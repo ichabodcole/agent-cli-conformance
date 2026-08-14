@@ -1,9 +1,5 @@
 import { emit, type OutputMode, useColor } from "../envelope.ts";
-import { usageError } from "../errors.ts";
 import { loadGraph, type WikiPage } from "../graph.ts";
-
-const TIERS = ["core", "diagnostic"];
-const PROBE_LEVELS = ["L0", "L1", "L2"];
 
 export interface RulesOptions {
   tier?: string;
@@ -22,24 +18,15 @@ interface RuleRow {
 }
 
 /**
- * Validate a closed-set option, and hand back the valid set on failure.
+ * `--tier` and `--probe-level` are NOT re-validated here.
  *
- * The caller never has to consult help: the rejection carries its own correction. This is the
- * `choices` pattern from the error-envelope contract applied to a usage error rather than a
- * lookup failure.
+ * They used to be, against a `TIERS`/`PROBE_LEVELS` pair copied out of `spec.ts` — two
+ * declarations of one closed set, which is the drift this project exists to remove. The parser
+ * now enforces every `ArgSpec.values` centrally (see `rejectOutOfSet` in cli.ts), so an
+ * out-of-set value never reaches this function and the valid set is stated once.
  */
-function oneOf(value: string | undefined, valid: string[], flag: string): string | undefined {
-  if (value === undefined) return undefined;
-  if (valid.includes(value)) return value;
-  throw usageError(`invalid value for ${flag}: "${value}"`, {
-    hint: `Pass one of: ${valid.join(", ")}`,
-    choices: valid,
-  });
-}
-
 export function rulesCommand(opts: RulesOptions, mode: OutputMode, startedAt: number): void {
-  const tier = oneOf(opts.tier, TIERS, "--tier");
-  const probeLevel = oneOf(opts.probeLevel, PROBE_LEVELS, "--probe-level");
+  const { tier, probeLevel } = opts;
 
   const graph = loadGraph();
   const matched = graph.pages

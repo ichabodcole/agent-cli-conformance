@@ -19,6 +19,7 @@ import { record } from "./kit/record.ts";
 import { CHECKERS } from "./kit/registry.ts";
 import { buildReport, runCheckers } from "./kit/report.ts";
 import type { TargetInfo } from "./kit/types.ts";
+import { COMMANDS, GLOBAL_ARGS } from "./spec.ts";
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), "cli.ts");
 // Rule B2 forbids ANSI escapes when stdout is not a terminal. Detecting them requires naming
@@ -253,6 +254,77 @@ describe("machine mode", () => {
     const env = JSON.parse(r.stdout);
     expect(env.ok).toBe(true);
     expect(env.next[0].command).toContain("acc show");
+  });
+});
+
+// A closed set the parser does not enforce is a lie the schema tells. `--format` declared
+// `text|json` and accepted anything, so `acc rules --format nonsense` returned data and exit 0
+// — the exact silent acceptance A1/A3 exist to catch in other CLIs, in the tool that checks
+// for it.
+//
+// The cases are WALKED out of `spec.ts` rather than listed, which is the point: a flag added
+// with a `values` the parser ignores fails here the day it is added, without anyone
+// remembering to extend this file.
+describe("every declared closed set is enforced", () => {
+  const closedSets = COMMANDS.flatMap((c) =>
+    [...c.args, ...GLOBAL_ARGS]
+      .filter((a) => a.values?.length)
+      .map((a) => [`${c.name} ${a.name}`, c.name, a.name, a.values as string[]] as const),
+  );
+
+  test("the walk found closed sets to check", () => {
+    // Guards the degenerate pass: an empty walk would make every case below vacuous.
+    expect(closedSets.length).toBeGreaterThan(0);
+  });
+
+  test.each(closedSets)("%s rejects an out-of-set value", async (_label, command, flag) => {
+    const r = await run([command, flag, "nonsense-value-xyz", "--json"]);
+    expect({ flag, code: r.code, stdout: r.stdout }).toEqual({ flag, code: 2, stdout: "" });
+    const env = JSON.parse(r.stderr);
+    expect(env.error.kind).toBe("usage");
+    // Both halves of a self-correcting rejection: what was wrong, and what would be right.
+    expect(env.error.message).toContain("nonsense-value-xyz");
+    expect(env.error.choices).toEqual(
+      COMMANDS.flatMap((c) => [...c.args, ...GLOBAL_ARGS]).find((a) => a.name === flag)?.values,
+    );
+  });
+
+  // The other direction. A validator that rejected EVERYTHING would satisfy the cases above,
+  // so each declared value has to survive its own flag.
+  test.each(closedSets)(
+    "%s accepts every value it declares",
+    async (_label, command, flag, values) => {
+      for (const value of values) {
+        const r = await run([command, flag, value, "--json"]);
+        expect({ flag, value, stderr: r.stderr }).toEqual({
+          flag,
+          value,
+          stderr: expect.not.stringContaining(`invalid value for ${flag}`),
+        });
+      }
+    },
+    20_000,
+  );
+
+  // The EARLY paths, which answer before commander ever parses. `--help` was intercepted and
+  // served the schema at exit 0 no matter what else the invocation carried.
+  test("an early-exit path still rejects an out-of-set value", async () => {
+    for (const args of [
+      ["--help", "--format", "nonsense"],
+      ["--format", "nonsense", "--help"],
+      ["rules", "--help", "--format", "nonsense"],
+    ]) {
+      const r = await run(args);
+      expect({ args, code: r.code, stdout: r.stdout }).toEqual({ args, code: 2, stdout: "" });
+    }
+  });
+
+  // ...but the terminator still ends option parsing (A6): after `--`, `--format nonsense` is
+  // two positional values, and rejecting them as a bad format would be reading data as syntax.
+  test("does not scan past the `--` terminator", async () => {
+    const r = await run(["show", "--", "--format", "nonsense", "--json"]);
+    expect(r.code).toBe(2);
+    expect(r.stderr).not.toContain("invalid value for --format");
   });
 });
 

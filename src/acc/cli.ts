@@ -8,7 +8,7 @@
  *
  * The parser is built from spec.ts, so help, parsing and `acc schema` cannot disagree.
  */
-import { Command, CommanderError } from "commander";
+import { Command, CommanderError, Option } from "commander";
 import { checkCommand } from "./commands/check.ts";
 import { pathCommand } from "./commands/path.ts";
 import { rulesCommand } from "./commands/rules.ts";
@@ -18,7 +18,7 @@ import { tagsCommand } from "./commands/tags.ts";
 import { emitError, type OutputMode, resolveMode } from "./envelope.ts";
 import { AccError, usageError } from "./errors.ts";
 import { ExitCode } from "./exit-codes.ts";
-import { COMMANDS, GLOBAL_ARGS } from "./spec.ts";
+import { type ArgSpec, COMMANDS, GLOBAL_ARGS } from "./spec.ts";
 import { VERSION } from "./version.ts";
 
 /**
@@ -33,9 +33,88 @@ function earlyMode(argv: string[]): OutputMode {
   return resolveMode(value);
 }
 
+/**
+ * Reject a value outside an argument's declared set, quoting both the value and the set.
+ *
+ * `ArgSpec.values` used to be decoration. The builder below read `name` and `type` and ignored
+ * it, and `resolveMode` treats an unrecognised explicit format as if none had been supplied —
+ * so `acc rules --format nonsense` returned 4KB of data and exit 0. That is the precise
+ * silent-acceptance shape A1 and A3 exist to catch in OTHER CLIs, in the reference
+ * implementation itself. The set travels back as `choices` so the caller self-corrects in one
+ * step rather than going to help.
+ */
+function rejectOutOfSet(arg: ArgSpec, value: string): void {
+  if (!arg.values || arg.values.includes(value)) return;
+  throw usageError(`invalid value for ${arg.name}: "${value}"`, {
+    hint: `Pass one of: ${arg.values.join(", ")}`,
+    choices: arg.values,
+  });
+}
+
+/** Every argument a command accepts: its own, plus the globals every command carries. */
+function argsFor(commandName: string | undefined): ArgSpec[] {
+  const spec = COMMANDS.find((c) => c.name === commandName);
+  return [...(spec?.args ?? []), ...GLOBAL_ARGS];
+}
+
+/** Long options that take a value, across the whole surface. Needed to tell the `core` in
+ *  `--tier core` (a value) from a bare token that names the command. */
+const VALUE_TAKING = new Set(
+  [...GLOBAL_ARGS, ...COMMANDS.flatMap((c) => c.args)]
+    .filter((a) => a.type === "string")
+    .map((a) => a.name),
+);
+
+/**
+ * Enforce every declared closed set over raw argv, before commander parses.
+ *
+ * Command actions are covered by an `argParser` derived from the same declaration (see the
+ * builder below), but two paths answer and exit before commander ever runs: the bare
+ * invocation, and the machine-mode help interception. `acc --help --format nonsense` returned
+ * a schema and exit 0 until this ran first.
+ */
+function enforceClosedSets(argv: string[]): void {
+  const rest = argv.slice(2);
+  const supplied: Array<[name: string, value: string]> = [];
+  let command: string | undefined;
+  for (let i = 0; i < rest.length; i++) {
+    const token = rest[i] as string;
+    // Everything after the terminator is positional DATA, never a flag (rule A6). Scanning
+    // past it would reject `acc show -- --format nonsense`, where those are literal arguments.
+    if (token === "--") break;
+    if (!token.startsWith("-")) {
+      command ??= token;
+      continue;
+    }
+    const eq = token.indexOf("=");
+    if (eq > 0) {
+      supplied.push([token.slice(0, eq), token.slice(eq + 1)]);
+      continue;
+    }
+    const value = rest[i + 1];
+    if (VALUE_TAKING.has(token) && value !== undefined) {
+      supplied.push([token, value]);
+      i++; // consumed as a value, so it cannot also be read as the command name
+    }
+  }
+  const args = argsFor(command);
+  for (const [name, value] of supplied) {
+    const arg = args.find((a) => a.name === name);
+    if (arg) rejectOutOfSet(arg, value);
+  }
+}
+
 const argv = process.argv;
 const mode = earlyMode(argv);
 const startedAt = performance.now();
+
+// Before ANY early path answers: an invocation carrying a value the spec does not allow is
+// wrong, whether or not the path it took would have needed to parse.
+try {
+  enforceClosedSets(argv);
+} catch (err) {
+  process.exit(emitError({ mode, command: argv[2] ?? "", error: err }));
+}
 
 // Bare invocation is a usage error (rule D2): nothing was requested, nothing ran. Exiting 0
 // here is how an unset shell variable becomes a silent no-op that reports success.
@@ -87,10 +166,20 @@ for (const spec of COMMANDS) {
   // them once on the root is the citty gotcha: root flags do not reach subcommands, so
   // `mycli sub --format json` silently returns human text.
   for (const a of [...spec.args, ...GLOBAL_ARGS]) {
-    cmd.option(
+    const option = new Option(
       a.type === "boolean" ? a.name : `${a.name} <${a.valueHint ?? "value"}>`,
       a.description,
     );
+    // Validation is DERIVED from the declaration, never restated beside it. An ArgSpec that
+    // names a closed set gets a parser that enforces it, so a flag cannot be added with a set
+    // the parser then ignores — which is exactly how `--format` came to accept anything.
+    if (a.values?.length) {
+      option.argParser((value: string) => {
+        rejectOutOfSet(a, value);
+        return value;
+      });
+    }
+    cmd.addOption(option);
   }
   // Notes before examples: a caveat a caller must read BEFORE running the command is worth
   // nothing underneath the copy-pasteable invocation it is warning about.
