@@ -64,6 +64,23 @@ describe("parseHelp", () => {
       "volume",
     ]);
   });
+
+  // gh suffixes every entry in its command table with a colon that is table punctuation, not
+  // part of the name. Left in, a nested probe built as `gh auth: <sentinel>` gets rejected as an
+  // unknown ROOT command — a false pass for a check that exists to verify nested-verb handling.
+  test("strips gh-style trailing colons from subcommand names", () => {
+    const d = parseHelp(
+      "CORE COMMANDS\n  auth:        Authenticate gh and git with GitHub\n  browse:      Open the repository in the browser\n",
+    );
+    expect(d.subcommands).toEqual(["auth", "browse"]);
+  });
+
+  // Interior colons are real, namespaced verb names (`db:migrate`, `cache:clear`) — only a
+  // trailing colon is punctuation, and stripping must not touch these.
+  test("keeps interior colons in namespaced subcommand names", () => {
+    const d = parseHelp("Commands:\n  db:migrate    Run migrations.\n");
+    expect(d.subcommands).toEqual(["db:migrate"]);
+  });
 });
 
 describe("discover", () => {

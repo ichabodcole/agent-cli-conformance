@@ -74,7 +74,13 @@ export function parseHelp(text: string): Omit<Discovery, "helpReadable"> {
     // is what separates a real entry from prose that merely starts with a lowercase word inside
     // the block ("list of available flags below") — without it, a stray sentence reads as a verb.
     const m = /^\s+([a-z][a-z0-9:_-]*)(\s{2,}|$)/i.exec(line);
-    if (m?.[1]) subcommands.push(m[1]);
+    // `:` stays in the character class because some CLIs namespace verbs with it for real
+    // ("db:migrate", "cache:clear"). But gh's table style ("auth:  Authenticate...") suffixes
+    // every name with a colon that is punctuation from the layout, not part of the name — left
+    // in, a nested probe built from it (`gh auth: <sentinel>`) is rejected as an unknown ROOT
+    // command by gh, which records a pass for a nesting check that verified nothing at all. Only
+    // a single TRAILING colon is stripped; interior colons survive untouched.
+    if (m?.[1]) subcommands.push(m[1].replace(/:$/, ""));
   }
 
   const flags = extractFlags(text, lines);
