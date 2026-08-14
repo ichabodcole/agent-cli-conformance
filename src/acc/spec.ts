@@ -166,7 +166,9 @@ export const COMMANDS: CommandSpec[] = [
     positionals: [],
     args: [],
     errors: [],
-    examples: ["acc schema", "acc schema | jq '.commands[].name'"],
+    // `.data.commands`, not `.commands`: the schema is enveloped in BOTH modes, so the query
+    // path does not change when the command is piped.
+    examples: ["acc schema", "acc schema | jq '.data.commands[].name'"],
   },
   {
     name: "check",

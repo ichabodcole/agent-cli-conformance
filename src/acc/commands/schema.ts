@@ -49,6 +49,13 @@ export function schemaCommand(mode: OutputMode, startedAt: number): void {
     next: [{ command: "acc rules --tier core", when: "to see what a conforming CLI must satisfy" }],
     // Text mode still emits JSON here: the schema IS structured data, and pretty-printing it
     // into prose would produce something no one can consume and no one wants to read.
-    renderText: (d) => JSON.stringify(d, null, 2),
+    //
+    // It emits the ENVELOPE, not the bare payload. Printing the raw object in a terminal and
+    // the enveloped one in a pipeline gave the same argv two incompatible query paths chosen
+    // by whether stdout was a TTY — which is why the published `acc schema | jq '.commands[]'`
+    // example failed. Every other command envelopes, generic tooling should not have to
+    // special-case this one, and the envelope carries `meta` and `next` that the bare object
+    // does not.
+    renderText: (_d, envelope) => JSON.stringify(envelope, null, 2),
   });
 }

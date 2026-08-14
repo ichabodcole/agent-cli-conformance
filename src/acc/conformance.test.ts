@@ -397,6 +397,20 @@ describe("the schema declares every error kind a command can produce", () => {
 });
 
 describe("schema", () => {
+  // The same argv used to yield two incompatible query paths: the raw object in a terminal,
+  // `{ok, data}` in a pipeline. A caller cannot write one `jq` filter against a document whose
+  // shape depends on whether stdout is a TTY — which is exactly how the published
+  // `acc schema | jq '.commands[].name'` example came to fail.
+  test("emits the same enveloped document in both modes", async () => {
+    const asText = JSON.parse((await run(["schema", "--format", "text"])).stdout);
+    const asJson = JSON.parse((await run(["schema", "--json"])).stdout);
+    // durationMs is the one field that legitimately differs between two runs.
+    for (const doc of [asText, asJson]) delete doc.meta.durationMs;
+    expect(asText).toEqual(asJson);
+    expect(asText.ok).toBe(true);
+    expect(asText.data.commands.length).toBe(COMMANDS.length);
+  });
+
   test("describes every command the parser accepts, and nothing it does not", async () => {
     const r = await run(["schema"]);
     const { data } = JSON.parse(r.stdout);

@@ -80,16 +80,18 @@ export function emit<T>(opts: {
   mode: OutputMode;
   command: string;
   data: T;
-  /** Human rendering. Never called in json mode, so it may use colour freely via useColor(). */
-  renderText: (data: T) => string;
+  /**
+   * Human rendering. Never called in json mode, so it may use colour freely via useColor().
+   *
+   * The assembled envelope is passed alongside the payload for the one command whose human
+   * rendering IS the document — `schema`. Without it, the only way to print an enveloped
+   * schema in text mode would be to rebuild the envelope outside this file, and the
+   * single-writer property (see the header) is what makes rule B3 hold by construction.
+   */
+  renderText: (data: T, envelope: SuccessEnvelope<T>) => string;
   next?: NextAction[];
   startedAt?: number;
 }): void {
-  if (opts.mode === "text") {
-    const text = opts.renderText(opts.data);
-    if (text) writeOut(text);
-    return;
-  }
   const envelope: SuccessEnvelope<T> = {
     ok: true,
     data: opts.data,
@@ -98,6 +100,11 @@ export function emit<T>(opts: {
   if (opts.next?.length) envelope.next = opts.next;
   if (opts.startedAt !== undefined) {
     envelope.meta.durationMs = Math.round(performance.now() - opts.startedAt);
+  }
+  if (opts.mode === "text") {
+    const text = opts.renderText(opts.data, envelope);
+    if (text) writeOut(text);
+    return;
   }
   writeOut(JSON.stringify(envelope));
 }
