@@ -10,12 +10,9 @@
 // the `import.meta.main` guard: before it, importing ran the wiki lint and killed the runner.
 
 import { expect, test } from "bun:test";
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { LintPage } from "../../scripts/docs-lint/index.ts";
 import { ruleChecks } from "./lint.ts";
-
-const CHECKERS_DIR = join(import.meta.dir, "../../src/acc/kit/checkers");
 
 /** A `LintPage` carrying just the frontmatter under test. */
 function pageOf(rel: string, fields: Record<string, string>): LintPage {
@@ -46,12 +43,21 @@ function without(key: string): Record<string, string> {
   return rest;
 }
 
+// `src/acc/kit/checkers/parsing/unknown-flag.ts` is now real, so the REVERSE direction (a
+// checker file no page declares) fires against every test below unless its pages happen to
+// declare that exact path — which is not what any of these tests are about. `forward` isolates
+// the FORWARD direction (page → checker) they actually exercise; the reverse direction gets its
+// own live tests further down.
+function forward(pages: LintPage[]): string[] {
+  return ruleChecks(pages).filter((p) => !p.startsWith("UNDOCUMENTED"));
+}
+
 test("a valid rule page produces no problems", () => {
-  expect(ruleChecks([rule("rules/parsing/a1.md")])).toEqual([]);
+  expect(forward([rule("rules/parsing/a1.md")])).toEqual([]);
 });
 
 test("no pages at all produces no problems", () => {
-  expect(ruleChecks([])).toEqual([]);
+  expect(forward([])).toEqual([]);
 });
 
 test("non-rule pages are ignored entirely", () => {
@@ -60,22 +66,22 @@ test("non-rule pages are ignored entirely", () => {
     pageOf("concepts/exit-codes.md", { type: "concept", tier: "nonsense" }),
     pageOf("SCHEMA.md", {}),
   ];
-  expect(ruleChecks(pages)).toEqual([]);
+  expect(forward(pages)).toEqual([]);
 });
 
 test("a missing rule_id is reported", () => {
-  const problems = ruleChecks([pageOf("rules/parsing/a1.md", without("rule_id"))]);
+  const problems = forward([pageOf("rules/parsing/a1.md", without("rule_id"))]);
   expect(problems).toHaveLength(1);
   expect(problems[0]).toMatch(/^MISSING rule_id rules\/parsing\/a1\.md\s+\(every rule page needs/);
 });
 
 test("an empty rule_id counts as missing", () => {
-  const problems = ruleChecks([rule("rules/parsing/a1.md", { rule_id: "" })]);
+  const problems = forward([rule("rules/parsing/a1.md", { rule_id: "" })]);
   expect(problems).toEqual([expect.stringContaining("MISSING rule_id")]);
 });
 
 test("a duplicate rule_id is reported, naming the page that claimed it first", () => {
-  const problems = ruleChecks([
+  const problems = forward([
     rule("rules/parsing/a1.md"),
     rule("rules/streams/also-a1.md", { checker: "scripts/checkers/streams/x.ts" }),
   ]);
@@ -86,14 +92,14 @@ test("a duplicate rule_id is reported, naming the page that claimed it first", (
 });
 
 test("a third page with the same rule_id is reported too", () => {
-  const problems = ruleChecks([rule("rules/a.md"), rule("rules/b.md"), rule("rules/c.md")]).filter(
+  const problems = forward([rule("rules/a.md"), rule("rules/b.md"), rule("rules/c.md")]).filter(
     (p) => p.startsWith("DUPLICATE"),
   );
   expect(problems).toHaveLength(2);
 });
 
 test("rule_id uniqueness is scoped to rule pages", () => {
-  const problems = ruleChecks([
+  const problems = forward([
     rule("rules/parsing/a1.md"),
     pageOf("concepts/exit-codes.md", { type: "concept", rule_id: "A1" }),
   ]);
@@ -104,45 +110,45 @@ test("distinct rule_ids across many pages are fine", () => {
   const pages = ["A1", "A2", "B1"].map((id, i) =>
     rule(`rules/r${i}.md`, { rule_id: id, checker: `scripts/checkers/r${i}.ts` }),
   );
-  expect(ruleChecks(pages)).toEqual([]);
+  expect(forward(pages)).toEqual([]);
 });
 
 test.each(["core", "diagnostic"])("tier %s is accepted", (tier) => {
-  expect(ruleChecks([rule("rules/a.md", { tier })])).toEqual([]);
+  expect(forward([rule("rules/a.md", { tier })])).toEqual([]);
 });
 
 test.each(["", "Core", "CORE", "optional", "core ", "critical"])("tier %j is rejected", (tier) => {
-  const problems = ruleChecks([rule("rules/a.md", { tier })]);
+  const problems = forward([rule("rules/a.md", { tier })]);
   expect(problems).toHaveLength(1);
   expect(problems[0]).toContain("BAD tier");
   expect(problems[0]).toContain("not in {core, diagnostic}");
 });
 
 test("a missing tier is reported as BAD tier with an empty value", () => {
-  const problems = ruleChecks([pageOf("rules/a.md", without("tier"))]);
+  const problems = forward([pageOf("rules/a.md", without("tier"))]);
   expect(problems).toHaveLength(1);
   expect(problems[0]).toMatch(/^BAD tier\s+rules\/a\.md: "" not in \{core, diagnostic\}$/);
 });
 
 test.each(["L0", "L1", "L2"])("probe_level %s is accepted", (probe_level) => {
-  expect(ruleChecks([rule("rules/a.md", { probe_level })])).toEqual([]);
+  expect(forward([rule("rules/a.md", { probe_level })])).toEqual([]);
 });
 
 test.each(["", "l0", "L3", "0", "L0 ", "level-0"])("probe_level %j is rejected", (probe_level) => {
-  const problems = ruleChecks([rule("rules/a.md", { probe_level })]);
+  const problems = forward([rule("rules/a.md", { probe_level })]);
   expect(problems).toHaveLength(1);
   expect(problems[0]).toContain("BAD probe_level");
   expect(problems[0]).toContain("not in {L0, L1, L2}");
 });
 
 test("a missing probe_level is reported as BAD probe_level with an empty value", () => {
-  const problems = ruleChecks([pageOf("rules/a.md", without("probe_level"))]);
+  const problems = forward([pageOf("rules/a.md", without("probe_level"))]);
   expect(problems).toHaveLength(1);
   expect(problems[0]).toMatch(/^BAD probe_level rules\/a\.md: "" not in \{L0, L1, L2\}$/);
 });
 
 test("a missing checker is reported", () => {
-  const problems = ruleChecks([pageOf("rules/a.md", without("checker"))]);
+  const problems = forward([pageOf("rules/a.md", without("checker"))]);
   expect(problems).toHaveLength(1);
   expect(problems[0]).toMatch(/^MISSING checker rules\/a\.md\s+\(name the file that enforces/);
 });
@@ -151,13 +157,13 @@ test.each(["planned", "implemented"])("checker_status %s is accepted", (checker_
   // "implemented" also demands the file exist (covered below) — point at one that does, so
   // this case is isolated to the enum check.
   const checker = checker_status === "implemented" ? "docs/wiki/lint.ts" : OK_RULE.checker;
-  expect(ruleChecks([rule("rules/a.md", { checker_status, checker })])).toEqual([]);
+  expect(forward([rule("rules/a.md", { checker_status, checker })])).toEqual([]);
 });
 
 test.each(["", "Planned", "PLANNED", "done", "planned ", "in-progress"])(
   "checker_status %j is rejected",
   (checker_status) => {
-    const problems = ruleChecks([rule("rules/a.md", { checker_status })]);
+    const problems = forward([rule("rules/a.md", { checker_status })]);
     expect(problems).toHaveLength(1);
     expect(problems[0]).toContain("BAD checker_status");
     expect(problems[0]).toContain("not in {planned, implemented}");
@@ -165,7 +171,7 @@ test.each(["", "Planned", "PLANNED", "done", "planned ", "in-progress"])(
 );
 
 test("a missing checker_status is reported as BAD checker_status with an empty value", () => {
-  const problems = ruleChecks([pageOf("rules/a.md", without("checker_status"))]);
+  const problems = forward([pageOf("rules/a.md", without("checker_status"))]);
   expect(problems).toHaveLength(1);
   expect(problems[0]).toMatch(
     /^BAD checker_status rules\/a\.md: "" not in \{planned, implemented\}$/,
@@ -175,14 +181,14 @@ test("a missing checker_status is reported as BAD checker_status with an empty v
 // The ratchet: a `planned` rule owes nothing on disk, no matter what path it names — that is
 // what lets a rule declare its checker before the file exists.
 test("a planned rule with a checker path that does not exist produces no problem", () => {
-  const problems = ruleChecks([
+  const problems = forward([
     rule("rules/a.md", { checker_status: "planned", checker: "src/acc/kit/checkers/nope.ts" }),
   ]);
   expect(problems).toEqual([]);
 });
 
 test("an implemented rule whose checker file does not exist is reported as MISSING CHECKER", () => {
-  const problems = ruleChecks([
+  const problems = forward([
     rule("rules/a.md", {
       checker_status: "implemented",
       checker: "src/acc/kit/checkers/nope.ts",
@@ -194,14 +200,14 @@ test("an implemented rule whose checker file does not exist is reported as MISSI
 });
 
 test("an implemented rule whose checker file exists produces no problem", () => {
-  const problems = ruleChecks([
+  const problems = forward([
     rule("rules/a.md", { checker_status: "implemented", checker: "docs/wiki/lint.ts" }),
   ]);
   expect(problems).toEqual([]);
 });
 
 test("every defect on one page is reported, in field order", () => {
-  const problems = ruleChecks([
+  const problems = forward([
     pageOf("rules/broken.md", { type: "rule", tier: "wrong", probe_level: "L9" }),
   ]);
   expect(problems).toEqual([
@@ -213,7 +219,7 @@ test("every defect on one page is reported, in field order", () => {
 });
 
 test("problems from several pages accumulate", () => {
-  const problems = ruleChecks([
+  const problems = forward([
     rule("rules/ok.md"),
     pageOf("rules/bad1.md", { type: "rule", rule_id: "B1", tier: "x", probe_level: "L1" }),
     pageOf("rules/bad2.md", { type: "rule", rule_id: "B2", tier: "core", probe_level: "L9" }),
@@ -225,19 +231,22 @@ test("problems from several pages accumulate", () => {
 
 // The forward direction (does a declared checker exist) is exercised live above — it no
 // longer needs `src/acc/kit/checkers/` on disk, because `checker_status` governs it, not
-// directory existence. Only the REVERSE direction still needs the directory: it walks
-// `src/acc/kit/checkers/` for files no rule page declares, and there is nothing to walk before
-// that directory exists.
-//
-// WHEN `src/acc/kit/checkers/` IS ADDED, this test skips itself — replace it with a live case:
-// a checker file on disk that no rule page's `checker` field names must be UNDOCUMENTED.
-test.skipIf(existsSync(CHECKERS_DIR))(
-  "the undocumented-checker check stays dormant while src/acc/kit/checkers/ is absent",
-  () => {
-    const problems = ruleChecks([
-      rule("rules/a.md", { checker: "src/acc/kit/checkers/definitely/not/here.ts" }),
-      rule("rules/b.md", { rule_id: "A2", checker: "not-even-a-plausible-path" }),
-    ]);
-    expect(problems).toEqual([]);
-  },
-);
+// directory existence. The REVERSE direction needs the directory to be real, and now it is:
+// `src/acc/kit/checkers/parsing/unknown-flag.ts` landed in Task 5, so these are live cases
+// against the real file rather than the skipped placeholder that used to stand here.
+const REAL_CHECKER = "src/acc/kit/checkers/parsing/unknown-flag.ts";
+
+test("a real checker file with no rule page declaring it is reported as UNDOCUMENTED", () => {
+  const problems = ruleChecks([
+    rule("rules/a.md", { checker: "src/acc/kit/checkers/definitely/not/here.ts" }),
+    rule("rules/b.md", { rule_id: "A2", checker: "not-even-a-plausible-path" }),
+  ]);
+  expect(problems).toContain(
+    `UNDOCUMENTED   ${REAL_CHECKER}  (no rule page declares this checker)`,
+  );
+});
+
+test("a real checker file IS documented once some page's checker field names it exactly", () => {
+  const problems = ruleChecks([rule("rules/a.md", { checker: REAL_CHECKER })]);
+  expect(problems.filter((p) => p.startsWith("UNDOCUMENTED"))).toEqual([]);
+});

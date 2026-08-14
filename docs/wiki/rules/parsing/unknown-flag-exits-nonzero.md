@@ -12,7 +12,7 @@ rule_id: A1
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/unknown-flag.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Unknown flags must exit non-zero

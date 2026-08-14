@@ -97,3 +97,21 @@ export interface Checker {
   probes: (d: Discovery) => Invocation[];
   check: (h: History) => Finding;
 }
+
+/** Find a recorded observation by the exact args it was run with. */
+export function findByArgs(h: History, args: string[]): Observation | undefined {
+  const key = args.join("\0");
+  return h.observations.find((o) => o.invocation.args.join("\0") === key);
+}
+
+/**
+ * Every observation whose `purposes` includes one starting with `prefix`.
+ *
+ * Returns an array because deduplication can merge several requests into one recording, and
+ * because a checker that declares three probes needs all three back. Prefer this over indexing
+ * on `invocation.purpose` — that field is only the FIRST requester's reason, and a checker
+ * reading it would silently miss observations another checker happened to request first.
+ */
+export function findByPurpose(h: History, prefix: string): Observation[] {
+  return h.observations.filter((o) => o.purposes.some((p) => p.startsWith(prefix)));
+}
