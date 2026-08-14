@@ -1,0 +1,546 @@
+# 03 — The CLI / MCP Boundary
+
+Research date: 2026-08-13. Scope: local agents doing tooling work. Not a general MCP primer.
+
+**Evidence labels used throughout:**
+
+- `[MEASURED]` — someone ran an experiment and published numbers; methodology inspectable.
+- `[VENDOR]` — first-party numbers from the party that benefits.
+- `[SPEC]` — normative fact from a specification or product documentation.
+- `[PRACTITIONER]` — argued, credible, not measured.
+- `[INFERENCE]` — my reasoning from the above, not something anyone published.
+
+---
+
+## 1. The decision rule
+
+**Ship a CLI as the primary surface for any capability a local agent invokes from a shell. Add MCP only to reach clients that have no shell, or to buy a protocol feature the CLI genuinely cannot express. Generate the MCP surface from the CLI's definition rather than writing it by hand.**
+
+The instinct is **substantially validated — but the popular reasoning for it is half wrong, and using that reasoning will get the spec dismissed.**
+
+- ❌ **Don't argue "MCP burns 55k tokens before you start."** Prompt caching puts tool definitions in the cacheable prefix, and deferred loading (`defer_loading` / tool search) is generally available and cuts definition tokens >85%. The dollar-cost argument is largely retired (§2.4).
+- ✅ **Do argue that intermediate data never enters context.** A measured MCP run cost **400,013 tokens** on a task the CLI did in 4,998, because there was no pipe to filter with. No protocol feature fixes this (§2.2).
+- ✅ **Do argue round-trip amplification.** AWS's own migration doc: _"Fewer round trips means fewer tokens spent restating intermediate state"_ (§5, F4).
+- ✅ **Do argue knowability.** Four independent sources — a −32% ablation, a benchmark where adding docs _raised_ cost 3.5×, GitHub building and then **removing** runtime tool discovery, and Cramer's critique — say a small, static, well-named surface beats runtime discovery (§S3). This is the highest-confidence finding here.
+- ⚠️ **Be honest that the evidence is contested.** The two most rigorous benchmarks point in _opposite_ directions (§2.2 vs §2.3), and the variable that flips the sign is not CLI-vs-MCP.
+
+### Decision table
+
+| Signal                                                                                                                                                | Surface                                                    | Confidence      |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------- |
+| Agent already has a Bash/shell tool and runs on the same host                                                                                         | **CLI**                                                    | High            |
+| Work involves iterating over N items, filtering, or joining outputs                                                                                   | **CLI** — pipes keep intermediates out of context entirely | High            |
+| Output is large and needs narrowing before the model sees it (`jq`, `head`, `grep`, `--fields`)                                                       | **CLI**                                                    | High            |
+| Human needs to reproduce, diff, or paste the exact invocation into a bug report                                                                       | **CLI**                                                    | High            |
+| Capability is one of many in a large surface (30+ operations)                                                                                         | **CLI**, or MCP **with** deferred loading                  | High            |
+| Target client is shell-less (claude.ai web, ChatGPT connectors, hosted assistants)                                                                    | **MCP**                                                    | High            |
+| Multi-user / multi-tenant OAuth where the agent must not hold a long-lived credential                                                                 | **MCP** (elicitation URL mode)                             | High            |
+| Tool must ask the user a structured question mid-execution                                                                                            | **MCP** elicitation — _or_ a CLI convention (see §4.3)     | Medium          |
+| Needs to be installed on a machine you do not control, with no runtime prerequisites                                                                  | **CLI** (single static binary)                             | High            |
+| Server must run remotely and hold privileged network position                                                                                         | **MCP**                                                    | High            |
+| You want per-operation permission prompts in the host UI rather than blanket shell access                                                             | **MCP**                                                    | Medium          |
+| **Cost of rebuilding state each call exceeds the token cost of holding it** (long-running loop over one live session — a browser, a debugger, a REPL) | **MCP**                                                    | High — see §4.2 |
+
+`[VENDOR]` **The sharpest axis is not local-vs-remote, it's throughput-vs-continuity.** Microsoft ships both a Playwright CLI and a Playwright MCP server over a shared pinned core, and draws the line this way: CLI + Skills for _"high-throughput coding agents"_; MCP for _"long-running autonomous workflows where maintaining continuous browser context outweighs token cost concerns."_ Full quote and citation in §4.2.
+
+### The three failure modes this rule avoids
+
+1. **Schema-tax MCP** — 40+ tool definitions loaded for a task using two of them. Real, but _solvable within MCP_ now (§2.4). Do not build your spec's argument on this alone.
+2. **Context-flooding MCP** — a tool returns 400k tokens of JSON straight into the window because there is no pipe to filter it. This is the more durable problem and the one CLI structurally avoids. `[MEASURED]` — see the 400,013-token run in §2.2.
+3. **Undocumented-CLI** — the agent guesses flags, fails, retries, and burns more tokens than MCP would have. This is the _real_ cost of a badly specified CLI and is exactly what a conformance kit should eliminate.
+
+---
+
+## 2. Context and token economics
+
+### 2.1 What tool definitions actually cost
+
+`[SPEC/VENDOR]` Anthropic's own documentation is the most reliable anchor:
+
+> "A typical multiserver setup (GitHub, Slack, Sentry, Grafana, and Splunk) can consume ~55k tokens in definitions before Claude does any work."
+> — [Tool search tool, Claude Platform Docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)
+
+Same doc, the accuracy claim that matters more than the token claim:
+
+> "Claude's ability to pick the right tool degrades once you exceed 30–50 available tools."
+
+`[VENDOR]` [Advanced tool use](https://www.anthropic.com/engineering/advanced-tool-use) (2025-11-24) gives the underlying figures: "58 tools consuming approximately 55K tokens before the conversation even starts", and an extended example where "tool definitions consume 134K tokens before optimization."
+
+`[MEASURED]` Community measurement, [MCP issue #2808](https://github.com/modelcontextprotocol/modelcontextprotocol/issues/2808): 11 production tools measured via Anthropic's `count_tokens` endpoint ranged **103–1,024 tokens per tool definition** (roughly 10× spread driven by schema complexity, not tool count). Author reports ~10,000 tokens of schema per conversation first turn, ≈$0.15/conversation at Opus input pricing, ≈$390 across 2,600 conversations over 22 days. **Status: open, unresolved.**
+
+> ⚠️ Widely-repeated claim to _not_ use: several blogs assert "the GitHub MCP server alone dumps ~55,000 tokens." That number is Anthropic's _five-server_ figure, mis-attributed. Measured single-server GitHub numbers land closer to 20–27k (§2.2). Using the inflated number will get the spec challenged.
+
+`[VENDOR]` GitHub's own datapoint is cleaner: consolidating the Projects toolset "reduced token usage by around **23,000 tokens (50%)**" — [GitHub changelog, 2026-01-28](https://github.blog/changelog/2026-01-28-github-mcp-server-new-projects-tools-oauth-scope-filtering-and-new-features/). So one toolset within one server was ~46k tokens before consolidation. Schema bloat is real and vendors are actively fighting it.
+
+### 2.2 The strongest CLI-favouring measurement
+
+`[MEASURED]` **ScaleKit, [MCP vs CLI: Benchmarking AI Agent Cost & Reliability](https://www.scalekit.com/blog/mcp-vs-cli-use)** (2026-03-11), code at [scalekit-inc/mcp-vs-cli-benchmark](https://github.com/scalekit-inc/mcp-vs-cli-benchmark) (MIT, Python).
+
+This is the highest-quality evidence I found, for one specific reason: **it is pre-registered.** [`METHODOLOGY.md`](https://github.com/scalekit-inc/mcp-vs-cli-benchmark/blob/main/METHODOLOGY.md) was committed before any runs and states hypothesis H1 as _"MCP agents will use fewer total tokens than CLI agents."_ The data falsified their own stated hypothesis. That is a meaningfully stronger epistemic position than the usual blog benchmark.
+
+Setup: Claude Sonnet 4, temp 0, 5 read-only GitHub tasks, 25 runs per modality, three arms — bare `gh` via Bash; `gh` + an ~800-token skills doc; GitHub's official remote Copilot MCP server (43 tools). Paired Wilcoxon, Bonferroni-corrected, Cohen's d reported.
+
+Median tokens per run:
+
+| Task                      | CLI   | CLI+Skills | MCP    | Multiple |
+| ------------------------- | ----- | ---------- | ------ | -------- |
+| Repo language & license   | 1,365 | 4,724      | 44,026 | **32×**  |
+| PR details & review       | 1,648 | 2,816      | 32,279 | **20×**  |
+| Repo metadata             | 9,386 | 12,210     | 82,835 | **9×**   |
+| Merged PRs by contributor | 5,010 | 6,107      | 33,712 | **7×**   |
+| Latest release & deps     | 8,750 | 6,860      | 37,402 | **4×**   |
+
+All differences p < 0.05. Projected at 10,000 ops/month: **CLI ~$3.20 vs MCP ~$55.20.**
+
+Reliability: CLI 25/25, CLI+Skills 25/25, MCP 18/25 (72%).
+
+**Read that reliability number honestly.** All seven MCP failures were TCP `ConnectTimeout` reaching GitHub's _remote_ endpoint. The article says so explicitly: _"Not an MCP protocol error. Not a bad tool call."_ That is a comparison of local-process reliability vs network reliability, not of MCP vs CLI. **Do not cite 72% as an MCP protocol reliability figure.** It is, however, a legitimate argument for local execution over remote transport.
+
+The repo's single-run README table shows the tail behaviour that matters most: "Summarize PRs by contributor" cost CLI 4,998 tokens in 1 call, and MCP **400,013 tokens in 12 calls**. That is not schema tax — that is unfiltered intermediate data entering the context window because there was no pipe. **This is the load-bearing CLI argument.**
+
+### 2.3 The strongest MCP-favouring measurement — and why it disagrees
+
+`[MEASURED, unverified primary]` Smithery, "MCP vs CLI Is the Wrong Fight" — 756 isolated runs across 8 experiment families; Claude Haiku 4.5 and GPT 5.4 for the main suite, Claude Sonnet 4.6 for large-catalog GitHub experiments; GitHub REST, Linear GraphQL, and a Singapore bus REST API.
+
+Reported results, opposite in sign to ScaleKit:
+
+- GitHub REST success: **MCP 91.7% vs CLI 83.3%**
+- Tokens on _successful_ runs: **MCP 28.8k vs CLI 82.9k** — CLI used **2.9× more billed tokens** and took **2.4× longer**
+
+Their stated mechanism: CLI's overhead is _interaction_ overhead, not payload — the agent browses with `list`/`describe`, parses JSON, re-serializes args through the shell, then calls the operation, whereas MCP collapses that into fewer structured turns.
+
+> **Caveats you must carry.** (a) I could not fetch the primary — `https://smithery.ai/blog/mcp-vs-cli-is-the-wrong-fight` returned 404 on repeated attempts on 2026-08-13; these figures come from search-index snippets. (b) Smithery is an MCP registry/hosting company; this is a vendor result favouring their product. (c) I could not confirm whether "CLI" meant a well-specified CLI or a raw `curl`/generic wrapper — the described failure mode (browse → describe → parse → re-serialize) suggests a _discovery-heavy generic_ CLI, not a purpose-built one.
+
+**`[INFERENCE]` These two results are reconcilable, and the reconciliation is the most useful finding in this document.** ScaleKit gave the agent `gh` — a CLI the model already knows cold, in its training data, with stable flags. Smithery's CLI arm appears to have made the agent _discover_ the command surface at runtime. The variable that flipped the sign is not CLI-vs-MCP; it is **whether the command surface was known a priori or discovered per-session.** ScaleKit's own CLI+Skills arm is the tell: adding an 800-token skills doc _increased_ median tokens on 4 of 5 tasks (e.g. 1,365 → 4,724) while keeping 100% success — you pay for discovery material you didn't need.
+
+That is directly actionable for a spec: **a conforming CLI must make its surface cheap to know, not merely possible to discover.** Bounded, layered help; a machine-readable schema fetched once and cacheable; and — critically — enough training-data-adjacent convention that the agent doesn't need to look at all.
+
+### 2.4 The counter-argument you must engage: deferred loading killed the naive token case
+
+`[SPEC]` The "schemas load whether used or not" premise is **no longer true by default** on the Claude platform. [Tool search](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool) is generally available. Mark tools `defer_loading: true`, and:
+
+- Deferred definitions are excluded from the system-prompt prefix; only the search tool + non-deferred tools are in context.
+- Discovered tools arrive as `tool_reference` blocks appended inline, so **prompt caching is preserved**.
+- Limits: 10,000 deferred tools/request; ≥1 tool must stay non-deferred.
+- Anthropic's guidance: use it at ≥10 tools or >10k tokens of definitions; _don't_ use it under 10 tools or when every tool is used every request.
+
+`[VENDOR]` Measured effect: ">85 percent" reduction in definition tokens; 191,300 tokens of remaining context vs 122,800 without. On Anthropic's MCP evals, **Opus 4: 49% → 74%; Opus 4.5: 79.5% → 88.1%.**
+
+`[SPEC]` And on the "MCP costs N tokens every request" framing — from [Tool use with prompt caching](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-use-with-prompt-caching): tool definitions sit in the cacheable prefix (`tools` → `system` → `messages`). Cached input reads at a fraction of base input price.
+
+`[INFERENCE]` **So the honest position is:**
+
+| Cost                                                 | Still real for MCP?                                                                                                                                                                                                                               |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dollar cost of schemas                               | **Largely mitigated** — prompt caching + deferred loading. The `$55.20 vs $3.20` figure assumes no caching and no tool search.                                                                                                                    |
+| Context-window _occupancy_                           | **Mitigated** by deferred loading.                                                                                                                                                                                                                |
+| Tool-selection accuracy past 30–50 tools             | **Mitigated** by deferred loading (that's what the 49%→74% measures).                                                                                                                                                                             |
+| **Cache invalidation on toolset change**             | **Not mitigated.** "Modifying tool definitions → invalidates entire cache (tools, system, messages)." Adding or removing an MCP server mid-session nukes everything downstream. A CLI has no equivalent — its surface isn't in the prefix at all. |
+| **Unfiltered intermediate results entering context** | **Not mitigated by any of this.** The 400k-token run. No pipe, no `jq`, no `head`. This is the durable CLI advantage.                                                                                                                             |
+| **Round-trip amplification**                         | **Not mitigated.** Every intermediate value round-trips through the model. A shell loop does not.                                                                                                                                                 |
+
+**Build the spec's argument on the bottom two rows.** Anything built on "schemas cost tokens" will be obsolete, and a sophisticated reader will know it already is.
+
+> **But note the counter-evidence on deferred loading itself.** `[MEASURED]` GitHub shipped `--dynamic-toolsets` (start with 4 tools, discover the rest) and **removed it** — [issue #275](https://github.com/github/github-mcp-server/issues/275) closed 2025-10-27, flag gone from source. They replaced it with static consolidation and backward-compatible aliases (§5, F4). `[PRACTITIONER]` David Cramer independently argues _"MCP using progressive disclosure is worse than a CLI"_ (§4.2.5). `[MEASURED]` And the Bitter Lesson paper's filesystem-discovery condition degraded **32%** (§2.5). **Three independent sources say runtime discovery underperforms a small, well-named, static surface.** Anthropic's tool-search numbers are real, but they measure recovery from a _large_ toolset — not parity with a well-designed small one.
+
+### 2.5 Code-execution / progressive disclosure — characterized accurately
+
+`[VENDOR]` [Code execution with MCP](https://www.anthropic.com/engineering/code-execution-with-mcp) (Nov 2025). The famous number: a Google Drive → Salesforce task went from **150,000 tokens to 2,000, a 98.7% saving.** Mechanism, in their words: each tool becomes a file (`./servers/google-drive/getDocument.ts`), the agent "discover[s] tools by exploring the filesystem", reads definitions on demand, and writes TypeScript that filters/transforms results _before_ anything returns to the model.
+
+Two things get misquoted about this post, so state them carefully:
+
+1. **The 98.7% is not purely schema savings.** It is dominated by intermediate-data savings — a 2-hour transcript passing through context repeatedly "could mean processing an additional 50,000 tokens." The saving comes from _filtering in code_, which is exactly the pipe argument.
+2. **Anthropic states a real cost.** Verbatim: _"code execution introduces its own complexity. Running agent-generated code requires a secure execution environment with appropriate sandboxing, resource limits, and monitoring… should be weighed against these implementation costs."_
+
+`[VENDOR]` Related, from the same family: Programmatic Tool Calling cut average usage on complex research tasks **43,588 → 27,297 tokens (37%)**, with internal knowledge retrieval 25.6% → 28.5% and GAIA 46.5% → 51.2%.
+
+`[VENDOR]` **Cloudflare's [Code Mode](https://blog.cloudflare.com/code-mode/)** (Kenton Varda & Sunil Pai, 2025-09-26) makes the same argument independently and states the mechanism most crisply: _"LLMs have seen a lot of code. They have not seen a lot of 'tool calls.'"_ Tool-calling is out-of-distribution; code is in-distribution. Their implementation converts the MCP tool list into a **TypeScript API**, hands the model the type definitions, and executes generated code in a **Workers isolate via the Worker Loader API** (millisecond startup, disposable per snippet). Payoff: handles far more and more complex tools, and intermediate results never round-trip through the model. **No token numbers or tool-count thresholds are given in the post** — cite it for the argument, not for figures. MCP is explicitly _not_ deprecated; it is retained as the connection/authorization/discovery layer underneath.
+
+`[VENDOR]` Cloudflare's general agent guidance says the quiet part plainly: _"Fewer, well-designed tools often outperform many granular ones."_
+
+`[MEASURED]` The best independent test of the underlying claim is **["The Bitter Lesson of Tool Calling"](https://arxiv.org/html/2608.06370), Patel, Sen, Lumer & Subbiah (PwC), arXiv:2608.06370, 2026-08-06.** BFCL v4, 309-entry subset, 14 models across Anthropic and OpenAI, Nov 2024 – Jul 2026. Programmatic tool calling (model writes Python against typed stubs, executed in a subprocess) vs JSON tool calling:
+
+- PTC **matches or exceeds** JSON tool calling in **11 of 14 models**; GPT-5.6-Sol 72.2% → 82.8%.
+- Chaining (2–20 hops): Claude Sonnet 5 **80.8% → 96.2%**; Opus 4.8 80.8% → 94.2%. Wall-clock **0.32–0.96×** baseline for 13/14 models (one turn instead of two).
+- Parallelism (fan-out to N=100): JSON tool calling collapses to **0% enumeration accuracy** at N=100 for Sonnet 5; **PTC holds 100%.**
+- Context-rot (128 schemas flooded in): PTC **+5.5%**, JSON **−2.3%**.
+
+**And the finding that should worry us most, from the same table: the filesystem-discovery condition — i.e. the naive "tools as files, let the agent go find them" pattern — degraded 32%.** `[INFERENCE]` Read together with §2.3, the same lesson lands twice from independent directions: **runtime discovery is expensive and error-prone; a known, stable surface is what actually wins.** A spec that says "just add `--help` and let the agent explore" is specifying the losing condition.
+
+Costs the paper reports honestly: PTC incurs **1.5× input tokens** on chaining tasks (stub module in the system prompt), and three older OpenAI models failed outright on code-generation defects (newline encoding). Small ablation samples; echo-return stubs measure argument serialization, not end-to-end correctness.
+
+### 2.6 The Skills precedent
+
+`[SPEC]` Anthropic's own answer for local capability is **not** an MCP server. It is a folder: `SKILL.md` with YAML frontmatter, plus bundled scripts and reference files, loaded in stages. From [Claude Code docs](https://code.claude.com/docs/en/skills): _"a skill's body loads only when it's used, so long reference material costs almost nothing until you need it."_
+
+Two mechanical details worth stealing for our spec:
+
+- `${CLAUDE_SKILL_DIR}` is substituted in both the markdown body and in `allowed-tools` Bash rules — _"Using the same variable in both places lets a skill run a bundled script without a permission prompt."_ **A CLI shipped inside a skill can be pre-authorized.** That closes the "MCP gets nicer permission UX" gap for the packaged case.
+- A skill folder with `.claude-plugin/plugin.json` can itself bundle MCP servers. The packaging layer is already the natural place to carry both surfaces.
+
+`[PRACTITIONER]` Secondary analyses put skill discovery cost at ~55–235 tokens per skill (median ~80) for the frontmatter tier. I could not confirm these against a primary Anthropic source; treat as indicative only.
+
+---
+
+## 3. Dual-surface generation — prior art
+
+### 3.0 Headline: nobody has solved this as a library
+
+`[MEASURED — repo/registry inspection]` A systematic sweep (GitHub code + repo search, PyPI JSON API, npm registry, crates.io) found **no established, well-adopted library in any language that takes one definition and emits both a CLI and an MCP server.** A GitHub code search for the phrase `"generate both a CLI and an MCP server"` returned **zero results**; repo searches for "single definition CLI MCP", "dual interface CLI MCP tools", and "expose commands as both CLI and MCP" all returned zero.
+
+Every CLI→MCP generator found is under 35 stars, and most are stale or self-labelled drafts:
+
+| Project                                                                        | Lang   | Shared definition                                                                                                                                                                                | Status                                                                                                                                           |
+| ------------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [click-mcp](https://github.com/crowecawcaw/click-mcp)                          | Python | `@click_mcp` decorator on a `click.Group`; nested groups → dotted tool names (`users.create`)                                                                                                    | 14★, PyPI v0.6.1; recent commits are dependabot only. **Architecturally exactly our pattern; adoption is toy-grade.**                            |
+| [gakonst/clap-mcp](https://github.com/gakonst/clap-mcp)                        | Rust   | `#[derive(Parser, McpMode)]` + `--mcp` flag flips the _same binary_ into an MCP stdio/HTTP server                                                                                                | 31★ but **dead** — every commit dated 2025-06-14, untouched 14 months                                                                            |
+| [canardleteer/clap-mcp](https://github.com/canardleteer/clap-mcp)              | Rust   | `#[derive(ClapMcp)]`, `Cli::parse()` → `parse_or_serve_mcp()`, `#[clap_mcp(...)]` safety attrs                                                                                                   | crates.io v0.0.4, **459 lifetime downloads**. README: _"This is still a draft… without a stable API yet."_                                       |
+| [oclif-plugin-mcp-server](https://github.com/npjonath/oclif-plugin-mcp-server) | TS     | Reads the oclif **Command Registry**; `static args`/`static flags` → Zod. Opt-ins: `static toolId`, `static mcpAnnotations {readOnlyHint, destructiveHint, idempotentHint}`, `static disableMCP` | 12★, **13 months stale**. Not adopted into oclif core despite maintainer praise in [oclif#1796](https://github.com/oclif/oclif/discussions/1796) |
+| [eat-pray-ai/cobra-mcp](https://github.com/eat-pray-ai/cobra-mcp)              | Go     | _Not generation_ — you hand-write schemas, lib wires handlers + adds an `mcp` subcommand                                                                                                         | 2★                                                                                                                                               |
+
+**Confirmed non-existent** (checked registries directly): `typer-mcp`, `mcp-from-click`, `cyclopts-mcp`, `commander-mcp`, `citty-mcp`. There is **no Typer→MCP bridge at all** — zero issues mentioning MCP in `fastapi/typer`. No `kong` (Go) or charmbracelet equivalent.
+
+Refuted as prior art on inspection: **Mastra's** "Ship one agent as an API, a CLI, and an MCP server" is [marketing with no shared-definition mechanism shown](https://mastra.ai/articles/api-cli-mcp); **Encore's** [`encore mcp start`](https://encore.dev/docs/ts/cli/mcp) exposes a fixed ~19 introspection tools, not one tool per endpoint; **pydantic-ai's** `to_cli()` produces a chat REPL, not a per-tool CLI.
+
+`[INFERENCE]` **Read this as opportunity plus warning.** We are not reinventing a wheel — but there is no reference implementation to inherit, and the three most serious framework-level attempts are dead, draft, or stale. The sharpest risk statement found anywhere is `canardleteer/clap-mcp`'s own README: binding MCP (fast-moving spec) to clap (stable) means _"that mismatch in velocity will err towards instability."_ **Whatever we bind together moves at the speed of the faster spec.** That argues for a versioned IR with an explicit projection layer, not decorators that couple a CLI framework's internals directly to MCP's wire format.
+
+### 3.1 The traction is in the _reverse_ direction
+
+`[MEASURED]` MCP→CLI generators have real adoption, in stark contrast to CLI→MCP:
+
+- **[FastMCP `generate-cli`](https://gofastmcp.com/cli/generate-cli)** — [PrefectHQ/fastmcp](https://github.com/PrefectHQ/fastmcp), **27,206★**, shipped in FastMCP 3.0 (2026-02-18). `fastmcp generate-cli server.py my_cli.py` emits a **cyclopts** CLI, one typed subcommand per tool: JSON Schema types → Python annotations, descriptions → `--help`, arrays → repeatable flags, objects → JSON strings. **It also emits a `SKILL.md`** for Claude Code (`--no-skill` to opt out).
+  > Critical caveat, verbatim from the docs: _"The generated script is a **client**, not a server — it connects to the server on every invocation rather than bundling it."_ So it is _not_ an in-process dual surface; it is an MCP server plus a client shim paying per-invocation process spawn, with `fastmcp` as a runtime dependency.
+- **[mcporter](https://github.com/openclaw/mcporter)** — 4,911★, TS, `generate-cli` from live servers
+- **[mcp2cli](https://github.com/knowsuchagency/mcp2cli)** — 2,352★, runtime MCP/OpenAPI/GraphQL→CLI, zero codegen
+- **[clihub](https://github.com/thellimist/clihub)** — 668★, Go
+
+`[PRACTITIONER]` Sentiment on [HN 47305149](https://news.ycombinator.com/item?id=47305149): a commenter counted _"approximately 100 similar MCP-to-CLI tools"_; others noted the irony — _"we created MCP. Now we're wrapping MCP into CLIs"_ — and pushed back that _"tokens saved should not be your north star metric"_ absent accuracy evidence. Fair criticism, and one our spec should pre-empt with §S3's knowability metric.
+
+`[INFERENCE]` **The market has already voted that the CLI is the surface agents want, and is retrofitting it onto MCP servers.** That is strong indirect validation of the developer's instinct — but note what it implies: the demand is being met badly, by shim layers that spawn a process to talk to a server to do a thing. A definition that produces a _native_ CLI plus a projected MCP server is strictly better than that, and is the gap.
+
+### 3.2 Dagger — the best real-world instance of the pattern
+
+`[MEASURED — repo/PR/issue inspection]` [Dagger](https://docs.dagger.io/features/llm/) is the strongest existence proof. The shared definition is **an ordinary typed method** in Go/Python/TS/PHP. Dagger's engine derives a GraphQL schema from it, and that one schema drives `dagger call <fn>` (CLI), `dagger query` (API), the `LLM` tool environment, and `dagger mcp` (MCP stdio server). Docstrings become tool descriptions. [PR #9935](https://github.com/dagger/dagger/pull/9935) merged 2025-03-29; implementation is thin — _"the MCP server lives on the engine side, and the `dagger mcp` command simply forwards the stdio pipes to it."_
+
+**But it is rough, and that is the useful part.** `dagger mcp` is **not listed in the v0.21.4 [CLI reference](https://docs.dagger.io/reference/cli/)**. [Issue #13023](https://github.com/dagger/dagger/issues/13023) — filed and reproduced by Dagger's own founder on 2026-04-22 — reports that in v0.20.6 `dagger mcp` exposed only generic tools (`CallMethod`, `ChainMethods`, `ListMethods`) and **not the module's own functions**, a regression from earlier versions. Documented limitation: only modules with **no required constructor arguments** can be exposed at all.
+
+`[INFERENCE]` The lesson is not "don't do this" — it is that **the projected surface will silently rot unless it is covered by conformance tests.** Dagger's MCP surface regressed to generic-tools-only and shipped that way. This is a direct argument for our conformance kit asserting the projection, not just the CLI.
+
+### 3.3 OpenAPI-as-IR: the commercial answer
+
+`[VENDOR]` The three codegen vendors that genuinely ship both surfaces all chose an **external IR** — OpenAPI — rather than a CLI framework's internals.
+
+**[Speakeasy](https://www.speakeasy.com/blog/release-cli-generation)** — one OpenAPI doc → a Go **Cobra-based CLI** (per-operation commands grouped by tag, keychain auth, shell completion, GoReleaser dist) **+** a TS SDK with Zod **+** an MCP server wrapping those SDK methods, plus Terraform provider, docs, contract tests. They address our exact question head-on:
+
+> "This isn't a CLI-versus-MCP story. The best platforms will ship both, because they serve different audiences and runtimes. Speakeasy generates both from one source of truth — two interfaces, every audience covered."
+
+Two features worth stealing outright: an **`--agent-mode` flag** that disables interactivity and switches output format, which **auto-enables on detecting Claude Code / Cursor / Codex / Aider / Cline / Windsurf / Copilot / Amazon Q / Gemini Code Assist**; and their stated CLI-for-agents rationale — progressive `--help` at every level "without loading hundreds of tool definitions upfront", training-data familiarity, pipe/`jq` composability — with MCP reserved for _"non-technical users operating in a shell-less execution environment."_
+
+**[Stainless](https://www.stainless.com/docs/mcp/)** — OpenAPI + `stainless.yml` → SDKs, docs, CLIs, Terraform, MCP servers. **The important design signal: they moved away from 1-tool-per-endpoint.** Their generated MCP server exposes a **code-execution tool** (sandboxed TypeScript against the generated SDK) plus a docs-search tool, because _"a small number of tools take up less space in an LLM's context window, and multiple operations can be performed in a single code tool call."_ MCP generation is marked **experimental**.
+
+**[Fern](https://buildwithfern.com/post/mcp-vs-cli-api-access)** (Nathan Lian, 2026-06-15) states the ordering explicitly: _"A CLI is the more foundational surface to ship first when planning for agent integrations. Once a CLI exists, an MCP server can be built on top of it, exposing those same commands as tools an LLM agent can invoke at runtime."_
+
+`[VENDOR]` And the honest limit, from [Speakeasy's own page](https://www.speakeasy.com/mcp/tool-design/generate-mcp-tools-from-openapi/): the failure mode is **semantic, not mechanical** — thin docs produce hallucination, because _"AI agents need more context than human developers to use APIs effectively."_ Generators cannot fix an underdocumented command. This is the same conclusion as §4.2.5 (steering) reached from a different direction.
+
+### 3.4 The Fern single-binary claim
+
+`[VENDOR]` **[Fern CLI generator](https://buildwithfern.com/post/cli-generator)** (announced 2026-05-07) is the closest thing to the architecture we're considering. From an OpenAPI/Fern Definition it generates a **single statically-linked Rust binary**, and claims verbatim:
+
+> "The same binary covers both interfaces: it runs as a CLI for terminal-based agents and as an MCP server over stdio or streamable HTTP."
+
+Agent-facing details: `--help --format json` returns per-endpoint JSON schemas; a **`skill.md` ships per command** as a drop-in context bundle; inputs are validated/normalized before the request goes out. Reference: Box Platform API, 279 methods, 1.5 MB OpenAPI spec → 8.1 MB binary. Spec changes open a PR against the CLI repo with regenerated source.
+
+> ⚠️ Caveat: the [CLI generator overview docs](https://buildwithfern.com/learn/cli-generator/get-started/overview) do **not** mention MCP mode at all — they only describe the Rust binary and structured JSON schema/help. And Fern's own [CLI vs MCP post](https://buildwithfern.com/post/cli-vs-mcp-which-api-interface-first) (2026-06-19) describes a _different_ split: "Fern generates a CLI from your API spec and provisions an MCP server for your docs site" — two components, not one binary. **The single-binary dual-surface claim is a marketing claim I could not independently verify.** Worth a direct look at a generated artifact before relying on it.
+
+**`[INFERENCE]` The architecturally important part of Fern is not the MCP mode — it's the IR choice.** They did not invent a command DSL. They used the API spec teams already have, and treated CLI and MCP as _renderers_. If we adopt a single definition, the highest-leverage question is whether our IR is a novel schema (adoption cost, no ecosystem) or a projection of something that already exists.
+
+### 3.5 What people actually ship: shared core + two thin adapters
+
+`[MEASURED — repo inspection]` The pattern with the most real-world instances is not codegen at all. [**pipefy/ai-toolkit**](https://github.com/pipefy/ai-toolkit) (42★, actively pushed) is the cleanest example — a Python monorepo:
+
+```
+packages/sdk/  →  pipefy             (GraphQL transport, services, Pydantic models)
+packages/mcp/  →  pipefy-mcp-server  (187 MCP tools)
+packages/cli/  →  pipefy-cli         (Typer commands)
+```
+
+Their README states the rule: _"`pipefy` is the vendor GraphQL layer; MCP and CLI depend on it and do not import each other."_ No codegen. Parity is maintained by discipline plus an explicit **`docs/parity.md` matrix** mapping MCP tool ↔ CLI command.
+
+Related: [Stripe's agent-toolkit](https://github.com/stripe/agent-toolkit) shares **Zod tool definitions** across MCP + OpenAI Agents SDK + LangChain + CrewAI + Vercel AI SDK — but the `stripe` CLI is a separate codebase, so the shared definition covers the agent surfaces only. [oomol-lab/open-connector](https://github.com/oomol-lab/open-connector) (4,658★) shares Action _contracts_ consumed by SDK/CLI/MCP/HTTP adapters, again without codegen.
+
+`[INFERENCE]` **A machine-checked parity manifest is the cheap 80% of what we'd want from codegen.** pipefy's `parity.md` is the right idea implemented as a human-maintained markdown table. Making that artifact machine-readable and asserting it in CI is a smaller, more adoptable deliverable than a generator — and it works for teams whose two surfaces are in different languages, which codegen does not.
+
+### 3.6 The recurring failure is granularity, not plumbing
+
+`[INFERENCE, from converging evidence]` Across every project that actually shipped a mechanical command→tool mapping, the same thing happened: **they walked it back.**
+
+- Stainless abandoned 1-tool-per-endpoint for a code-execution tool, explicitly for context reasons (§3.3).
+- The oclif MCP plugin requires topic/pattern filtering because **Cursor caps at 40 tools and VS Code at 128**.
+- GitHub consolidated its Projects toolset into three tools and saved ~23k tokens (§2.1).
+- Speakeasy's stated binding constraint is documentation quality, not schema fidelity (§3.3).
+
+**A 1:1 projection is the thing everyone who built it regretted.** Our spec must therefore treat the CLI→MCP projection as _lossy and curated by design_, with the curation declared, rather than as a completeness property. See §S9.
+
+### 3.7 The nearest thing to our whole project: clispec.dev
+
+`[SPEC]` **[The CLI Spec](https://clispec.dev/)**, by Ruben Jongejan. This is methodology + specification + conformance kit for agent-first CLIs — i.e. approximately our stated project. Know it before writing a line.
+
+- v0.2 frozen; **v0.3 candidate as of August 2026**. CC BY 4.0.
+- Six principles: structured output, schema introspection, stderr/stdout separation, non-interactive defaults, safe retries, bounded output.
+- A real type system, not just conventions:
+  - **Output kinds** — `data` (structured, default) / `stream` (NDJSON) / `opaque` (binary + declared media type)
+  - **Effects**, required on every command — `read_only` / `idempotent` / `non_idempotent` (the last requires idempotency keys)
+  - **Cardinality** — `single` / `bounded` / `unbounded` (unbounded ⇒ pagination + field selection mandatory)
+  - **Error model** — every error kind maps to an exit code; failures emit a JSON envelope to stderr with `kind`, `message`, `hint`, optional `details`
+- Discovery: a `schema` subcommand emitting JSON that validates against `https://clispec.dev/schema/v0.3.json`. Their stated position: _"Agents should never need to parse `--help` text to discover what a tool can do."_
+- **Conformance is real:** two layers (Core = required for all tools; Capability = applies only to declared output kinds/effects), a `make check` schema validator, and [`rvben/clispec-cli`](https://github.com/rvben/clispec-cli) — a Rust tool that **scores a running binary** against runtime compliance. Reference implementations: [proxctl](https://github.com/rvben/proxctl), unifi-cli.
+
+Maturity, honestly: [`rvben/clispec`](https://github.com/rvben/clispec) has **8 stars**, `clispec-cli` has **0**, both created 2026-04-03, both pushed 2026-08-13 (actively worked on, single author). **It is nascent, not a standard.** But it is well-designed, and its effects/cardinality/output-kind taxonomy is better thought through than most of the blog-post principle lists.
+
+**It does not address MCP at all.** `[INFERENCE]` That is precisely our differentiated slot: clispec specifies the CLI contract; nobody has specified the _projection_ from that contract to an MCP surface. Adopting or extending clispec as our CLI layer — rather than inventing a ninth principle list — and owning the dual-surface projection is a stronger position than competing head-on.
+
+### 3.8 The distinction that matters: generation vs wrapping
+
+`[INFERENCE]` Four architectures get conflated in the discourse. Our spec should name them:
+
+| Pattern                         | Shape                                                                   | Drift risk                                                  | Cost                                                                   |
+| ------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Wrapping**                    | MCP server shells out to the CLI binary                                 | Low (one implementation)                                    | Loses structured returns; process spawn per call; arg-escaping hazards |
+| **Shared model layer**          | CLI and MCP are two front-ends over one internal command registry / SDK | Low–medium                                                  | Requires the registry to be the real seam, not a convention            |
+| **Projection from a shared IR** | One definition renders both surfaces (Dagger, Speakeasy, Fern)          | Low if conformance-tested — **high if not** (Dagger #13023) | Needs a versioned IR; couples release cadence to MCP's spec velocity   |
+| **Parallel implementation**     | Two codebases against the same HTTP API                                 | **High**                                                    | Duplicated auth, pagination, error mapping                             |
+
+`[PRACTITIONER]` The wrapping case has a well-known illustration: Robert Melton's [CLI-First, MCP-Second](https://robertmelton.com/posts/clis-wrap-as-mcps/) (2025-11-06) reports **~200 lines of Python wrapping a 50,000-line Go CLI** — subprocess call plus JSON parse. His framing: _"MCP server is thin wrapper. CLI does the work."_ He is explicit about where MCP-first still wins: AI-specific operations with no CLI equivalent, real-time streaming, and state maintained across calls.
+
+`[INFERENCE]` A CLI that already conforms to a clispec-style contract — machine-readable `schema` output, JSON envelopes, declared effects, declared cardinality — **contains everything an MCP `tools/list` response needs.** `name`, `description`, `inputSchema` from the command's argument spec, and (new in modern MCP) `outputSchema` from the declared output fields. The `effects` field maps directly onto tool annotations (`readOnlyHint`, `idempotentHint`, `destructiveHint`). Cardinality tells the generator which tools need pagination parameters. **The mechanical projection is nearly total.** The generator writes itself if the CLI contract is rich enough — which is an argument for making the CLI contract rich, and for treating MCP generation as the forcing function that proves the contract is complete.
+
+### 3.9 Wrapping an arbitrary CLI as MCP — the anti-pattern
+
+`[MEASURED — repo inspection]` These take an _opaque binary_ and expose it. There is no shared definition; schemas are hand-written or scraped from `--help`.
+
+- **[Heroku MCP server](https://github.com/heroku/heroku-mcp-server)** — `heroku mcp:start` (CLI ≥10.8.1). Spawns the Heroku CLI in a **persistent REPL process** (`HerokuREPL`) and shells commands into it. Heroku's CLI is oclif, but the MCP server **does not reuse oclif metadata** — tool schemas are written separately. **This is the drift trap in its purest form: same company, same binary, two hand-maintained descriptions of the same commands.**
+- **[eirikb/any-cli-mcp-server](https://github.com/eirikb/any-cli-mcp-server)** — builds tools by parsing `--help` text. 20★, dead since 2025-09-04. The fragile end.
+- **[f/mcptools](https://github.com/f/mcptools)** (1,616★), **[mcpo](https://github.com/open-webui/mcpo)** (4,342★, MCP→OpenAPI proxy) — wrappers/proxies, no shared definition.
+
+`[INFERENCE]` Name this as an anti-pattern in the spec. Scraping `--help` is a _symptom_ of the CLI having no machine-readable contract — which is precisely what our spec fixes. If a conforming CLI emits `schema`, nobody ever needs to scrape it.
+
+---
+
+## 4. Where MCP genuinely wins
+
+Be careful here: **the conventional list is out of date.** The MCP 2026-07-28 revision moved the goalposts, and moved several of them _toward_ CLI.
+
+### 4.1 What the 2026-07-28 spec actually changed
+
+`[SPEC]` [The 2026-07-28 Specification](https://blog.modelcontextprotocol.io/posts/2026-07-28/) and [client concepts](https://modelcontextprotocol.io/docs/2026-07-28/learn/client-concepts):
+
+- **Sessions are gone.** _"We've officially retired the `initialize`/`initialized` exchange along with the `Mcp-Session-Id` header… Each request now travels on its own."_ Servers must mint explicit handles passed as ordinary tool arguments. The protocol is request/response stateless.
+- **Roots: deprecated.** _"New implementations should pass directories or files via tool parameters, resource URIs, or server configuration instead."_
+- **Sampling: deprecated.** _"New implementations should integrate directly with LLM provider APIs instead."_
+- **Logging: deprecated.**
+- Formal deprecation policy: minimum twelve months before removal eligibility. HTTP+SSE also deprecated in favour of Streamable HTTP.
+- **MRTR (Multi Round-Trip Requests)** replaces server-initiated `elicitation/create`, `sampling/createMessage`, and `roots/list`. The server returns an `InputRequiredResult` carrying requests plus opaque `requestState`; the client gathers input and **retries the original call** with `inputResponses`.
+
+**`[INFERENCE]` Consequence for our spec: "MCP wins on stateful sessions" and "MCP wins on sampling" are now weak-to-dead arguments.** MCP explicitly went stateless and told you to hold state in tool arguments — which is exactly what a stateless CLI does. Do not concede ground MCP has vacated.
+
+### 4.2 What MCP still genuinely wins
+
+`[VENDOR]` **The clearest articulation of the boundary comes from Microsoft, in identical text in the READMEs of both [playwright-mcp](https://github.com/microsoft/playwright-mcp) and [playwright-cli](https://github.com/microsoft/playwright-cli)** — a vendor shipping both surfaces over a shared pinned core, with no incentive to favour either:
+
+> "**CLI**: Modern coding agents increasingly favor CLI-based workflows exposed as SKILLs over MCP because CLI invocations are more token-efficient: they avoid loading large tool schemas and verbose accessibility trees into the model context… This makes CLI + SKILLs better suited for high-throughput coding agents…
+>
+> **MCP**: MCP remains relevant for specialized agentic loops that benefit from persistent state, rich introspection, and iterative reasoning over page structure, such as exploratory automation, self-healing tests, or long-running autonomous workflows where maintaining continuous browser context outweighs token cost concerns."
+
+`playwright-cli` lists "Token-efficient. Does not force page data into LLM" as a headline feature, ships `playwright-cli install --skills`, and explicitly supports skills-less operation: _"Point your agent at the CLI and let it cook. It'll read the skill off `playwright-cli --help` on its own."_
+
+`[INFERENCE]` This is the strongest independent corroboration of §1 found anywhere, and note the axis it draws: **not local-vs-remote, but throughput-vs-continuity.** High-throughput, many-invocation, stateless work → CLI. Long-running loops where the _cost of rebuilding state each call_ exceeds the token cost of holding it → MCP. That is a better boundary than the one I proposed in §1 and it should be folded into the spec's decision rule.
+
+1. **Shell-less clients.** `[SPEC]` The single most durable win. claude.ai in a browser, ChatGPT connectors, hosted assistants — no shell, no filesystem, no way to invoke a binary. If your users are there, MCP is not optional. Fern names this explicitly as the reason for MCP mode: _"shell-less clients like Claude.ai and ChatGPT."_
+
+2. **Delegated / interactive auth.** `[SPEC]` Elicitation **URL mode** is genuinely without CLI equivalent: the server hands the client a URL, the client gets explicit consent and opens it, _"The interaction happens out of band and its data never passes through the client, which makes this mode suitable for sensitive flows such as credential entry or third-party OAuth authorization."_ The spec further forbids form mode for passwords/API keys/tokens. A CLI's answer is "run `tool auth login` yourself first" — fine for a solo developer, unworkable for multi-tenant. **`[MEASURED]` corroboration:** ScaleKit's own stated limitation is that every benchmark in this discourse _"tests the same scenario: a single developer automating their own workflow."_ Our spec must say the same out loud.
+
+3. **Remote execution / privileged network position.** A CLI runs where the agent runs. When the capability must run inside a VPC, hold a secret the client must never see, or enforce server-side authorization, MCP is the right shape.
+
+4. **Host-mediated permission UX.** Per-tool allow/deny in the host UI, plus server-side filtering. `[VENDOR]` GitHub's OAuth scope filtering is a good example: _"Tools requiring scopes your token doesn't have are automatically hidden"_ — the tool surface shrinks to what the credential can actually do. A CLI has no way to hide a subcommand from the model based on the host's credential state. Counterweight: Claude Code's skill `allowed-tools` mechanism narrows this gap for packaged CLIs (§2.6).
+
+5. **Steering, always-on.** `[PRACTITIONER]` The strongest argument against our thesis, and it comes from someone who ships both. **David Cramer (Sentry CTO), [Context Management and MCP](https://cra.mr/context-management-and-mcp/), 2026-02-02.** He calls the debate _"the dumbest fucking debate on the planet"_ and argues:
+   - _"The ability to steer the LLM is **the entire value prop of MCP tools**"_ — Sentry's server returns Markdown/XML-ish LLM-catered responses with hints, minimized parameter counts, not raw API output.
+   - MCP steering context is **always on**; CLI steering requires injecting a skill or docs, updating them per project, and handling auth inconsistently.
+   - And directly against the §2.4/§2.5 direction: **"MCP using progressive disclosure is worse than a CLI."** His view is that hiding tool context destroys the steering that justified MCP in the first place.
+   - His recommended answer to context rot is **subagents** — isolate tools, restrict access, keep pollution out of the main context — not protocol choice.
+
+   `[INFERENCE]` Cramer's critique lands on a real gap and our spec must answer it: **a bare CLI has nowhere to put steering.** `--help` is not read until the agent is already confused. This is the strongest argument for the packaging layer being part of the spec, not an afterthought — the skill/`AGENTS.md`/`skill.md`-per-command tier is where steering lives, and it must be normative, not optional.
+
+6. **Rich structured returns.** Modern MCP carries structured content with an output schema alongside text. A CLI's answer is `--json` plus a declared output schema (clispec does this). `[INFERENCE]` Roughly parity if the CLI contract is strict; MCP wins if the CLI is loose. Not a strong differentiator either way.
+
+7. **Resources and prompts.** Genuinely no CLI equivalent as protocol concepts. `[INFERENCE]` In practice, resources ≈ "a path the agent can read" and prompts ≈ "a slash command" — both of which the local-agent world solves at the packaging layer. Low weight for local tooling; real weight for remote/hosted.
+
+### 4.3 The MRTR opening
+
+`[INFERENCE]` This is a spec idea, not a finding. MRTR's shape — _return a structured "I need input" result; caller re-invokes with responses and echoed state_ — is **trivially expressible in a stateless CLI.** Exit with a reserved code and a JSON envelope on stderr: `{"kind": "input_required", "inputRequests": [...], "requestState": "..."}`, and accept `--input-responses` + `--request-state` on retry. That closes the last real interactive-capability gap between the surfaces, keeps the CLI stateless, and makes the CLI→MCP projection of elicitation mechanical. **Worth prototyping — I found no prior art for it.**
+
+---
+
+## 5. How shipping-both projects avoid drift
+
+**They mostly don't. And the one thing that actually works is generation.**
+
+`[MEASURED — source inspection]` The survey below is verified by cloning and reading the repos (Aug 2026), not by reading marketing pages. Classification: **(a)** MCP as thin executor over the CLI, **(b)** separate implementations over a shared SDK/client, **(c)** wholly separate codebases, **(d)** one surface generated from the other.
+
+| Vendor                 | CLI ↔ MCP relationship                                                                                                                                                                                                                                                                                                                                                                                                   | Class             | Verified evidence                                                                                                                                                                                                                                                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **GitHub**             | `cli/cli` and `github/github-mcp-server` are **entirely separate Go codebases with different HTTP clients**. MCP server uses `go-github/v89` (62 files); `gh` does **not depend on go-github at all**. No shell-out to `gh` (`os/exec` appears only in oauth env + a dev tool). `gh` has **no `mcp` subcommand** — but it does now have **`gh skill`** (search/install/list/preview/publish/update) and `gh agent-task`. | **(c)**           | 116 tools (`__toolsnaps__/`); `--toolsets`, `--tools`, `--exclude-tools`, `--read-only`, `--lockdown-mode`                                                                                                                                                                                                                        |
+| **Stripe**             | **Collapsed to one canonical remote server.** `stripe` CLI has **no `mcp` command** — it has `stripe agent setup`, an _installer_ for skills and MCP config. `@stripe/mcp` v0.3.3 **defines zero tools**; it is a stdio↔HTTP shim to `https://mcp.stripe.com`. The agent-toolkit now **fetches its tools from MCP at runtime**; every framework adapter is a converter over that.                                        | **(d)**           | [MIGRATION.md](https://github.com/stripe/agent-toolkit/blob/main/tools/typescript/MIGRATION.md): _"Tools are fetched from mcp.stripe.com. If the server is unreachable, initialization fails with no fallback."_ Client-side permissions **removed** in favour of server-side API-key scope.                                      |
+| **Cloudflare**         | `wrangler` lives in `workers-sdk`; **18 separate per-product MCP servers** live in `mcp-server-cloudflare`. `wrangler` is a **devDependency only** — never a runtime dep, no shell-out. Shared layer is `packages/mcp-common/` with its _own_ API client, not the CLI's. Only 4 of 18 apps use the official TS SDK.                                                                                                      | **(c)**           | Splitting by product _is_ the token strategy. `apps/stack-mcp` ships **2 tools** with URL-level scoping (`?libs=cloudflare,hono,vite`).                                                                                                                                                                                           |
+| **AWS**                | **The CLI _is_ the shared layer.** `aws-api-mcp-server` pins `awscli==1.46.0` and **imports it as a library** (`awscli.clidriver`, `argparser`, `shorthand`, customizations) rather than shelling out. Surface is **~3 tools**: `call_aws(cli_command)`, `suggest_aws_commands`, `get_execution_plan`. One grammar, two entry points, zero drift by construction.                                                        | **(a)**           | **And AWS is deprecating it.** In-source: _"DEPRECATION NOTICE: The AWS API MCP server is entering end of development."_                                                                                                                                                                                                          |
+| **Azure**              | `AzCommand.cs` exposes a tool literally named **`az`** that finds the `az` binary on `PATH` and subprocesses it (`Destructive = true`). The other ~40 areas are separate implementations over Azure SDKs.                                                                                                                                                                                                                | **(a)** + **(b)** | Most explicit tool-count dial of anyone: **Mode = `namespace` (default) / `consolidated` / `all` / `single`**, plus `--namespace`, `--tool`, `--read-only`, and a **"Learn mode"** where _"tools return metadata about their commands and parameters instead of performing actions."_ Repo archived 2025-08-25 → `microsoft/mcp`. |
+| **Chrome DevTools**    | **The CLI is code-generated from the MCP tool list.** `scripts/generate-cli.ts` spawns the MCP server over stdio, connects as an MCP client, calls **`tools/list`**, and emits the CLI's command definitions into a **1,326-line** file headed _"do not edit manually."_ CLI command names _are_ the MCP tool names (`chrome-devtools take_snapshot`).                                                                   | **(d)**           | Ships `npm run count-tokens` and a memory profiler with a **1%-regression threshold**. 6 skills, one of which teaches the agent to drive the **CLI**.                                                                                                                                                                             |
+| **Playwright**         | `@playwright/mcp` and `@playwright/cli` are separate packages over **the same two deps pinned to the same alpha version** (`playwright`/`playwright-core` @ `1.63.0-alpha-2026-08-05`).                                                                                                                                                                                                                                  | **(b)**           | Cleanest shared-core example found.                                                                                                                                                                                                                                                                                               |
+| **Sentry**             | `sentry-mcp` (TypeScript) vs `sentry-cli` (Rust) — **different languages, zero references to `sentry-cli`** in the MCP codebase.                                                                                                                                                                                                                                                                                         | **(c)**           | No shared layer possible.                                                                                                                                                                                                                                                                                                         |
+| **Supabase**           | MCP server goes to the Management API via `openapi-fetch` + OpenAPI-generated types. **No `child_process`** — does not shell out to the `supabase` CLI.                                                                                                                                                                                                                                                                  | **(b)**           | `features` groups + `--read-only`                                                                                                                                                                                                                                                                                                 |
+| **Grafana**            | `mcp-grafana` uses the official generated `grafana-openapi-client-go`.                                                                                                                                                                                                                                                                                                                                                   | **(b)**           | **13+ tool categories off by default** — the most aggressive default-off filtering in the survey                                                                                                                                                                                                                                  |
+| **Neon**               | Over the official `@neon/sdk`; shipped as a Next.js app with OAuth — primarily a hosted remote server.                                                                                                                                                                                                                                                                                                                   | **(b)**           | —                                                                                                                                                                                                                                                                                                                                 |
+| **Netlify**            | Public repo `netlify/context-and-tools` contains **no MCP server source** — it is 15 skills plus a pointer to a hosted endpoint. `netlify/cli` has no `mcp` command. The `netlify-deploy` skill's job is **teaching the CLI**.                                                                                                                                                                                           | n/a               | —                                                                                                                                                                                                                                                                                                                                 |
+| **Vercel / Atlassian** | `vercel mcp` **does not run a server** — it configures local MCP clients to point at `mcp.vercel.com`. `acli rovodev mcp` is an MCP _client_ config editor.                                                                                                                                                                                                                                                              | n/a               | —                                                                                                                                                                                                                                                                                                                                 |
+| **Linear**             | Remote-only MCP, OAuth 2.1, **no official CLI at all.**                                                                                                                                                                                                                                                                                                                                                                  | n/a               | The "MCP-native, never had a CLI" baseline                                                                                                                                                                                                                                                                                        |
+
+### 5.1 The five findings that matter
+
+**F1 — Generation is the only thing that produces zero drift.** `[MEASURED]` Every zero-drift example in the survey is generated: Chrome DevTools generates its CLI from `tools/list`; AWS reuses the CLI's own parser; Stripe generates every framework adapter from the one remote server. **Everyone maintaining two hand-written surfaces has drift they are not tracking** — and none of them publish a policy about it (see F5).
+
+**F2 — Nobody wraps their own CLI as MCP unless the CLI grammar _is_ the API.** `[MEASURED]` Only AWS and Azure's `extension` area do it, and only because their CLI is itself machine-generated over thousands of operations. GitHub, Cloudflare, Sentry, Supabase, Netlify, and Playwright all go to the API/library directly. **This is a meaningful check on the "just wrap your CLI" instinct**: it works when the CLI is a generated, total surface over an API; it is not what mature vendors do for hand-designed CLIs.
+
+**F3 — "CLI-as-installer" is now the dominant CLI↔MCP relationship.** `[MEASURED]` Stripe (`stripe agent setup`), Vercel (`vercel mcp`), Atlassian (`acli rovodev mcp`), GitHub (`gh skill install`) all use the CLI to _configure_ agent tooling rather than to _serve_ it. `[INFERENCE]` If our spec defines an MCP-adjacent subcommand, this is the shape with by far the most precedent — and it is a different thing from `<tool> mcp` serving stdio. Both are worth specifying, distinctly.
+
+**F4 — Every deprecation points the same way, and none point at CLIs.**
+
+- AWS API MCP Server → AWS MCP Server, whose headline tool is **`aws___run_script` — Python in a sandbox.** AWS's stated reason is verbatim the code-execution argument: _"`call_aws` forced one round trip per API call… `aws___run_script` executes a script, so that same workflow becomes one call that lists, filters, loops, and acts inline. Fewer round trips means fewer tokens spent restating intermediate state."_
+- **GitHub's `--dynamic-toolsets` was removed.** [Issue #275](https://github.com/github/github-mcp-server/issues/275) closed 2025-10-27; the flag no longer exists in source. It was replaced by static **tool consolidation with backward-compatible aliases** (`list_workflows`, `list_workflow_runs`, `list_workflow_jobs`, `list_workflow_run_artifacts` → `actions_list`). `[INFERENCE]` **This is a significant caution for §2.4**: the largest MCP server in the wild tried runtime tool discovery and reverted to a smaller, static, well-named surface. It is a third independent vote for "knowability over discoverability" (§S3).
+- Stripe agent-toolkit v0.8 local tools → v0.9 remote MCP fetch (breaking, no fallback). `Azure/azure-mcp` archived → `microsoft/mcp`.
+- **No vendor in this survey deprecated a CLI in favour of an MCP server.**
+
+**F5 — There is no drift-tracking policy anywhere.** `[MEASURED]` Issue searches across `github/github-mcp-server` and `supabase-community/supabase-mcp` for CLI-parity complaints returned **none**. GitHub's [`docs/tool-renaming.md`](https://github.com/github/github-mcp-server/blob/main/docs/tool-renaming.md) is the only written tool-surface-stability policy found, and it governs MCP-internal renames only: _"The deprecation alias system allows us to maintain backward compatibility by silently resolving old tool names to their new canonical names."_ **No vendor publishes a statement about which of CLI/MCP is canonical.** `[INFERENCE]` That is a genuine, unoccupied gap our spec can fill — and it is the same gap §S5b's parity manifest addresses.
+
+### 5.2 The one documented drift incident
+
+`[PRACTITIONER]` The only concrete, dated drift casualty found in the wild: Armin Ronacher, [Skills vs Dynamic MCP Loadouts](https://lucumr.pocoo.org/2025/12/13/skills-vs-mcp/) (2025-12-13), removed **both** the Sentry and Playwright MCP servers in favour of skills. Sentry's MCP cost _"around 8k tokens"_ out of the box, and it _"shifted its query syntax entirely to natural language,"_ breaking his documented guidance without warning.
+
+`[INFERENCE]` Note what broke: not the API, not the CLI — **the MCP server's tool semantics changed under a user who had written guidance against them.** This is the failure mode a versioned, conformance-tested projection prevents, and it is the concrete harm story our spec can point at.
+
+### 5.3 Distribution asymmetry
+
+`[PRACTITIONER]` MCP servers commonly install via `npx`/`uvx`, importing a Node or Python runtime requirement onto the user's machine; a static CLI binary does not. An analysis of 8,000+ MCP servers found ~55% JS/npx and ~38% Python/uvx, and the two lanes are not interchangeable — a frequently-reported setup failure. `[INFERENCE]` Version skew between a globally-installed CLI and an `npx @latest` MCP server is structurally likely, and nothing in the ecosystem prevents it.
+
+`[MEASURED]` **A real instance of exactly this, in the architecture that is supposed to be drift-proof:** AWS's MCP server pins `awscli==1.46.0` (v1, pip-installable) while users' `aws` on PATH is v2, distributed as a bundled binary. Whether that causes behavioural differences is **unexamined** — but it means even the "MCP imports the CLI" design has a version-skew surface.
+
+---
+
+## 6. Implications for our spec
+
+**S1. Make the CLI the normative artifact; make MCP a declared projection of it.**
+Justified by §3.8 — a sufficiently rich CLI contract already contains everything `tools/list` needs. Specify the projection (`effects` → tool annotations; output schema → `outputSchema`; cardinality → pagination params) as a _conformance requirement on the CLI contract_: if the projection can't be generated mechanically, the CLI contract is underspecified. **MCP generation is our best completeness test, not just a feature.** Every vendor who ships both agrees on the ordering — Fern: _"A CLI is the more foundational surface to ship first."_
+
+**S1b. Put a versioned IR between the two surfaces; do not couple a CLI framework's internals to MCP's wire format.**
+§3.0. The clearest risk statement in the entire prior-art sweep is `canardleteer/clap-mcp`'s own README: binding a fast-moving spec to a stable one means _"that mismatch in velocity will err towards instability."_ Every decorator-based CLI→MCP bridge is dead or draft; the survivors (Dagger, Speakeasy, Stainless, Fern) all put a versioned schema in the middle. Our IR should carry a spec version and pin which MCP revision a given projection targets.
+
+**S2. Do not build the argument on schema token cost.**
+§2.4. Deferred loading + prompt caching have already retired most of that case, and readers who know MCP well will know it. Build on: (a) intermediate data never entering context — the 400k-token run; (b) round-trip amplification; (c) cache invalidation on toolset change; (d) zero client-side install/config.
+
+**S3. Specify _knowability_, not discoverability. This is the highest-confidence finding in the document.**
+Four independent lines of evidence converge: filesystem-discovery degraded **−32%** under context flooding (§2.5); ScaleKit's own skills doc _increased_ token use 3.5× on the simplest task (§2.3); **GitHub built runtime tool discovery and removed it** in favour of a static consolidated surface (§5 F4); and Cramer argues progressive disclosure is _"worse than a CLI"_ (§4.2.5). Concretely: conventional verb/noun shapes that match training-data priors; a single cacheable `schema` call rather than progressive `--help` spelunking; a hard budget on the tokens it costs to _know_ the tool at all. **Make "tokens-to-first-correct-invocation" a measured conformance metric** — nobody is measuring it, it reconciles the contradictory benchmarks in §2.2/§2.3, and it is the metric that actually predicts outcomes.
+
+**S4. Make steering normative, at the packaging tier.**
+§4.2.5. Cramer's critique is correct that a bare CLI has nowhere to put steering. Answer it structurally: require a per-command context bundle (Fern's `skill.md`-per-command is the existing shape) and specify what goes in it — when to use, when not to, common failure modes, worked example. Use `${CLAUDE_SKILL_DIR}` + `allowed-tools` so the bundled binary is pre-authorized (§2.6). **Steering as a first-class deliverable is the thing that makes the CLI competitive with a well-designed MCP server, and it's where most CLI-first advocacy is silent.**
+
+**S5. Adopt or align with clispec rather than inventing a ninth principles list.**
+§3.7. Its output-kinds / effects / cardinality taxonomy is sound and it already has a runtime scorer. It is nascent (8 stars, one author) so alignment is cheap and differentiation is available: **clispec does not address MCP at all.** Owning the dual-surface projection on top of a compatible CLI contract is a stronger position than competing on CLI principles, where at least six overlapping guides now exist (clispec, clig.dev, Chow, Jung, steipete, Speakeasy/Fern).
+
+**S5b. Ship a machine-checked parity manifest — it may be more valuable than the generator.**
+§3.5. pipefy maintains a hand-written `docs/parity.md` mapping MCP tool ↔ CLI command. Making that artifact machine-readable and asserting it in CI delivers most of the anti-drift value of codegen, works when the two surfaces are in different languages (Heroku's case, §3.9), and is far cheaper to adopt than "rewrite your CLI in our framework." **This is plausibly the highest adoption-per-effort deliverable in the whole project.**
+
+**S5c. Steal two proven affordances outright.**
+§3.3 and §3.1. (a) Speakeasy's **`--agent-mode`** flag that disables interactivity and switches output format, and **auto-enables on detecting an agent harness** (Claude Code, Cursor, Codex, Aider, Cline, Windsurf, Copilot, Amazon Q, Gemini Code Assist) — a spec-able detection list plus a normative behaviour change. (b) FastMCP's `generate-cli` emitting a **`SKILL.md` alongside the CLI**; Fern emits `skill.md` per command. Two independent implementations converged on this — it should be normative in our spec, not an idea.
+
+**S6. Scope the spec explicitly to the single-operator local case, and say so.**
+§4.2.2. Every benchmark in this discourse tests one developer automating their own workflow — ScaleKit admits this about its own work. Our decision rule is strong there and weak for multi-tenant/delegated-auth. Naming the boundary makes the spec more credible, not less, and cleanly cedes OAuth-heavy and shell-less cases to MCP.
+
+**S7. Prototype the MRTR-equivalent CLI elicitation convention.**
+§4.3. Reserved exit code + `input_required` JSON envelope + `--request-state` retry. It closes the last genuine interactive gap, keeps statelessness, and makes elicitation projection mechanical. No prior art found — this is available to own.
+
+**S8. Require single-artifact shipping when both surfaces exist — and distinguish `<tool> mcp` (serve) from `<tool> agent setup` (install).**
+§5. Shipping both surfaces in one binary makes version skew structurally impossible and removes the npx/uvx runtime-dependency class of failure. But note F3: the _dominant_ shipped pattern is CLI-as-installer (`stripe agent setup`, `vercel mcp`, `gh skill install`), not CLI-as-server. Specify both verbs distinctly; conflating them is how `vercel mcp` ends up meaning something different from `dagger mcp`. `[MEASURED]` Also note that even the "MCP imports the CLI" architecture has a skew surface — AWS pins `awscli==1.46.0` (v1) while users run the v2 binary (§5.3).
+
+**S9. Do not require CLI↔MCP parity.**
+§3.6, §5. Every vendor good at this curates the MCP surface deliberately — fewer, coarser, agent-shaped tools. Stainless abandoned 1-tool-per-endpoint; GitHub collapsed four workflow tools into `actions_list`; Cloudflare's `stack-mcp` ships two tools; Stripe covers ~100 API methods with four. Specify parity of _behaviour and semantics_ for projected commands, and require an explicit, machine-readable declaration of which commands are projected and why the rest are not. **Mandating 1:1 is the thing everyone who built it walked back.**
+
+**S10. Make the projection conformance-tested, not merely generated.**
+§3.2, §5 F1/F5. Dagger's `dagger mcp` regressed to exposing only generic tools and shipped that way; its own founder filed the bug. Generation prevents _definitional_ drift but not _behavioural_ regression. The conformance kit should assert the projection end-to-end — connect to the generated MCP server, call `tools/list`, and diff it against the CLI's `schema` output. Chrome DevTools already does the generation half of this (`scripts/generate-cli.ts` spawns the server and calls `tools/list`); nobody does the assertion half.
+
+**S11. Publish the canonicality statement nobody else has.**
+§5 F5. Across GitHub, Stripe, Cloudflare, Sentry, Supabase, AWS, Azure, Playwright and Grafana, **no vendor publishes which surface is canonical, and issue searches found zero CLI-parity complaints tracked.** GitHub's `docs/tool-renaming.md` is the only tool-surface-stability policy in the wild, and it covers MCP-internal renames only. A normative "declare your canonical surface, declare your projected subset, declare your deprecation policy" section is unoccupied ground and directly addresses the one documented drift casualty (§5.2).
+
+---
+
+## Source index
+
+**Primary / specification**
+
+- [Tool search tool — Claude Platform Docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)
+- [Tool use with prompt caching — Claude Platform Docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-use-with-prompt-caching)
+- [Introducing advanced tool use — Anthropic Engineering, 2025-11-24](https://www.anthropic.com/engineering/advanced-tool-use)
+- [Code execution with MCP — Anthropic Engineering, Nov 2025](https://www.anthropic.com/engineering/code-execution-with-mcp)
+- [Extend Claude with skills — Claude Code Docs](https://code.claude.com/docs/en/skills)
+- [The 2026-07-28 MCP Specification](https://blog.modelcontextprotocol.io/posts/2026-07-28/)
+- [MCP client concepts, 2026-07-28](https://modelcontextprotocol.io/docs/2026-07-28/learn/client-concepts)
+- [GitHub MCP Server changelog, 2026-01-28](https://github.blog/changelog/2026-01-28-github-mcp-server-new-projects-tools-oauth-scope-filtering-and-new-features/)
+- [MCP issue #2808 — tool schema token overhead](https://github.com/modelcontextprotocol/modelcontextprotocol/issues/2808)
+
+**Measured**
+
+- [ScaleKit — MCP vs CLI benchmark](https://www.scalekit.com/blog/mcp-vs-cli-use) · [repo](https://github.com/scalekit-inc/mcp-vs-cli-benchmark) · [pre-registered methodology](https://github.com/scalekit-inc/mcp-vs-cli-benchmark/blob/main/METHODOLOGY.md)
+- [The Bitter Lesson of Tool Calling — arXiv:2608.06370](https://arxiv.org/html/2608.06370)
+- Smithery — "MCP vs CLI Is the Wrong Fight" (`https://smithery.ai/blog/mcp-vs-cli-is-the-wrong-fight` — **404 on 2026-08-13**, figures from search snippets only)
+
+**Prior art — specs and generators**
+
+- [The CLI Spec — clispec.dev](https://clispec.dev/) · [spec repo](https://github.com/rvben/clispec) · [conformance scorer](https://github.com/rvben/clispec-cli) · [proxctl reference impl](https://github.com/rvben/proxctl)
+- [Fern CLI generator announcement](https://buildwithfern.com/post/cli-generator) · [generator docs](https://buildwithfern.com/learn/cli-generator/get-started/overview) · [Fern: CLI vs MCP](https://buildwithfern.com/post/cli-vs-mcp-which-api-interface-first) · [Fern: MCP vs CLI API access](https://buildwithfern.com/post/mcp-vs-cli-api-access)
+- [Speakeasy CLI generation](https://www.speakeasy.com/blog/release-cli-generation) · [Speakeasy MCP-from-OpenAPI limits](https://www.speakeasy.com/mcp/tool-design/generate-mcp-tools-from-openapi/) · [Stainless MCP docs](https://www.stainless.com/docs/mcp/)
+- [Dagger LLM docs](https://docs.dagger.io/features/llm/) · [PR #9935](https://github.com/dagger/dagger/pull/9935) · [issue #13023 — `dagger mcp` regression](https://github.com/dagger/dagger/issues/13023)
+- [FastMCP `generate-cli`](https://gofastmcp.com/cli/generate-cli) · [PrefectHQ/fastmcp](https://github.com/PrefectHQ/fastmcp) · [mcporter](https://github.com/openclaw/mcporter) · [mcp2cli](https://github.com/knowsuchagency/mcp2cli)
+- CLI→MCP bridges (all toy/dead/draft): [click-mcp](https://github.com/crowecawcaw/click-mcp) · [gakonst/clap-mcp](https://github.com/gakonst/clap-mcp) · [canardleteer/clap-mcp](https://github.com/canardleteer/clap-mcp) · [oclif-plugin-mcp-server](https://github.com/npjonath/oclif-plugin-mcp-server) · [oclif#1796](https://github.com/oclif/oclif/discussions/1796)
+- Shared-core-two-adapters: [pipefy/ai-toolkit](https://github.com/pipefy/ai-toolkit) · [stripe/agent-toolkit](https://github.com/stripe/agent-toolkit)
+- Anti-pattern (wrap an opaque CLI): [heroku-mcp-server](https://github.com/heroku/heroku-mcp-server) · [any-cli-mcp-server](https://github.com/eirikb/any-cli-mcp-server)
+- HN discussion: [47305149](https://news.ycombinator.com/item?id=47305149) · [47157398](https://news.ycombinator.com/item?id=47157398)
+
+**Prior art — vendors shipping both (source-verified Aug 2026)**
+
+- [github/github-mcp-server](https://github.com/github/github-mcp-server) · [tool-renaming policy](https://github.com/github/github-mcp-server/blob/main/docs/tool-renaming.md) · [issue #275 — dynamic toolsets, closed](https://github.com/github/github-mcp-server/issues/275)
+- [stripe/agent-toolkit MIGRATION.md](https://github.com/stripe/agent-toolkit/blob/main/tools/typescript/MIGRATION.md) · [docs.stripe.com/mcp](https://docs.stripe.com/mcp)
+- [cloudflare/mcp-server-cloudflare](https://github.com/cloudflare/mcp-server-cloudflare) · [Code Mode](https://blog.cloudflare.com/code-mode/) · [Cloudflare agents/MCP guidance](https://developers.cloudflare.com/agents/model-context-protocol/)
+- [awslabs/mcp — aws-api-mcp-server](https://github.com/awslabs/mcp/tree/main/src/aws-api-mcp-server) · [MIGRATION.md](https://github.com/awslabs/mcp/blob/main/src/aws-api-mcp-server/MIGRATION.md) · [AWS MCP Server docs](https://docs.aws.amazon.com/agent-toolkit/latest/userguide/mcp-server.html)
+- [Azure/azure-mcp](https://github.com/Azure/azure-mcp) (archived) → [microsoft/mcp](https://github.com/microsoft/mcp) · [tool modes on MS Learn](https://learn.microsoft.com/en-us/azure/developer/azure-mcp-server/tools/)
+- [ChromeDevTools/chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp) — CLI generated from `tools/list`
+- [microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp) · [microsoft/playwright-cli](https://github.com/microsoft/playwright-cli) — the clearest vendor boundary statement
+- [getsentry/sentry-mcp](https://github.com/getsentry/sentry-mcp) · [supabase-community/supabase-mcp](https://github.com/supabase-community/supabase-mcp) · [grafana/mcp-grafana](https://github.com/grafana/mcp-grafana) · [netlify/context-and-tools](https://github.com/netlify/context-and-tools) · [docker/mcp-gateway](https://github.com/docker/mcp-gateway) · [huggingface/hf-mcp-server](https://github.com/huggingface/hf-mcp-server) ([engineering post](https://huggingface.co/blog/building-hf-mcp))
+
+**Practitioner**
+
+- [Armin Ronacher — Your MCP Doesn't Need 30 Tools: It Needs Code, 2025-08-18](https://lucumr.pocoo.org/2025/8/18/code-mcps/) · [Skills vs Dynamic MCP Loadouts, 2025-12-13](https://lucumr.pocoo.org/2025/12/13/skills-vs-mcp/) (the one documented drift incident)
+- [David Cramer — Context Management and MCP, 2026-02-02](https://cra.mr/context-management-and-mcp/)
+- [Robert Melton — Build CLIs First, Wrap as MCPs Second, 2025-11-06](https://robertmelton.com/posts/clis-wrap-as-mcps/)
+- [Trevin Chow — 7 Principles for Agent-Friendly CLIs, 2026-03-26](https://trevinsays.com/p/7-principles-for-agent-friendly-clis) (superseded by his "10 Principles for Agent Native CLIs")
+- [Christian F. Jung — Designing a CLI for AI Agents, 2026-02-15](https://www.christianfjung.com/cli-for-agents)
+- [steipete — create-cli skill](https://github.com/steipete/agent-scripts/blob/main/skills/create-cli/SKILL.md)
+- [Manveer C — MCP vs CLI decision framework, 2026-03-08](https://manveerc.substack.com/p/mcp-vs-cli-ai-agents) (contains the mis-attributed "GitHub MCP = 55k tokens" figure; cite with care)
+
+## Open questions / thin evidence
+
+- **Shell fluency from training data** is asserted everywhere ("models have seen billions of bash examples, zero MCP schemas") and I found **no controlled ablation isolating it.** The Bitter Lesson paper is adjacent but tests Python-against-typed-stubs, not shell. Treat as plausible but unproven; do not cite it as measured.
+- **Smithery's 756-run benchmark is the main contrary evidence and I could not verify the primary.** Someone should retrieve it before we publish anything that leans on the CLI-wins direction.
+- **Fern's single-binary dual-surface claim is unverified** — the marketing post and the generator docs disagree, and Fern's own CLI-vs-MCP post describes a two-component split. Worth generating one artifact and looking.
+- **Hosted MCP server internals are closed.** `mcp.stripe.com` and Netlify's MCP endpoint are not open source. Stripe's _local_ package is verified to be a pure proxy, but whether the hosted server shares code with the `stripe` CLI is undeterminable from outside. Any claim about their internal sharing is speculation.
+- **AWS's version-skew risk is unexamined.** `aws-api-mcp-server` pins `awscli==1.46.0` (v1) while users' `aws` on PATH is v2. Whether this produces behavioural differences is unknown and is a real gap in the one architecture marketed as drift-proof.
+- **Grafana's CLI relationship is unverified** — `mcp-grafana` uses the official OpenAPI Go client, but whether `grafanactl` uses the same client was not checked.
+- **Latency** is under-measured everywhere. ScaleKit shows CLI both far faster (3.6s vs 7.5s) and far slower (50.8s vs 7.7s) on different tasks in the same run. Process-spawn cost per invocation vs MCP's persistent connection is a real variable nobody has isolated.
+- **Nobody measures "tokens to first correct invocation."** That is the metric that actually reconciles the contradictory benchmarks, and it is available for us to define.
