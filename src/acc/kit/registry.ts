@@ -1,3 +1,7 @@
+import { advertisesMachineModeChecker } from "./checkers/discoverability/advertises-machine-mode.ts";
+import { bareInvocationChecker } from "./checkers/discoverability/bare-invocation.ts";
+import { helpDeterministicChecker } from "./checkers/discoverability/help-deterministic.ts";
+import { versionFlagChecker } from "./checkers/discoverability/version-flag.ts";
 import { deterministicChecker } from "./checkers/exit-codes/deterministic.ts";
 import { helpExitsZeroChecker } from "./checkers/exit-codes/help-exits-zero.ts";
 import { usageDistinguishableChecker } from "./checkers/exit-codes/usage-distinguishable.ts";
@@ -32,4 +36,8 @@ export const CHECKERS: Checker[] = [
   helpExitsZeroChecker,
   usageDistinguishableChecker,
   deterministicChecker,
+  versionFlagChecker,
+  bareInvocationChecker,
+  advertisesMachineModeChecker,
+  helpDeterministicChecker,
 ];

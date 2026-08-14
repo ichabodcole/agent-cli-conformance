@@ -12,7 +12,7 @@ rule_id: D1
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/version-flag.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # A version is reportable without side effects
@@ -55,9 +55,9 @@ Inert (`L0`).
 
 Passes when it exits `0` with non-empty stdout and empty stderr, promptly.
 
-The checker additionally runs it with a deliberately invalid `HOME` and an empty environment
-where the platform permits, to verify the no-configuration requirement — a `--version` that
-only works in a configured environment fails this rule even though it passes the naive probe.
+The checker additionally runs it with a deliberately unusable `HOME` and `XDG_CONFIG_HOME`, to
+verify the no-configuration requirement — a `--version` that only works in a configured
+environment fails this rule even though it passes the naive probe.
 
 ## How to comply
 

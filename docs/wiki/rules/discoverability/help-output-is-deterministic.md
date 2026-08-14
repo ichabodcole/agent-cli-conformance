@@ -12,7 +12,7 @@ rule_id: D4
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/help-deterministic.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Help output is byte-identical between runs
@@ -52,10 +52,11 @@ Inert (`L0`).
 
 ```
 <cli> --help     ×2      # captured, byte-compared
-<cli> --version  ×2
 ```
 
-Passes when the two captures are identical.
+Passes when the two captures are identical. The second run carries a distinct, allow-listed env
+var (rather than repeating the first invocation verbatim) purely so the runner's dedup — which
+merges identical probes into one recording — doesn't collapse the pair into a single sample.
 
 When they differ, the checker reports the **diff**, not merely the fact — a one-line delta
 containing a timestamp is a different problem from wholesale reordering, and the fix differs
@@ -63,7 +64,9 @@ accordingly.
 
 Deliberately not attempted: distinguishing "nondeterministic" from "changed because the
 environment changed". The probe runs both invocations in the same environment moments apart,
-which is the case that matters and the only one it can honestly speak to.
+which is the case that matters and the only one it can honestly speak to. `--version` is
+covered separately, by [D1](./version-flag-exists.md)'s own hostile-environment probe, rather
+than duplicated here.
 
 ## How to comply
 

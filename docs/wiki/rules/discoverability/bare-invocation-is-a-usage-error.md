@@ -12,7 +12,7 @@ rule_id: D2
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/bare-invocation.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Bare invocation is a usage error
@@ -68,8 +68,9 @@ Inert (`L0`) by definition: no operation was requested.
 ```
 
 Passes when the exit code is non-zero, stdout is empty, and the process terminates rather than
-waiting. Exit code exactly `2` is checked as a **diagnostic** at `L0`, since an undeclared tool
-never agreed to the taxonomy.
+waiting (a hang is reported as a failure, not a pass with missing evidence). The checker
+requires only non-zero, not exactly `2` — an undeclared tool never agreed to the taxonomy — but
+records the observed code in the finding either way.
 
 ## How to comply
 

@@ -12,7 +12,7 @@ rule_id: D3
 tier: diagnostic
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/advertises-machine-mode.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Help advertises the machine-readable path
