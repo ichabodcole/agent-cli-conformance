@@ -1,4 +1,12 @@
-import { closeSync, existsSync, openSync, readSync } from "node:fs";
+import {
+  accessSync,
+  closeSync,
+  constants,
+  existsSync,
+  openSync,
+  readSync,
+  statSync,
+} from "node:fs";
 import { basename, resolve } from "node:path";
 import { emit, type OutputMode, useColor } from "../envelope.ts";
 import { notFoundError, usageError } from "../errors.ts";
@@ -18,25 +26,21 @@ export interface CheckOptions {
 const SHEBANG_BYTES = 256;
 
 /**
- * True when the target's first line is a `#!` naming `bun` as its interpreter.
+ * The interpreter a target's `#!` line names, by basename, or null when it has none.
  *
- * This exists for A6. Its checker reports `unverified` whenever `argv0[0] === "bun"`, because
- * Bun eats the bare `--` the probe leads with and what gets measured is A1 wearing A6's name.
- * A Bun CLI installed WITHOUT a `.ts` extension used to miss that guard — nothing in the
- * invocation said "bun" — so a target that honours `--` perfectly collected a FAIL derived from
- * an argv it never received. Launching it the way its own shebang says puts it back inside the
- * guard, and `check()` stays pure: the inference happens here, once, not inside a checker.
+ * `env` and its flags are skipped, so `#!/usr/bin/env bun`, `#!/usr/bin/env -S bun run` and
+ * `#!/opt/homebrew/bin/bun` all answer "bun", while `bunx` and a node living under
+ * `/home/bunny/bin` answer their own names rather than matching a substring.
  *
  * Reading a `#!` line is NOT the guess `inert.ts` refuses. That refusal is about whether a
  * target's root positional is free-form data — a property with no observable signal, where a
  * wrong answer licenses an unsafe spawn. A shebang is the kernel's own contract about what runs
- * the file, and a wrong answer here costs one diagnostic verdict. The line below already infers
- * an interpreter from a strictly weaker signal: the filename extension.
+ * the file, and it is in the first bytes of the file.
  *
  * Never throws. An unreadable file, a directory, a race between `existsSync` and here — all are
  * "no shebang", and the existing not-found/not-executable paths report them properly.
  */
-function hasBunShebang(abs: string): boolean {
+function shebangInterpreter(abs: string): string | null {
   let fd: number | undefined;
   try {
     fd = openSync(abs, "r");
@@ -44,28 +48,60 @@ function hasBunShebang(abs: string): boolean {
     const read = readSync(fd, buf, 0, SHEBANG_BYTES, 0);
     // A binary decodes to mojibake rather than throwing, and mojibake does not start with `#!`.
     const firstLine = buf.subarray(0, read).toString("utf8").split(/\r?\n/, 1)[0] ?? "";
-    if (!firstLine.startsWith("#!")) return false;
-    // Whole-basename comparison over every token, so `#!/usr/bin/env bun`,
-    // `#!/usr/bin/env -S bun run` and `#!/opt/homebrew/bin/bun` all match while `bunx` and a
-    // node interpreter living under `/home/bunny/bin` do not.
-    return firstLine
-      .slice(2)
-      .trim()
-      .split(/\s+/)
-      .some((token) => basename(token) === "bun");
+    if (!firstLine.startsWith("#!")) return null;
+    const tokens = firstLine.slice(2).trim().split(/\s+/).filter(Boolean);
+    // `env` is not an interpreter, and `-S` is how you portably pass one its own arguments; the
+    // first token that is neither is the program the kernel will hand the file to.
+    const interpreter = tokens.find((t) => basename(t) !== "env" && !t.startsWith("-"));
+    return interpreter ? basename(interpreter) : null;
   } catch {
-    return false;
+    return null;
   } finally {
     if (fd !== undefined) closeSync(fd);
   }
 }
 
-/** A `.ts` target, or one whose shebang names bun, is run through bun; anything else is
- *  executed directly. */
-function toTarget(path: string): TargetInfo {
+/** True when this process may execute the file — the ownership bits, not just `0o111`. */
+function isExecutable(abs: string): boolean {
+  try {
+    accessSync(abs, constants.X_OK);
+    return statSync(abs).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * How the target will be launched.
+ *
+ * **An executable file is executed directly, so the kernel honours its own shebang.** Every
+ * `.ts` path used to go through Bun regardless, which tests a different program from the one
+ * users run: a Deno or Node-TypeScript CLI would be handed to a runtime it never declared,
+ * changing argv handling and rejecting runtime-specific APIs — and quietly undercutting the
+ * language-agnostic claim (review R2-5). The extension is a weaker signal than the `#!` line,
+ * and the exec bit is what makes the `#!` line the kernel's business rather than ours.
+ *
+ * Bun is named in `argv0` in exactly two cases, and neither overrides a declared interpreter:
+ *
+ * 1. **The shebang says bun.** Then bun is what runs it either way, and naming it matters for
+ *    A6: that checker reports `unverified` whenever `argv0[0] === "bun"`, because Bun eats the
+ *    bare `--` its probe leads with — including when the kernel launched the script — so what
+ *    would get measured is A1 wearing A6's name. A Bun CLI installed without a `.ts` extension
+ *    used to miss the guard entirely and collect a FAIL derived from an argv it never received.
+ * 2. **A non-executable `.ts` file with no conflicting shebang.** That is a SOURCE file rather
+ *    than a program, and Bun is the documented fallback for running one. A non-executable file
+ *    that declares some other interpreter gets neither: it is launched as itself and fails to
+ *    spawn, which `record()` reports as `TargetNotExecutableError` — an honest "chmod +x it"
+ *    rather than a verdict about a program nobody asked us to build.
+ */
+export function toTarget(path: string): TargetInfo {
   const abs = resolve(path);
-  const viaBun = abs.endsWith(".ts") || hasBunShebang(abs);
-  return { path: abs, argv0: viaBun ? ["bun", abs] : [abs] };
+  const interpreter = shebangInterpreter(abs);
+  if (isExecutable(abs)) {
+    return { path: abs, argv0: interpreter === "bun" ? ["bun", abs] : [abs] };
+  }
+  const bunFallback = abs.endsWith(".ts") && (interpreter === null || interpreter === "bun");
+  return { path: abs, argv0: bunFallback ? ["bun", abs] : [abs] };
 }
 
 export async function checkCommand(

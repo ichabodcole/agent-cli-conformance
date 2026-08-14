@@ -76,7 +76,8 @@ consequences:
   history is in-memory and dies with the process, so retroactive checking is a property of the
   architecture rather than a workflow you can run.
 - **It is language-agnostic by construction**, because it only ever touches argv, streams, and
-  exit codes. Rust, TypeScript, Go and Python CLIs are tested identically.
+  exit codes. Rust, TypeScript, Go and Python CLIs are tested identically, and an executable
+  target is launched as itself so the kernel honours its own shebang.
 
 Probes come in three levels. `L0` is **risk-reduced, not inert**: it uses only help paths,
 sentinel-bearing arguments, and bare invocations, which is a much smaller blast radius than

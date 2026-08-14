@@ -84,16 +84,22 @@ The guard keys on the launcher, so it only fires when the invocation itself name
 CLI installed with **no `.ts` extension** used to slip past it: nothing in the invocation said
 "bun", the swallow happened anyway, and the target collected a `FAIL` — for a probe it never
 received, on a CLI that honours `--` perfectly. The cost of leaving it open was never a wrong
-`unverified`; it was a wrong verdict, on a conforming target. So `acc check` now reads the
-target's first line and launches it through `bun` when the shebang names `bun`, which puts it
-back inside the guard.
+`unverified`; it was a wrong verdict, on a conforming target. So `acc check` reads the target's
+first line and names `bun` in `argv0` whenever the shebang does, which puts it back inside the
+guard — the kernel would hand the file to bun regardless, and bun swallows the token either way.
 
 Reading a `#!` line is not the kind of guess this catalogue refuses elsewhere. What
 [the inertness gate](#where-this-probe-is-not-inert) refuses to guess is whether a target's
 root positional is free-form data — a property with no observable signal, where a wrong answer
 licenses an unsafe spawn. A shebang is the kernel's own contract about what runs the file, it
-is in the first bytes of the file, and a wrong answer costs one diagnostic verdict. `acc check`
-already infers an interpreter from a strictly weaker signal: the filename extension.
+is in the first bytes of the file, and a wrong answer costs one diagnostic verdict.
+
+The reverse inference is the one that had to go. `acc check` used to launch every `.ts` path
+through bun, which handed a Deno or Node-TypeScript CLI to a runtime it never declared — a
+different program from the one its users run, and an odd claim for a kit that calls itself
+language-agnostic. An **executable** target is now executed as itself, so the kernel honours its
+own shebang; bun remains the documented fallback for a **non-executable** `.ts` source file that
+declares no other interpreter.
 
 ### Where this probe is not inert
 
