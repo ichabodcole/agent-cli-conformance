@@ -4,10 +4,10 @@ import { emit, type OutputMode, useColor } from "../envelope.ts";
 import { notFoundError } from "../errors.ts";
 import { Outcome } from "../exit-codes.ts";
 import { loadExpectations } from "../kit/expectations.ts";
-import { record } from "../kit/record.ts";
+import { record, TargetNotExecutableError } from "../kit/record.ts";
 import { CHECKERS } from "../kit/registry.ts";
 import { buildReport, type ReportedFinding, runCheckers } from "../kit/report.ts";
-import type { TargetInfo } from "../kit/types.ts";
+import type { History, TargetInfo } from "../kit/types.ts";
 
 export interface CheckOptions {
   expectations?: string;
@@ -32,7 +32,21 @@ export async function checkCommand(
     });
   }
 
-  const history = await record(target, CHECKERS);
+  // A target that cannot execute gets an ERROR, never a report. Reporting it would mean
+  // publishing verdicts derived from a process that never ran — see TargetNotExecutableError.
+  // `not_found` is the honest kind: the caller named something that is not a runnable CLI.
+  let history: History;
+  try {
+    history = await record(target, CHECKERS);
+  } catch (err) {
+    if (err instanceof TargetNotExecutableError) {
+      throw notFoundError(`target could not be executed: ${targetPath}`, {
+        hint: "The file exists but could not be spawned. Check the exec bit, the shebang, and the architecture.",
+        details: { argv0: target.argv0 },
+      });
+    }
+    throw err;
+  }
   const findings = runCheckers(history, CHECKERS);
   // Run at L0: everything the kit can probe without effect-classifying subcommands first. A
   // checker whose rule needs a higher level (e.g. A4) is reported not-applicable here rather

@@ -10,6 +10,8 @@
 
 import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
+import { rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadExpectations } from "./kit/expectations.ts";
@@ -364,4 +366,23 @@ describe("acc check — the outcome exit code", () => {
     expect(env.error.kind).toBe("not_found");
     expect(env.error.exit_code).toBe(5);
   }, 15_000);
+
+  // A file that EXISTS but cannot be executed. Before this, `printf 'hello' > f; acc check f`
+  // produced a report in which nine rules PASSED — every checker satisfied by an empty stream
+  // and a non-zero exit. A target that never runs must not be certified against anything.
+  test("errors, rather than reporting, when the target exists but cannot be executed", async () => {
+    const notABinary = join(tmpdir(), `acc-not-a-binary-${process.pid}.txt`);
+    writeFileSync(notABinary, "hello\n");
+    try {
+      const r = await run(["check", notABinary, "--json"]);
+      expect(r.code).toBe(5);
+      expect(r.stdout).toBe("");
+      const env = JSON.parse(r.stderr);
+      expect(env.ok).toBe(false);
+      expect(env.error.kind).toBe("not_found");
+      expect(env.error.message).toContain("could not be executed");
+    } finally {
+      rmSync(notABinary, { force: true });
+    }
+  }, 30_000);
 });

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { record } from "./record.ts";
+import { record, TargetNotExecutableError } from "./record.ts";
 import type { Checker, Finding, History, Invocation, TargetInfo } from "./types.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -58,6 +58,23 @@ describe("record", () => {
     };
     await record(CONFORMING, [spy]);
     expect(seenSubcommands).toContain("list");
+  });
+
+  // The failure this closes: a text file containing `hello` used to record twelve ordinary
+  // observations with exit 127 and empty streams, and eight core checkers passed it. A target
+  // that cannot execute is a bad invocation, not a conformance question.
+  test("a target that cannot be executed aborts the run instead of producing a history", async () => {
+    const notABinary = join(HERE, "fixtures/conforming.ts"); // real file, but no exec bit
+    await expect(
+      record({ path: notABinary, argv0: [notABinary] }, [stubChecker("X1", [helpProbe])]),
+    ).rejects.toBeInstanceOf(TargetNotExecutableError);
+  });
+
+  test("the abort names the target and the probe that could not be spawned", async () => {
+    const notABinary = join(HERE, "fixtures/conforming.ts");
+    await expect(
+      record({ path: notABinary, argv0: [notABinary] }, [stubChecker("X1", [helpProbe])]),
+    ).rejects.toThrow(/could not be executed/i);
   });
 
   test("a checker requesting a non-inert probe fails the RUN, not silently", async () => {

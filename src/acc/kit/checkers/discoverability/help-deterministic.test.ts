@@ -22,6 +22,7 @@ function historyWithOneRun(): History {
     stderr: "",
     exitCode: 0,
     timedOut: false,
+    spawnFailed: false,
     durationMs: 1,
     timeToFirstByteMs: 1,
   };

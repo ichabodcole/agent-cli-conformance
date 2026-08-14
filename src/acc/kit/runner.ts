@@ -61,7 +61,7 @@ export async function runProbe(
       child.kill("SIGKILL");
     }, timeoutMs);
 
-    const finish = (code: number | null) => {
+    const finish = (code: number | null, spawnFailed = false) => {
       clearTimeout(timer);
       resolve({
         id: invocationId(inv),
@@ -73,13 +73,17 @@ export async function runProbe(
         // code would fabricate evidence about a tool that never got to exit.
         exitCode: timedOut ? null : code,
         timedOut,
+        spawnFailed,
         durationMs: Math.round(performance.now() - startedAt),
         timeToFirstByteMs: firstByteAt === null ? null : Math.round(firstByteAt - startedAt),
       });
     };
 
-    child.on("close", finish);
-    // A target that cannot be spawned at all (ENOENT) is an observation too, not a crash.
-    child.on("error", () => finish(127));
+    child.on("close", (code) => finish(code));
+    // A target that cannot be spawned at all (ENOENT, EACCES, a file with no exec bit) is an
+    // observation too, not a crash — but it must be FLAGGED as one. 127 alone is a code a real
+    // CLI can choose to return, so without `spawnFailed` a file that never executed is
+    // indistinguishable from one that ran and answered; see Observation.spawnFailed.
+    child.on("error", () => finish(127, true));
   });
 }

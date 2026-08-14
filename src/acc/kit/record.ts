@@ -3,6 +3,31 @@ import { invocationId, runProbe } from "./runner.ts";
 import type { Checker, History, Invocation, Observation, TargetInfo } from "./types.ts";
 
 /**
+ * The target could not be executed at all.
+ *
+ * Thrown rather than folded into the history, because a binary that never runs is not a
+ * conformance question — it is a bad invocation, and the answer is "fix the path", not a
+ * report. Left as an ordinary observation it is worse than useless: empty streams and a
+ * non-zero code satisfy A2, B1, B2, C3, D2, D4, E1 and F1 by accident, so a text file
+ * containing `hello` certifies as passing eight core rules.
+ *
+ * Carries the failing observation so the caller can name the probe in its own error envelope.
+ */
+export class TargetNotExecutableError extends Error {
+  constructor(
+    readonly target: TargetInfo,
+    readonly observation: Observation,
+  ) {
+    super(
+      `target could not be executed: ${target.argv0.join(" ")} (probe: ${
+        observation.invocation.args.join(" ") || "(bare)"
+      })`,
+    );
+    this.name = "TargetNotExecutableError";
+  }
+}
+
+/**
  * Phase one: run every probe any checker asked for, exactly once.
  *
  * Checkers declare what they need and never spawn anything themselves. That buys three things:
@@ -32,6 +57,12 @@ export async function record(target: TargetInfo, checkers: Checker[]): Promise<H
   const observations: Observation[] = [];
   for (const { inv, purposes } of wanted.values()) {
     const o = await runProbe(target, inv);
+    // Abort the whole run on the FIRST spawn failure. In practice that is the first probe —
+    // a target either executes or it does not — and continuing would spend a dozen more
+    // spawns to build a history of nothing, then certify it. Discovery's own `--help` probe
+    // runs before this loop and fails silently to `helpReadable: false`; the first checker
+    // probe is what turns that into an error the caller can act on.
+    if (o.spawnFailed) throw new TargetNotExecutableError(target, o);
     observations.push({ ...o, purposes: [...purposes] });
   }
 

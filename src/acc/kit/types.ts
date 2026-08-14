@@ -34,6 +34,14 @@ export interface Observation {
   /** null when the deadline killed it — a process we killed did not choose its status. */
   exitCode: number | null;
   timedOut: boolean;
+  /**
+   * True when the process could never be started (ENOENT, EACCES, a text file with no exec
+   * bit). Distinct from `exitCode: 127`, which a target may legitimately CHOOSE to return:
+   * without this flag "answered 127" and "never ran at all" are the same recording, and a
+   * target that never ran collects a pass from every checker that asks only for a non-zero
+   * exit and an empty stdout. `record()` refuses to build a history from one.
+   */
+  spawnFailed: boolean;
   durationMs: number;
   /** null when nothing was ever written. */
   timeToFirstByteMs: number | null;

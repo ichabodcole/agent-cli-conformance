@@ -11,6 +11,7 @@ function obs(args: string[], purposes: string[]): Observation {
     stderr: "",
     exitCode: 0,
     timedOut: false,
+    spawnFailed: false,
     durationMs: 1,
     timeToFirstByteMs: null,
   };

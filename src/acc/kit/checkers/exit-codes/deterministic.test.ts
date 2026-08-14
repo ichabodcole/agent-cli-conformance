@@ -28,6 +28,7 @@ function historyWithRuns(n: 0 | 1 | 2): History {
     stderr: "",
     exitCode: 2,
     timedOut: false,
+    spawnFailed: false,
     durationMs: 1,
     timeToFirstByteMs: null,
   }));
@@ -55,6 +56,7 @@ function historyWithTimedOutRuns(): History {
     stderr: "",
     exitCode: null,
     timedOut: true,
+    spawnFailed: false,
     durationMs: 10_000,
     timeToFirstByteMs: null,
   }));

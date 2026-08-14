@@ -50,6 +50,21 @@ describe("runProbe", () => {
     expect(o.exitCode).toBeNull();
   });
 
+  // The distinction that keeps a non-executable file out of the report: 127 alone is a status
+  // a real CLI can choose, so "never ran" has to be recorded as its own fact.
+  test("flags a target that cannot be spawned, rather than recording an ordinary exit 127", async () => {
+    const notExecutable = join(HERE, "fixtures/conforming.ts"); // real file, no exec bit
+    const o = await runProbe({ path: notExecutable, argv0: [notExecutable] }, inv([], "bare"));
+    expect(o.spawnFailed).toBe(true);
+    expect(o.exitCode).toBe(127);
+    expect(o.timedOut).toBe(false);
+  });
+
+  test("a target that really runs is never flagged as spawn-failed", async () => {
+    const o = await runProbe(CONFORMING, inv(["--help"], "help-path"));
+    expect(o.spawnFailed).toBe(false);
+  });
+
   test("closes stdin so a target waiting on input cannot hang", async () => {
     // A target invoked with `--help` never reads stdin, so it would pass this test whether or
     // not stdin was closed. `read` blocks on an open stdin and returns immediately on EOF, so

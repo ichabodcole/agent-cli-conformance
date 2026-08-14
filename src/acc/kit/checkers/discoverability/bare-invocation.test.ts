@@ -27,6 +27,7 @@ function historyWithHang(): History {
     stderr: "",
     exitCode: null,
     timedOut: true,
+    spawnFailed: false,
     durationMs: 10_000,
     timeToFirstByteMs: null,
   };
