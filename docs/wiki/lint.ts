@@ -193,6 +193,31 @@ export function ruleChecks(pages: LintPage[]): string[] {
 /** The index section the matrix owns. Everything between it and the next heading is generated. */
 export const MATRIX_HEADING = "### Coverage at a glance";
 
+/**
+ * A page's basename must be unique across the whole wiki.
+ *
+ * `acc show <handle>` resolves a slug through `graph.ts`'s `bySlug`, which is a Map built from
+ * every page's basename — so two pages called `overview.md` in different folders make one of
+ * them unreachable by slug, and which one wins is insertion order. The command has no way to
+ * report the ambiguity, because by the time it looks the loser is gone.
+ *
+ * Stricter than the `type/slug` uniqueness the portable core enforces, and deliberately so: this
+ * is a constraint the CLI imposes, not one the format does.
+ */
+export function slugChecks(pages: LintPage[]): string[] {
+  const problems: string[] = [];
+  const seen = new Map<string, string>();
+  for (const page of pages) {
+    // SCHEMA.md is the contract, not a page — `graph.ts` skips it, so it cannot collide.
+    if (page.rel.endsWith("SCHEMA.md")) continue;
+    const slug = page.rel.slice(page.rel.lastIndexOf("/") + 1, -3);
+    const first = seen.get(slug);
+    if (first) problems.push(`DUPLICATE slug ${page.rel}: "${slug}" already used by ${first}`);
+    else seen.set(slug, page.rel);
+  }
+  return problems;
+}
+
 /** The rule-page section that states what its checker does and does not establish. */
 export const COVERAGE_HEADING = "## Current checker coverage";
 
@@ -451,7 +476,12 @@ if (import.meta.main) {
       types: ["concept", "archetype", "rule", "decision", "guide", "index"],
       dateField: "updated",
       allowDateOnly: true,
-      extraChecks: (pages) => [...ruleChecks(pages), ...matrixChecks(pages), ...hookChecks(pages)],
+      extraChecks: (pages) => [
+        ...ruleChecks(pages),
+        ...slugChecks(pages),
+        ...matrixChecks(pages),
+        ...hookChecks(pages),
+      ],
       json: process.argv.includes("--json"),
     });
 

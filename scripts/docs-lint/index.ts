@@ -375,10 +375,19 @@ export function runDocsLint(config: DocsLintConfig): number {
   // --- `related:` edges must resolve -----------------------------------------------------
   // Keys are `type/slug` where slug is the BASENAME, so a page's folder can move without
   // rewriting every `related:` that points at it.
+  //
+  // That indirection is what makes collisions possible, and a Map resolves one by keeping the
+  // LAST page written — silently. Two pages sharing a `type/slug` make every `related:` edge
+  // pointing at that key ambiguous, and nothing downstream can tell which one was meant, so the
+  // duplicate is reported here rather than resolved by insertion order.
   const byTypeSlug = new Map<string, string>();
   for (const file of files) {
     const t = fieldsOf(file).get("type");
-    if (t) byTypeSlug.set(`${t}/${file.slice(file.lastIndexOf("/") + 1, -3)}`, file);
+    if (!t) continue;
+    const key = `${t}/${file.slice(file.lastIndexOf("/") + 1, -3)}`;
+    const first = byTypeSlug.get(key);
+    if (first) say(`DUPLICATE KEY  ${rel(file)}: "${key}" already used by ${rel(first)}`);
+    else byTypeSlug.set(key, file);
   }
   for (const file of files) {
     for (const entry of yamlList(fieldsOf(file).get("related"))) {

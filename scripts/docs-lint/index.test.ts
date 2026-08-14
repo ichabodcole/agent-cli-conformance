@@ -1181,6 +1181,54 @@ describe("runDocsLint — related", () => {
     expect(res.problems.every((p) => p.startsWith("BAD related"))).toBe(true);
   });
 
+  // The key is `type/slug`, so two pages in DIFFERENT folders can claim the same one. A Map
+  // resolved that by keeping whichever was written last, which makes every `related:` edge
+  // pointing at the key ambiguous with nothing able to report it downstream.
+  test("two pages sharing a `type/slug` key is a DUPLICATE KEY", () => {
+    const root = wiki({
+      "index.md": page(
+        { type: "index", title: "Catalog", tags: "[index]", updated: DATE },
+        "# Catalog\n\n- [A](./one/a.md)\n- [B](./two/a.md)\n",
+      ),
+      "one/a.md": page(OK_FM),
+      "two/a.md": page(OK_FM),
+    });
+    const res = lint(config(root));
+    expect(res.problems).toHaveLength(1);
+    expect(res.problems[0]).toMatch(
+      /^DUPLICATE KEY\s+two\/a\.md: "concept\/a" already used by one\/a\.md$/,
+    );
+  });
+
+  test("the same slug under a different TYPE is not a duplicate — the key is type/slug", () => {
+    const root = wiki({
+      "index.md": page(
+        { type: "index", title: "Catalog", tags: "[index]", updated: DATE },
+        "# Catalog\n\n- [A](./one/a.md)\n- [B](./two/a.md)\n",
+      ),
+      "one/a.md": page(OK_FM),
+      "two/a.md": page({ ...OK_FM, type: "rule" }),
+    });
+    expect(lint(config(root)).problems).toEqual([]);
+  });
+
+  test("a duplicated key does not also break the `related:` edges that use it", () => {
+    // The first page keeps the key, so `concept/a` still resolves — the collision is reported
+    // once, rather than cascading into a BAD related for every edge pointing at it.
+    const root = wiki({
+      "index.md": page(
+        { type: "index", title: "Catalog", tags: "[index]", updated: DATE },
+        "# Catalog\n\n- [A](./one/a.md)\n- [B](./two/a.md)\n- [C](./c.md)\n",
+      ),
+      "one/a.md": page(OK_FM),
+      "two/a.md": page(OK_FM),
+      "c.md": page({ ...OK_FM, related: "[concept/a]" }),
+    });
+    const res = lint(config(root));
+    expect(res.problems).toHaveLength(1);
+    expect(res.problems[0]).toContain("DUPLICATE KEY");
+  });
+
   test("no `related:` field is not a problem", () => {
     const root = wiki({
       "index.md": page(

@@ -23,6 +23,7 @@ import {
   normalizeBlock,
   ruleChecks,
   sectionBody,
+  slugChecks,
   statedGaps,
 } from "./lint.ts";
 
@@ -595,6 +596,51 @@ test("an index with no matrix section at all is reported as MISSING", () => {
 // send a maintainer to regenerate a file that does not exist.
 test("no index page at all produces no matrix problem", () => {
   expect(matrixChecks([rule("rules/parsing/a1.md")])).toEqual([]);
+});
+
+// --- slug uniqueness -----------------------------------------------------------------------
+//
+// `acc show <handle>` resolves a slug through a Map of basenames, so two pages sharing one make
+// the loser unreachable — by insertion order, with nothing able to report it.
+
+test("two pages with the same basename in different folders are reported", () => {
+  const problems = slugChecks([
+    pageOf("concepts/overview.md", { type: "concept" }),
+    pageOf("guides/overview.md", { type: "guide" }),
+  ]);
+  expect(problems).toEqual([
+    'DUPLICATE slug guides/overview.md: "overview" already used by concepts/overview.md',
+  ]);
+});
+
+// Stricter than the portable core's `type/slug` check on purpose: `bySlug` has no type half, so
+// a concept and a guide sharing a basename collide in `acc show` even though `related:` is fine.
+test("differing types do not rescue a duplicate slug", () => {
+  expect(
+    slugChecks([pageOf("a/x.md", { type: "concept" }), pageOf("b/x.md", { type: "rule" })]).length,
+  ).toBe(1);
+});
+
+test("a third page with the same slug is reported too, against the first", () => {
+  const problems = slugChecks([
+    pageOf("a/x.md", { type: "concept" }),
+    pageOf("b/x.md", { type: "concept" }),
+    pageOf("c/x.md", { type: "concept" }),
+  ]);
+  expect(problems).toHaveLength(2);
+  expect(problems.every((p) => p.includes("already used by a/x.md"))).toBe(true);
+});
+
+test("distinct basenames produce no problem", () => {
+  expect(
+    slugChecks([pageOf("a/x.md", { type: "concept" }), pageOf("b/y.md", { type: "concept" })]),
+  ).toEqual([]);
+});
+
+// SCHEMA.md is the contract, not a page: `graph.ts` skips it, so it cannot collide with anything
+// and must not be reported as if it could.
+test("SCHEMA.md is exempt", () => {
+  expect(slugChecks([pageOf("SCHEMA.md", {}), pageOf("nested/SCHEMA.md", {})])).toEqual([]);
 });
 
 // --- catalog hooks -------------------------------------------------------------------------
