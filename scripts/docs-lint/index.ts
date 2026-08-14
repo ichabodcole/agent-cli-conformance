@@ -124,13 +124,18 @@ export function stripCode(md: string): string {
  * YAML only begins a comment at an UNQUOTED `#` preceded by whitespace. The regex this
  * replaced could not see quoting, so `title: "Exit code #2"` parsed as `"Exit code` — a
  * truncated value and an orphaned quote.
+ *
+ * A backslash inside a DOUBLE-quoted scalar escapes the next character, so `\"` must not be
+ * read as closing the scalar. Without that, `title: "a \"b\" c # d"` closes early and the
+ * value is truncated at the `#`.
  */
 function stripInlineComment(v: string): string {
   let inSingle = false;
   let inDouble = false;
   for (let i = 0; i < v.length; i++) {
     const c = v[i];
-    if (c === "'" && !inDouble) inSingle = !inSingle;
+    if (c === "\\" && inDouble) i++;
+    else if (c === "'" && !inDouble) inSingle = !inSingle;
     else if (c === '"' && !inSingle) inDouble = !inDouble;
     else if (c === "#" && !inSingle && !inDouble && i > 0 && /\s/.test(v[i - 1])) {
       return v.slice(0, i);
@@ -140,16 +145,63 @@ function stripInlineComment(v: string): string {
 }
 
 /**
+ * The escapes a double-quoted frontmatter scalar may use.
+ *
+ * DELIBERATELY smaller than YAML's set. This parser is a few dozen lines, and an escape it
+ * decodes WRONG is worse than one it refuses — `acc show C2` renders these values straight to
+ * a user, so they are CLI output now, not lint metadata. `unsupportedEscapes` below closes the
+ * syntax: anything outside this table is a lint failure rather than a silent mis-decode.
+ */
+const DOUBLE_QUOTED_ESCAPES: Record<string, string> = {
+  '"': '"',
+  "\\": "\\",
+  "/": "/",
+  n: "\n",
+  t: "\t",
+  r: "\r",
+};
+
+/**
+ * Every escape sequence in `fm` that `unquoteScalar` cannot decode.
+ *
+ * Scans the whole block rather than only the quoted regions: a bare backslash in unquoted
+ * frontmatter is a mistake too, and needing `\\` for a literal one is the price of a closed
+ * syntax. Returned as a de-duplicated list so the lint message names each offender once.
+ */
+export function unsupportedEscapes(fm: string): string[] {
+  return [
+    ...new Set(
+      [...fm.matchAll(/\\(.|$)/gs)]
+        .map((m) => m[1] ?? "")
+        .filter((c) => !(c in DOUBLE_QUOTED_ESCAPES))
+        .map((c) => `\\${c}`),
+    ),
+  ];
+}
+
+/**
  * `"concept"` -> `concept`. Quoted scalars are legal YAML and authors reach for them when a
  * value contains a colon or a `#`; every check downstream compares bare values, so leaving
  * the quotes on rejects valid frontmatter.
+ *
+ * The ESCAPES inside a double-quoted scalar are decoded too. Stripping only the outer pair
+ * left `title: "\"You invoked me wrong\""` rendering as `\"You invoked me wrong\"` in `acc
+ * show C2` — YAML syntax leaking into user-facing output. A single-quoted scalar has exactly
+ * one escape, `''` for a literal apostrophe; it has no backslash escapes at all.
  */
-function unquoteScalar(v: string): string {
+export function unquoteScalar(v: string): string {
   const t = v.trim();
   if (t.length < 2) return t;
   const first = t[0];
   const last = t[t.length - 1];
-  if ((first === '"' && last === '"') || (first === "'" && last === "'")) return t.slice(1, -1);
+  if (first === '"' && last === '"') {
+    // Replacing pairwise left-to-right is what makes `\\n` decode to a backslash followed by
+    // `n`, rather than to a newline: the match consumes both characters of the pair.
+    return t
+      .slice(1, -1)
+      .replace(/\\(.|$)/gs, (whole, c: string) => DOUBLE_QUOTED_ESCAPES[c] ?? whole);
+  }
+  if (first === "'" && last === "'") return t.slice(1, -1).replace(/''/g, "'");
   return t;
 }
 
@@ -209,10 +261,14 @@ export function runDocsLint(config: DocsLintConfig): number {
   // --- read every file ONCE -------------------------------------------------------------
   const body = new Map<string, string>();
   const meta = new Map<string, Map<string, string>>();
+  // The RAW block is kept alongside the parsed fields because the escape check below has to
+  // see what the author wrote; by the time `parseFrontmatter` is done the escapes are decoded.
+  const frontmatter = new Map<string, string>();
   for (const f of files) {
     const raw = readFileSync(f, "utf8");
     body.set(f, raw);
     const m = /^---\n([\s\S]*?)\n---/.exec(raw);
+    if (m) frontmatter.set(f, m[1]);
     meta.set(f, m ? parseFrontmatter(m[1]) : new Map());
   }
 
@@ -241,6 +297,15 @@ export function runDocsLint(config: DocsLintConfig): number {
 
     if (!DATE_RE.test(fields.get(DATE_FIELD) ?? ""))
       say(`MISSING ${DATE_FIELD}  ${rel(file)}  (expected \`${DATE_FIELD}: YYYY-MM-DD\`)`);
+
+    // Frontmatter values are user-facing output downstream (`acc show` prints title and
+    // description verbatim), so an escape this parser cannot decode must fail the gate rather
+    // than reach a reader as literal YAML syntax.
+    const escapes = unsupportedEscapes(frontmatter.get(file) ?? "");
+    if (escapes.length)
+      say(
+        `BAD ESCAPE     ${rel(file)}: ${escapes.join(", ")}  (frontmatter decodes only \\" \\\\ \\/ \\n \\t \\r)`,
+      );
   }
 
   // --- links + anchors, and the graph they form -----------------------------------------

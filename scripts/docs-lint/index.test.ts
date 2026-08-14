@@ -23,6 +23,7 @@ import {
   runDocsLint,
   slug,
   stripCode,
+  unsupportedEscapes,
   walkMarkdown,
   yamlList,
 } from "./index.ts";
@@ -426,6 +427,58 @@ describe("parseFrontmatter", () => {
   // which is why it has never bitten in practice.
   test("loses a block sequence written at column 0 (documented limitation)", () => {
     expect(parseFrontmatter("tags:\n- a\n- b").get("tags")).toBe("");
+  });
+});
+
+// ---------------------------------------------------------------------------------------
+// quoted-scalar round trip
+// ---------------------------------------------------------------------------------------
+
+// REGRESSION: `unquoteScalar` stripped the outer quotes but left the ESCAPED inner ones, so
+// C2's title reached `acc show C2` as `\"You invoked me wrong\" is distinguishable from
+// \"I broke\"`. These fields are CLI output now, not lint metadata — YAML syntax must not
+// survive the parse.
+//
+// The table is authored the other way round from the tests above: each case states the value a
+// reader should SEE and the frontmatter an author would write to produce it, and the assertion
+// is that one round-trips to the other. That is the property; the individual escapes are not.
+describe("quoted scalars round-trip to their intended value", () => {
+  const cases: Array<[label: string, written: string, intended: string]> = [
+    ["escaped quotes", '"\\"wrong\\" is not \\"broke\\""', '"wrong" is not "broke"'],
+    ["a colon", '"Exit codes: an API"', "Exit codes: an API"],
+    ["a hash", '"Exit code #2"', "Exit code #2"],
+    ["commas", '"parsing, streams, exit codes"', "parsing, streams, exit codes"],
+    ["a quote AND a hash together", '"a \\"b\\" # not a comment"', 'a "b" # not a comment'],
+    ["a literal backslash", '"C:\\\\path"', "C:\\path"],
+    ["an escaped backslash before an n", '"raw \\\\n stays raw"', "raw \\n stays raw"],
+    ["a tab escape", '"a\\tb"', "a\tb"],
+    ["single quotes around a colon", "'Exit codes: an API'", "Exit codes: an API"],
+    ["a doubled apostrophe in a single-quoted scalar", "'it''s fine'", "it's fine"],
+  ];
+
+  test.each(cases)("%s", (_label, written, intended) => {
+    expect(parseFrontmatter(`title: ${written}`).get("title")).toBe(intended);
+  });
+
+  // A multi-line value is the OTHER shape these fields take — every `description:` in the wiki
+  // is Prettier-wrapped — and quoting has to survive being reassembled from several lines.
+  test("a multiline quoted value joins its lines and still decodes", () => {
+    const fm = ['title: "\\"Wrong\\" and \\"broke\\"', '  are not the same failure"'].join("\n");
+    expect(parseFrontmatter(fm).get("title")).toBe('"Wrong" and "broke" are not the same failure');
+  });
+
+  test("a multiline unquoted value is unaffected", () => {
+    const fm = ["description:", "  A sentence that wraps", "  across two lines."].join("\n");
+    expect(parseFrontmatter(fm).get("description")).toBe("A sentence that wraps across two lines.");
+  });
+
+  // The other half of the ruling: the syntax is deliberately SMALL, so an escape outside the
+  // table is a lint failure rather than a silent mis-decode. Without this, closing the set
+  // would just move the leak from `\"` to the next escape someone reaches for.
+  test("names an escape the parser cannot decode, and only that one", () => {
+    expect(unsupportedEscapes('title: "a \\u00e9 b"')).toEqual(["\\u"]);
+    expect(unsupportedEscapes('title: "\\"ok\\" \\t \\n \\\\ \\/"')).toEqual([]);
+    expect(unsupportedEscapes("title: plain\ndescription: also plain")).toEqual([]);
   });
 });
 
@@ -868,6 +921,21 @@ describe("runDocsLint — frontmatter", () => {
     expect(lint(config(oneCatalogedPage({ ...OK_FM, type: '"nonsense"' }))).problems[0]).toContain(
       "BAD type",
     );
+  });
+
+  // The frontmatter syntax is deliberately smaller than YAML's, so it has to SAY so: an escape
+  // the parser cannot decode would otherwise reach `acc show` as literal backslashes.
+  test("rejects an escape the parser cannot decode", () => {
+    const res = lint(config(oneCatalogedPage({ ...OK_FM, title: '"caf\\u00e9"' })));
+    expect(res.problems[0]).toContain("BAD ESCAPE");
+    expect(res.problems[0]).toContain("\\u");
+  });
+
+  test("accepts the escapes it can decode", () => {
+    expect(
+      lint(config(oneCatalogedPage({ ...OK_FM, title: '"\\"wrong\\" is not \\"broke\\""' })))
+        .problems,
+    ).toEqual([]);
   });
 });
 
