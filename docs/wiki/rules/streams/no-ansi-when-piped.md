@@ -1,0 +1,82 @@
+---
+type: rule
+title: No ANSI escapes when output is not a terminal
+description:
+  Colour codes are invisible in a terminal and very visible in a string comparison.
+tags: [streams, machine-mode, output, core]
+related: [concept/machine-mode, rule/machine-output-is-parseable]
+status: current
+updated: 2026-08-13
+rule_id: B2
+tier: core
+probe_level: L0
+checker: scripts/checkers/streams/no-ansi-when-piped.ts
+---
+
+# No ANSI escapes when output is not a terminal
+
+## The rule
+
+When stdout is not a TTY, or [machine mode](../../concepts/machine-mode.md) is active, output
+**MUST NOT** contain ANSI escape sequences — colour, bold, cursor movement, spinners, or
+progress animation.
+
+This applies to stderr as well. Diagnostics get captured too.
+
+A CLI **MUST** additionally honour `NO_COLOR` and a `--no-color` flag when a TTY _is_ present,
+and **SHOULD** treat `TERM=dumb` the same way.
+
+## Why
+
+An escape sequence is invisible to the person the colour was for, and perfectly visible to
+everything else. A captured field carrying `\x1b[32m` compares unequal to the value it
+displays as, and the mismatch is undetectable by eye — the two strings look identical in every
+rendering a human is likely to check.
+
+For an agent this is worse than a formatting nuisance, because the corruption is _inside_ the
+data rather than around it. A run that greps output, extracts an id, and passes it to the next
+command fails at the third step with an error about an id that looks entirely correct in the
+transcript.
+
+Progress animation adds a second failure: a spinner emitted to a non-TTY writes thousands of
+carriage returns into a captured log, producing enormous output that carries no information —
+the "Christmas tree in CI logs" problem.
+
+## The probe
+
+Inert (`L0`). Help output is used because it is the one path guaranteed to produce
+presentational output without performing work.
+
+```
+<cli> --help              # stdout captured to a file, i.e. not a TTY
+<cli> nonsense-verb-xyz   # stderr captured likewise
+```
+
+Passes when neither capture contains `\x1b[` (CSI) or any other escape introducer.
+
+Because the checker always captures to files, the CLI is by definition not writing to a TTY —
+so this probe tests the detection path a CLI would use anyway. A tool that colours
+unconditionally fails; a tool that checks `isatty` passes without special handling.
+
+## How to comply
+
+Nearly every colour library detects TTY automatically — the common failure is bypassing it with
+a hand-written escape in one code path, typically an error message or a banner.
+
+Two specifics:
+
+- Check the stream you are writing to. `stdout.isTTY` says nothing about stderr, and a tool
+  writing coloured diagnostics while stdout is piped is the usual half-fixed state.
+- Suppress animation, not just colour. Spinners and progress bars need the same guard.
+
+## Evidence
+
+`gh`'s own agent-facing skill documents this as already-handled behaviour: in non-TTY contexts
+it skips the pager, strips colour, and fails fast — and explicitly tells agents they need not
+defensively set a pager variable. That is the target: correct by default, with no special
+handling required of the caller.
+
+The inverse capability matters too. `gh` provides `GH_FORCE_TTY=1` so a caller inside an agent
+harness can _demand_ the human rendering — an explicit override in the other direction, which
+is why [machine mode](../../concepts/machine-mode.md#how-machine-mode-is-selected) requires the
+flag to win over inference in both directions.

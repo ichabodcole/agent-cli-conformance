@@ -30,7 +30,7 @@ const PROBE_LEVELS = new Set(["L0", "L1", "L2"]);
  * built there is nothing to point at, and a lint that fails on absent future work just
  * trains you to ignore it.
  */
-function ruleChecks(pages: LintPage[]): string[] {
+export function ruleChecks(pages: LintPage[]): string[] {
   const problems: string[] = [];
   const rules = pages.filter((p) => p.fields.get("type") === "rule");
   const seenIds = new Map<string, string>();
@@ -91,13 +91,17 @@ function walk(dir: string): string[] {
   return out;
 }
 
-const problems = runDocsLint({
-  root: WIKI_ROOT,
-  types: ["concept", "archetype", "rule", "decision", "guide", "index"],
-  dateField: "updated",
-  allowDateOnly: true,
-  extraChecks: ruleChecks,
-  json: process.argv.includes("--json"),
-});
+// Guarded so this file can be IMPORTED (by lint.test.ts) without linting the wiki and
+// exiting the process. `bun docs/wiki/lint.ts` still runs it; `import` does not.
+if (import.meta.main) {
+  const problems = runDocsLint({
+    root: WIKI_ROOT,
+    types: ["concept", "archetype", "rule", "decision", "guide", "index"],
+    dateField: "updated",
+    allowDateOnly: true,
+    extraChecks: ruleChecks,
+    json: process.argv.includes("--json"),
+  });
 
-process.exit(problems === 0 ? 0 : 1);
+  process.exit(problems === 0 ? 0 : 1);
+}

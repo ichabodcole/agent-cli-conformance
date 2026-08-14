@@ -77,10 +77,18 @@ export function slug(h: string): string {
     .replace(/\s/g, "-");
 }
 
-/** GitHub-slugged headings in a file, for anchor verification. */
+/**
+ * GitHub-slugged headings in a file, for anchor verification.
+ *
+ * Code is stripped FIRST. A `# comment` inside a fenced block is not a heading and GitHub
+ * renders no anchor for it, so counting it lets a link to a nonexistent anchor pass — a
+ * FALSE NEGATIVE, which is the one direction a gate must never fail in. `stripCode` is
+ * length-preserving and only collapses newlines *inside* a fence, so headings before and
+ * after one still begin a line.
+ */
 export function headingSlugsOf(text: string): Set<string> {
   const s = new Set<string>();
-  for (const line of text.split("\n")) {
+  for (const line of stripFences(text).split("\n")) {
     const m = /^#+\s+(.*)$/.exec(line);
     if (m) s.add(slug(m[1]));
   }
@@ -88,15 +96,61 @@ export function headingSlugsOf(text: string): Set<string> {
 }
 
 /**
- * Blank out fenced code blocks and inline code spans before link scanning, preserving
+ * Blank out FENCED blocks only, preserving length.
+ *
+ * Separate from `stripCode` because heading detection must strip fences but must NOT strip
+ * inline spans: a heading like "### `choices` is discovery" derives its anchor from text that
+ * includes the span, so blanking it silently changes the slug. An inline span cannot fake a
+ * heading anyway — a heading needs `#` at the start of a line, and a span starts with a
+ * backtick — so fences are the whole risk.
+ */
+export function stripFences(md: string): string {
+  return md.replace(/```[\s\S]*?```/g, (m) => " ".repeat(m.length));
+}
+
+/**
+ * Blank out fenced code blocks AND inline code spans before link scanning, preserving
  * length so nothing else shifts. A doc that DOCUMENTS a link — `[a](../b.md)` inside
  * backticks — is not a doc that HAS one, and a lint that cannot tell them apart fires a
  * false positive on exactly the pages that explain link conventions (i.e. SCHEMA.md).
  */
 export function stripCode(md: string): string {
-  let out = md.replace(/```[\s\S]*?```/g, (m) => " ".repeat(m.length));
-  out = out.replace(/(?<!`)`[^`\n]+`(?!`)/g, (m) => " ".repeat(m.length));
-  return out;
+  return stripFences(md).replace(/(?<!`)`[^`\n]+`(?!`)/g, (m) => " ".repeat(m.length));
+}
+
+/**
+ * Strip a trailing `# comment`, respecting quotes.
+ *
+ * YAML only begins a comment at an UNQUOTED `#` preceded by whitespace. The regex this
+ * replaced could not see quoting, so `title: "Exit code #2"` parsed as `"Exit code` — a
+ * truncated value and an orphaned quote.
+ */
+function stripInlineComment(v: string): string {
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < v.length; i++) {
+    const c = v[i];
+    if (c === "'" && !inDouble) inSingle = !inSingle;
+    else if (c === '"' && !inSingle) inDouble = !inDouble;
+    else if (c === "#" && !inSingle && !inDouble && i > 0 && /\s/.test(v[i - 1])) {
+      return v.slice(0, i);
+    }
+  }
+  return v;
+}
+
+/**
+ * `"concept"` -> `concept`. Quoted scalars are legal YAML and authors reach for them when a
+ * value contains a colon or a `#`; every check downstream compares bare values, so leaving
+ * the quotes on rejects valid frontmatter.
+ */
+function unquoteScalar(v: string): string {
+  const t = v.trim();
+  if (t.length < 2) return t;
+  const first = t[0];
+  const last = t[t.length - 1];
+  if ((first === '"' && last === '"') || (first === "'" && last === "'")) return t.slice(1, -1);
+  return t;
 }
 
 /**
@@ -110,15 +164,7 @@ export function parseFrontmatter(fm: string): Map<string, string> {
   let key: string | null = null;
   let buf: string[] = [];
   const flush = () => {
-    if (key)
-      out.set(
-        key,
-        buf
-          .join(" ")
-          .trim()
-          .replace(/\s+#.*$/, "")
-          .trim(),
-      );
+    if (key) out.set(key, unquoteScalar(stripInlineComment(buf.join(" ").trim()).trim()));
   };
   for (const line of fm.split("\n")) {
     const m = /^([A-Za-z_][\w-]*):\s*(.*)$/.exec(line);

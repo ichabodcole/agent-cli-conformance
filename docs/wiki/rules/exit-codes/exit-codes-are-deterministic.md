@@ -1,0 +1,84 @@
+---
+type: rule
+title: Identical invocations produce identical exit codes
+description:
+  A code that varies between runs makes every retry decision unsound, and turns a reproducible
+  failure into an intermittent one.
+tags: [exit-codes, determinism, core]
+related: [concept/exit-codes, rule/help-output-is-deterministic]
+status: current
+updated: 2026-08-13
+rule_id: C3
+tier: core
+probe_level: L0
+checker: scripts/checkers/exit-codes/deterministic.ts
+---
+
+# Identical invocations produce identical exit codes
+
+## The rule
+
+The same invocation, against unchanged state, **MUST** produce the same exit code every time.
+
+Where an operation genuinely can fail intermittently — a network call, a lock contention — that
+**MUST** be expressed as a distinct, declared code carrying `retryable: true`, not as the same
+code sometimes meaning success.
+
+## Why
+
+Every retry policy a caller can write assumes the code means something stable. If `mycli
+deploy` returns `0` on one run and `7` on the next with nothing changed, then no policy is
+correct: retrying is right sometimes and wrong other times, and the caller cannot tell which
+situation it is in.
+
+The subtler damage is to diagnosis. An agent that hits a nondeterministic code will often
+"resolve" it by retrying until it passes — which looks like success and hides a real defect
+indefinitely. The failure is now intermittent, which is strictly worse than reproducible: it
+survives investigation, because it does not reproduce when someone looks.
+
+Note the rule permits intermittency; it requires it to be _declared_. `retryable: true` is a
+promise that retrying is meaningful. What it forbids is an undeclared code that silently means
+two different things.
+
+## The probe
+
+Inert (`L0`).
+
+```
+<cli> --totally-made-up-flag     ×3
+<cli> --help                     ×3
+```
+
+Passes when all three runs of each invocation return the same code.
+
+Three runs is a cheap smoke test, not proof — it catches gross nondeterminism (an uninitialised
+value, a race in startup, a random default) and will miss anything rarer. The checker reports
+what it did: three runs, all agreeing. It does not claim determinism.
+
+Deliberately excluded: any invocation that performs work. Repeating a real command three times
+is the opposite of inert, and belongs to `L2` — where running twice is precisely how
+[idempotence](../../concepts/output-kind.md) claims get falsified.
+
+## How to comply
+
+Almost always satisfied for free. When it isn't, the usual causes are:
+
+- exit status derived from a value that depends on iteration order over a hash map or a set
+- a timeout or deadline short enough to be marginal on a loaded machine, so the same command
+  sometimes completes and sometimes times out
+- a cleanup path that races the exit and occasionally changes the status
+- signal handling that lets the process exit with `128+n` under conditions the caller did not
+  cause
+
+The timeout case is the common one and the most misleading, because it makes a
+performance problem present as a correctness problem.
+
+## Evidence
+
+No survey data — none of the five tools examined exhibited nondeterministic exit codes under
+the probes run, which is the expected result for mature CLIs.
+
+The rule is included because it is nearly free to check and because the failure it guards
+against is expensive out of proportion to its rarity: an intermittent exit code degrades every
+other guarantee in this catalogue, since every probe here assumes that running a command twice
+tells you the same thing.

@@ -9,11 +9,12 @@
     "docs:lint": "bun docs/wiki/lint.ts",
     "docs:graph": "bun docs/wiki/lint.ts --json",
     "typecheck": "tsc --noEmit",
+    "test": "bun test",
     "lint": "biome check --error-on-warnings .",
     "lint:fix": "biome check --write --error-on-warnings .",
     "format": "biome format --write .",
     "format:md": "prettier --write '**/*.md'",
-    "check": "bun run typecheck && biome check --error-on-warnings . && bun run docs:lint"
+    "check": "bun run typecheck && biome check --error-on-warnings . && bun run docs:lint && bun run test"
   },
   "lint-staged": {
     "*.{ts,json,jsonc}": [
