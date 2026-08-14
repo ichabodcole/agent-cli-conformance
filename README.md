@@ -1,10 +1,35 @@
 # Agent CLI Conformance
 
 A specification and conformance kit for command-line tools that **LLM agents drive** — and
-that fail loudly instead of silently when the agent gets something wrong.
+that fail loudly instead of silently when the agent gets something wrong. It helps CLI authors
+and framework maintainers make ordinary command-line tools predictable, machine-readable and
+safely operable by autonomous agents, using an executable specification and black-box evidence
+rather than documentation alone.
 
 > **Status: early.** The research is complete; the spec is being written. Nothing here is
 > stable yet.
+
+**For** — CLI authors, framework and scaffold maintainers, and platform/tooling teams;
+agent-harness authors second. It is a conformance suite for _ordinary CLIs consumed by agents_,
+not for agent applications that happen to have a CLI. If a person types your tool and a script
+also runs it, it is in scope.
+
+**Today** — the [wiki](docs/wiki/index.md) (19 rules, each with a checker), the `acc` reference
+CLI, the documentation graph and linter, and an `L0` black-box checker that records argv,
+stdout, stderr, exit status and timing per probe. Every one of the 19 checkers declares
+`coverage: partial` — see [the matrix](docs/wiki/index.md#coverage-at-a-glance) for what each
+one leaves unestablished.
+
+**Planned** — filesystem hashing and snapshot diffing, the `L1` and `L2` levels that falsify a
+CLI's own effect declarations, durable and replayable observation histories, and the
+retroactive re-checking those make possible. None of it exists yet; every mention below is
+labelled.
+
+**Non-goals** — a passing report is **not a security certification**, does **not** prove
+domain-level correctness, and at `L0` does **not** prove a target is harmless to execute. It
+proves that no core rule the kit could apply was violated, which is a narrower claim than any of
+those and is deliberately reported as two separate booleans (see
+[conformance](docs/wiki/concepts/conformance.md)).
 
 ## The problem
 
@@ -41,11 +66,15 @@ be mechanically checked does not get to be a rule.
 
 ### The conformance kit
 
-Records a structured _observation_ per probe (argv, stdout, stderr, exit code, timing,
-filesystem hashes), then runs rule-checkers over the recorded observations. Two consequences:
+Records a structured _observation_ per probe — argv, stdout, stderr, exit code, timing, and
+whether the capture was cut short — then runs rule-checkers over the recorded observations.
+(Filesystem hashes belong in that list and are _planned_; nothing hashes anything today.) Two
+consequences:
 
 - **A new rule is a new checker over data already collected** — not a new test in every
-  project. Learn a lesson once, and every CLI is audited for it retroactively.
+  project. Learn a lesson once and every CLI is audited for it retroactively. _Planned:_ the
+  history is in-memory and dies with the process, so retroactive checking is a property of the
+  architecture rather than a workflow you can run.
 - **It is language-agnostic by construction**, because it only ever touches argv, streams, and
   exit codes. Rust, TypeScript, Go and Python CLIs are tested identically.
 
@@ -70,9 +99,13 @@ Point `acc check` only at a binary you are already willing to run. Per-run tempo
 `HOME`/XDG directories, credential stripping, an OS-level sandbox, and a dry run of the planned
 argv are all _planned_; none of them exist today.
 
-`L1` and `L2` require the CLI to _declare_ what its commands do, and then try to falsify those
-claims: a command declaring `read_only` is run in a snapshotted sandbox and the filesystem is
-diffed. A declaration that cannot be falsified is a comment that lies.
+`L1` and `L2` are _planned_ — neither level runs today, and `acc check` is `L0` only. They will
+require the CLI to _declare_ what its commands do, and then try to falsify those claims: a
+command declaring `read_only` run in a snapshotted sandbox, with the filesystem diffed
+afterwards. A declaration that cannot be falsified is a comment that lies, which is the whole
+argument for building them — and the reason the rules that need them
+([A4](docs/wiki/rules/parsing/unexpected-positionals-rejected.md)) report `not applicable`
+rather than passing today.
 
 ### `acc`, the reference implementation
 

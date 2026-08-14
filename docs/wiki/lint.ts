@@ -327,6 +327,72 @@ export function matrixChecks(pages: LintPage[]): string[] {
     : [`STALE MATRIX   index.md: "${MATRIX_HEADING}" is out of date  (run \`bun run docs:sync\`)`];
 }
 
+/**
+ * Every catalog entry in the index: the page it points at, and the hook it states.
+ *
+ * An entry is a list item whose first token is a link to a `.md` page; a Prettier-wrapped
+ * continuation line belongs to the entry above it. Table rows and inline links are excluded by
+ * construction, which is what keeps the generated matrix from being read as twenty catalog
+ * entries with no hooks.
+ */
+export function catalogEntries(indexBody: string): Array<{ target: string; hook: string }> {
+  // Folded BEFORE the link is matched, not after. Prettier is free to break a long link's TEXT
+  // across lines, and a matcher that read one physical line at a time simply skipped those
+  // entries — a check with a silent hole exactly where the entries are longest.
+  const items: string[] = [];
+  let inItem = false;
+  for (const raw of indexBody.split("\n")) {
+    if (/^-\s+\[/.test(raw)) {
+      items.push(raw.trim());
+      inItem = true;
+    } else if (inItem && /^\s+\S/.test(raw)) items[items.length - 1] += ` ${raw.trim()}`;
+    else inItem = false;
+  }
+
+  const out: Array<{ target: string; hook: string }> = [];
+  for (const item of items) {
+    const m = /^-\s+\[[^\]]*\]\(([^)#]+\.md)\)(.*)$/.exec(item);
+    if (m) out.push({ target: (m[1] ?? "").replace(/^\.\//, ""), hook: m[2] ?? "" });
+  }
+  return out.map((e) => ({
+    target: e.target,
+    // The tier marker is navigation, not part of the sentence, so it is stripped before the
+    // comparison rather than pushed into twenty-five `description` fields.
+    hook: e.hook
+      .replace(/\s+/g, " ")
+      .replace(/^\s*(_\(diagnostic\)_)?\s*—\s*/, "")
+      .trim(),
+  }));
+}
+
+/**
+ * A catalog hook must be its target page's `description`, verbatim.
+ *
+ * SCHEMA.md has always said the description "doubles as the catalog hook"; nothing enforced it,
+ * so the two drifted into paraphrases and the index kept describing things that had been
+ * removed — a "third status (`action_required`)" deleted when the envelope model was made
+ * canonical, and an exit-code rationale whose source page had already been corrected. Both
+ * survived a review of the page they described, because nobody re-reads the catalog.
+ */
+export function hookChecks(pages: LintPage[]): string[] {
+  const index = pages.find((p) => p.rel === "index.md");
+  if (!index) return [];
+  const byRel = new Map(pages.map((p) => [p.rel, p]));
+  const problems: string[] = [];
+  for (const { target, hook } of catalogEntries(index.body)) {
+    const page = byRel.get(target);
+    // A link to a file outside the wiki (or a missing one) is the core lint's problem.
+    if (!page) continue;
+    const description = (page.fields.get("description") ?? "").replace(/\s+/g, " ").trim();
+    if (!description) continue; // already reported as missing frontmatter
+    if (hook !== description)
+      problems.push(
+        `STALE HOOK     index.md → ${target}:\n         hook: ${JSON.stringify(hook)}\n  description: ${JSON.stringify(description)}`,
+      );
+  }
+  return problems;
+}
+
 /** Read the wiki as `LintPage`s, for the generator running outside `runDocsLint`. */
 function readPages(): LintPage[] {
   return walkMarkdown(WIKI_ROOT).map((path) => {
@@ -385,7 +451,7 @@ if (import.meta.main) {
       types: ["concept", "archetype", "rule", "decision", "guide", "index"],
       dateField: "updated",
       allowDateOnly: true,
-      extraChecks: (pages) => [...ruleChecks(pages), ...matrixChecks(pages)],
+      extraChecks: (pages) => [...ruleChecks(pages), ...matrixChecks(pages), ...hookChecks(pages)],
       json: process.argv.includes("--json"),
     });
 

@@ -2,8 +2,8 @@
 type: concept
 title: Error envelope
 description:
-  The structured failure payload — a stable machine code, a retry verdict, and executable
-  remediation — that prose on stderr cannot provide.
+  The structured failure payload — a stable machine code, a retry verdict, and the valid
+  alternatives — that prose on stderr cannot provide.
 tags: [errors, contract, agent-facing, remediation]
 related: [concept/exit-codes, concept/machine-mode, rule/stdout-carries-only-data]
 status: current

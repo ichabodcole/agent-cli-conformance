@@ -14,8 +14,10 @@ import { join } from "node:path";
 import { type LintPage, yamlList } from "../../scripts/docs-lint/index.ts";
 import {
   COVERAGE_HEADING,
+  catalogEntries,
   coverageMatrix,
   GAPS_MARKER,
+  hookChecks,
   MATRIX_HEADING,
   matrixChecks,
   normalizeBlock,
@@ -593,6 +595,74 @@ test("an index with no matrix section at all is reported as MISSING", () => {
 // send a maintainer to regenerate a file that does not exist.
 test("no index page at all produces no matrix problem", () => {
   expect(matrixChecks([rule("rules/parsing/a1.md")])).toEqual([]);
+});
+
+// --- catalog hooks -------------------------------------------------------------------------
+//
+// SCHEMA.md has always said a page's `description` doubles as its catalog hook. Nothing
+// enforced it, so the index kept advertising a "third status (`action_required`)" deleted when
+// the envelope model was made canonical, and an exit-code rationale whose source page had been
+// corrected. Both survived review of the page they described, because nobody re-reads the
+// catalog.
+
+/** An index whose catalog lists `entries` verbatim. */
+function catalog(...entries: string[]): LintPage {
+  const page = pageOf("index.md", { type: "index" });
+  page.body = `# wiki\n\n## Concepts\n\n${entries.join("\n")}\n`;
+  return page;
+}
+
+/** A target page carrying just a description. */
+function described(rel: string, description: string): LintPage {
+  return pageOf(rel, { type: "concept", description });
+}
+
+test("a hook equal to its target's description produces no problem", () => {
+  const pages = [
+    described("concepts/x.md", "One sentence about X."),
+    catalog("- [X](./concepts/x.md) — One sentence about X."),
+  ];
+  expect(hookChecks(pages)).toEqual([]);
+});
+
+test("a hook that paraphrases its target's description is reported", () => {
+  const pages = [
+    described("concepts/x.md", "One sentence about X."),
+    catalog("- [X](./concepts/x.md) — a sentence about X."),
+  ];
+  expect(hookChecks(pages)).toEqual([expect.stringContaining("STALE HOOK")]);
+});
+
+test("the diagnostic marker is navigation, not part of the hook", () => {
+  const pages = [
+    described("rules/a6.md", "Only sentence."),
+    catalog("- [A6](./rules/a6.md) _(diagnostic)_ — Only sentence."),
+  ];
+  expect(hookChecks(pages)).toEqual([]);
+});
+
+// The hole this check had on its first run: Prettier is free to break a long link's TEXT across
+// lines, and a matcher reading one physical line at a time skipped exactly those entries.
+test("an entry whose link text Prettier wrapped is still checked", () => {
+  const wrapped = [
+    "- [C2 — Usage errors are distinguishable from internal",
+    "  errors](./rules/c2.md) — Wrong sentence.",
+  ].join("\n");
+  const pages = [described("rules/c2.md", "Right sentence."), catalog(wrapped)];
+  expect(catalogEntries(catalog(wrapped).body)).toEqual([
+    { target: "rules/c2.md", hook: "Wrong sentence." },
+  ]);
+  expect(hookChecks(pages)).toEqual([expect.stringContaining("STALE HOOK")]);
+});
+
+test("a table row is not a catalog entry", () => {
+  const page = pageOf("index.md", { type: "index" });
+  page.body = "# wiki\n\n| [A1](./rules/a1.md) | core |\n";
+  expect(catalogEntries(page.body)).toEqual([]);
+});
+
+test("no index page at all produces no hook problem", () => {
+  expect(hookChecks([described("concepts/x.md", "One sentence about X.")])).toEqual([]);
 });
 
 // The forward direction (does a declared checker exist) is exercised live above — it no

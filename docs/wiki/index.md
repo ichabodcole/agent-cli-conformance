@@ -21,23 +21,25 @@ wiki.
 
 What each part of a CLI _is_.
 
-- [Exit codes](./concepts/exit-codes.md) — the only part of a response a caller can read
-  without parsing anything, and the only signal that survives truncation.
-- [Machine mode](./concepts/machine-mode.md) — the output contract for a caller that is a
-  program, and why it must be selectable explicitly rather than only inferred.
-- [Output kind](./concepts/output-kind.md) — whether stdout is one document, a stream of
-  records, or opaque bytes, declared so a caller never guesses.
-- [Error envelope](./concepts/error-envelope.md) — the structured failure payload, including
-  the third status (`action_required`) that prose on stderr cannot express.
-- [Conformance](./concepts/conformance.md) — what the kit's verdict claims, and why "no core
-  rule was violated" is a different claim from "every core rule was established".
+- [Exit codes](./concepts/exit-codes.md) — The one part of a CLI's response a caller can read
+  without parsing anything — and the only signal that survives truncation.
+- [Machine mode](./concepts/machine-mode.md) — The output contract a CLI switches to when its
+  caller is a program rather than a person — and why it must be selectable explicitly, never only
+  inferred.
+- [Output kind](./concepts/output-kind.md) — Whether a command returns one document, a stream of
+  records, or opaque bytes — declared, so a caller never has to guess how to read it.
+- [Error envelope](./concepts/error-envelope.md) — The structured failure payload — a stable
+  machine code, a retry verdict, and the valid alternatives — that prose on stderr cannot provide.
+- [Conformance](./concepts/conformance.md) — What the kit's headline verdict claims, and the
+  separate claim it deliberately does not make — no core rule was violated, versus every core rule
+  was established.
 
 ## Archetypes
 
 The shapes a CLI takes, and which rules bind differently for each.
 
-- [Delegator](./archetypes/delegator.md) — a CLI that runs another program, where the hardest
-  problem is not confusing its own failures with the child's.
+- [Delegator](./archetypes/delegator.md) — A CLI whose job is to resolve and run another program —
+  where the hardest problem is not confusing its own failures with the child's.
 
 _Planned: stateless-verb, service-client, daemon-session, streaming._
 
@@ -81,66 +83,83 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 
 ### Parsing
 
-- [A1 — Unknown flags must exit non-zero](./rules/parsing/unknown-flag-exits-nonzero.md) —
-  accepting an unrecognised flag produces a wrong answer with a success exit code.
+- [A1 — Unknown flags must exit non-zero](./rules/parsing/unknown-flag-exits-nonzero.md) — A CLI
+  that accepts an unrecognised flag and continues cannot tell its caller that anything went wrong.
 - [A2 — Unknown commands must exit non-zero](./rules/parsing/unknown-command-exits-nonzero.md) —
-  including nested subcommands, which is where parsers actually let them through.
+  Rejecting an unrecognised verb at the root is not enough — nested subcommands are where parsers
+  most often let one through.
 - [A3 — Errors name the offending token](./rules/parsing/errors-name-the-offending-token.md) —
-  "invalid arguments" says something is wrong; naming the token says what to change.
-- [A4 — Unexpected positionals are rejected](./rules/parsing/unexpected-positionals-rejected.md)
-  — a stray positional is usually the orphaned value of a misparsed flag.
+  "Invalid arguments" tells a caller that something is wrong; naming the token tells it what to
+  change.
+- [A4 — Unexpected positionals are rejected](./rules/parsing/unexpected-positionals-rejected.md) —
+  A stray positional is almost never intentional — it is usually the orphaned value of a flag that
+  was silently misparsed.
 - [A5 — Never act on a guessed correction](./rules/parsing/no-fuzzy-auto-correction.md) —
-  suggesting is helpful; running the guess is an unlogged wrong action.
+  Suggesting "did you mean" is helpful; running it converts a caught error into an unlogged wrong
+  action.
 - [A6 — Honour the `--` terminator](./rules/parsing/double-dash-terminator.md) _(diagnostic)_ —
-  without it, any value beginning with a hyphen is unpassable.
+  Without it, any value that begins with a hyphen is unpassable — including negative numbers and
+  hyphen-leading filenames.
 
 ### Streams
 
-- [B1 — stdout carries only data](./rules/streams/stdout-carries-only-data.md) — on failure
-  stdout must be empty, or a consumer receives a wrong answer instead of an error.
-- [B2 — No ANSI when output is not a terminal](./rules/streams/no-ansi-when-piped.md) — escape
-  codes are invisible to the eye and very visible to a string comparison.
+- [B1 — stdout carries only data](./rules/streams/stdout-carries-only-data.md) — On failure stdout
+  must be empty — otherwise a consumer reading it receives a wrong answer rather than an error.
+- [B2 — No ANSI when output is not a terminal](./rules/streams/no-ansi-when-piped.md) — Colour
+  codes are invisible in a terminal and very visible in a string comparison.
 - [B3 — Machine output parses as its declared kind](./rules/streams/machine-output-is-parseable.md)
-  — whole-stream parsing turns any stray debug print into a hard failure.
+  — Requiring the whole stdout stream to parse turns any stray debug print into a hard failure
+  instead of a code-review question.
 
 ### Exit codes
 
-- [C1 — Help is a request, and it succeeds](./rules/exit-codes/help-exits-zero.md) — `--help`
-  exits zero on stdout, the deliberate inverse of bare invocation.
+- [C1 — Help is a request, and it succeeds](./rules/exit-codes/help-exits-zero.md) — Asking for
+  help is not an error — `--help` exits zero and writes to stdout, unlike every other path that
+  prints help.
 - [C2 — Usage errors are distinguishable from internal errors](./rules/exit-codes/usage-errors-are-distinguishable.md)
-  — one is fixed by changing the command; the other never is.
+  — Both are failures, but one is fixed by changing the command and the other never is — an agent
+  that cannot tell them apart retries forever or gives up wrongly.
 - [C3 — Identical invocations produce identical exit codes](./rules/exit-codes/exit-codes-are-deterministic.md)
-  — a varying code makes every retry decision unsound.
+  — A code that varies between runs makes every retry decision unsound, and turns a reproducible
+  failure into an intermittent one.
 
 ### Discoverability
 
 - [D1 — A version is reportable without side effects](./rules/discoverability/version-flag-exists.md)
-  — the cheapest probe of whether a tool is installed and which contract it implements.
+  — Version is the cheapest possible probe of whether a tool is installed, reachable, and which
+  contract it implements.
 - [D2 — Bare invocation is a usage error](./rules/discoverability/bare-invocation-is-a-usage-error.md)
-  — how an unset shell variable becomes a silent no-op that reports success.
+  — Running the tool with no arguments requested nothing and did nothing — reporting success for
+  that is how an unset shell variable becomes a silent no-op.
 - [D3 — Help advertises the machine-readable path](./rules/discoverability/help-advertises-machine-mode.md)
-  _(diagnostic)_ — an undiscoverable feature is indistinguishable from an absent one.
+  _(diagnostic)_ — An agent reading help should not have to guess whether structured output exists
+  — the human surface is where it looks first.
 - [D4 — Help output is byte-identical between runs](./rules/discoverability/help-output-is-deterministic.md)
-  — the precondition that makes every other probe in this catalogue meaningful.
+  — A timestamp or a hash-ordered list in help text makes every snapshot test rot and every cached
+  reference wrong.
 
 ### Interactivity
 
 - [E1 — Never block on input without a terminal](./rules/interactivity/never-block-without-a-tty.md)
-  — a prompt with nobody to answer it either hangs or is silently answered by EOF.
+  — With no TTY a prompt either hangs forever or is silently answered by EOF — and the silent
+  answer is the more dangerous of the two.
 
 ### Safety
 
 - [F1 — Help and schema never contain secrets](./rules/safety/no-secrets-in-help-or-schema.md) —
-  flag defaults are copied verbatim into introspection output.
+  Flag defaults are copied verbatim into introspection output — so a defaulted credential is
+  published to anything that asks.
 - [F2 — First byte arrives promptly](./rules/safety/first-byte-is-prompt.md) _(diagnostic)_ —
-  agents invoke in loops, so startup cost is paid per iteration.
+  Agents invoke CLIs in loops, so startup cost is paid per iteration — and a tool that looks hung
+  gets killed and retried.
 
 ## Decisions
 
 Why we chose what we chose, citing the research.
 
-- [Exit codes stay below 125](./decisions/exit-codes-below-125.md) — reserving the shell's
-  existing band gives delegating CLIs verbatim passthrough for free.
+- [Exit codes stay below 125](./decisions/exit-codes-below-125.md) — Reserving the band POSIX and
+  the delegators already use, rather than inventing a new one, keeps our domain codes clear of the
+  shell's — on POSIX, and not without residue.
 
 ## Guides
 
