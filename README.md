@@ -49,11 +49,30 @@ filesystem hashes), then runs rule-checkers over the recorded observations. Two 
 - **It is language-agnostic by construction**, because it only ever touches argv, streams, and
   exit codes. Rust, TypeScript, Go and Python CLIs are tested identically.
 
-Probes come in three levels. `L0` is inert — only help paths and deliberately-invalid
-invocations, so it is safe to run against any binary with no cooperation and no risk. `L1` and
-`L2` require the CLI to _declare_ what its commands do, and then try to falsify those claims:
-a command declaring `read_only` is run in a snapshotted sandbox and the filesystem is diffed.
-A declaration that cannot be falsified is a comment that lies.
+Probes come in three levels. `L0` is **risk-reduced, not inert**: it uses only help paths,
+sentinel-bearing arguments, and bare invocations, which is a much smaller blast radius than
+arbitrary probing — but it does execute the target, and it is not a sandbox. What it does not
+prevent:
+
+- a **bare invocation** is one of its classes, and a CLI that does real work with no arguments
+  does that work;
+- a fixed-verb CLI may **ignore an unknown flag** and execute a default root action — which is
+  the very [A1](docs/wiki/rules/parsing/unknown-flag-exits-nonzero.md) violation being probed;
+- `--version` and `--help` can be ignored, or handled only **after** global initialisation has
+  already run;
+- the fresh temporary working directory redirects **relative** paths only — it does not stop
+  writes through `HOME`, XDG paths, absolute paths, subprocesses, or platform config
+  directories;
+- the child inherits the **full parent environment, credentials included**; and
+- nothing denies filesystem access outside that directory, and nothing denies the network.
+
+Point `acc check` only at a binary you are already willing to run. Per-run temporary
+`HOME`/XDG directories, credential stripping, an OS-level sandbox, and a dry run of the planned
+argv are all _planned_; none of them exist today.
+
+`L1` and `L2` require the CLI to _declare_ what its commands do, and then try to falsify those
+claims: a command declaring `read_only` is run in a snapshotted sandbox and the filesystem is
+diffed. A declaration that cannot be falsified is a comment that lies.
 
 ### `acc`, the reference implementation
 

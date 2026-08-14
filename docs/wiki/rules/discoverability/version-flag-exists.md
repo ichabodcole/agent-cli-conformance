@@ -34,9 +34,13 @@ structured payload, not a bare string requiring a regex to extract.
 
 ## Why
 
-`--version` is the one invocation a caller can make against a completely unknown tool with
-total confidence that nothing will happen. That makes it the natural first probe, and it is
-load-bearing in three places:
+`--version` is the invocation with the strongest convention behind it for doing nothing, which
+makes it the natural first probe. Note the direction: this rule is what turns that convention
+into a requirement. It is not a property a caller can verify from outside — a tool that
+initialises globally before dispatching does its work first and prints a version afterwards,
+and `acc check` cannot see the difference (see [how to comply](#how-to-comply)).
+
+It is load-bearing in three places:
 
 - **Presence.** Distinguishing "the command is not installed" (`127`) from "the command failed"
   requires running something harmless first.

@@ -103,8 +103,10 @@ happens. For a CLI whose root positional is **free-form data** — `claude "…"
 `aider "…"` — the sentinel is a prompt, and running it spends money and may take actions.
 
 The kit cannot detect that shape and does not try: a wrong guess is worse than a documented
-limit. Probes run in a fresh temporary working directory, which bounds filesystem damage, but
-nothing bounds a network call. Do not point `acc check` at a CLI of that shape.
+limit. Probes run in a fresh temporary working directory, which redirects **relative** paths
+and nothing else — not a write through `HOME` or an absolute path, not a subprocess, not the
+credentials the child inherits, and not a network call. Do not point `acc check` at a CLI of
+that shape.
 
 ## How to comply
 

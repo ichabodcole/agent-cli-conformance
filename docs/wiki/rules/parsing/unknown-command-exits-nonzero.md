@@ -68,9 +68,11 @@ It is **not** inert against a CLI whose root positional is **free-form data**. F
 — running it spends money and can take actions. The kit cannot detect that shape from outside
 and deliberately does not guess, because a wrong guess would license probes it cannot justify.
 
-Probes run with stdin closed, under a deadline, and in a fresh temporary working directory, so
-filesystem damage is bounded. Nothing bounds a network call. Do not point `acc check` at a CLI
-whose first positional is free-form text.
+Probes run with stdin closed, under a deadline, and in a fresh temporary working directory.
+That is risk reduction, not containment: the temporary cwd redirects **relative** paths only,
+and nothing stops a write through `HOME`, an absolute path or a subprocess, nothing strips the
+credentials the child inherits from the environment, and nothing bounds a network call. Do not
+point `acc check` at a CLI whose first positional is free-form text.
 
 The nested case (`<cli> <known-group> nonsense-verb-xyz`) is not currently probed. Building it
 requires prefixing the sentinel with a real, discovered subcommand — but a CLI that treats an

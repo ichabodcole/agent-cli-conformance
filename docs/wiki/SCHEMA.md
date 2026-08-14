@@ -87,7 +87,7 @@ frontmatter is machine-read, and `lint.ts` cross-checks it against `src/acc/kit/
 ```yaml
 rule_id: A1 # stable, unique; cited verbatim in conformance output
 tier: core # core (binary pass/fail) | diagnostic (reported, non-fatal)
-probe_level: L0 # L0 inert | L1 declared read-only | L2 contained mutating
+probe_level: L0 # L0 risk-reduced | L1 declared read-only | L2 contained mutating
 checker: src/acc/kit/checkers/parsing/unknown-flag.ts
 checker_status: planned # planned | implemented
 coverage: partial # complete | partial — how much of THIS page the checker establishes

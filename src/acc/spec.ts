@@ -31,7 +31,14 @@ export interface PositionalSpec {
 export interface CommandSpec {
   name: string;
   description: string;
-  /** read_only is falsifiable: run it in a sandbox and diff the filesystem. */
+  /**
+   * read_only is falsifiable: run it in a sandbox and diff the filesystem.
+   *
+   * The claim covers everything the command CAUSES, not only what its own code writes. A
+   * command that spawns another program owns that program's effects for the purpose of this
+   * field, because the caller experiences them either way — which is why `check` cannot be
+   * `read_only` (see its declaration).
+   */
   effects: "read_only" | "idempotent" | "non_idempotent";
   output_kind: "data" | "stream" | "opaque";
   cardinality: "single" | "bounded" | "unbounded";
@@ -182,7 +189,11 @@ export const COMMANDS: CommandSpec[] = [
   {
     name: "check",
     description: "Run the L0 conformance probes against a CLI binary.",
-    effects: "read_only",
+    // `read_only` was a claim about acc's OWN file access, and as a claim about the command it
+    // was false: `check` spawns third-party code, and nothing the kit does bounds what that code
+    // writes (review R2-1). The weakest value in the vocabulary is the only honest one — a
+    // second run repeats every probe, so whatever the target did the first time it may do again.
+    effects: "non_idempotent",
     output_kind: "data",
     cardinality: "single",
     positionals: [
@@ -197,18 +208,23 @@ export const COMMANDS: CommandSpec[] = [
       },
     ],
     errors: [ErrorKind.NotFound],
-    // The gate's guarantee, stated where someone is about to point this at a binary. L0 probes
-    // are inert against a CLI that dispatches on a verb table; they are NOT inert against one
-    // whose first positional is free-form text, where the probe token is a prompt rather than
-    // an unknown command. The kit cannot detect that shape, so the caller has to know.
+    // What the gate does and does not buy, stated where someone is about to point this at a
+    // binary. The residual risks are listed rather than summarised as "low": a reader who is
+    // told a probe is safe stops reading, and every item below is something they can act on by
+    // choosing a different target.
     notes: [
       "The target is YOUR binary; the examples below are placeholders for it.",
-      "SAFETY: probes are inert against a CLI that dispatches on a fixed verb table — the probe",
-      "token matches no flag and no command, so nothing runs. They are NOT inert against a CLI",
-      "whose first positional is free-form text (claude, llm, aider): there the token is a",
-      "prompt, and running it costs money and may take actions. Probes run with stdin closed,",
-      "a deadline, and a fresh temporary working directory, which bounds filesystem damage but",
-      "not network calls. Do not point this at a CLI of that shape.",
+      "SAFETY: this command EXECUTES the target. L0 reduces the risk, it does not remove it —",
+      "only help paths, sentinel-bearing arguments, and bare invocations, which is a far smaller",
+      "blast radius than arbitrary probing. It is NOT a sandbox, and does not prevent: a CLI that",
+      "does real work on a bare invocation; a fixed-verb CLI that ignores an unknown flag and",
+      "runs a default root action; --help or --version handled only after global init; writes",
+      "through HOME, XDG paths, absolute paths or subprocesses (the fresh temporary working",
+      "directory redirects RELATIVE paths only); credentials, which the child inherits with the",
+      "rest of the environment; or any network call. Probes are inert against a CLI that",
+      "dispatches on a fixed verb table — the probe token matches no flag and no command — but",
+      "NOT against one whose first positional is free-form text (claude, llm, aider), where",
+      "that token is a prompt. Point this only at a binary you are willing to run.",
     ],
     examples: ["acc check ./mycli", "acc check $(which gh) --json"],
   },

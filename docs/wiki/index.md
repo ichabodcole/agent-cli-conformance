@@ -82,7 +82,7 @@ rules are reported but do not fail a run. Each declares the checker that enforce
 ### Discoverability
 
 - [D1 — A version is reportable without side effects](./rules/discoverability/version-flag-exists.md)
-  — the one invocation guaranteed safe against an unknown tool.
+  — the cheapest probe of whether a tool is installed and which contract it implements.
 - [D2 — Bare invocation is a usage error](./rules/discoverability/bare-invocation-is-a-usage-error.md)
   — how an unset shell variable becomes a silent no-op that reports success.
 - [D3 — Help advertises the machine-readable path](./rules/discoverability/help-advertises-machine-mode.md)

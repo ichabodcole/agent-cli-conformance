@@ -43,31 +43,53 @@ const ALLOWED_ENV = /^(ACC_[A-Z0-9_]+|AI_AGENT|HOME|XDG_CONFIG_HOME|NO_COLOR|TER
  * treated as a hypothesis and verified against the args, never trusted. A mislabelled probe is
  * a bug in a checker; the cost of trusting it is damage to someone's project.
  *
- * ## What L0 actually guarantees
+ * ## What this gate actually buys
  *
- * Against a **verb-dispatching** CLI — one whose first positional selects a command from a
- * fixed table — L0 only ever runs help paths and invocations that fail argument parsing. There
- * is no verb for `acc-probe-xyzzy-verb` and no flag for `--acc-probe-xyzzy-flag`, so dispatch
- * never happens and no work is performed. That covers the great majority of CLIs, and every
- * tool in the case-study survey.
+ * It classifies ARGV. Against a **verb-dispatching** CLI — one whose first positional selects a
+ * command from a fixed table — the classes below only ever produce help paths and invocations
+ * that fail argument parsing. There is no verb for `acc-probe-xyzzy-verb` and no flag for
+ * `--acc-probe-xyzzy-flag`, so dispatch never happens and no work is performed. That covers the
+ * great majority of CLIs, and every tool in the case-study survey.
  *
- * ## What it does NOT guarantee
+ * That is a REDUCTION IN RISK, not a proof of inertness, and the difference is the whole reason
+ * this comment is long. "L0 is inert" is a statement about the arguments; "running L0 is safe"
+ * would be a statement about the target, and nothing here can make it.
  *
- * It is **not** inert against a CLI whose root positional is FREE-FORM DATA. For `claude "…"`,
- * `llm "…"`, `aider "…"` — the dominant shape of the agent CLIs this kit exists to check —
- * `<cli> acc-probe-xyzzy-verb` is not an unknown verb, it is a PROMPT. Running it spends money
- * and can take actions. A6's `-- <sentinel>` is worse: after a terminator the sentinel is
- * guaranteed to land as a positional, whatever the parser would otherwise have done with it.
+ * ## What it does NOT buy
+ *
+ * The classes themselves leave work reachable, even on a well-behaved verb-dispatching CLI:
+ *
+ * - `bare` passes no arguments at all, and a CLI that does real work on a bare invocation does
+ *   that work. (It is still the least dangerous class, and D2/E1 cannot be probed without it.)
+ * - a fixed-verb CLI may IGNORE the unknown flag in a `no-verb` or `sentinel` probe and execute
+ *   a default root action — which is the exact A1 violation the probe exists to find, so the
+ *   targets most worth probing are the ones where this fires.
+ * - `--version` and `--help` are requests, not guarantees: a CLI may ignore them, or handle
+ *   them only after global initialisation has already connected, migrated, or written.
+ *
+ * And it is **not** inert at all against a CLI whose root positional is FREE-FORM DATA. For
+ * `claude "…"`, `llm "…"`, `aider "…"` — the dominant shape of the agent CLIs this kit exists
+ * to check — `<cli> acc-probe-xyzzy-verb` is not an unknown verb, it is a PROMPT. Running it
+ * spends money and can take actions. A6's `-- <sentinel>` is worse: after a terminator the
+ * sentinel is guaranteed to land as a positional, whatever the parser would otherwise have done
+ * with it.
  *
  * There is no reliable way to detect that shape from outside — help text does not declare it,
  * and a wrong guess is worse than a documented limit, because it would license the kit to run
  * probes it cannot justify. So the limit is documented and not guessed at: the rule pages for
  * A2 and A6 say it, and `acc check --help` says it.
  *
- * Two things bound the damage rather than preventing it. Probes run with stdin closed and a
- * deadline, so nothing waits for an answer forever; and each runs in a fresh temporary working
- * directory (see runner.ts), so a probe that writes files cannot write them into the caller's
- * project. Neither bounds a network call.
+ * ## What the runner adds, and what it still does not
+ *
+ * Probes run with stdin closed and under a deadline, so nothing waits for an answer forever;
+ * each runs in a fresh temporary working directory (see runner.ts); and output is capped.
+ *
+ * The temporary cwd redirects RELATIVE paths only. It does not stop a write through `HOME`, an
+ * XDG path, an absolute path, a platform config directory, or a subprocess — and the child
+ * inherits the caller's whole environment, credentials included. Nothing denies the filesystem
+ * outside that directory and nothing denies the network. A per-run temporary `HOME`/XDG,
+ * credential stripping, and a real OS sandbox are planned; none of them exist yet, so no
+ * sentence anywhere in this repo may describe L0 as safe against an arbitrary binary.
  */
 export function classifyInertness(inv: Invocation): Invocation["inertness"] | null {
   // Checked before the switch because it bounds every class alike: an env var can change what
