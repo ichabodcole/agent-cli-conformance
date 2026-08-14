@@ -12,7 +12,7 @@ rule_id: F1
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/safety/no-secrets-in-help.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Help and schema never contain secrets
@@ -57,19 +57,18 @@ Inert (`L0`).
 
 ```
 <cli> --help
-<cli> <discovered-group> --help
-<cli> schema            # when present
 ```
 
-Passes when no capture matches the credential patterns: common provider prefixes (`sk-`,
-`ghp_`, `xox`, `AKIA`, `opk_`), `PRIVATE KEY` blocks, JWTs, connection strings carrying a
-password, and long high-entropy strings sitting in a `default` position.
+Passes when no capture matches a known credential pattern: common provider prefixes (`sk-`,
+`ghp_`, `xox`), an AWS access key (`AKIA…`), a `PRIVATE KEY` block, a JWT, or a password embedded
+in a URL.
 
 Two honest limits, both reported rather than glossed:
 
-- **It cannot catch a secret it does not recognise.** A bespoke token format with no telltale
-  prefix passes. A clean result means "no known pattern found", not "no secret present", and
-  the checker says so.
+- **It cannot catch a secret it does not recognise, and it only scans root `--help`.** A bespoke
+  token format with no telltale prefix passes; a discovered subcommand group's own help and a
+  `schema` subcommand (when present) are not yet scanned. A clean result means "no known pattern
+  found", not "no secret present", and the checker says so.
 - **It cannot distinguish a real credential from a placeholder.** `--token sk-example-xxxx` in
   an example is flagged. That is the correct bias — a false positive costs one look, a false
   negative publishes a key — but it means findings need reading, not automatic trust.

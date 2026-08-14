@@ -12,7 +12,7 @@ rule_id: E1
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/interactivity/never-block.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Never block on input without a terminal
