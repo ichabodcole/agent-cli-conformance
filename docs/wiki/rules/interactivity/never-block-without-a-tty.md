@@ -89,6 +89,22 @@ Two implementation notes for the checker, both learned the hard way:
 - **A killed process must be reported as a timeout, not a failure.** `128+n` from the
   checker's own kill signal is not the CLI's exit code, and recording it as one would
   fabricate evidence.
+- **Kill the process GROUP, not the process.** Signalling only the direct child leaves any
+  descendant holding the stdout/stderr pipe it inherited, and the runtime's process-close event
+  waits for the streams as well as the process. A target that backgrounded a `sleep 30` on
+  stdout took 30 seconds against a 50 ms deadline — the deadline was a signal, not a bound. The
+  checker launches targets in their own process group and kills the group, then resolves on a
+  bounded finalisation timer regardless, so a descendant that escaped the group still cannot
+  hold the probe open.
+
+### Platform scope of the deadline
+
+The tree bound is **POSIX only**. Windows has no process group of this kind: terminating a tree
+there requires `taskkill /T` or a job object, and the checker does neither today. On Windows the
+deadline still bounds the PROBE — the finalisation timer resolves it either way — but a
+descendant the target spawned may outlive the run. That limit is stated rather than implied,
+because a deadline that quietly does less than it claims on one platform is the same
+silent-failure shape the rest of this catalogue exists to report.
 
 The checker deliberately does **not** probe commands that legitimately prompt. Establishing
 that a real confirmation path behaves correctly requires running it, which is `L2` work in a

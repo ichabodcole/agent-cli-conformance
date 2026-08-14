@@ -41,6 +41,26 @@ describe("runProbe", () => {
     );
   });
 
+  // R1-1: the deadline has to bound a process TREE. SIGKILL to the direct child does not close a
+  // pipe a descendant inherited, and Node's `close` waits for the streams — so a target that
+  // backgrounded a `sleep` holding stdout ran for as long as the SLEEP, not as long as the
+  // deadline. Measured against the old runner this fixture took ~10s for a 500ms deadline.
+  //
+  // The bound below is deliberately loose (5x the deadline) so a loaded machine cannot make it
+  // flaky, and still an order of magnitude under the descendant's lifetime, so it fails hard if
+  // the group kill is ever removed.
+  test("the deadline bounds the whole process tree, not just the direct child", async () => {
+    const fixture = join(HERE, "fixtures/spawns-surviving-descendant.ts");
+    const target: TargetInfo = { path: fixture, argv0: ["bun", fixture] };
+    const startedAt = performance.now();
+    const o = await runProbe(target, inv([`--${SENTINEL}`], "sentinel"), 500);
+    const wall = performance.now() - startedAt;
+    expect(o.timedOut).toBe(true);
+    // The status is still null, not 128+9. We killed the group; nothing in it chose a status.
+    expect(o.exitCode).toBeNull();
+    expect(wall).toBeLessThan(2_500);
+  }, 30_000);
+
   test("reports a timeout as exitCode null, never as a signal code", async () => {
     // `sleep 30 --acc-probe-xyzzy` exits immediately: sleep rejects the extra operand instead
     // of sleeping. Wrapping in `sh -c` makes the extra arg become $0 for the script, which

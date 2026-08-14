@@ -17,6 +17,22 @@ export function invocationId(inv: Invocation): string {
 export const DEFAULT_TIMEOUT_MS = 10_000;
 
 /**
+ * How long after the kill the runner still waits for Node's `close` event before resolving
+ * anyway.
+ *
+ * `close` fires only once the process has exited AND every stdio stream has ended. A descendant
+ * we could not reach — one that called `setsid` itself, or a Windows grandchild — can hold the
+ * inherited pipe open indefinitely, and the promise would wait with it. That is exactly the R1-1
+ * defect one level down: the deadline would still be a signal rather than a bound.
+ *
+ * 250ms is far more than SIGKILL needs (the kernel reaps immediately; this is only the time for
+ * pending `data` events already in flight to drain), and small enough that the advertised
+ * deadline stays a deadline. Past it the streams are being held by something outside our
+ * control, and continuing to wait would trade a correct measurement for none at all.
+ */
+const FINALIZE_GRACE_MS = 250;
+
+/**
  * Run one probe and record what happened.
  *
  * Deadline is enforced IN-PROCESS. Shelling out to `timeout(1)` is a trap: it is GNU coreutils
@@ -25,6 +41,12 @@ export const DEFAULT_TIMEOUT_MS = 10_000;
  *
  * stdin is closed immediately, so a target that waits for input hits the deadline instead of
  * hanging forever — which is itself the E1 finding.
+ *
+ * The deadline bounds a process TREE, not a process. Targets are launched in their own process
+ * group (`detached`) and the GROUP is killed, because SIGKILL to the direct child does not close
+ * a pipe a descendant inherited, and Node's `close` waits for the streams: a target that
+ * backgrounded a `sleep 30` holding stdout took 30 seconds against a 50ms deadline. See
+ * `killTree` for the platform limit.
  *
  * Every probe runs in a FRESH TEMPORARY DIRECTORY, removed afterwards. The kit's probes are
  * inert by construction against a verb-dispatching CLI, but `inert.ts` cannot prove anything
@@ -53,9 +75,17 @@ export async function runProbe(
     let stderr = "";
     let timedOut = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let graceTimer: ReturnType<typeof setTimeout> | undefined;
+    // `resolve` is idempotent, but `finish` is not: it also removes the sandbox and reads timing.
+    // Three paths can now reach it (close, error, the finalisation fallback), so the guard is
+    // explicit rather than leaning on the promise swallowing the second call.
+    let settled = false;
 
     const finish = (code: number | null, spawnFailed = false) => {
+      if (settled) return;
+      settled = true;
       if (timer) clearTimeout(timer);
+      if (graceTimer) clearTimeout(graceTimer);
       // `force` so a probe that already removed its own cwd doesn't turn cleanup into a crash;
       // the recording is the point, and a leftover temp directory is not worth losing it over.
       rmSync(sandbox, { recursive: true, force: true });
@@ -90,11 +120,58 @@ export async function runProbe(
         stdio: ["pipe", "pipe", "pipe"],
         cwd: sandbox,
         env: { ...process.env, ...inv.env },
+        // POSIX only (Node ignores it for signalling purposes on Windows): makes the child the
+        // leader of a new process group, which is what gives `killTree` a group to signal.
+        // It does NOT change what the target sees on stdin — stdin is still the pipe closed
+        // below, so E1's contract (a target waiting on input hits the deadline rather than
+        // hanging forever) is unaffected.
+        detached: process.platform !== "win32",
       });
     } catch {
       finish(127, true);
       return;
     }
+
+    /**
+     * Kill the target and everything it spawned.
+     *
+     * A negative pid signals the whole process group, which on POSIX is what `detached: true`
+     * above created. Killing only the direct child leaves any descendant holding the inherited
+     * stdout/stderr pipe, and Node's `close` event waits for those streams — which is how a
+     * 50ms deadline became a 30-second probe.
+     *
+     * WINDOWS IS NOT COVERED. Windows has no POSIX process groups, `process.kill` there
+     * terminates only the named process, and killing a tree needs `taskkill /T` or a job object
+     * — neither of which this runner does today. On Windows the group kill is skipped and the
+     * deadline degrades to what it was before: a signal to the direct child, backstopped by the
+     * finalisation fallback below, which still bounds the PROBE even though the descendant may
+     * outlive it. Stated rather than implied, because a deadline that silently does less than it
+     * claims on one platform is the same defect class this kit exists to report.
+     */
+    const killTree = () => {
+      if (process.platform !== "win32" && child.pid !== undefined) {
+        // ESRCH once the group is already gone — a race we win either way, so it is not an error.
+        try {
+          process.kill(-child.pid, "SIGKILL");
+        } catch {
+          /* group already reaped */
+        }
+      }
+      // Windows' only path, and a harmless no-op on POSIX once the group kill has landed.
+      child.kill("SIGKILL");
+
+      // The bound that holds regardless of what the kill reached. A descendant that escaped the
+      // group (it called setsid itself, or this is Windows) still owns the write end of our
+      // pipes, so `close` may never arrive; resolve on a hard timer instead and tear down the
+      // handles so a live pipe cannot keep the event loop — or the caller — alive.
+      graceTimer = setTimeout(() => {
+        child.stdout.destroy();
+        child.stderr.destroy();
+        child.stdin.destroy();
+        child.unref();
+        finish(null);
+      }, FINALIZE_GRACE_MS);
+    };
 
     const mark = () => {
       if (firstByteAt === null) firstByteAt = performance.now();
@@ -111,7 +188,7 @@ export async function runProbe(
 
     timer = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGKILL");
+      killTree();
     }, timeoutMs);
 
     child.on("close", (code) => finish(code));
