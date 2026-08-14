@@ -68,10 +68,13 @@ Inert (`L0`).
 
 ```
 <cli> --version          # time to first byte, best of 3
-<cli> --help
 ```
 
-Reports the measurement. Flags anything above 100 ms as a finding; never fails the run.
+Runs that probe three times and reports the fastest time to first byte: `pass` at or under
+100 ms, `fail` above it. `diagnostic` softens what the _rule_ demands (`SHOULD`, not `MUST`) —
+it does not soften what a `fail` verdict means once the measurement is taken. A report that
+weighs a diagnostic finding more lightly than a core one is a decision for whatever aggregates
+findings across the whole run, not something this checker decides on its own by staying silent.
 
 Best-of-three rather than mean, because the interesting number is the floor — a slow run
 usually measures the machine, not the tool. The checker records all three so a wide spread is
