@@ -22,7 +22,16 @@ function fail(message: string): never {
 
 if (args.length === 0) fail("no command given");
 if (args.includes("--help") || args.includes("-h")) {
-  process.stdout.write(HELP);
+  // B3: in machine mode, even help output must parse as its declared kind — so `--help --json`
+  // gets a JSON document instead of the plain-text usage screen. Plain `--help` is untouched,
+  // since discovery (and A1-A6) depend on parsing that as ordinary help text.
+  if (args.includes("--json")) {
+    process.stdout.write(
+      `${JSON.stringify({ ok: true, data: { usage: "fixture <command> [--json]", commands: ["list"] } })}\n`,
+    );
+  } else {
+    process.stdout.write(HELP);
+  }
   process.exit(0);
 }
 if (args.includes("--version")) {

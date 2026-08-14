@@ -11,7 +11,7 @@ rule_id: B2
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/streams/no-ansi-when-piped.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # No ANSI escapes when output is not a terminal
@@ -49,13 +49,13 @@ Inert (`L0`). Help output is used because it is the one path guaranteed to produ
 presentational output without performing work.
 
 ```
-<cli> --help              # stdout captured to a file, i.e. not a TTY
-<cli> nonsense-verb-xyz   # stderr captured likewise
+<cli> --help                    # stdout captured to a pipe, i.e. not a TTY
+<cli> --totally-made-up-flag    # stderr captured likewise, on the error path
 ```
 
 Passes when neither capture contains `\x1b[` (CSI) or any other escape introducer.
 
-Because the checker always captures to files, the CLI is by definition not writing to a TTY —
+Because the runner always captures to a pipe, the CLI is by definition not writing to a TTY —
 so this probe tests the detection path a CLI would use anyway. A tool that colours
 unconditionally fails; a tool that checks `isatty` passes without special handling.
 

@@ -4,6 +4,9 @@ import { noFuzzyCorrectionChecker } from "./checkers/parsing/no-fuzzy-correction
 import { unexpectedPositionalsChecker } from "./checkers/parsing/unexpected-positionals.ts";
 import { unknownCommandChecker } from "./checkers/parsing/unknown-command.ts";
 import { unknownFlagChecker } from "./checkers/parsing/unknown-flag.ts";
+import { machineOutputParseableChecker } from "./checkers/streams/machine-output-parseable.ts";
+import { noAnsiWhenPipedChecker } from "./checkers/streams/no-ansi-when-piped.ts";
+import { stdoutCarriesOnlyDataChecker } from "./checkers/streams/stdout-carries-only-data.ts";
 import type { Checker } from "./types.ts";
 
 /**
@@ -20,4 +23,7 @@ export const CHECKERS: Checker[] = [
   unexpectedPositionalsChecker,
   noFuzzyCorrectionChecker,
   doubleDashTerminatorChecker,
+  stdoutCarriesOnlyDataChecker,
+  noAnsiWhenPipedChecker,
+  machineOutputParseableChecker,
 ];

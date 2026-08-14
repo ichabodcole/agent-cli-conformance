@@ -12,7 +12,7 @@ rule_id: B3
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/streams/machine-output-parseable.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Machine output parses as its declared kind

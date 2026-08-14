@@ -12,7 +12,7 @@ rule_id: B1
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/streams/stdout-carries-only-data.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # stdout carries only data
@@ -67,7 +67,7 @@ Inert (`L0`).
 
 Passes when stdout is **byte-empty** on every failing invocation.
 
-The checker captures the two streams to separate files rather than reading them through a
+The runner captures the two streams to separate buffers rather than reading them through a
 shared pipe — measuring stream separation through a merged stream cannot work, and an early
 attempt at exactly that produced identical byte counts for both streams and nearly went
 unnoticed.
