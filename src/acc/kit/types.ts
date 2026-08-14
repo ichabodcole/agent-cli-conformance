@@ -98,7 +98,14 @@ export interface Checker {
   check: (h: History) => Finding;
 }
 
-/** Find a recorded observation by the exact args it was run with. */
+/**
+ * Find a recorded observation by the exact args it was run with.
+ *
+ * Matches on `args` only — `env` is ignored. A checker that deliberately reuses identical args
+ * under different env (D1's `--version` with a hostile `HOME`, D4's `--help` run twice, F2's
+ * three timing runs) will have several observations collide on the same args, and this returns
+ * whichever was recorded first, silently. Those checkers must use `findByPurpose` instead.
+ */
 export function findByArgs(h: History, args: string[]): Observation | undefined {
   const key = args.join("\0");
   return h.observations.find((o) => o.invocation.args.join("\0") === key);

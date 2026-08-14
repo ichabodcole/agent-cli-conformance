@@ -972,8 +972,8 @@ Append:
 ```ts
 /** Find a recorded observation by the exact args it was run with. */
 export function findByArgs(h: History, args: string[]): Observation | undefined {
-  const key = args.join("�");
-  return h.observations.find((o) => o.invocation.args.join("�") === key);
+  const key = args.join("\0");
+  return h.observations.find((o) => o.invocation.args.join("\0") === key);
 }
 ```
 

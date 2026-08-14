@@ -11,11 +11,16 @@ const fixture = (rel: string): TargetInfo => {
   return { path: p, argv0: ["bun", p] };
 };
 
+// The `timedOut` branch (a target that hangs on an unknown flag rather than rejecting it) is
+// deliberately not covered here: exercising it needs a fixture that actually blocks for the
+// runner's ~10s deadline, which would make this file slow on every run. Covered instead by
+// inspection of `record.ts`/`runner.ts`, which guarantee `timedOut` is only ever set that way.
 describe("A1 — unknown flags must exit non-zero", () => {
   test("PASSES the conforming fixture", async () => {
     const h = await record(fixture("conforming.ts"), [unknownFlagChecker]);
     const f = unknownFlagChecker.check(h);
     expect(f.verdict).toBe("pass");
+    expect(f.ruleId).toBe("A1");
   });
 
   // The negative control. A checker verified only against passing input has proved nothing
@@ -25,6 +30,7 @@ describe("A1 — unknown flags must exit non-zero", () => {
     const f = unknownFlagChecker.check(h);
     expect(f.verdict).toBe("fail");
     expect(f.detail).toContain("exit");
+    expect(f.ruleId).toBe("A1");
   });
 
   test("cites the observations backing its verdict", async () => {

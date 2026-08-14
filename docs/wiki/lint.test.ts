@@ -248,5 +248,11 @@ test("a real checker file with no rule page declaring it is reported as UNDOCUME
 
 test("a real checker file IS documented once some page's checker field names it exactly", () => {
   const problems = ruleChecks([rule("rules/a.md", { checker: REAL_CHECKER })]);
-  expect(problems.filter((p) => p.startsWith("UNDOCUMENTED"))).toEqual([]);
+  // NOT `toEqual([])` on the UNDOCUMENTED-filtered list: `ruleChecks` walks the REAL
+  // `src/acc/kit/checkers/` directory regardless of what pages this test passes in, so as soon
+  // as a second checker file lands on disk (Task 6+) it will be UNDOCUMENTED too — this test
+  // isn't about that file, only about whether REAL_CHECKER itself got matched.
+  expect(problems).not.toContain(
+    `UNDOCUMENTED   ${REAL_CHECKER}  (no rule page declares this checker)`,
+  );
 });
