@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { buildReport } from "./report.ts";
-import type { Checker, Finding, History, ProbeLevel } from "./types.ts";
+import { buildReport, primaryProblem } from "./report.ts";
+import type { Checker, Finding, History, Observation, ProbeLevel } from "./types.ts";
 
 const H: History = {
   target: { path: "x", argv0: ["x"] },
@@ -292,5 +292,86 @@ describe("buildReport", () => {
       expect(r.counts.notApplicable).toBe(0);
       expect(r.counts.coreFailures).toBe(1);
     });
+  });
+});
+
+// Which rule `acc check` offers as the next thing to read. The report can carry several red
+// lines at once, and only one of them gets the caller's attention.
+describe("primaryProblem", () => {
+  const hungHistory = (): History => {
+    const o: Observation = {
+      id: "hung",
+      invocation: { args: [], inertness: "bare", purpose: "E1: bare" },
+      purposes: ["E1: bare"],
+      stdout: "",
+      stderr: "",
+      exitCode: null,
+      timedOut: true,
+      spawnFailed: false,
+      durationMs: 10_000,
+      timeToFirstByteMs: null,
+    };
+    return { ...H, observations: [o], byId: new Map([[o.id, o]]) };
+  };
+
+  const reportOf = (h: History, findings: Finding[], checkers: Checker[]) =>
+    buildReport(h, findings, checkers, { knownFailures: {} }, "L0");
+
+  test("prefers a violation over a gap, wherever each falls in registry order", () => {
+    const r = reportOf(
+      H,
+      [finding("A1", "unverified"), finding("C2", "fail")],
+      [checker("A1", "core"), checker("C2", "core")],
+    );
+    expect(primaryProblem(H, r)?.ruleId).toBe("C2");
+  });
+
+  test("ignores a diagnostic failure, which never blocks conformance", () => {
+    const r = reportOf(
+      H,
+      [finding("A6", "fail"), finding("C2", "fail")],
+      [checker("A6", "diagnostic"), checker("C2", "core")],
+    );
+    expect(primaryProblem(H, r)?.ruleId).toBe("C2");
+  });
+
+  // A target that blocks on stdin fails A1, C1, D2 and E1 at once. Registry order offered A1 —
+  // a page about rejecting unknown flags, which explains none of the four failures on screen.
+  test("points at E1, not registry order, when the history contains a hang", () => {
+    const h = hungHistory();
+    const r = reportOf(
+      h,
+      [finding("A1", "fail"), finding("C1", "fail"), finding("E1", "fail")],
+      [checker("A1", "core"), checker("C1", "core"), checker("E1", "core")],
+    );
+    expect(primaryProblem(h, r)?.ruleId).toBe("E1");
+  });
+
+  // E1's precedence is about the rule that OWNS the failure mode, not about E1 as such: an
+  // excused or passing E1 explains nothing, so the ranking falls back to registry order.
+  test("falls back to registry order when E1 itself is excused", () => {
+    const h = hungHistory();
+    const r = buildReport(
+      h,
+      [finding("A1", "fail"), finding("E1", "fail")],
+      [checker("A1", "core"), checker("E1", "core")],
+      { knownFailures: { E1: "known to block on this platform" } },
+      "L0",
+    );
+    expect(primaryProblem(h, r)?.ruleId).toBe("A1");
+  });
+
+  test("offers the first core gap when nothing was violated", () => {
+    const r = reportOf(
+      H,
+      [finding("A1", "pass"), finding("B3", "unverified")],
+      [checker("A1", "core"), checker("B3", "core")],
+    );
+    expect(primaryProblem(H, r)?.ruleId).toBe("B3");
+  });
+
+  test("offers nothing when every applicable core rule passed", () => {
+    const r = reportOf(H, [finding("A1", "pass")], [checker("A1", "core")]);
+    expect(primaryProblem(H, r)).toBeUndefined();
   });
 });

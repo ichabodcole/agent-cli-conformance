@@ -6,7 +6,7 @@ import { Outcome } from "../exit-codes.ts";
 import { loadExpectations } from "../kit/expectations.ts";
 import { record, TargetNotExecutableError } from "../kit/record.ts";
 import { CHECKERS } from "../kit/registry.ts";
-import { buildReport, type ReportedFinding, runCheckers } from "../kit/report.ts";
+import { buildReport, primaryProblem, type ReportedFinding, runCheckers } from "../kit/report.ts";
 import type { History, TargetInfo } from "../kit/types.ts";
 
 export interface CheckOptions {
@@ -103,16 +103,10 @@ export async function checkCommand(
   const expectations = loadExpectations(opts.expectations ?? ".");
   const report = buildReport(history, findings, CHECKERS, expectations, "L0");
 
-  // The rule that actually explains the report's headline. Filtered to `applicable` core
-  // findings specifically: with no filter, an early DIAGNOSTIC fail (which never blocks
-  // conformance) could shadow the real, later CORE fail that does, pointing the caller at a
-  // rule that isn't why the check is red. A `fail` outranks an `unverified` regardless of
-  // position, because only a fail is a violation — see docs/wiki/concepts/conformance.md.
-  const coreProblem = (verdict: "fail" | "unverified") =>
-    report.findings.find(
-      (f) => f.applicable && f.tier === "core" && !f.excused && f.verdict === verdict,
-    );
-  const firstCoreProblem = coreProblem("fail") ?? coreProblem("unverified");
+  // The rule that actually explains the report's headline — see primaryProblem, which owns the
+  // ranking (violations before gaps, and the rule that owns a failure mode before whatever
+  // happens to come first in the registry).
+  const firstCoreProblem = primaryProblem(history, report);
 
   emit({
     mode,
@@ -126,9 +120,13 @@ export async function checkCommand(
       : [
           {
             command: `acc show ${firstCoreProblem?.ruleId ?? "A1"}`,
+            // Not "the FIRST violation" any more: for a hang the offer is E1, which may sit
+            // well after the other rules the hang tripped. Naming a position the ranking no
+            // longer guarantees would be a small lie in the field that tells the caller what
+            // they are about to read.
             when: report.conformant
               ? "to read the rule that could not be verified"
-              : "to read the rule behind the first violation",
+              : "to read the rule that best explains the violations",
           },
         ],
     renderText: (r) => {

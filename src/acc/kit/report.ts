@@ -66,6 +66,34 @@ export interface Report {
   staleExpectations: string[];
 }
 
+/**
+ * The one rule to point a caller at when a report is not fully verified.
+ *
+ * Filtered to `applicable`, unexcused CORE findings: with no filter, an early DIAGNOSTIC fail
+ * (which never blocks conformance) could shadow the real, later CORE fail that does, pointing
+ * the caller at a rule that isn't why the check is red. A `fail` outranks an `unverified`
+ * regardless of position, because only a fail is a violation.
+ *
+ * Beyond that it is registry order — EXCEPT for a hang, which is the one failure mode with an
+ * identifiable owner. A target that blocks on stdin fails A1, C1, D2 and E1 at once, and
+ * registry order offers A1: a page about rejecting unknown flags, which explains none of the
+ * four failures the caller is looking at. E1 is the rule that owns hangs (see finding.ts), and
+ * its page is the one that explains all of them. Ownership beats position.
+ */
+export function primaryProblem(h: History, report: Report): ReportedFinding | undefined {
+  const pick = (verdict: "fail" | "unverified", ruleId?: string) =>
+    report.findings.find(
+      (f) =>
+        f.applicable &&
+        f.tier === "core" &&
+        !f.excused &&
+        f.verdict === verdict &&
+        (ruleId === undefined || f.ruleId === ruleId),
+    );
+  const hung = h.observations.some((o) => o.timedOut);
+  return (hung ? pick("fail", "E1") : undefined) ?? pick("fail") ?? pick("unverified");
+}
+
 /** Phase two: pure functions over recorded history. Nothing here spawns a process. */
 export function runCheckers(h: History, checkers: Checker[]): Finding[] {
   return checkers.map((c) => c.check(h));
