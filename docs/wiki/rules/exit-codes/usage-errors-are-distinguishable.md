@@ -12,7 +12,7 @@ rule_id: C2
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/exit-codes/usage-distinguishable.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # "You invoked me wrong" is distinguishable from "I broke"

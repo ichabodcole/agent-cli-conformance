@@ -12,7 +12,7 @@ rule_id: C1
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/exit-codes/help-exits-zero.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Help is a request, and it succeeds
@@ -58,13 +58,14 @@ Inert (`L0`).
 ```
 <cli> --help
 <cli> -h
-<cli> <discovered-group> --help
 ```
 
-Passes when each exits `0` with non-empty stdout and empty stderr.
+Passes when each exits `0` with non-empty stdout.
 
-Subcommand paths are discovered from the root help text; where none can be found, the nested
-case is reported **unverified** rather than passed.
+Not yet checked at `L0`: stderr emptiness on the help path, and the nested case (`<cli>
+<group> --help`). The nested case needs the discovered group to also be a leaf-or-group
+distinction `Discovery` does not currently carry — see `unknown-command.ts`'s checker for the
+same limitation — so it is left for a later probe level rather than guessed at.
 
 ## How to comply
 

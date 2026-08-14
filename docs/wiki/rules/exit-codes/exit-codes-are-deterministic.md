@@ -12,7 +12,7 @@ rule_id: C3
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/exit-codes/deterministic.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Identical invocations produce identical exit codes
@@ -46,11 +46,20 @@ two different things.
 Inert (`L0`).
 
 ```
-<cli> --totally-made-up-flag     ×3
-<cli> --help                     ×3
+<cli> --<sentinel>-repeat-1
+<cli> --<sentinel>-repeat-2
+<cli> --<sentinel>-repeat-3
 ```
 
-Passes when all three runs of each invocation return the same code.
+Three textually distinct unknown-flag invocations, each rejected the same way by any conforming
+parser. They must stay distinct strings rather than three copies of one flag: the runner
+deduplicates invocations by their exact args before recording, and three identical args would
+collapse into a single recorded run — silently defeating the check. `--help` is not repeated
+here; a single sentinel-flag probe class is enough to catch gross nondeterminism cheaply, and
+`--help` repeated three times would need its own three distinct-but-equivalent invocations to
+survive the same dedup, for no additional coverage.
+
+Passes when all three runs return the same code.
 
 Three runs is a cheap smoke test, not proof — it catches gross nondeterminism (an uninitialised
 value, a race in startup, a random default) and will miss anything rarer. The checker reports
