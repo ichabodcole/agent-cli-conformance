@@ -4,7 +4,7 @@ title: Agent CLI Conformance — wiki
 description: The catalog. One line per page; update it in the same commit as the page.
 tags: [index, catalog]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 ---
 
 # Agent CLI Conformance — wiki
@@ -29,6 +29,8 @@ What each part of a CLI _is_.
   records, or opaque bytes, declared so a caller never guesses.
 - [Error envelope](./concepts/error-envelope.md) — the structured failure payload, including
   the third status (`action_required`) that prose on stderr cannot express.
+- [Conformance](./concepts/conformance.md) — what the kit's verdict claims, and why "no core
+  rule was violated" is a different claim from "every core rule was established".
 
 ## Archetypes
 

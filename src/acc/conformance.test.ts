@@ -304,16 +304,20 @@ describe("acc checks itself, through the kit", () => {
     expect(r.conformant).toBe(true);
   }, 60_000);
 
+  // The claim that actually matters for a positive control, and the reason `fullyVerified`
+  // exists as a separate boolean: `conformant` alone would now be satisfied by a run in which
+  // every core rule came back `unverified`. acc must clear the stronger bar — every applicable
+  // core rule VERIFIED, not merely unfalsified. (A4 is core but above L0, so it is reported
+  // not-applicable and excluded from both claims; A6 is diagnostic and unverifiable through a
+  // bun launcher, so it gates neither.)
   test("every applicable core rule is verified, not merely unfailed", async () => {
-    // A4 is core but its probeLevel exceeds L0, so it is reported not-applicable rather than
-    // unverified — that must not count against acc. Only applicable core findings are asserted
-    // here; buildReport already excludes not-applicable findings from `conformant` itself.
     const h = await record(ACC, CHECKERS);
     const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations("."), "L0");
     const unverified = r.findings.filter(
       (f) => f.applicable && f.tier === "core" && f.verdict === "unverified",
     );
     expect(unverified.map((f) => `${f.ruleId}: ${f.detail}`)).toEqual([]);
+    expect(r.fullyVerified).toBe(true);
   }, 60_000);
 
   test("the kit detects a CLI that is NOT conformant", async () => {
@@ -347,6 +351,28 @@ describe("acc check — the outcome exit code", () => {
     const r = await run(["check", conforming, "--format", "text"]);
     expect(r.code).toBe(0);
     expect(r.stdout).toContain("CONFORMANT");
+  }, 30_000);
+
+  // The ruling in docs/wiki/concepts/conformance.md, end to end. This fixture documents itself
+  // as conforming at every L0 rule and has ZERO violations — it simply advertises no
+  // machine-mode flag, so A5 and B3 cannot be established. Exit 9 for that told a caller the
+  // target had broken a rule it had not broken.
+  test("exits 0, not 9, on a target with unverified core rules but no violation", async () => {
+    const target = join(dirname(CLI), "kit/fixtures/no-machine-mode.ts");
+    const r = await run(["check", target, "--json"]);
+    expect(r.code).toBe(0);
+    const { data } = JSON.parse(r.stdout);
+    expect(data.conformant).toBe(true);
+    expect(data.counts.coreFailures).toBe(0);
+    // ...and the weaker claim is still withheld, and still visible.
+    expect(data.fullyVerified).toBe(false);
+    expect(data.counts.coreUnverified).toBeGreaterThan(0);
+  }, 30_000);
+
+  test("the text verdict states both claims and names the probe level", async () => {
+    const conforming = join(dirname(CLI), "kit/fixtures/conforming.ts");
+    const r = await run(["check", conforming, "--format", "text"]);
+    expect(r.stdout).toMatch(/CONFORMANT \(L0\) — \d+ violated, \d+ unverified/);
   }, 30_000);
 
   // Finding 4: the not_found path (a target that doesn't exist) had no coverage at all — `check`

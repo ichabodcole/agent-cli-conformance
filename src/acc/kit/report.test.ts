@@ -53,18 +53,80 @@ describe("buildReport", () => {
     expect(r.counts.diagnosticFailures).toBe(1);
   });
 
-  test("an UNVERIFIED core rule does not count as a pass", () => {
-    const r = buildReport(
-      H,
-      [finding("A1", "unverified")],
-      [checker("A1", "core")],
-      {
-        knownFailures: {},
-      },
-      "L0",
-    );
-    expect(r.conformant).toBe(false);
-    expect(r.counts.unverified).toBe(1);
+  // The ruling this file's `conformant` semantics rest on — see
+  // docs/wiki/concepts/conformance.md. `conformant` answers "did anything VIOLATE a core rule";
+  // `fullyVerified` answers "and was every core rule actually established". Conflating them
+  // made `git`, `gh` and `kubectl` non-conformant with zero violations: for not advertising
+  // --json (B3 unverified) and for exiting 1 rather than 2 (C2 unverified), neither of which
+  // breaks any rule.
+  describe("conformance is about VIOLATIONS; verification is a separate claim", () => {
+    test("an UNVERIFIED core rule does not count as a pass", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "unverified")],
+        [checker("A1", "core")],
+        {
+          knownFailures: {},
+        },
+        "L0",
+      );
+      expect(r.counts.unverified).toBe(1);
+      expect(r.counts.corePassed).toBe(0);
+    });
+
+    test("an UNVERIFIED core rule does not block conformance either", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "unverified")],
+        [checker("A1", "core")],
+        {
+          knownFailures: {},
+        },
+        "L0",
+      );
+      expect(r.conformant).toBe(true);
+      expect(r.fullyVerified).toBe(false);
+      expect(r.counts.coreUnverified).toBe(1);
+    });
+
+    test("a core FAILURE blocks both claims", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "fail")],
+        [checker("A1", "core")],
+        { knownFailures: {} },
+        "L0",
+      );
+      expect(r.conformant).toBe(false);
+      expect(r.fullyVerified).toBe(false);
+    });
+
+    test("all core rules passing yields both claims", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "pass"), finding("A2", "pass")],
+        [checker("A1", "core"), checker("A2", "core")],
+        { knownFailures: {} },
+        "L0",
+      );
+      expect(r.conformant).toBe(true);
+      expect(r.fullyVerified).toBe(true);
+      expect(r.counts.coreUnverified).toBe(0);
+    });
+
+    test("an unverified DIAGNOSTIC rule gates neither claim", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "pass"), finding("A6", "unverified")],
+        [checker("A1", "core"), checker("A6", "diagnostic")],
+        { knownFailures: {} },
+        "L0",
+      );
+      expect(r.fullyVerified).toBe(true);
+      expect(r.counts.coreUnverified).toBe(0);
+      // Still counted and still reported — it is only `fullyVerified` that is core-scoped.
+      expect(r.counts.unverified).toBe(1);
+    });
   });
 
   test("a known failure is excused but still reported", () => {
@@ -88,6 +150,57 @@ describe("buildReport", () => {
       "L0",
     );
     expect(r.staleExpectations).toEqual(["A1"]);
+  });
+
+  // The ratchet used to excuse `fail` only, which left a project blocked by an UNVERIFIED core
+  // rule with no path to green: nothing it could change would clear the rule, and the
+  // expectations file had no way to acknowledge that.
+  describe("the ratchet excuses unverified, not only failures", () => {
+    test("an excused unverified core rule does not gate fullyVerified", () => {
+      const r = buildReport(
+        H,
+        [finding("B3", "unverified")],
+        [checker("B3", "core")],
+        { knownFailures: { B3: "no machine-mode path yet" } },
+        "L0",
+      );
+      expect(r.findings[0]?.excused).toBe(true);
+      expect(r.fullyVerified).toBe(true);
+      expect(r.counts.coreUnverified).toBe(0);
+    });
+
+    test("an UNexcused unverified core rule still gates fullyVerified", () => {
+      const r = buildReport(
+        H,
+        [finding("B3", "unverified")],
+        [checker("B3", "core")],
+        { knownFailures: {} },
+        "L0",
+      );
+      expect(r.fullyVerified).toBe(false);
+    });
+
+    test("an excused rule that reaches PASS is stale whichever verdict it was excused for", () => {
+      const r = buildReport(
+        H,
+        [finding("B3", "pass")],
+        [checker("B3", "core")],
+        { knownFailures: { B3: "no machine-mode path yet" } },
+        "L0",
+      );
+      expect(r.staleExpectations).toEqual(["B3"]);
+    });
+
+    test("a passing rule is never marked excused, so the excuse cannot hide a pass", () => {
+      const r = buildReport(
+        H,
+        [finding("B3", "pass")],
+        [checker("B3", "core")],
+        { knownFailures: { B3: "no machine-mode path yet" } },
+        "L0",
+      );
+      expect(r.findings[0]?.excused).toBe(false);
+    });
   });
 
   test("every finding carries the rule page path", () => {
@@ -121,7 +234,10 @@ describe("buildReport", () => {
       expect(r.findings[0]?.applicable).toBe(false);
     });
 
-    test("a core checker AT the run level returning unverified still blocks conformance", () => {
+    // Both claims, on the same input, at the two levels. Not-applicable is out of scope and
+    // gates nothing; unverified at the run's own level is a real gap in the evidence and gates
+    // `fullyVerified` — the distinction the `applicable` flag exists to preserve.
+    test("a core checker AT the run level returning unverified gates verification, not conformance", () => {
       const r = buildReport(
         H,
         [finding("A1", "unverified")],
@@ -129,9 +245,24 @@ describe("buildReport", () => {
         { knownFailures: {} },
         "L0",
       );
-      expect(r.conformant).toBe(false);
+      expect(r.conformant).toBe(true);
+      expect(r.fullyVerified).toBe(false);
       expect(r.counts.unverified).toBe(1);
+      expect(r.counts.coreUnverified).toBe(1);
       expect(r.counts.notApplicable).toBe(0);
+    });
+
+    test("a core checker ABOVE the run level gates neither claim", () => {
+      const r = buildReport(
+        H,
+        [finding("A4", "unverified")],
+        [checker("A4", "core", "L1")],
+        { knownFailures: {} },
+        "L0",
+      );
+      expect(r.conformant).toBe(true);
+      expect(r.fullyVerified).toBe(true);
+      expect(r.counts.coreUnverified).toBe(0);
     });
 
     test("a not-applicable rule's failure is excluded from core counts, not just excused", () => {

@@ -54,29 +54,32 @@ export async function checkCommand(
   const expectations = loadExpectations(opts.expectations ?? ".");
   const report = buildReport(history, findings, CHECKERS, expectations, "L0");
 
-  // The rule that actually explains why this target is not conformant — a core, applicable,
-  // unexcused fail or unverified. Filtered to `applicable` core findings specifically: with no
-  // filter, an early DIAGNOSTIC fail (which never blocks conformance) could shadow the real,
-  // later CORE fail that does, pointing the caller at a rule that isn't why the check is red.
-  const firstCoreProblem = report.findings.find(
-    (f) =>
-      f.applicable &&
-      f.tier === "core" &&
-      !f.excused &&
-      (f.verdict === "fail" || f.verdict === "unverified"),
-  );
+  // The rule that actually explains the report's headline. Filtered to `applicable` core
+  // findings specifically: with no filter, an early DIAGNOSTIC fail (which never blocks
+  // conformance) could shadow the real, later CORE fail that does, pointing the caller at a
+  // rule that isn't why the check is red. A `fail` outranks an `unverified` regardless of
+  // position, because only a fail is a violation — see docs/wiki/concepts/conformance.md.
+  const coreProblem = (verdict: "fail" | "unverified") =>
+    report.findings.find(
+      (f) => f.applicable && f.tier === "core" && !f.excused && f.verdict === verdict,
+    );
+  const firstCoreProblem = coreProblem("fail") ?? coreProblem("unverified");
 
   emit({
     mode,
     command: "check",
     startedAt,
     data: report,
-    next: report.conformant
+    // Offered whenever something core is outstanding, violation or gap: a caller staring at an
+    // unverified core rule needs the page just as much as one staring at a failure.
+    next: report.fullyVerified
       ? []
       : [
           {
             command: `acc show ${firstCoreProblem?.ruleId ?? "A1"}`,
-            when: "to read the rule behind the first failure",
+            when: report.conformant
+              ? "to read the rule that could not be verified"
+              : "to read the rule behind the first violation",
           },
         ],
     renderText: (r) => {
@@ -94,13 +97,18 @@ export async function checkCommand(
       const lines = r.findings.map(
         (f) => `  ${mark(f)}  ${f.ruleId.padEnd(3)} ${f.detail}${f.excused ? " (excused)" : ""}`,
       );
+      // Both claims, on one line, always. The verdict answers "did anything VIOLATE a core
+      // rule"; the counts beside it answer "and was everything actually established". Naming
+      // the level is part of the claim, not decoration — A4 is core and silently excluded as
+      // N/A at L0, so a bare "CONFORMANT" overstates what was checked.
       const verdict = r.conformant ? "CONFORMANT" : "NOT CONFORMANT";
       return [
-        `${bold}${verdict}${reset}  ${r.target}`,
+        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} violated, ${r.counts.coreUnverified} unverified  ${r.target}`,
         "",
         ...lines,
         "",
-        `  core ${r.counts.corePassed}/${r.counts.core} · failures ${r.counts.coreFailures} · unverified ${r.counts.unverified} · diagnostics ${r.counts.diagnosticFailures}`,
+        `  core ${r.counts.corePassed}/${r.counts.core} · violations ${r.counts.coreFailures} · unverified ${r.counts.unverified} · diagnostics ${r.counts.diagnosticFailures}`,
+        `  ${r.fullyVerified ? "every applicable core rule was verified" : "conformance means no core rule was VIOLATED; an unverified rule was probed and could not be established"}`,
         "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable at this level",
         ...(r.staleExpectations.length
           ? [`  stale expectations (now passing, remove them): ${r.staleExpectations.join(", ")}`]
@@ -112,7 +120,14 @@ export async function checkCommand(
   // Non-zero-ness is the ONE signal a harness that never parses stdout still sees. The report
   // itself is not an error — stdout stays `ok: true` and well-formed data — but exiting 0 on a
   // non-conformant target is exactly the silent-failure shape this whole project exists to
-  // catch a CLI doing. `emit` already performed the one stdout write; this only decides the
-  // process's exit status afterward.
-  if (!report.conformant) process.exit(Outcome.NonConformant);
+  // catch a CLI doing.
+  //
+  // Fires on a VIOLATION only. An unverified core rule is a gap in the evidence, not a defect
+  // in the target, and exiting 9 for one told `git` it had failed a rule it had not broken.
+  // It is still reported prominently and still gates `fullyVerified`.
+  //
+  // `process.exitCode` and return, never `process.exit()`: exiting immediately after a stdout
+  // write can truncate it when stdout is a pipe. Setting the code lets the runtime flush and
+  // exit on its own, which removes that failure class rather than making it unlikely.
+  if (!report.conformant) process.exitCode = Outcome.NonConformant;
 }

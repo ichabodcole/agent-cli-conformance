@@ -26,15 +26,31 @@ export interface Report {
   target: string;
   /** The probe level this report was built at. Determines which findings are `applicable`. */
   level: ProbeLevel;
-  /** Binary. Core rules pass or they do not — a percentage invites gaming the number rather
-   *  than fixing the implementation (the Acid3 "Potemkin village" critique). */
+  /**
+   * NO APPLICABLE CORE RULE FAILED. Violations only — see
+   * docs/wiki/concepts/conformance.md, which is the normative definition.
+   *
+   * Binary, not a percentage: core rules pass or they do not, and a score invites gaming the
+   * number rather than fixing the implementation (the Acid3 "Potemkin village" critique).
+   *
+   * Deliberately NOT "everything was verified". An unverified core rule is a gap in the
+   * EVIDENCE, not a defect in the target, and conflating the two made `git`, `gh` and
+   * `kubectl` non-conformant for not advertising `--json` and for exiting 1 rather than 2 —
+   * neither of which is a violation of anything. `fullyVerified` carries that second claim.
+   */
   conformant: boolean;
+  /** `conformant` AND no applicable core rule is `unverified`. The stronger claim: every core
+   *  rule was actually established, not merely left unfalsified. */
+  fullyVerified: boolean;
   counts: {
     core: number;
     corePassed: number;
     coreFailures: number;
     diagnosticFailures: number;
     unverified: number;
+    /** Unexcused applicable CORE findings that are `unverified` — the set that gates
+     *  `fullyVerified`, as distinct from `unverified`, which counts every tier. */
+    coreUnverified: number;
     /** Findings whose rule is out of scope at this run's level — see `ReportedFinding.applicable`. */
     notApplicable: number;
   };
@@ -74,7 +90,12 @@ export function buildReport(
       rulePath: c?.rulePath ?? "",
       probeLevel,
       applicable: LEVEL_RANK[probeLevel] <= LEVEL_RANK[level],
-      excused: f.verdict === "fail" && f.ruleId in expectations.knownFailures,
+      // `unverified` is excusable too, not just `fail`. Excusing only failures left a project
+      // blocked by an unverified core rule with no path to green: nothing it could change
+      // would clear the rule, and the ratchet had no way to acknowledge that.
+      excused:
+        (f.verdict === "fail" || f.verdict === "unverified") &&
+        f.ruleId in expectations.knownFailures,
     };
   });
 
@@ -83,16 +104,20 @@ export function buildReport(
 
   const core = applicable.filter((f) => f.tier === "core");
   const coreFailures = core.filter((f) => f.verdict === "fail" && !f.excused);
-  // An unverified core rule is NOT a pass. Counting it as one is exactly the overclaim this
-  // project exists to prevent. Only applicable findings count here — a rule out of scope at
-  // this level is a different claim from "tried and could not establish it".
+  // An unverified core rule is NOT a pass — counting it as one is exactly the overclaim this
+  // project exists to prevent. It is not a VIOLATION either, which is what the split below is
+  // for. Only applicable findings count: a rule out of scope at this level is a different
+  // claim again from "tried and could not establish it".
   const unverified = applicable.filter((f) => f.verdict === "unverified");
-  const unverifiedCore = core.filter((f) => f.verdict === "unverified");
+  const unverifiedCore = core.filter((f) => f.verdict === "unverified" && !f.excused);
+
+  const conformant = coreFailures.length === 0;
 
   return {
     target: h.target.path,
     level,
-    conformant: coreFailures.length === 0 && unverifiedCore.length === 0,
+    conformant,
+    fullyVerified: conformant && unverifiedCore.length === 0,
     counts: {
       core: core.length,
       corePassed: core.filter((f) => f.verdict === "pass").length,
@@ -100,6 +125,7 @@ export function buildReport(
       diagnosticFailures: applicable.filter((f) => f.tier === "diagnostic" && f.verdict === "fail")
         .length,
       unverified: unverified.length,
+      coreUnverified: unverifiedCore.length,
       notApplicable: notApplicable.length,
     },
     findings: reported,
