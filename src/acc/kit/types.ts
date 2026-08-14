@@ -4,8 +4,16 @@ export interface Invocation {
   args: string[];
   /** Environment overrides layered onto the parent env. */
   env?: Record<string, string>;
-  /** Why this invocation is safe to run. The runner refuses anything unclassified. */
-  inertness: "help-path" | "sentinel" | "no-verb";
+  /**
+   * Why this invocation is safe to run. The runner refuses anything unclassified.
+   *
+   * `bare` is its own class rather than a side effect of an empty `args` array satisfying
+   * `help-path` or `no-verb` vacuously: it is the least dangerous possible invocation, and the
+   * only way to probe D2/E1 (bare-invocation behaviour). A CLI that does real work on a bare
+   * invocation is itself the finding the probe exists to catch; the runner's deadline catches a
+   * wizard that blocks waiting for input.
+   */
+  inertness: "help-path" | "sentinel" | "no-verb" | "bare";
   /** Human-readable reason this probe exists; appears in findings as evidence. */
   purpose: string;
 }

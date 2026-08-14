@@ -82,13 +82,13 @@ folders organise them. `decisions` / `guides` are **atomic and cross-cutting** â
 ## Rule pages carry extra frontmatter
 
 A `rule` page is not prose â€” it is the human-readable half of a conformance checker. Its
-frontmatter is machine-read, and `lint.ts` cross-checks it against `scripts/checkers/`:
+frontmatter is machine-read, and `lint.ts` cross-checks it against `src/acc/kit/checkers/`:
 
 ```yaml
 rule_id: A1 # stable, unique; cited verbatim in conformance output
 tier: core # core (binary pass/fail) | diagnostic (reported, non-fatal)
 probe_level: L0 # L0 inert | L1 declared read-only | L2 contained mutating
-checker: scripts/checkers/parsing/unknown-flag.ts
+checker: src/acc/kit/checkers/parsing/unknown-flag.ts
 checker_status: planned # planned | implemented
 ```
 
