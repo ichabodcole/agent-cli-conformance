@@ -113,8 +113,10 @@ rather than passing today.
 `acc` explores the spec — and is built to satisfy it. That second part is the reason it
 exists: **a conformance kit with nothing that provably passes cannot tell "found a real
 defect" from "the checker is wrong."** `acc` is the positive control, and
-`src/acc/conformance.test.ts` runs the L0 probes against it on every commit, so it cannot
-quietly stop conforming.
+`src/acc/conformance.test.ts` runs the L0 probes against it inside `bun run check` — the
+pre-commit hook locally, and [the CI workflow](.github/workflows/check.yml) on every push and
+pull request — so it cannot quietly stop conforming. The hook is the faster of the two and the
+bypassable one; CI is what the claim rests on.
 
 ```bash
 acc rules --tier core      # the rules a conforming CLI must satisfy
@@ -154,10 +156,17 @@ scripts/
 ## Commands
 
 ```bash
+bun run check                  # THE gate: typecheck, lint, wiki lint, tests
 bun docs/wiki/lint.ts          # link, anchor, frontmatter, orphan and rule checks
 bun docs/wiki/lint.ts --json   # emit the knowledge graph
+bun run docs:sync              # regenerate the generated blocks in docs/wiki/index.md
 ```
 
-The lint is not optional decoration. It verifies that every rule page declares a checker that
-exists, and that every checker has a rule page — so spec-versus-implementation drift fails the
+`bun run check` is the whole gate and the only definition of it — the pre-commit hook and
+[the CI workflow](.github/workflows/check.yml) both run exactly that line, so neither can
+enforce something the other does not.
+
+The wiki lint is not optional decoration. It verifies that every rule page declares a checker
+that exists, that every checker has a rule page, and that each page's `tier`, `probe_level`,
+`coverage` and stated gaps match the checker's — so spec-versus-implementation drift fails the
 gate rather than accumulating silently.
