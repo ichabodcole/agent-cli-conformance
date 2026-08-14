@@ -14,9 +14,14 @@ updated: 2026-08-14
 
 ## What it is
 
-Every process returns an integer between 0 and 255 when it exits. `0` means success; anything
-else means failure. Shells expose it as `$?`; agent harnesses surface it alongside stdout and
-stderr.
+On a POSIX system, a process returns an integer between 0 and 255 when it exits. `0` means
+success; anything else means failure. Shells expose it as `$?`; agent harnesses surface it
+alongside stdout and stderr.
+
+**This taxonomy targets POSIX shells**, and the range is part of why. Windows reports process
+termination through `GetExitCodeProcess` as a `DWORD` — a full 32-bit value — so neither the
+`0`–`255` ceiling nor the reserved band below holds there. See
+[exit codes stay below 125](../decisions/exit-codes-below-125.md#context).
 
 It is the **only** part of a CLI's response a caller can act on without parsing anything — no
 JSON, no prose, no encoding assumptions.
@@ -55,10 +60,17 @@ that fails while exiting `0` is not merely hard to diagnose — it is invisible.
 Exit codes look like HTTP status codes but do not behave like them. HTTP has RFC 9110, a
 registry, and universal client support: `404` means the same thing against any server.
 
-Exit codes have almost none of that. Genuinely universal:
+Exit codes have almost none of that. Standardised by POSIX, and therefore dependable:
 
 - `0` = success, non-zero = failure
-- `126` = found but not executable, `127` = command not found, `128+n` = killed by signal `n`
+- `126` = found but not executable, `127` = command not found
+- **greater than** `128` = terminated by a signal
+
+The familiar `128+n` spelling (`143` for SIGTERM) is a widespread shell convention, not the
+POSIX guarantee — POSIX commits only to "greater than 128". Read a status above `128` as "it
+was signalled"; do not portably derive `n` from it. `124` and `125` are neither: they are
+[`timeout`'s and Docker's conventions](../decisions/exit-codes-below-125.md#decision), adopted
+by particular delegators rather than assigned by any shell.
 
 `sysexits.h` (BSD, circa 1987) defined `EX_USAGE=64` through `EX_CONFIG=78` and is the only
 real attempt at more. Adoption is spotty. Measured against the same probe — an unrecognised
@@ -83,10 +95,11 @@ machine-discoverable is tribal knowledge.
 7   rate limited                     (retryable: true)
 8   confirmation required
 --- reserved; never allocate ---
-125 the wrapper itself failed
-126 command found but not executable
-127 command not found
-128+n killed by signal n
+124 timed out                        (timeout's convention)
+125 the wrapper itself failed        (timeout's and Docker's convention)
+126 command found but not executable (POSIX)
+127 command not found                (POSIX)
+>128 terminated by a signal          (POSIX; 128+n is a shell convention)
 ```
 
 Codes are grouped by **what the caller should do**, not by which HTTP status a server
@@ -102,8 +115,8 @@ named makes the same command work. `2` cannot be resolved that way (retrying unc
 identically) and neither can `4` (no argument the caller adds will help). There is no third
 top-level status; see [the error envelope](./error-envelope.md#two-shapes-and-confirmation_required-is-one-of-the-errors).
 
-The reserved band is why our codes stop at 8 — see
-[exit codes stay below 125](../decisions/exit-codes-below-125.md).
+The reserved band is why the errors stop at `8` and the whole allocated range stops at `9` —
+see [exit codes stay below 125](../decisions/exit-codes-below-125.md).
 
 ### Outcomes are not errors
 

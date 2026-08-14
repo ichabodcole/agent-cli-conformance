@@ -7,7 +7,7 @@ description:
 tags: [archetype, delegation, exit-codes, passthrough]
 related: [concept/exit-codes, rule/double-dash-terminator, decision/exit-codes-below-125]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 ---
 
 # Delegator
@@ -50,13 +50,22 @@ error text names a program the caller did not know was involved.
 ### Exit codes: pass through verbatim
 
 A delegator **MUST** return the child's exit code unmodified, and use `125` when the _wrapper
-itself_ failed — the established shell convention (`125` wrapper failed, `126` not executable,
-`127` not found, `128+n` signalled), which `timeout`, `env`, and `docker` already follow.
+itself_ failed. `126` (found but not executable) and `127` (not found) are POSIX; `125` is
+`timeout`'s and Docker's convention, which delegators follow because they are delegators, not
+because any shell assigns it a meaning. See
+[the reserved band](../decisions/exit-codes-below-125.md#decision) for the split.
 
-Because this project's own codes stop at `8`, collision is structurally impossible and no
-remapping is needed. That is the whole reason for
-[keeping codes below 125](../decisions/exit-codes-below-125.md), and it is strictly better than
-KEP-2551's `255`-means-"child returned ≥201", which discards which code it actually was.
+Because this project's own codes stop below `125`, _its_ domain codes can never be mistaken for
+the shell band — `not_found` is `5`, never `127` — and no remapping is needed. That is better
+than KEP-2551's `255`-means-"child returned ≥201", which discards which code it actually was.
+
+**It is not a complete answer, and a delegator should not pretend otherwise.** When the child
+itself exits `125`, `126` or `127` — likely, since delegators frequently wrap other delegators
+— verbatim passthrough makes the wrapper's own failure indistinguishable from the child's
+report of the same number. The exit code has no room left to carry the attribution. A delegator
+that needs the distinction **SHOULD** report the child's exit code as a field in its
+[machine-mode envelope](../concepts/error-envelope.md) alongside the passthrough status, which
+helps exactly those callers that read it.
 
 ### `--` stops being optional
 
@@ -99,8 +108,8 @@ wrapper rather than the child.
   own description calls it "a pointer, not a copy", which is the right framing.
 - **`gh copilot`** — a shim that downloads and executes a separate binary, forwarding any
   arguments `gh` does not recognise, and documenting the `--` boundary.
-- **`timeout` / `env`** — the canonical minimal delegators, and the origin of the `125`–`127`
-  convention this archetype adopts.
+- **`timeout` / `env`** — the canonical minimal delegators. `timeout` is where `124` and `125`
+  come from; `126` and `127` it inherits from POSIX rather than invents.
 
 ## Related rules
 
