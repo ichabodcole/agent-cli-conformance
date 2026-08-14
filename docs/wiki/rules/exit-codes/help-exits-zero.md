@@ -69,6 +69,11 @@ one of four rules in the catalogue that own hangs — with
 [D2](../discoverability/bare-invocation-is-a-usage-error.md) and
 [E1](../interactivity/never-block-without-a-tty.md) — rather than deferring them to E1.
 
+A help path killed at the checker's **output limit** is the opposite case and reports
+`unverified`: that target was writing, not failing to, and the exit code C1 turns on is one the
+checker prevented it from choosing. The two ways a probe can be cut short are recorded
+separately for exactly this reason.
+
 Not yet checked at `L0`: stderr emptiness on the help path, and the nested case (`<cli>
 <group> --help`). The nested case needs the discovered group to also be a leaf-or-group
 distinction `Discovery` does not currently carry — see `unknown-command.ts`'s checker for the

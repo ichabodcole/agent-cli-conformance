@@ -90,6 +90,10 @@ killed may have written its first byte quickly and then blocked forever, and F2'
 about the run as a whole. F2 is not one of the four rules that own hangs — the hang itself is
 [E1](../interactivity/never-block-without-a-tty.md)'s finding to report.
 
+A run killed at the checker's **output limit** is treated the same way, for the same reason. Its
+first byte is real, but the run did not complete, and averaging over the ones that happened to
+stay under the ceiling would be measuring the limit rather than the tool.
+
 ## How to comply
 
 Do nothing before dispatch. The usual cause of a slow `--help` is initialisation that runs
