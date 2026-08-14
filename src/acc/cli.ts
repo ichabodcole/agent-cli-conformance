@@ -15,6 +15,7 @@ import { rulesCommand } from "./commands/rules.ts";
 import { schemaCommand } from "./commands/schema.ts";
 import { showCommand } from "./commands/show.ts";
 import { tagsCommand } from "./commands/tags.ts";
+import { versionCommand } from "./commands/version.ts";
 import { emitError, type OutputMode, resolveMode } from "./envelope.ts";
 import { AccError, usageError } from "./errors.ts";
 import { ExitCode } from "./exit-codes.ts";
@@ -136,6 +137,16 @@ if (argv.length <= 2) {
 // something it can branch on; a human asking gets the human rendering below.
 if (mode === "json" && (argv.includes("--help") || argv.includes("-h"))) {
   schemaCommand(mode, startedAt);
+  process.exit(ExitCode.Success);
+}
+
+// Version travels the SAME early path, for the same reason. Commander's built-in `--version`
+// wrote a bare `0.0.0` and exited before the envelope existed, so every machine-mode spelling —
+// `--version --json`, `--json --version`, `--format json --version` — returned an unparseable
+// string at exit 0, violating D1's structured-payload requirement. Help is checked first so
+// `acc --help --version` keeps answering the broader question.
+if (mode === "json" && (argv.includes("--version") || argv.includes("-V"))) {
+  versionCommand(mode, startedAt);
   process.exit(ExitCode.Success);
 }
 

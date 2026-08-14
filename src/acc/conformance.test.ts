@@ -20,6 +20,7 @@ import { CHECKERS } from "./kit/registry.ts";
 import { buildReport, runCheckers } from "./kit/report.ts";
 import type { TargetInfo } from "./kit/types.ts";
 import { COMMANDS, GLOBAL_ARGS } from "./spec.ts";
+import { VERSION } from "./version.ts";
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), "cli.ts");
 // Rule B2 forbids ANSI escapes when stdout is not a terminal. Detecting them requires naming
@@ -192,6 +193,37 @@ describe("D — discoverability", () => {
     expect(r.code).toBe(0);
     expect(r.stdout.trim().length).toBeGreaterThan(0);
     expect(r.stderr).toBe("");
+  });
+
+  // D1's other half: in machine mode the version must be a FIELD, not a bare string a caller
+  // has to regex. Commander's built-in handling answered before the envelope existed, so all
+  // three machine-mode spellings emitted `0.0.0` at exit 0 — and the D1 checker never saw it,
+  // because it probes only plain `--version`, which in a terminal is legitimately a bare
+  // string. Both option orders AND both selectors, since the defect was order-independent.
+  test("D1 the version is a structured field in machine mode", async () => {
+    for (const args of [
+      ["--version", "--json"],
+      ["--json", "--version"],
+      ["--format", "json", "--version"],
+      ["-V", "--json"],
+    ]) {
+      const r = await run(args);
+      expect({ args, code: r.code, stderr: r.stderr }).toEqual({ args, code: 0, stderr: "" });
+      const env = JSON.parse(r.stdout);
+      expect({ args, ok: env.ok, version: env.data.version }).toEqual({
+        args,
+        ok: true,
+        version: VERSION,
+      });
+    }
+  });
+
+  // ...and the bare string survives where it belongs. A shell comparing `acc --version` to a
+  // string must not start receiving JSON because this rule was fixed.
+  test("D1 text mode still emits the bare version string", async () => {
+    const r = await run(["--version", "--format", "text"]);
+    expect(r.code).toBe(0);
+    expect(r.stdout.trim()).toBe(VERSION);
   });
 
   test("D2 bare invocation is a usage error on stderr", async () => {
