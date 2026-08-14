@@ -76,11 +76,20 @@ guess rather than reporting a verdict about an argv the target never saw.
 
 The kit's `.ts` fixtures inherit this, so A6's own tests use POSIX shell fixtures instead.
 
-One case slips the guard, knowingly: a target with **no `.ts` extension** but a
-`#!/usr/bin/env bun` shebang is launched directly, so nothing in the invocation says "bun" and
-the swallow happens anyway. Catching it would mean reading an arbitrary target's first line and
-guessing at its interpreter — a heuristic on exactly the footing this catalogue refuses
-elsewhere. A6 is diagnostic, and a wrong `unverified` is cheaper than a wrong verdict.
+The guard keys on the launcher, so it only fires when the invocation itself names `bun`. A Bun
+CLI installed with **no `.ts` extension** used to slip past it: nothing in the invocation said
+"bun", the swallow happened anyway, and the target collected a `FAIL` — for a probe it never
+received, on a CLI that honours `--` perfectly. The cost of leaving it open was never a wrong
+`unverified`; it was a wrong verdict, on a conforming target. So `acc check` now reads the
+target's first line and launches it through `bun` when the shebang names `bun`, which puts it
+back inside the guard.
+
+Reading a `#!` line is not the kind of guess this catalogue refuses elsewhere. What
+[the inertness gate](#where-this-probe-is-not-inert) refuses to guess is whether a target's
+root positional is free-form data — a property with no observable signal, where a wrong answer
+licenses an unsafe spawn. A shebang is the kernel's own contract about what runs the file, it
+is in the first bytes of the file, and a wrong answer costs one diagnostic verdict. `acc check`
+already infers an interpreter from a strictly weaker signal: the filename extension.
 
 ### Where this probe is not inert
 

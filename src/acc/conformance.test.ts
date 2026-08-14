@@ -10,7 +10,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
-import { rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -392,6 +392,42 @@ describe("acc check — the outcome exit code", () => {
     expect(env.error.kind).toBe("not_found");
     expect(env.error.exit_code).toBe(5);
   }, 15_000);
+
+  // A6, through the product's own target-resolution path rather than a hand-built TargetInfo.
+  //
+  // A Bun CLI installed without a `.ts` extension used to be launched directly, so `argv0` never
+  // said "bun", A6's swallow guard never fired, and the checker reported `FAIL` against an argv
+  // the target never received — on a fixture that provably honours `--`. `toTarget` now reads
+  // the shebang. The honest verdict for any bun-launched target is `unverified`.
+  test("a bun CLI with no .ts extension is launched through bun, so A6 does not invent a FAIL", async () => {
+    const noExtension = join(tmpdir(), `acc-conforming-noext-${process.pid}`);
+    copyFileSync(join(dirname(CLI), "kit/fixtures/conforming.ts"), noExtension);
+    chmodSync(noExtension, 0o755);
+    try {
+      const r = await run(["check", noExtension, "--json"]);
+      expect(r.code).toBe(0);
+      const { data } = JSON.parse(r.stdout);
+      const a6 = data.findings.find((f: { ruleId: string }) => f.ruleId === "A6");
+      expect(a6.verdict).toBe("unverified");
+      expect(a6.detail).toContain("bun");
+      expect(data.conformant).toBe(true);
+    } finally {
+      rmSync(noExtension, { force: true });
+    }
+  }, 30_000);
+
+  // The other side of the same resolution path: a target that is NOT a bun script must still be
+  // launched directly, so A6 is actually exercised. The `sh` fixtures are the only ones that can
+  // receive the terminator, and this is the only test that reaches them the way a user does —
+  // via `acc check`, which needs their exec bit to be committed.
+  test("a shell CLI is launched directly, so A6 is exercised rather than skipped", async () => {
+    const fixture = join(dirname(CLI), "kit/fixtures/sh/honours-double-dash.sh");
+    const r = await run(["check", fixture, "--json"]);
+    // Not 5: an exec bit missing from the committed fixture makes this a not_found error.
+    expect(r.code).not.toBe(5);
+    const { data } = JSON.parse(r.stdout);
+    expect(data.findings.find((f: { ruleId: string }) => f.ruleId === "A6").verdict).toBe("pass");
+  }, 30_000);
 
   // A file that EXISTS but cannot be executed. Before this, `printf 'hello' > f; acc check f`
   // produced a report in which nine rules PASSED — every checker satisfied by an empty stream

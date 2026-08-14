@@ -44,10 +44,12 @@ export const doubleDashTerminatorChecker: Checker = {
     // argv, but only for targets we already know are Bun scripts — and it would corrupt the
     // argv of every other target. A diagnostic rule that cannot be delivered says so.
     //
-    // Known gap: a target with no `.ts` extension but a `#!/usr/bin/env bun` shebang is
-    // launched directly, so argv0 never says "bun" and the swallow still happens. Closing it
-    // means reading an arbitrary file's first line and guessing its interpreter — the same
-    // class of guess `inert.ts` refuses for free-form-positional CLIs.
+    // The guard keys on the LAUNCHER, so whoever builds the TargetInfo has to name bun when
+    // bun is what will run the target. A Bun CLI installed without a `.ts` extension used to
+    // slip past this and collect a FAIL measured against an argv it never received; `toTarget`
+    // in src/acc/commands/check.ts now reads the shebang so those targets arrive here as
+    // `["bun", path]`. That is an interpreter fact from the kernel's own contract, not the
+    // free-form-positional guess `inert.ts` refuses — and it keeps this check pure.
     if (h.target.argv0[0] === "bun") {
       return finding(
         "unverified",

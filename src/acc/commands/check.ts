@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { closeSync, existsSync, openSync, readSync } from "node:fs";
+import { basename, resolve } from "node:path";
 import { emit, type OutputMode, useColor } from "../envelope.ts";
 import { notFoundError } from "../errors.ts";
 import { Outcome } from "../exit-codes.ts";
@@ -13,10 +13,59 @@ export interface CheckOptions {
   expectations?: string;
 }
 
-/** A `.ts` target is run through bun; anything else is executed directly. */
+/** Enough for any real interpreter line — the kernel caps it at 127 bytes on Linux and the BSDs
+ *  — and small enough that pointing `acc check` at a gigabyte-sized binary costs one page. */
+const SHEBANG_BYTES = 256;
+
+/**
+ * True when the target's first line is a `#!` naming `bun` as its interpreter.
+ *
+ * This exists for A6. Its checker reports `unverified` whenever `argv0[0] === "bun"`, because
+ * Bun eats the bare `--` the probe leads with and what gets measured is A1 wearing A6's name.
+ * A Bun CLI installed WITHOUT a `.ts` extension used to miss that guard — nothing in the
+ * invocation said "bun" — so a target that honours `--` perfectly collected a FAIL derived from
+ * an argv it never received. Launching it the way its own shebang says puts it back inside the
+ * guard, and `check()` stays pure: the inference happens here, once, not inside a checker.
+ *
+ * Reading a `#!` line is NOT the guess `inert.ts` refuses. That refusal is about whether a
+ * target's root positional is free-form data — a property with no observable signal, where a
+ * wrong answer licenses an unsafe spawn. A shebang is the kernel's own contract about what runs
+ * the file, and a wrong answer here costs one diagnostic verdict. The line below already infers
+ * an interpreter from a strictly weaker signal: the filename extension.
+ *
+ * Never throws. An unreadable file, a directory, a race between `existsSync` and here — all are
+ * "no shebang", and the existing not-found/not-executable paths report them properly.
+ */
+function hasBunShebang(abs: string): boolean {
+  let fd: number | undefined;
+  try {
+    fd = openSync(abs, "r");
+    const buf = Buffer.alloc(SHEBANG_BYTES);
+    const read = readSync(fd, buf, 0, SHEBANG_BYTES, 0);
+    // A binary decodes to mojibake rather than throwing, and mojibake does not start with `#!`.
+    const firstLine = buf.subarray(0, read).toString("utf8").split(/\r?\n/, 1)[0] ?? "";
+    if (!firstLine.startsWith("#!")) return false;
+    // Whole-basename comparison over every token, so `#!/usr/bin/env bun`,
+    // `#!/usr/bin/env -S bun run` and `#!/opt/homebrew/bin/bun` all match while `bunx` and a
+    // node interpreter living under `/home/bunny/bin` do not.
+    return firstLine
+      .slice(2)
+      .trim()
+      .split(/\s+/)
+      .some((token) => basename(token) === "bun");
+  } catch {
+    return false;
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
+}
+
+/** A `.ts` target, or one whose shebang names bun, is run through bun; anything else is
+ *  executed directly. */
 function toTarget(path: string): TargetInfo {
   const abs = resolve(path);
-  return { path: abs, argv0: abs.endsWith(".ts") ? ["bun", abs] : [abs] };
+  const viaBun = abs.endsWith(".ts") || hasBunShebang(abs);
+  return { path: abs, argv0: viaBun ? ["bun", abs] : [abs] };
 }
 
 export async function checkCommand(
