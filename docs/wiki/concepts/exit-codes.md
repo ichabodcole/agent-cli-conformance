@@ -98,6 +98,43 @@ them lets a caller probe for the existence of resources it cannot see.
 The reserved band is why our codes stop at 8 — see
 [exit codes stay below 125](../decisions/exit-codes-below-125.md).
 
+### Outcomes are not errors
+
+The taxonomy above answers "why did the invocation fail?" — every code in it implies something
+went wrong with the request itself: a bad flag, no credential, a missing resource. Each one
+carries an error envelope on stderr, a `kind`, and a `retryable` flag.
+
+Some commands need to report something different: the invocation **succeeded**, and the
+question it was asked has a **negative answer**. `acc check <target>` is one — a target that
+does not conform is not a bug in `acc`, and the report describing why is accurate, well-formed
+data on stdout with `ok: true`, not a failure. Reusing a usage or internal error code for this
+would misclassify it — a caller that branches on `kind` would treat "the target isn't
+conformant" as "you asked me wrong," which isn't true and sends the caller looking for the
+wrong fix. Exiting `0` is worse: it is precisely the silent-failure shape [unknown flags must
+exit non-zero](../rules/parsing/unknown-flag-exits-nonzero.md) exists to catch every OTHER CLI
+doing, so `acc` cannot do it either.
+
+The fix is a third category, distinct from both:
+
+```
+0     success
+1-8   ERRORS      — why the INVOCATION failed. Structured envelope, `kind`, `retryable`.
+9-124 OUTCOMES    — what the SUBJECT turned out to be. Still `ok: true`; no envelope, no `kind`,
+                    no `retryable` — there is nothing to retry, because nothing failed.
+125+  reserved    — what a CHILD PROCESS did.
+```
+
+```
+9   acc check ran successfully; the target does not conform
+```
+
+An outcome code is still governed by every rule an error code is: append-only, never renumbered,
+declared once and never duplicated across the codebase — see
+[exit codes stay below 125](../decisions/exit-codes-below-125.md) for why the whole
+non-reserved range, errors and outcomes alike, stays under 125. The only thing that changes is
+what a non-zero value _means_ here — not "something broke," but "here is the answer, and it's a
+no."
+
 ### Exit codes are append-only
 
 Codes are a published contract. Changing what `4` means breaks every script and agent that

@@ -34,6 +34,25 @@ export const ExitCode = {
 
 export type ExitCodeValue = (typeof ExitCode)[keyof typeof ExitCode];
 
+/**
+ * OUTCOME codes — deliberately NOT errors, and deliberately not in ERROR_KINDS.
+ *
+ * An error means the invocation failed. An outcome means the invocation SUCCEEDED and the
+ * answer was negative. `acc check` on a non-conformant target did its job perfectly; the
+ * report is accurate, well-formed data and stays on stdout as `ok: true`. But it must still
+ * exit non-zero, because non-zero-ness is what makes a finding visible to a harness that does
+ * not parse JSON — the argument this catalogue makes for every CLI it checks.
+ *
+ * The bands: 1-8 = why the INVOCATION failed. 9-124 = what the SUBJECT turned out to be.
+ * 125+ = what a CHILD PROCESS did.
+ */
+export const Outcome = {
+  /** The check ran successfully; the target does not conform. */
+  NonConformant: 9,
+} as const;
+
+export type OutcomeValue = (typeof Outcome)[keyof typeof Outcome];
+
 /** Stable machine identifiers, paired 1:1 with the codes above. The `kind` is the contract; the
  *  message is presentation. */
 export const ErrorKind = {

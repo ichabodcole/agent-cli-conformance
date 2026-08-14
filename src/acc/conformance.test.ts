@@ -325,3 +325,43 @@ describe("acc checks itself, through the kit", () => {
     expect(r.findings.find((f) => f.ruleId === "A1")?.verdict).toBe("fail");
   }, 60_000);
 });
+
+// `acc check` end to end, through the real CLI entry point rather than the kit's library
+// functions directly — these exercise checkCommand's own exit-code plumbing (see
+// src/acc/exit-codes.ts's Outcome band), which the kit-driven tests above never touch since
+// they call record/buildReport in-process and never observe a process exit code at all.
+describe("acc check — the outcome exit code", () => {
+  test("exits 9 (Outcome.NonConformant) against a non-conformant target", async () => {
+    const broken = join(dirname(CLI), "kit/fixtures/broken/exits-zero-on-unknown-flag.ts");
+    const r = await run(["check", broken, "--format", "text"]);
+    expect(r.code).toBe(9);
+    // Still a successful invocation, not an error: the report is data, not a failure envelope.
+    expect(r.stdout).toContain("NOT CONFORMANT");
+    expect(r.stderr).toBe("");
+  }, 30_000);
+
+  test("exits 0 against a conformant target", async () => {
+    const conforming = join(dirname(CLI), "kit/fixtures/conforming.ts");
+    const r = await run(["check", conforming, "--format", "text"]);
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain("CONFORMANT");
+  }, 30_000);
+
+  // Finding 4: the not_found path (a target that doesn't exist) had no coverage at all — `check`
+  // declares ErrorKind.NotFound in spec.ts but nothing exercised it.
+  test("exits 5 (not_found) when the target path does not exist", async () => {
+    const r = await run(["check", "/no/such/binary-xyz", "--format", "text"]);
+    expect(r.code).toBe(5);
+    expect(r.stdout).toBe("");
+    expect(r.stderr).toContain("no such file");
+  }, 15_000);
+
+  test("exits 5 (not_found) with a structured envelope in machine mode", async () => {
+    const r = await run(["check", "/no/such/binary-xyz", "--json"]);
+    expect(r.code).toBe(5);
+    const env = JSON.parse(r.stderr);
+    expect(env.ok).toBe(false);
+    expect(env.error.kind).toBe("not_found");
+    expect(env.error.exit_code).toBe(5);
+  }, 15_000);
+});
