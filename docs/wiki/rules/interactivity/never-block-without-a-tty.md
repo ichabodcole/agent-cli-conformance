@@ -28,8 +28,8 @@ When stdin is not a TTY, a CLI **MUST NOT** wait for input. No prompts, no confi
 "press any key".
 
 Where an operation genuinely requires a decision, it **MUST** fail fast with a structured
-[`action_required`](../../concepts/error-envelope.md#three-statuses-not-two) response and a
-non-zero exit (`8`), naming the flag that would supply the answer.
+[`confirmation_required`](../../concepts/error-envelope.md#two-shapes-and-confirmation_required-is-one-of-the-errors)
+error and exit `8`, naming the flag that would supply the answer.
 
 It **MUST NOT** treat EOF, an empty line, or closed stdin as an answer — neither as consent nor
 as refusal.
@@ -54,9 +54,10 @@ mechanism itself. The behaviour has also shifted across releases (earlier versio
 printed a reclaimed-space line, later ones do not), so even output-sniffing is not a stable
 workaround.
 
-Failing fast with `action_required` fixes both: the caller learns immediately that a decision
-is needed, learns exactly which flag supplies it, and never receives a success code for work
-that did not happen.
+Failing fast with `confirmation_required` fixes both: the caller learns immediately that a
+decision is needed, learns exactly which flag supplies it, and never receives a success code
+for work that did not happen. Exit `8` is an error rather than a success precisely because the
+work was not done — see [what exit 8 means](../../concepts/exit-codes.md#the-taxonomy).
 
 ## The probe
 

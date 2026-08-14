@@ -7,7 +7,7 @@ description:
 tags: [errors, contract, agent-facing, remediation]
 related: [concept/exit-codes, concept/machine-mode, rule/stdout-carries-only-data]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 ---
 
 # Error envelope
@@ -60,26 +60,52 @@ a Core rule, and why the envelope belongs on stderr.
 
 ## The details
 
-### Three statuses, not two
+### Two shapes, and `confirmation_required` is one of the errors
 
-The best artefact found in the survey is Vercel's agent-mode envelope, because it has a third
-status beyond success and failure:
+There are exactly **two** top-level shapes: `{ ok: true, data }` and `{ ok: false, error }`.
+There is no third status and no `status` field. A discriminated union over `ok` is the whole
+algebra a consumer has to handle.
+
+"I need a decision from you" is therefore an ordinary error, with the kind
+`confirmation_required` and [exit `8`](./exit-codes.md#the-taxonomy):
 
 ```
-{ "status": "action_required",
-  "reason": "project_not_linked",
-  "message": "...",
-  "choices": ["link-existing", "create-new"],
-  "next": [{ "command": "vercel link --project <name>", "when": "link-existing" }] }
+{
+  "ok": false,
+  "error": {
+    "kind": "confirmation_required",
+    "exit_code": 8,
+    "retryable": false,
+    "message": "Deleting 3 projects requires confirmation",
+    "hint": "Re-run with --yes to proceed, or --dry-run to see the effect",
+    "choices": ["--yes", "--dry-run"],
+    "details": { "affected": ["alpha", "beta", "gamma"] }
+  },
+  "meta": { "command": "projects prune" }
+}
 ```
 
-`action_required` says: _nothing went wrong, and nothing happened, and here is exactly what
-would unblock it._ Without it, "I need a decision from you" has to masquerade as an error, and
-an agent cannot tell a genuine failure from a solicitable one.
+Nothing above is optional decoration: `choices` names the flags that would supply the decision,
+and `details` enumerates the blast radius — the machine-readable equivalent of reading the
+prompt a TTY user would have seen.
 
-This is also how a non-interactive tool asks for confirmation — see
-[exit code 8](./exit-codes.md#the-taxonomy). It never blocks on a prompt; it returns
-`action_required` with the exact command to re-run.
+**What exit `8` means.** The work was **not done** — that is why it is not a success, and why
+`ok` is `false`. What separates it from every other error kind is that the caller can resolve
+it: the invocation was incomplete rather than wrong, and supplying the decision it named turns
+the same command into one that works. Compare `usage` (exit `2`), where retrying the invocation
+unchanged fails identically, and `permission` (exit `4`), where no argument the caller can add
+will help.
+
+That distinction is the point, and it is what the survey's best artefact — Vercel's agent-mode
+envelope — was reaching for with a third top-level status. This spec puts the same information
+in the `kind` field instead of in a parallel `status` field. One discriminator, and
+`confirmation_required` is as branchable as `rate_limit`. (An earlier draft of this page named
+that state `action_required`, after Vercel's field. The name is gone; `confirmation_required`
+is the only spelling, and it is the one the implementation and the schema publish.)
+
+This is how a non-interactive tool asks for confirmation. It never blocks on a prompt — see
+[never block without a TTY](../rules/interactivity/never-block-without-a-tty.md) — it exits `8`
+and names the flag that would supply the answer.
 
 ### `choices` is just-in-time discovery
 
@@ -94,12 +120,34 @@ so the flags an error offers are by construction the flags the parser accepts.
 Contrast a parser that accepts `--frmat` silently: there is no error, so there is no slice, so
 there is nothing to correct.
 
-### `next` carries executable remediation
+### `next` carries remediation as untyped command templates
 
-Success responses may also carry `next` — command _templates with typed placeholders_,
-pre-filled with the identifiers just used. This addresses a real and specific agent failure:
-a command that starts something (a job, a daemon, a build) succeeds, and the agent never
-performs the follow-up that makes the result observable, because nothing told it to.
+**Success** responses may carry `next`. This addresses a real and specific agent failure: a
+command that starts something (a job, a daemon, a build) succeeds, and the agent never performs
+the follow-up that makes the result observable, because nothing told it to.
+
+```
+"next": [{ "command": "acc show A1 --body", "when": "to read the full text" }]
+```
+
+The error envelope has no `next` field. A failure's remediation travels in `hint` (prose) and
+`choices` (the valid alternatives) — including the `confirmation_required` case above, where
+`choices` names the flags that would resolve it.
+
+`command` is **a string**. It is not a typed structure, and the placeholders in it are not
+declared anywhere: `acc link --project <name>` carries a `<name>` that no schema describes, and
+a caller has to recognise the convention by reading it. `when` is prose. Nothing in the envelope
+tells a consumer which parts of the string are substitutable, what type they take, or what
+effects running it would have.
+
+Saying so plainly is the honest position, because a string that looks executable invites being
+executed. Treat `next` as a **proposal to read**, not text to run — a shell string also loses
+the distinction between argv and shell syntax, so interpolating a user-controlled identifier
+into one is a command-injection boundary.
+
+A typed `next` — an executable plus an argv array, declared placeholders, an effect
+classification, and provenance — is the intended direction and is not implemented. Until it is,
+this page describes what is actually emitted.
 
 `next` is advisory, never required. A caller that ignores it must still be able to reach the
 same state by other means.

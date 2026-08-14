@@ -14,7 +14,19 @@ import { ERROR_KINDS, ExitCode, type ExitCodeValue } from "./exit-codes.ts";
 
 export type OutputMode = "text" | "json";
 
-/** A command template with typed placeholders, pre-filled where the ids are already known. */
+/**
+ * An UNTYPED command template. `command` is a string, and any placeholders in it (`<name>`) are
+ * a reading convention, not a declared structure — nothing here says which substring is
+ * substitutable, what type it takes, or what running it would do.
+ *
+ * Described that way deliberately: this said "typed placeholders" while emitting neither types
+ * nor placeholders, and a string that looks executable invites being executed. See
+ * docs/wiki/concepts/error-envelope.md — a typed `next` is a later roadmap item, and until it
+ * exists the field says what it actually is.
+ *
+ * Success envelopes only. `ErrorEnvelope` deliberately has no `next`: a failure's remediation
+ * travels in `hint` and `choices`.
+ */
 export interface NextAction {
   command: string;
   when?: string;

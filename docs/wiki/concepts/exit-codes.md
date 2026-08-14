@@ -7,7 +7,7 @@ description:
 tags: [exit-codes, errors, contract, agent-facing]
 related: [rule/unknown-flag-exits-nonzero, decision/exit-codes-below-125]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 ---
 
 # Exit codes
@@ -94,6 +94,13 @@ happened to return. That is why nine suffice where a status-mirroring scheme nee
 
 `5` deliberately conflates "does not exist" with "exists outside your scope". Distinguishing
 them lets a caller probe for the existence of resources it cannot see.
+
+`8` is an **error, not a success**: the work was not done, `ok` is `false`, and the kind is
+`confirmation_required`. What distinguishes it from the other seven is that the caller can
+resolve it — the invocation was incomplete rather than wrong, so supplying the decision it
+named makes the same command work. `2` cannot be resolved that way (retrying unchanged fails
+identically) and neither can `4` (no argument the caller adds will help). There is no third
+top-level status; see [the error envelope](./error-envelope.md#two-shapes-and-confirmation_required-is-one-of-the-errors).
 
 The reserved band is why our codes stop at 8 — see
 [exit codes stay below 125](../decisions/exit-codes-below-125.md).
