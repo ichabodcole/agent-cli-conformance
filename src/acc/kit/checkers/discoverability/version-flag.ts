@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, hungUnverified } from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -36,6 +36,11 @@ export const versionFlagChecker: Checker = {
     if (!plain) {
       return finding("unverified", "probe was not recorded", []);
     }
+    // A hung `--version` would otherwise be reported as "--version exited null" — a fail whose
+    // detail describes a status the target never chose. D1 does not own hangs (E1 does), so
+    // the honest verdict is that nothing was established.
+    const hung = hungUnverified(finding, runs);
+    if (hung) return hung;
 
     const evidence = runs.map((o) => o.id);
     const problems: string[] = [];

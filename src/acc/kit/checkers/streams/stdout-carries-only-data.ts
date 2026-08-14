@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, hungUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -24,12 +24,20 @@ export const stdoutCarriesOnlyDataChecker: Checker = {
     // A3's probes, so dedup in record() merges all three checkers' requests into one recording
     // per args, and `invocation.purpose` only ever holds the FIRST requester's reason.
     const relevant = findByPurpose(h, "B1:");
-    const failures = relevant.filter((o) => o.exitCode !== 0 && !o.timedOut);
+    // Checked before the exitCode filter below, which would silently drop hung probes and then
+    // report on whatever remained. Every other checker in the catalogue answers a hang the
+    // same way; B1 doing it by side effect made its verdict depend on how many probes hung.
+    const hung = hungUnverified(finding, relevant);
+    if (hung) return hung;
+
+    const failures = relevant.filter((o) => o.exitCode !== 0);
     if (failures.length === 0) {
       return finding(
         "unverified",
         "no failing invocation was produced, so stdout could not be checked on failure",
-        [],
+        // Cite what WAS observed. An `unverified` with empty evidence reads as "nothing was
+        // recorded", which is a different claim from "these probes ran and none of them failed".
+        relevant.map((o) => o.id),
       );
     }
     const polluted = failures.filter((o) => o.stdout !== "");

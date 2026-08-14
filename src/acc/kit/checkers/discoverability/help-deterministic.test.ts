@@ -48,7 +48,9 @@ describe("D4 — help output is byte-identical between runs", () => {
     const h = await record(fixture("broken/nondeterministic-help.ts"), [helpDeterministicChecker]);
     const f = helpDeterministicChecker.check(h);
     expect(f.verdict).toBe("fail");
-    expect(f.detail).toMatch(/first at byte \d+/);
+    // "index", not "byte": the offset is a JS string index (UTF-16 code units), which is only
+    // a byte offset while the help text stays ASCII.
+    expect(f.detail).toMatch(/first at index \d+/);
     expect(f.ruleId).toBe("D4");
   });
 

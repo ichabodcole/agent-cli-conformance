@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, hungUnverified } from "../../finding.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -38,6 +38,12 @@ export const noFuzzyCorrectionChecker: Checker = {
     if (!o) {
       return finding("unverified", "no suitable flag was discovered to build a near-miss from", []);
     }
+    // The most dangerous hang in the catalogue lands here: a CLI that "corrects" the near-miss
+    // and then PROMPTS for confirmation blocks forever. exitCode is null, `!== 0` holds, and
+    // this checker used to report "near-miss rejected with exit null".
+    const hung = hungUnverified(finding, [o]);
+    if (hung) return hung;
+
     return o.exitCode === 0
       ? finding(
           "fail",

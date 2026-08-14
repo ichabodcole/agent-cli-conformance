@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, hungUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -34,6 +34,11 @@ export const noAnsiWhenPipedChecker: Checker = {
     if (relevant.length === 0) {
       return finding("unverified", "probes were not recorded", []);
     }
+    // A killed probe emits nothing, and "nothing" contains no escapes — so a hung target used
+    // to pass B2 for the same reason a target that prints nothing at all does.
+    const hung = hungUnverified(finding, relevant);
+    if (hung) return hung;
+
     // Every probe the runner makes captures to a pipe, so the target was never writing to a
     // TTY — that is exactly the condition this rule requires. No TTY emulation needed.
     const offenders = relevant.filter((o) => ANSI.test(o.stdout) || ANSI.test(o.stderr));

@@ -32,6 +32,11 @@ export const helpExitsZeroChecker: Checker = {
     const problems: string[] = [];
     for (const o of observed) {
       const label = o.invocation.args.join(" ");
+      // One of the four deliberate exceptions to `hungUnverified` (see finding.ts). C1's rule
+      // is "help is a request, and it SUCCEEDS" — a help path that never returns has
+      // definitively not succeeded, so this is a violation, not an inconclusive probe. The
+      // catalogue-wide invariant is only that a timeout never yields a PASS; it does not
+      // require every rule to go silent on one.
       if (o.timedOut) {
         problems.push(`${label} hung instead of exiting`);
         continue;

@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, hungUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
@@ -25,6 +25,11 @@ export const namesOffendingTokenChecker: Checker = {
     const flag = findByArgs(h, FLAG);
     const verb = findByArgs(h, VERB);
     if (!flag || !verb) return finding("unverified", "probes were not recorded", []);
+    // A killed probe has empty stderr, which would read here as "did not name the token" — a
+    // FAIL derived from a process that never got to write anything. Wrong in the other
+    // direction from a false pass, but wrong on the same evidence.
+    const hung = hungUnverified(finding, [flag, verb]);
+    if (hung) return hung;
 
     const evidence = [flag.id, verb.id];
     const problems: string[] = [];

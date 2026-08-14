@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, hungUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
@@ -31,6 +31,11 @@ export const doubleDashTerminatorChecker: Checker = {
   check: (h: History): Finding => {
     const o = findByArgs(h, ARGS);
     if (!o) return finding("unverified", "probe was not recorded", []);
+    // This checker's assertion is an ABSENCE (no unknown-option error naming the sentinel), so
+    // a hung probe's empty stderr satisfies it trivially. Absence of evidence, read as
+    // evidence of absence, is exactly the overclaim the kit exists to prevent.
+    const hung = hungUnverified(finding, [o]);
+    if (hung) return hung;
 
     // Inverted assertion: after `--`, the token is a VALUE, so it must not be reported as an
     // unknown option. The command may still fail for other reasons (no verb given), which is

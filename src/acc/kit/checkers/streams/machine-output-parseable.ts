@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, hungUnverified } from "../../finding.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -44,12 +44,17 @@ export const machineOutputParseableChecker: Checker = {
       );
     }
     // findByPurpose, not findByArgs: the args `["--help", "--json"]` belong solely to this
-    // checker today, but findByArgs is the wrong default to reach for on a probe result — see
-    // types.ts's doc comment on why every checker here uses findByPurpose instead.
+    // checker today, but findByArgs matches on args while ignoring env, so it is the wrong
+    // default to reach for on a probe result — see types.ts's doc comment on findByArgs.
     const [o] = findByPurpose(h, "B3:");
     if (!o) {
       return finding("unverified", "probe was not recorded", []);
     }
+    // Already unverified below via the empty-stdout branch, but that detail would blame the
+    // target for producing no output when in fact we killed it. Say which happened.
+    const hung = hungUnverified(finding, [o]);
+    if (hung) return hung;
+
     if (o.stdout.trim() === "") {
       return finding("unverified", "machine-mode probe produced no stdout", [o.id]);
     }

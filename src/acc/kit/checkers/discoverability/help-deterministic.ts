@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, hungUnverified } from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -41,6 +41,11 @@ export const helpDeterministicChecker: Checker = {
       );
     }
 
+    // Two hung runs both yield "", and "" === "" — so this checker used to report "help output
+    // identical across runs" for a CLI that produced no help at all, twice.
+    const hung = hungUnverified(finding, [a, b]);
+    if (hung) return hung;
+
     const evidence = [a.id, b.id];
     if (a.stdout === b.stdout) {
       return finding("pass", "help output identical across runs", evidence);
@@ -61,7 +66,9 @@ export const helpDeterministicChecker: Checker = {
       "fail",
       // Report the DIFF location, not just the fact: a one-line delta containing a timestamp is
       // a different problem from wholesale reordering, and the fix differs accordingly.
-      `help output differed between runs, first at byte ${firstDiff}`,
+      // "index", not "byte": these are JS string offsets, i.e. UTF-16 code units, which diverge
+      // from byte offsets the moment help contains a non-ASCII character.
+      `help output differed between runs, first at index ${firstDiff}`,
       evidence,
     );
   },

@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, hungUnverified } from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -35,6 +35,11 @@ export const noSecretsInHelpChecker: Checker = {
     if (!o) {
       return finding("unverified", "probe was not recorded", []);
     }
+    // Scanning the empty output of a killed process finds no credentials, which is true and
+    // worthless. F1 is already careful not to overclaim from a clean scan; claiming one from
+    // text that was never produced is the same error one step earlier.
+    const hung = hungUnverified(finding, [o]);
+    if (hung) return hung;
 
     const text = `${o.stdout}\n${o.stderr}`;
     const hits = PATTERNS.filter(([, re]) => re.test(text)).map(([label]) => label);

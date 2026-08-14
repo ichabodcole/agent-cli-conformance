@@ -32,12 +32,24 @@ export const firstBytePromptChecker: Checker = {
     // other and with D1's own `--version` probes — findByArgs would return whichever of those
     // recorded first, silently.
     const runs = findByPurpose(h, "F2:");
-    const times = runs.map((o) => o.timeToFirstByteMs).filter((t): t is number => t !== null);
+    // Timed-out runs are excluded from the sample, not merely tolerated. A process we killed
+    // may well have written a byte quickly and then blocked forever; reading that as "first
+    // byte was prompt" would certify responsiveness for a command that never finished. The
+    // catalogue's rule is that a killed probe is not evidence of compliance, and F2's
+    // compliance claim is about the run as a whole.
+    const completed = runs.filter((o) => !o.timedOut);
+    const times = completed.map((o) => o.timeToFirstByteMs).filter((t): t is number => t !== null);
     if (times.length === 0) {
-      return finding("unverified", "no timing was captured", []);
+      return finding(
+        "unverified",
+        runs.length === completed.length
+          ? "no timing was captured"
+          : `no timing was captured: ${runs.length - completed.length} of ${runs.length} runs hit the deadline`,
+        runs.map((o) => o.id),
+      );
     }
 
-    const evidence = runs.map((o) => o.id);
+    const evidence = completed.map((o) => o.id);
     // Best-of-N, not the mean: the interesting number is the floor, since a slow run usually
     // measures the machine rather than the tool. The spread is reported because high variance
     // is itself a finding.

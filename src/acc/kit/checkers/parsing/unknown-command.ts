@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, hungUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
@@ -35,6 +35,11 @@ export const unknownCommandChecker: Checker = {
   check: (h: History): Finding => {
     const o = findByArgs(h, ROOT);
     if (!o) return finding("unverified", "probe was not recorded", []);
+    // A killed probe reports exitCode null and an empty stdout, which satisfies both tests
+    // below — this checker used to pass a CLI that blocked forever on an unknown verb, with
+    // the detail "root verb rejected with exit null".
+    const hung = hungUnverified(finding, [o]);
+    if (hung) return hung;
 
     const problems: string[] = [];
     if (o.exitCode === 0) problems.push("unknown root verb exited 0");
