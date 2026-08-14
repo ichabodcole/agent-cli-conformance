@@ -6,7 +6,7 @@ the pages.
 
 ## What this wiki is
 
-The durable, curated knowledge for the **agent-first CLI framework**: what each part of a CLI
+The durable, curated knowledge for the **Agent CLI Conformance** project: what each part of a CLI
 _is_ (concepts), what shapes CLIs take (archetypes), the normative rules a conforming CLI must
 satisfy (rules), why we chose what we chose (decisions), and how to actually do things
 (guides).

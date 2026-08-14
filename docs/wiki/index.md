@@ -1,13 +1,13 @@
 ---
 type: index
-title: Agent-first CLI framework — wiki
+title: Agent CLI Conformance — wiki
 description: The catalog. One line per page; update it in the same commit as the page.
 tags: [index, catalog]
 status: current
 updated: 2026-08-13
 ---
 
-# Agent-first CLI framework — wiki
+# Agent CLI Conformance — wiki
 
 Durable, curated knowledge for building command-line tools that LLM agents can drive without
 falling into silent failures. The contract for maintaining these pages is

@@ -1,4 +1,4 @@
-# agent-cli-framework
+# Agent CLI Conformance
 
 A specification and conformance kit for command-line tools that **LLM agents drive** — and
 that fail loudly instead of silently when the agent gets something wrong.
