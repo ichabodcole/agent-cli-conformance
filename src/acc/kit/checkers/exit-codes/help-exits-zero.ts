@@ -11,6 +11,7 @@ export const helpExitsZeroChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/exit-codes/help-exits-zero.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     { args: ["--help"], inertness: "help-path", purpose: "C1: --help" },

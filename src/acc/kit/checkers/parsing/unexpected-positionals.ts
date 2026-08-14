@@ -22,6 +22,7 @@ export const unexpectedPositionalsChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/unexpected-positionals-rejected.md",
   tier: "core",
+  probeLevel: "L1",
 
   probes: (): Invocation[] => [],
   check: (): Finding =>

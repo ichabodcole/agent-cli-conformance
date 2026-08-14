@@ -15,6 +15,7 @@ export const noAnsiWhenPipedChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/streams/no-ansi-when-piped.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     { args: ["--help"], inertness: "help-path", purpose: "B2: help must be escape-free" },

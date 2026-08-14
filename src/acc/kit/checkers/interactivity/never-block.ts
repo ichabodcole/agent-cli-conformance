@@ -20,6 +20,7 @@ export const neverBlockChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/interactivity/never-block-without-a-tty.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     { args: [], inertness: "bare", purpose: "E1: bare" },

@@ -12,6 +12,7 @@ export const usageDistinguishableChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/exit-codes/usage-errors-are-distinguishable.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     { args: [`--${SENTINEL}-flag`], inertness: "sentinel", purpose: "C2: usage error via flag" },

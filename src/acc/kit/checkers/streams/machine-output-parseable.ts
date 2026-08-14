@@ -25,6 +25,7 @@ export const machineOutputParseableChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/streams/machine-output-is-parseable.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (d: Discovery): Invocation[] =>
     // `--format` is deliberately NOT treated as a format selector here (see inert.ts's

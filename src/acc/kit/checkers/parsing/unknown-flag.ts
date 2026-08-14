@@ -13,6 +13,7 @@ export const unknownFlagChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/unknown-flag-exits-nonzero.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     {

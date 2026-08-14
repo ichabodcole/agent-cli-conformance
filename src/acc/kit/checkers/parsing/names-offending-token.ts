@@ -14,6 +14,7 @@ export const namesOffendingTokenChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/errors-name-the-offending-token.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     { args: FLAG, inertness: "sentinel", purpose: "A3: the rejection must name the flag" },

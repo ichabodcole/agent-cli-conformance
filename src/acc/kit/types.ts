@@ -89,11 +89,24 @@ export interface Finding {
  * never spawn. That separation is what lets two checkers share one recorded invocation, and
  * what lets a stored history be re-checked against new rules later.
  */
+/**
+ * How deeply the kit is allowed to probe. L0 is safety-classification-free: every probe must be
+ * inert by construction (see `Invocation.inertness`). Higher levels unlock probes that require
+ * knowledge only available after earlier phases run — e.g. L1 requires effect classification of
+ * subcommands, which is what lets A4 safely invoke a real verb with a stray positional.
+ */
+export type ProbeLevel = "L0" | "L1" | "L2";
+
 export interface Checker {
   ruleId: string;
   /** Wiki path, quoted in output so a failure points at the rule that explains it. */
   rulePath: string;
   tier: "core" | "diagnostic";
+  /** The lowest probe level at which this rule can be checked. A run at a lower level reports
+   *  it as not-applicable rather than unverified — "out of scope here" is a different claim
+   *  from "tried and could not establish it", and a report that conflates them cannot be acted
+   *  on. Must match the rule page's `probe_level` frontmatter. */
+  probeLevel: ProbeLevel;
   probes: (d: Discovery) => Invocation[];
   check: (h: History) => Finding;
 }

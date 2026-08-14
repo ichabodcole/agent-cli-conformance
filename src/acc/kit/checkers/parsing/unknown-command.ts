@@ -26,6 +26,7 @@ export const unknownCommandChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/unknown-command-exits-nonzero.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     { args: ROOT, inertness: "sentinel", purpose: "A2: unknown root verb" },

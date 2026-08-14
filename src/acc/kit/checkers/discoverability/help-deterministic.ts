@@ -11,6 +11,7 @@ export const helpDeterministicChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/discoverability/help-output-is-deterministic.md",
   tier: "core",
+  probeLevel: "L0",
 
   // Two runs of the SAME invocation would be deduplicated by the runner (see record.ts), so
   // determinism is probed through a distinct env that must not affect help output.

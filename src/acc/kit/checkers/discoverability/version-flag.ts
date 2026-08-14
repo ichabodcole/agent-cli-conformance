@@ -11,6 +11,7 @@ export const versionFlagChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/discoverability/version-flag-exists.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     { args: ["--version"], inertness: "help-path", purpose: "D1: --version" },

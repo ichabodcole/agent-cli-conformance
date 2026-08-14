@@ -18,6 +18,7 @@ export const noFuzzyCorrectionChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/no-fuzzy-auto-correction.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (d: Discovery): Invocation[] => {
     // Only flags, and only at root with no verb: a near-miss VERB could be corrected into a

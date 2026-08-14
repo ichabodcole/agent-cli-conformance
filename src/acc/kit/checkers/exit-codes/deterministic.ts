@@ -17,6 +17,7 @@ export const deterministicChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/exit-codes/exit-codes-are-deterministic.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (): Invocation[] =>
     REPEATS.map((args, i) => ({

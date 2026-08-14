@@ -14,6 +14,7 @@ export const firstBytePromptChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/safety/first-byte-is-prompt.md",
   tier: "diagnostic",
+  probeLevel: "L0",
 
   probes: (): Invocation[] =>
     RUNS.map((n) => ({

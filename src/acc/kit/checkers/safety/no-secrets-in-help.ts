@@ -21,6 +21,7 @@ export const noSecretsInHelpChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/safety/no-secrets-in-help-or-schema.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     { args: ["--help"], inertness: "help-path", purpose: "F1: scan help" },

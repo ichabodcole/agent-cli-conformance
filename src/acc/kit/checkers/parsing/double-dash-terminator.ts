@@ -22,6 +22,7 @@ export const doubleDashTerminatorChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/double-dash-terminator.md",
   tier: "diagnostic",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     { args: ARGS, inertness: "sentinel", purpose: "A6: `--` must end option parsing" },

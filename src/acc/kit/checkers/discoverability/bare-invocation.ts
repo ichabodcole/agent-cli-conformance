@@ -11,6 +11,7 @@ export const bareInvocationChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/discoverability/bare-invocation-is-a-usage-error.md",
   tier: "core",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     // `bare` is its own inertness class (see inert.ts), not `no-verb`: `no-verb` requires a

@@ -21,6 +21,7 @@ function stubChecker(ruleId: string, probes: Invocation[]): Checker {
     ruleId,
     rulePath: `docs/wiki/rules/stub/${ruleId}.md`,
     tier: "core",
+    probeLevel: "L0",
     probes: () => probes,
     check: (h: History): Finding => ({
       ruleId,

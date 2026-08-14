@@ -11,6 +11,7 @@ export const advertisesMachineModeChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/discoverability/help-advertises-machine-mode.md",
   tier: "diagnostic",
+  probeLevel: "L0",
 
   probes: (): Invocation[] => [
     { args: ["--help"], inertness: "help-path", purpose: "D3: help mentions machine mode" },
