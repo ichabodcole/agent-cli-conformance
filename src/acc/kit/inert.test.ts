@@ -14,6 +14,25 @@ describe("classifyInertness", () => {
     expect(classifyInertness(inv(["--version"], "help-path"))).toBe("help-path");
   });
 
+  // B3 checks machine-mode help by pairing a help token with a format selector. `--json`
+  // changes how the help renders, not what work gets done, so the pairing stays inert.
+  test("accepts a help path carrying a format selector alongside a help token", () => {
+    expect(classifyInertness(inv(["--help", "--json"], "help-path"))).toBe("help-path");
+  });
+
+  test("REFUSES a bare format selector claiming to be a help path", () => {
+    expect(() => assertInert(inv(["--json"], "help-path"))).toThrow(/not inert/i);
+  });
+
+  // `--format` is not a recognized format-selector token (only `--json` is), and even if it
+  // were, `json` here is a value riding alongside it — the same bare-token-after-a-flag problem
+  // that `no-verb` refuses, reintroduced through the `help-path` door.
+  test("REFUSES a help path carrying an unrecognized flag plus its value", () => {
+    expect(() => assertInert(inv(["--help", "--format", "json"], "help-path"))).toThrow(
+      /not inert/i,
+    );
+  });
+
   test("accepts an invocation carrying the sentinel", () => {
     expect(classifyInertness(inv([`--${SENTINEL}-flag`], "sentinel"))).toBe("sentinel");
   });

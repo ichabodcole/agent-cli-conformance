@@ -9,6 +9,13 @@ export const SENTINEL = "acc-probe-xyzzy";
 const HELP_TOKENS = new Set(["--help", "-h", "help", "--version", "-V", "-v"]);
 
 /**
+ * Output-format selectors. They change how a command RENDERS its result, never what work it
+ * does — so combined with a help token they are still inert, and B3 needs exactly that pairing
+ * to check machine-mode help (`--help --json`).
+ */
+const FORMAT_TOKENS = new Set(["--json"]);
+
+/**
  * Env keys a probe may set. Anything else could change what the target DOES, not just how it
  * reports — and the gate's job is to bound the blast radius, not just the argv. This is every
  * env the plan actually uses: D1's `HOME`/`XDG_CONFIG_HOME`, D4's `ACC_PROBE_NONCE`, F2's
@@ -37,11 +44,19 @@ export function classifyInertness(inv: Invocation): Invocation["inertness"] | nu
   const looksLikeFlag = (a: string) => a.startsWith("-");
 
   switch (inv.inertness) {
-    case "help-path":
-      // Every argument must be a help/version token, AND there must be at least one. Without
-      // the length check, an empty args array — a `bare` invocation — satisfies `.every()`
-      // vacuously, and a checker could claim it as `help-path` for free.
-      return inv.args.length > 0 && inv.args.every((a) => HELP_TOKENS.has(a)) ? "help-path" : null;
+    case "help-path": {
+      // Every argument must be a help/version token OR a format selector, AND at least one
+      // must be an actual help token. The second clause is what stops a bare `["--json"]` from
+      // classifying as a help path — `--json` alone asks for real output, not help — while
+      // still letting `["--help", "--json"]` through for B3. Without the length check on top,
+      // an empty args array — a `bare` invocation — would satisfy `.every()` vacuously.
+      const recognized = (a: string) => HELP_TOKENS.has(a) || FORMAT_TOKENS.has(a);
+      return inv.args.length > 0 &&
+        inv.args.every(recognized) &&
+        inv.args.some((a) => HELP_TOKENS.has(a))
+        ? "help-path"
+        : null;
+    }
     case "sentinel":
       // Every non-flag token must itself be a sentinel. Checking only that the sentinel
       // appears SOMEWHERE lets a real verb ride alongside it — a lenient parser rejects the

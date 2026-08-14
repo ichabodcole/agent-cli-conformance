@@ -35,6 +35,35 @@ describe("parseHelp", () => {
     expect(d.subcommands).toEqual([]);
     expect(d.flags).toEqual([]);
   });
+
+  // A flag belonging to a piped example command, or to a docs URL, is not the target's own
+  // surface. Scoping to the Options block is what keeps those out.
+  test("does not pick up flags outside the options block", () => {
+    const d = parseHelp(
+      "Options:\n  --loglevel <level>   Set the log level.\n\nExamples:\n  mycli list | jq --raw-output '.items'\n",
+    );
+    expect(d.flags).toEqual(["--loglevel"]);
+  });
+
+  // No options heading anywhere means there is no block to scope to — falling back to an
+  // unscoped scan is safer than reporting no flags at all when a real (if unheaded) one exists.
+  test("falls back to an unscoped scan when no options heading exists", () => {
+    const d = parseHelp("Usage: mycli [--json]\n");
+    expect(d.flags).toContain("--json");
+  });
+
+  // Real CLIs disagree on how they head the commands block: gh uses no colon at all, docker
+  // uses a qualifier before "Commands:". The heading match has to tolerate both.
+  test("finds subcommands under headings with no colon or an extra qualifier word", () => {
+    expect(
+      parseHelp("CORE COMMANDS\n  issue   Manage issues.\n  pr      Manage pull requests.\n")
+        .subcommands,
+    ).toEqual(["issue", "pr"]);
+    expect(parseHelp("Common Commands:\n  run    Run a container.\n").subcommands).toEqual(["run"]);
+    expect(parseHelp("Management Commands:\n  volume   Manage volumes.\n").subcommands).toEqual([
+      "volume",
+    ]);
+  });
 });
 
 describe("discover", () => {
