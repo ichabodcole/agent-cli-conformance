@@ -144,4 +144,24 @@ export const COMMANDS: CommandSpec[] = [
     errors: [ErrorKind.Internal],
     examples: ["acc schema", "acc schema | jq '.commands[].name'"],
   },
+  {
+    name: "check",
+    description: "Run the L0 conformance probes against a CLI binary.",
+    effects: "read_only",
+    output_kind: "data",
+    cardinality: "single",
+    positionals: [
+      { name: "target", description: "Path to the binary or script to check.", required: true },
+    ],
+    args: [
+      {
+        name: "--expectations",
+        type: "string",
+        description: "Directory holding .acc-expectations.json.",
+        valueHint: "dir",
+      },
+    ],
+    errors: [ErrorKind.NotFound, ErrorKind.Usage, ErrorKind.Internal],
+    examples: ["acc check ./mycli", "acc check $(which gh) --json"],
+  },
 ];

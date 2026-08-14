@@ -12,6 +12,11 @@ import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadExpectations } from "./kit/expectations.ts";
+import { record } from "./kit/record.ts";
+import { CHECKERS } from "./kit/registry.ts";
+import { buildReport, runCheckers } from "./kit/report.ts";
+import type { TargetInfo } from "./kit/types.ts";
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), "cli.ts");
 // Rule B2 forbids ANSI escapes when stdout is not a terminal. Detecting them requires naming
@@ -272,4 +277,51 @@ describe("schema", () => {
       expect(e.exit_code).toBeLessThan(125); // the reserved passthrough band
     }
   });
+});
+
+// acc, checked against the spec it enforces — now through the kit itself.
+//
+// This is the POSITIVE CONTROL, and it is now self-referential: the checker checks itself. If
+// acc ever stops conforming, or a checker breaks in a way that stops detecting, this goes red.
+// This suite is ADDED alongside the hand-written probes above, not a replacement for them: the
+// kit only re-implements what the 19 rule pages cover, and does not check the `choices` field's
+// contents, `next` command templates, machine-mode precedence, or schema completeness — those
+// stay covered by the tests above.
+const ACC: TargetInfo = { path: CLI, argv0: ["bun", CLI] };
+
+describe("acc checks itself, through the kit", () => {
+  test("is conformant", async () => {
+    const h = await record(ACC, CHECKERS);
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations("."), "L0");
+    if (!r.conformant) {
+      const failed = r.findings.filter((f) => f.verdict !== "pass" && f.tier === "core");
+      throw new Error(
+        `acc is not conformant:\n${failed.map((f) => `  ${f.ruleId} ${f.verdict}: ${f.detail}`).join("\n")}`,
+      );
+    }
+    expect(r.conformant).toBe(true);
+  }, 60_000);
+
+  test("every applicable core rule is verified, not merely unfailed", async () => {
+    // A4 is core but its probeLevel exceeds L0, so it is reported not-applicable rather than
+    // unverified — that must not count against acc. Only applicable core findings are asserted
+    // here; buildReport already excludes not-applicable findings from `conformant` itself.
+    const h = await record(ACC, CHECKERS);
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations("."), "L0");
+    const unverified = r.findings.filter(
+      (f) => f.applicable && f.tier === "core" && f.verdict === "unverified",
+    );
+    expect(unverified.map((f) => `${f.ruleId}: ${f.detail}`)).toEqual([]);
+  }, 60_000);
+
+  test("the kit detects a CLI that is NOT conformant", async () => {
+    // Without this, a kit that silently stopped checking anything would still pass the test
+    // above. The positive control needs a negative control.
+    const broken = join(dirname(CLI), "kit/fixtures/broken/exits-zero-on-unknown-flag.ts");
+    const target: TargetInfo = { path: broken, argv0: ["bun", broken] };
+    const h = await record(target, CHECKERS);
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, { knownFailures: {} }, "L0");
+    expect(r.conformant).toBe(false);
+    expect(r.findings.find((f) => f.ruleId === "A1")?.verdict).toBe("fail");
+  }, 60_000);
 });

@@ -13,10 +13,15 @@ import { existsSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type LintPage, runDocsLint } from "../../scripts/docs-lint/index.ts";
+import { CHECKERS } from "../../src/acc/kit/registry.ts";
 
 const WIKI_ROOT = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(WIKI_ROOT, "../..");
 const CHECKERS_DIR = join(REPO_ROOT, "src/acc/kit/checkers");
+
+// CHECKERS is plain data — `probes`/`check` are function references, never invoked at import
+// time — so this import has no side effects and is safe from a lint entry point.
+const PROBE_LEVEL_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.probeLevel]));
 
 const TIERS = new Set(["core", "diagnostic"]);
 const PROBE_LEVELS = new Set(["L0", "L1", "L2"]);
@@ -76,6 +81,20 @@ export function ruleChecks(pages: LintPage[]): string[] {
     // land the checker later, and the count of planned rules is the visible remaining work.
     if (status === "implemented" && !existsSync(join(REPO_ROOT, checker)))
       problems.push(`MISSING CHECKER ${page.rel}: declares "${checker}", which does not exist`);
+
+    // `Checker.probeLevel` gates the conformance verdict (buildReport reports it not-applicable
+    // above its declared level), so a page's `probe_level` frontmatter drifting from the
+    // checker's actual value would silently change what a run claims to have verified. Only
+    // checked once the rule is `implemented` and `id`/`level` are individually valid — an
+    // already-reported BAD probe_level or a `planned` rule (no live checker to compare against)
+    // would make this comparison meaningless.
+    if (status === "implemented" && id && level && PROBE_LEVELS.has(level)) {
+      const checkerLevel = PROBE_LEVEL_BY_RULE_ID.get(id);
+      if (checkerLevel && checkerLevel !== level)
+        problems.push(
+          `MISMATCH probe_level ${page.rel}: page declares "${level}", checker declares "${checkerLevel}"`,
+        );
+    }
   }
 
   // The reverse direction: a checker with no rule page is an undocumented rule, which is how

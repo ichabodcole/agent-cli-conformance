@@ -9,6 +9,7 @@
  * The parser is built from spec.ts, so help, parsing and `acc schema` cannot disagree.
  */
 import { Command, CommanderError } from "commander";
+import { checkCommand } from "./commands/check.ts";
 import { pathCommand } from "./commands/path.ts";
 import { rulesCommand } from "./commands/rules.ts";
 import { schemaCommand } from "./commands/schema.ts";
@@ -123,6 +124,13 @@ for (const spec of COMMANDS) {
         return tagsCommand(resolved, startedAt);
       case "schema":
         return schemaCommand(resolved, startedAt);
+      case "check":
+        return checkCommand(
+          positionals[0] as string,
+          { expectations: opts.expectations as string | undefined },
+          resolved,
+          startedAt,
+        );
       default:
         throw new AccError("internal", `no handler for command "${spec.name}"`);
     }
@@ -130,7 +138,7 @@ for (const spec of COMMANDS) {
 }
 
 try {
-  program.parse(argv);
+  await program.parseAsync(argv);
 } catch (err) {
   if (err instanceof CommanderError) {
     // Help and version are REQUESTS, and they succeeded. Commander models them as exceptions;

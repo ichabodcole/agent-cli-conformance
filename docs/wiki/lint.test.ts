@@ -206,6 +206,56 @@ test("an implemented rule whose checker file exists produces no problem", () => 
   expect(problems).toEqual([]);
 });
 
+// probe_level drift: `Checker.probeLevel` gates the conformance verdict (a checker above the
+// run's level is reported not-applicable, not unverified), so a page's frontmatter silently
+// disagreeing with the live checker would misdescribe what a run actually verified. `A1`'s real
+// checker (src/acc/kit/checkers/parsing/unknown-flag.ts) declares probeLevel "L0" — the
+// registry is ground truth here, not the frontmatter these tests write.
+test("an implemented rule whose probe_level disagrees with the checker's declared probeLevel is reported as MISMATCH", () => {
+  const problems = forward([
+    rule("rules/a.md", {
+      checker_status: "implemented",
+      checker: "docs/wiki/lint.ts",
+      probe_level: "L1",
+    }),
+  ]);
+  expect(problems).toEqual([
+    'MISMATCH probe_level rules/a.md: page declares "L1", checker declares "L0"',
+  ]);
+});
+
+test("an implemented rule whose probe_level agrees with the checker's declared probeLevel produces no problem", () => {
+  const problems = forward([
+    rule("rules/a.md", {
+      checker_status: "implemented",
+      checker: "docs/wiki/lint.ts",
+      probe_level: "L0",
+    }),
+  ]);
+  expect(problems).toEqual([]);
+});
+
+test("a planned rule's probe_level is not checked against the registry, even if it disagrees", () => {
+  // `planned` rules have no live checker to compare against yet — `status` gates this the same
+  // way it gates the MISSING CHECKER file-existence check above.
+  const problems = forward([rule("rules/a.md", { checker_status: "planned", probe_level: "L2" })]);
+  expect(problems).toEqual([]);
+});
+
+test("a rule_id the registry does not know about is not checked against it", () => {
+  // No real checker carries rule_id "Z9", so there is nothing to compare the frontmatter to —
+  // this must not be misread as a match (nor crash on an undefined lookup).
+  const problems = forward([
+    rule("rules/a.md", {
+      rule_id: "Z9",
+      checker_status: "implemented",
+      checker: "docs/wiki/lint.ts",
+      probe_level: "L2",
+    }),
+  ]);
+  expect(problems).toEqual([]);
+});
+
 test("every defect on one page is reported, in field order", () => {
   const problems = forward([
     pageOf("rules/broken.md", { type: "rule", tier: "wrong", probe_level: "L9" }),
