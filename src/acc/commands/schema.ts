@@ -29,6 +29,9 @@ export function schemaCommand(mode: OutputMode, startedAt: number): void {
       args: c.args,
       errors: c.errors,
       examples: c.examples,
+      // Serialised too: a caveat that only a human reading `--help` can see is invisible to
+      // exactly the caller this whole tool is built for.
+      ...(c.notes?.length ? { notes: c.notes } : {}),
     })),
     // Every declared kind, its code, and whether a blind retry is meaningful. A conformance
     // run provokes each one and verifies the code matches what is promised here.

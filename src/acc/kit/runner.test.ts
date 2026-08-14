@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SENTINEL } from "./inert.ts";
@@ -63,6 +64,25 @@ describe("runProbe", () => {
   test("a target that really runs is never flagged as spawn-failed", async () => {
     const o = await runProbe(CONFORMING, inv(["--help"], "help-path"));
     expect(o.spawnFailed).toBe(false);
+  });
+
+  // Bounding the blast radius: probes used to inherit the caller's cwd, so a probe that turned
+  // out not to be inert wrote into the user's project. This does not make an unsafe probe safe,
+  // it makes an unsafe probe survivable.
+  test("runs each probe in a fresh temporary directory, not the caller's cwd", async () => {
+    const pwd: TargetInfo = { path: "sh", argv0: ["sh", "-c", "pwd"] };
+    const a = await runProbe(pwd, inv([`--${SENTINEL}`], "sentinel"));
+    const b = await runProbe(pwd, inv([`--${SENTINEL}-two`], "sentinel"));
+    expect(a.stdout.trim()).not.toBe(process.cwd());
+    expect(a.stdout.trim()).toContain("acc-probe-");
+    // A fresh one per probe, so one probe cannot leave state another one reads.
+    expect(a.stdout.trim()).not.toBe(b.stdout.trim());
+  });
+
+  test("removes the temporary directory once the probe finishes", async () => {
+    const pwd: TargetInfo = { path: "sh", argv0: ["sh", "-c", "pwd"] };
+    const o = await runProbe(pwd, inv([`--${SENTINEL}`], "sentinel"));
+    expect(existsSync(o.stdout.trim())).toBe(false);
   });
 
   test("closes stdin so a target waiting on input cannot hang", async () => {

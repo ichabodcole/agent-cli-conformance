@@ -2,7 +2,11 @@ import type { Invocation } from "./types.ts";
 
 /**
  * A token no real CLI has a flag or verb for. Probes that need a guaranteed-invalid argument
- * build it from this, which is also what makes them provably inert.
+ * build it from this.
+ *
+ * That makes the token guaranteed-INVALID, which is not the same as guaranteed-HARMLESS. It is
+ * unmatched by any flag table and any command table; it is not unmatched by a CLI that takes
+ * free-form text as its root positional. See `classifyInertness` below.
  */
 export const SENTINEL = "acc-probe-xyzzy";
 
@@ -28,12 +32,35 @@ const ALLOWED_ENV = /^(ACC_[A-Z0-9_]+|AI_AGENT|HOME|XDG_CONFIG_HOME|NO_COLOR|TER
  * Prove an invocation is inert, or refuse it.
  *
  * The kit runs against binaries it knows nothing about, some of which spawn daemons, call live
- * APIs, or delete things. L0's guarantee is that it only ever runs help paths and
- * deliberately-invalid invocations — commands that a conforming CLI performs no work for.
+ * APIs, or delete things. This gate FAILS CLOSED: a checker's own claim about its probe is
+ * treated as a hypothesis and verified against the args, never trusted. A mislabelled probe is
+ * a bug in a checker; the cost of trusting it is damage to someone's project.
  *
- * This gate FAILS CLOSED: a checker's own claim about its probe is treated as a hypothesis and
- * verified against the args, never trusted. A mislabelled probe is a bug in a checker; the cost
- * of trusting it is damage to someone's project.
+ * ## What L0 actually guarantees
+ *
+ * Against a **verb-dispatching** CLI — one whose first positional selects a command from a
+ * fixed table — L0 only ever runs help paths and invocations that fail argument parsing. There
+ * is no verb for `acc-probe-xyzzy-verb` and no flag for `--acc-probe-xyzzy-flag`, so dispatch
+ * never happens and no work is performed. That covers the great majority of CLIs, and every
+ * tool in the case-study survey.
+ *
+ * ## What it does NOT guarantee
+ *
+ * It is **not** inert against a CLI whose root positional is FREE-FORM DATA. For `claude "…"`,
+ * `llm "…"`, `aider "…"` — the dominant shape of the agent CLIs this kit exists to check —
+ * `<cli> acc-probe-xyzzy-verb` is not an unknown verb, it is a PROMPT. Running it spends money
+ * and can take actions. A6's `-- <sentinel>` is worse: after a terminator the sentinel is
+ * guaranteed to land as a positional, whatever the parser would otherwise have done with it.
+ *
+ * There is no reliable way to detect that shape from outside — help text does not declare it,
+ * and a wrong guess is worse than a documented limit, because it would license the kit to run
+ * probes it cannot justify. So the limit is documented and not guessed at: the rule pages for
+ * A2 and A6 say it, and `acc check --help` says it.
+ *
+ * Two things bound the damage rather than preventing it. Probes run with stdin closed and a
+ * deadline, so nothing waits for an answer forever; and each runs in a fresh temporary working
+ * directory (see runner.ts), so a probe that writes files cannot write them into the caller's
+ * project. Neither bounds a network call.
  */
 export function classifyInertness(inv: Invocation): Invocation["inertness"] | null {
   // Checked before the switch because it bounds every class alike: an env var can change what

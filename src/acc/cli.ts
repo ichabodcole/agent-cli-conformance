@@ -92,6 +92,10 @@ for (const spec of COMMANDS) {
       a.description,
     );
   }
+  // Notes before examples: a caveat a caller must read BEFORE running the command is worth
+  // nothing underneath the copy-pasteable invocation it is warning about.
+  if (spec.notes?.length)
+    cmd.addHelpText("after", `\n${spec.notes.map((n) => `  ${n}`).join("\n")}`);
   for (const example of spec.examples) cmd.addHelpText("after", `\n  ${example}`);
 
   cmd.action((...actionArgs: unknown[]) => {

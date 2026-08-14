@@ -39,6 +39,9 @@ export interface CommandSpec {
   args: ArgSpec[];
   errors: ErrorKindValue[];
   examples: string[];
+  /** Caveats a caller must read BEFORE running the command, rendered above the examples in
+   *  help. Distinct from `description`, which has to stay one line for the command list. */
+  notes?: string[];
 }
 
 /** Available on every command. Declared once so no subcommand can forget it — the citty
@@ -162,6 +165,18 @@ export const COMMANDS: CommandSpec[] = [
       },
     ],
     errors: [ErrorKind.NotFound, ErrorKind.Usage, ErrorKind.Internal],
+    // The gate's guarantee, stated where someone is about to point this at a binary. L0 probes
+    // are inert against a CLI that dispatches on a verb table; they are NOT inert against one
+    // whose first positional is free-form text, where the probe token is a prompt rather than
+    // an unknown command. The kit cannot detect that shape, so the caller has to know.
+    notes: [
+      "SAFETY: probes are inert against a CLI that dispatches on a fixed verb table — the probe",
+      "token matches no flag and no command, so nothing runs. They are NOT inert against a CLI",
+      "whose first positional is free-form text (claude, llm, aider): there the token is a",
+      "prompt, and running it costs money and may take actions. Probes run with stdin closed,",
+      "a deadline, and a fresh temporary working directory, which bounds filesystem damage but",
+      "not network calls. Do not point this at a CLI of that shape.",
+    ],
     examples: ["acc check ./mycli", "acc check $(which gh) --json"],
   },
 ];

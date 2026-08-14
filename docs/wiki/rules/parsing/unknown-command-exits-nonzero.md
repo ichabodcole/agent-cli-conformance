@@ -7,7 +7,7 @@ description:
 tags: [parsing, silent-failure, core]
 related: [rule/unknown-flag-exits-nonzero, concept/exit-codes]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: A2
 tier: core
 probe_level: L0
@@ -48,8 +48,24 @@ Inert (`L0`) — an unknown verb should perform no work by definition.
 <cli> nonsense-verb-xyz
 ```
 
-Passes when the invocation exits non-zero with empty stdout and a stderr message naming the
-unrecognised verb.
+Passes when the invocation exits non-zero and leaves stdout empty. The checker does **not**
+read stderr: whether the message names the offending verb is
+[A3](./errors-name-the-offending-token.md)'s question, and A3 probes this same invocation for
+exactly that. A2 is only about the exit code and the stream.
+
+### Where this probe is not inert
+
+The probe is inert against a **verb-dispatching** CLI, which is what it assumes: there is no
+command called `acc-probe-xyzzy-verb`, so nothing dispatches and no work is done.
+
+It is **not** inert against a CLI whose root positional is **free-form data**. For
+`claude "…"`, `llm "…"`, `aider "…"` the probe token is not an unknown verb, it is a **prompt**
+— running it spends money and can take actions. The kit cannot detect that shape from outside
+and deliberately does not guess, because a wrong guess would license probes it cannot justify.
+
+Probes run with stdin closed, under a deadline, and in a fresh temporary working directory, so
+filesystem damage is bounded. Nothing bounds a network call. Do not point `acc check` at a CLI
+whose first positional is free-form text.
 
 The nested case (`<cli> <known-group> nonsense-verb-xyz`) is not currently probed. Building it
 requires prefixing the sentinel with a real, discovered subcommand — but a CLI that treats an

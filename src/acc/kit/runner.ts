@@ -1,5 +1,8 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { assertInert } from "./inert.ts";
 import type { Invocation, Observation, TargetInfo } from "./types.ts";
 
@@ -21,6 +24,12 @@ export const DEFAULT_TIMEOUT_MS = 10_000;
  *
  * stdin is closed immediately, so a target that waits for input hits the deadline instead of
  * hanging forever — which is itself the E1 finding.
+ *
+ * Every probe runs in a FRESH TEMPORARY DIRECTORY, removed afterwards. The kit's probes are
+ * inert by construction against a verb-dispatching CLI, but `inert.ts` cannot prove anything
+ * about a CLI whose root positional is free-form data, and inheriting the caller's cwd meant a
+ * misjudged probe wrote into the user's project. This does not make an unsafe probe safe — it
+ * bounds what an unsafe probe can reach, at no cost. Nothing bounds a network call.
  */
 export async function runProbe(
   target: TargetInfo,
@@ -32,11 +41,16 @@ export async function runProbe(
   const [cmd, ...base] = target.argv0;
   if (!cmd) throw new Error("target has an empty argv0");
 
+  // Created before the promise so a failure to make the sandbox is a thrown error, not a
+  // probe that quietly runs in the caller's project directory instead.
+  const sandbox = mkdtempSync(join(tmpdir(), "acc-probe-"));
+
   return new Promise<Observation>((resolve) => {
     const startedAt = performance.now();
     let firstByteAt: number | null = null;
     const child = spawn(cmd, [...base, ...inv.args], {
       stdio: ["pipe", "pipe", "pipe"],
+      cwd: sandbox,
       env: { ...process.env, ...inv.env },
     });
 
@@ -63,6 +77,9 @@ export async function runProbe(
 
     const finish = (code: number | null, spawnFailed = false) => {
       clearTimeout(timer);
+      // `force` so a probe that already removed its own cwd doesn't turn cleanup into a crash;
+      // the recording is the point, and a leftover temp directory is not worth losing it over.
+      rmSync(sandbox, { recursive: true, force: true });
       resolve({
         id: invocationId(inv),
         invocation: inv,
