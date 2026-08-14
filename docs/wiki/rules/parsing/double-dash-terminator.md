@@ -76,6 +76,12 @@ guess rather than reporting a verdict about an argv the target never saw.
 
 The kit's `.ts` fixtures inherit this, so A6's own tests use POSIX shell fixtures instead.
 
+One case slips the guard, knowingly: a target with **no `.ts` extension** but a
+`#!/usr/bin/env bun` shebang is launched directly, so nothing in the invocation says "bun" and
+the swallow happens anyway. Catching it would mean reading an arbitrary target's first line and
+guessing at its interpreter — a heuristic on exactly the footing this catalogue refuses
+elsewhere. A6 is diagnostic, and a wrong `unverified` is cheaper than a wrong verdict.
+
 ### Where this probe is not inert
 
 After a terminator the sentinel is **guaranteed** to arrive as a positional — that is what the

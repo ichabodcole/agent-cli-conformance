@@ -43,6 +43,11 @@ export const doubleDashTerminatorChecker: Checker = {
     // same token (verified directly). Prepending a placeholder `--` to argv0 would restore the
     // argv, but only for targets we already know are Bun scripts — and it would corrupt the
     // argv of every other target. A diagnostic rule that cannot be delivered says so.
+    //
+    // Known gap: a target with no `.ts` extension but a `#!/usr/bin/env bun` shebang is
+    // launched directly, so argv0 never says "bun" and the swallow still happens. Closing it
+    // means reading an arbitrary file's first line and guessing its interpreter — the same
+    // class of guess `inert.ts` refuses for free-form-positional CLIs.
     if (h.target.argv0[0] === "bun") {
       return finding(
         "unverified",
