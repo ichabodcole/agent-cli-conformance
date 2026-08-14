@@ -13,6 +13,17 @@ interface RuleRow {
   title: string;
   tier: string;
   probe_level: string;
+  /**
+   * `complete` | `partial`, carried through from the page's frontmatter — the same field
+   * `acc check` reports per finding.
+   *
+   * Listed here because a rule list without it invites the reading the field exists to remove:
+   * that a rule appearing in `acc rules --tier core` is a rule the kit enforces in full. Every
+   * one is `partial` today. `coverage_gaps` names what each one leaves unestablished, so the
+   * count is never a bare admission of a hole.
+   */
+  coverage: string;
+  coverage_gaps: string[];
   path: string;
   tags: string[];
 }
@@ -41,6 +52,8 @@ export function rulesCommand(opts: RulesOptions, mode: OutputMode, startedAt: nu
     title: p.title,
     tier: p.tier ?? "",
     probe_level: p.probeLevel ?? "",
+    coverage: p.coverage ?? "",
+    coverage_gaps: p.coverageGaps,
     path: p.path,
     tags: p.tags,
   }));
@@ -60,10 +73,15 @@ export function rulesCommand(opts: RulesOptions, mode: OutputMode, startedAt: nu
       const dim = useColor() ? "\x1b[2m" : "";
       const reset = useColor() ? "\x1b[0m" : "";
       const width = Math.max(...d.rules.map((r) => r.rule_id.length));
-      const lines = d.rules.map(
-        (r) =>
-          `  ${r.rule_id.padEnd(width)}  ${r.title}${dim} (${r.tier}, ${r.probe_level})${reset}`,
-      );
+      // Coverage is stated per rule and the gap count with it. "partial" alone would be the
+      // information-free half of the claim — the reader learns something is missing and nothing
+      // about how much; `acc show <id>` is where the phrases themselves live.
+      const lines = d.rules.map((r) => {
+        const n = r.coverage_gaps.length;
+        const scope =
+          r.coverage === "partial" ? `partial, ${n} gap${n === 1 ? "" : "s"}` : r.coverage;
+        return `  ${r.rule_id.padEnd(width)}  ${r.title}${dim} (${r.tier}, ${r.probe_level}, ${scope})${reset}`;
+      });
       return [`${d.count} rule${d.count === 1 ? "" : "s"}`, ...lines].join("\n");
     },
   });

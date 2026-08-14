@@ -33,6 +33,12 @@ export interface WikiPage {
   tier?: string;
   probeLevel?: string;
   checker?: string;
+  /** `complete` | `partial` — how much of the page its checker establishes. Read here as well
+   *  as by the lint so `acc rules` can say it without a second parse of the same frontmatter. */
+  coverage?: string;
+  /** One phrase per normative clause the checker does not establish. Empty for a non-rule page
+   *  and for `complete` coverage. */
+  coverageGaps: string[];
   linksOut: string[];
   linksIn: string[];
   /** Body with frontmatter removed. */
@@ -84,6 +90,7 @@ export function loadGraph(root: string = defaultWikiRoot()): WikiGraph {
       related: yamlList(fields.get("related")),
       status: fields.get("status") ?? "",
       updated: fields.get("updated") ?? "",
+      coverageGaps: yamlList(fields.get("coverage_gaps")),
       linksOut: [],
       linksIn: [],
       body: fm ? raw.slice(fm[0].length).trimStart() : raw,
@@ -96,6 +103,8 @@ export function loadGraph(root: string = defaultWikiRoot()): WikiGraph {
     if (probeLevel) page.probeLevel = probeLevel;
     const checker = fields.get("checker");
     if (checker) page.checker = checker;
+    const coverage = fields.get("coverage");
+    if (coverage) page.coverage = coverage;
 
     pages.push(page);
 

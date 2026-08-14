@@ -43,8 +43,41 @@ _Planned: stateless-verb, service-client, daemon-session, streaming._
 
 ## Rules
 
-The normative spec, one page per rule. **Core** rules are binary pass/fail; **diagnostic**
-rules are reported but do not fail a run. Each declares the checker that enforces it.
+The normative spec, one page per rule. **Core** rules gate the verdict: a core violation makes
+a run non-conformant. **Diagnostic** rules are reported and never do. A core rule can also come
+back [`unverified`](./concepts/conformance.md) — the probe ran and established neither answer,
+which blocks full verification without failing the run.
+
+### Coverage at a glance
+
+Generated from rule frontmatter by `bun run docs:sync`; the lint fails when it drifts.
+**Checker** is presence — a checker file exists and is registered. **Coverage** answers the
+different question of how much of the page that checker actually establishes, and each rule
+page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).
+
+| Rule                                                              | Tier       | Level | Checker     | Coverage | Gaps |
+| ----------------------------------------------------------------- | ---------- | ----- | ----------- | -------- | ---- |
+| [A1](./rules/parsing/unknown-flag-exits-nonzero.md)               | core       | L0    | implemented | partial  | 3    |
+| [A2](./rules/parsing/unknown-command-exits-nonzero.md)            | core       | L0    | implemented | partial  | 3    |
+| [A3](./rules/parsing/errors-name-the-offending-token.md)          | core       | L0    | implemented | partial  | 3    |
+| [A4](./rules/parsing/unexpected-positionals-rejected.md)          | core       | L1    | implemented | partial  | 1    |
+| [A5](./rules/parsing/no-fuzzy-auto-correction.md)                 | core       | L0    | implemented | partial  | 3    |
+| [A6](./rules/parsing/double-dash-terminator.md)                   | diagnostic | L0    | implemented | partial  | 2    |
+| [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | L0    | implemented | partial  | 2    |
+| [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | L0    | implemented | partial  | 3    |
+| [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L0    | implemented | partial  | 3    |
+| [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | L0    | implemented | partial  | 3    |
+| [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | L0    | implemented | partial  | 2    |
+| [C3](./rules/exit-codes/exit-codes-are-deterministic.md)          | core       | L0    | implemented | partial  | 3    |
+| [D1](./rules/discoverability/version-flag-exists.md)              | core       | L0    | implemented | partial  | 3    |
+| [D2](./rules/discoverability/bare-invocation-is-a-usage-error.md) | core       | L0    | implemented | partial  | 2    |
+| [D3](./rules/discoverability/help-advertises-machine-mode.md)     | diagnostic | L0    | implemented | partial  | 1    |
+| [D4](./rules/discoverability/help-output-is-deterministic.md)     | core       | L0    | implemented | partial  | 3    |
+| [E1](./rules/interactivity/never-block-without-a-tty.md)          | core       | L0    | implemented | partial  | 3    |
+| [F1](./rules/safety/no-secrets-in-help-or-schema.md)              | core       | L0    | implemented | partial  | 3    |
+| [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | L0    | implemented | partial  | 3    |
+
+19 rules · 0 `complete` · 19 `partial` · 49 named gaps.
 
 ### Parsing
 

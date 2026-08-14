@@ -95,17 +95,35 @@ coverage_gaps: # one phrase per normative clause the checker does not establish
   - only the root is probed so a flag unknown to a subcommand is not
 ```
 
-`checker_status` is the ratchet. A rule may declare its `checker` path before the file exists;
-the lint only requires the file once the status is `implemented`. The count of `planned` rules
-is the remaining work, and it only ever goes down.
+### Two fields, two questions
 
-`coverage` is a different axis, and the two are routinely confused: `checker_status` says a
-file exists, `coverage` says how much of this page's normative text that file establishes. A
-rule stating five **MUST**s whose checker tests two is `partial`, however finished the checker
-is. `complete` **MUST** carry an empty `coverage_gaps`; `partial` **MUST** carry at least one
-entry, so it can never be a bare flag admitting a hole while naming none of it. The gaps are
-what [`fullyVerified`](./concepts/conformance.md#coverage-a-pass-can-be-narrower-than-its-rule)
+`checker_status` and `coverage` are routinely confused, and the confusion runs one way: a
+reader takes `implemented` for "the rule is enforced". Every rule in the catalogue is
+`implemented` and every one is `partial`, so that reading is wrong for all of them.
+
+| Field            | The question it answers                                         |
+| ---------------- | --------------------------------------------------------------- |
+| `checker_status` | **Is there a checker at all?**                                  |
+| `coverage`       | **How much of this page does that checker actually establish?** |
+
+`checker_status: implemented` means exactly this: the file named by `checker` exists on disk
+and is registered in `src/acc/kit/registry.ts`, so `acc check` runs it. It is a statement about
+**implementation presence** and nothing else — not about scope, not about strength, not about
+whether a `pass` from it means the page held.
+
+It is the ratchet. A rule may declare its `checker` path before the file exists; the lint only
+requires the file once the status is `implemented`. The count of `planned` rules is the
+remaining work, and it only ever goes down.
+
+`coverage` says how much of this page's normative text that file establishes. A rule stating
+five **MUST**s whose checker tests two is `partial`, however finished the checker is. `complete`
+**MUST** carry an empty `coverage_gaps`; `partial` **MUST** carry at least one entry, so it can
+never be a bare flag admitting a hole while naming none of it. The gaps are what
+[`fullyVerified`](./concepts/conformance.md#coverage-a-pass-can-be-narrower-than-its-rule)
 withholds itself over, and what `acc check` prints when it does.
+
+Both fields for every rule are tabulated in [index.md](./index.md#coverage-at-a-glance), which
+is generated from this frontmatter by `bun run docs:sync` and fails the lint when it drifts.
 
 A gap phrase is read back by a deliberately small frontmatter parser that splits list items on
 a comma and on a space-hyphen-space sequence, so it must contain neither. The kit's own

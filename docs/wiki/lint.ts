@@ -9,10 +9,16 @@
 // prose, it is the human-readable half of a conformance checker, and the two must not drift.
 // That check has no business in the portable core, so it lives here.
 
-import { existsSync, readdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type LintPage, runDocsLint, yamlList } from "../../scripts/docs-lint/index.ts";
+import {
+  type LintPage,
+  parseFrontmatter,
+  runDocsLint,
+  walkMarkdown,
+  yamlList,
+} from "../../scripts/docs-lint/index.ts";
 import { CHECKERS } from "../../src/acc/kit/registry.ts";
 
 const WIKI_ROOT = dirname(fileURLToPath(import.meta.url));
@@ -168,6 +174,142 @@ export function ruleChecks(pages: LintPage[]): string[] {
   return problems;
 }
 
+/** The index section the matrix owns. Everything between it and the next heading is generated. */
+export const MATRIX_HEADING = "### Coverage at a glance";
+
+/**
+ * The rule / tier / probe level / checker_status / coverage / gap-count matrix (review R3-1).
+ *
+ * Derived from the same frontmatter the cross-checks above bind to the registry, so the table
+ * cannot claim a coverage the checker does not declare — it would have to drift past two gates
+ * to do it. Hand-maintaining nineteen rows beside nineteen pages is the exact shape of drift
+ * this wiki exists to fail on.
+ */
+export function coverageMatrix(pages: LintPage[]): string {
+  const rules = pages
+    .filter((p) => p.fields.get("type") === "rule")
+    .map((p) => ({
+      id: p.fields.get("rule_id") ?? "",
+      rel: p.rel,
+      tier: p.fields.get("tier") ?? "",
+      level: p.fields.get("probe_level") ?? "",
+      status: p.fields.get("checker_status") ?? "",
+      coverage: p.fields.get("coverage") ?? "",
+      gaps: yamlList(p.fields.get("coverage_gaps")).length,
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  const complete = rules.filter((r) => r.coverage === "complete").length;
+  const gaps = rules.reduce((n, r) => n + r.gaps, 0);
+
+  return [
+    "Generated from rule frontmatter by `bun run docs:sync`; the lint fails when it drifts.",
+    "**Checker** is presence — a checker file exists and is registered. **Coverage** answers the",
+    "different question of how much of the page that checker actually establishes, and each rule",
+    "page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).",
+    "",
+    "| Rule | Tier | Level | Checker | Coverage | Gaps |",
+    "| ---- | ---- | ----- | ------- | -------- | ---- |",
+    ...rules.map(
+      (r) =>
+        `| [${r.id}](./${r.rel}) | ${r.tier} | ${r.level} | ${r.status} | ${r.coverage} | ${r.gaps} |`,
+    ),
+    "",
+    `${rules.length} rules · ${complete} \`complete\` · ${rules.length - complete} \`partial\` · ${gaps} named gaps.`,
+  ].join("\n");
+}
+
+/** The lines between `heading` and the next heading of any depth, or null when absent. */
+export function sectionBody(md: string, heading: string): string | null {
+  const lines = md.split("\n");
+  const start = lines.indexOf(heading);
+  if (start === -1) return null;
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((l) => /^#{1,6}\s/.test(l));
+  return (end === -1 ? rest : rest.slice(0, end)).join("\n").trim();
+}
+
+/**
+ * Compare generated markdown against what is on the page, ignoring the formatting Prettier owns.
+ *
+ * Prettier pads table cells to align them and re-wraps prose at the print width. Neither is a
+ * difference the generator should have to predict, and one that tried would be re-implementing
+ * Prettier in order to keep a gate green. So cells are trimmed, the alignment row is collapsed,
+ * and consecutive prose lines are joined back into one paragraph.
+ */
+export function normalizeBlock(block: string): string {
+  const out: string[] = [];
+  let para: string[] = [];
+  const flush = () => {
+    if (para.length) out.push(para.join(" "));
+    para = [];
+  };
+  for (const raw of block.split("\n")) {
+    const line = raw.trim();
+    if (line.startsWith("|")) {
+      flush();
+      const cells = line
+        .split("|")
+        .slice(1, -1)
+        .map((c) => c.trim().replace(/^:?-+:?$/, "-"));
+      out.push(`|${cells.join("|")}|`);
+    } else if (line === "") flush();
+    else para.push(line);
+  }
+  flush();
+  return out.join("\n");
+}
+
+/** The index's matrix section must equal what the rule pages generate. */
+export function matrixChecks(pages: LintPage[]): string[] {
+  const index = pages.find((p) => p.rel === "index.md");
+  // A missing catalog is already the core lint's NO CATALOG problem; do not report it twice.
+  if (!index) return [];
+  const found = sectionBody(index.body, MATRIX_HEADING);
+  if (found === null)
+    return [`MISSING MATRIX index.md: no "${MATRIX_HEADING}" section  (run \`bun run docs:sync\`)`];
+  return normalizeBlock(found) === normalizeBlock(coverageMatrix(pages))
+    ? []
+    : [`STALE MATRIX   index.md: "${MATRIX_HEADING}" is out of date  (run \`bun run docs:sync\`)`];
+}
+
+/** Read the wiki as `LintPage`s, for the generator running outside `runDocsLint`. */
+function readPages(): LintPage[] {
+  return walkMarkdown(WIKI_ROOT).map((path) => {
+    const body = readFileSync(path, "utf8");
+    const fm = /^---\n([\s\S]*?)\n---/.exec(body);
+    return {
+      path,
+      rel: relative(WIKI_ROOT, path),
+      fields: fm ? parseFrontmatter(fm[1]) : new Map<string, string>(),
+      body,
+    };
+  });
+}
+
+/** Rewrite the index's matrix section in place. Prettier reformats it afterwards; the lint
+ *  compares through `normalizeBlock`, so both spellings pass. */
+function writeMatrix(): void {
+  const indexPath = join(WIKI_ROOT, "index.md");
+  const lines = readFileSync(indexPath, "utf8").split("\n");
+  const start = lines.indexOf(MATRIX_HEADING);
+  if (start === -1) {
+    console.log(`no "${MATRIX_HEADING}" heading in index.md — add it first`);
+    process.exit(1);
+  }
+  // Sliced by line index rather than by replacing the old body as a string: an EMPTY section
+  // (the heading freshly added, nothing under it) has no body to find, and a string replace of
+  // "" would splice the table in at the top of the file.
+  const after = lines.slice(start + 1);
+  const end = after.findIndex((l) => /^#{1,6}\s/.test(l));
+  const tail = end === -1 ? [] : after.slice(end);
+  writeFileSync(
+    indexPath,
+    [...lines.slice(0, start + 1), "", coverageMatrix(readPages()), "", ...tail].join("\n"),
+  );
+  console.log(`index.md: "${MATRIX_HEADING}" regenerated`);
+}
+
 function walk(dir: string): string[] {
   const out: string[] = [];
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -181,14 +323,18 @@ function walk(dir: string): string[] {
 // Guarded so this file can be IMPORTED (by lint.test.ts) without linting the wiki and
 // exiting the process. `bun docs/wiki/lint.ts` still runs it; `import` does not.
 if (import.meta.main) {
-  const problems = runDocsLint({
-    root: WIKI_ROOT,
-    types: ["concept", "archetype", "rule", "decision", "guide", "index"],
-    dateField: "updated",
-    allowDateOnly: true,
-    extraChecks: ruleChecks,
-    json: process.argv.includes("--json"),
-  });
+  if (process.argv.includes("--write")) {
+    writeMatrix();
+  } else {
+    const problems = runDocsLint({
+      root: WIKI_ROOT,
+      types: ["concept", "archetype", "rule", "decision", "guide", "index"],
+      dateField: "updated",
+      allowDateOnly: true,
+      extraChecks: (pages) => [...ruleChecks(pages), ...matrixChecks(pages)],
+      json: process.argv.includes("--json"),
+    });
 
-  process.exit(problems === 0 ? 0 : 1);
+    process.exit(problems === 0 ? 0 : 1);
+  }
 }

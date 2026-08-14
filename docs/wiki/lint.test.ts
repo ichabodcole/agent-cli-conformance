@@ -12,7 +12,14 @@
 import { expect, test } from "bun:test";
 import { join } from "node:path";
 import type { LintPage } from "../../scripts/docs-lint/index.ts";
-import { ruleChecks } from "./lint.ts";
+import {
+  coverageMatrix,
+  MATRIX_HEADING,
+  matrixChecks,
+  normalizeBlock,
+  ruleChecks,
+  sectionBody,
+} from "./lint.ts";
 
 /** A `LintPage` carrying just the frontmatter under test. */
 function pageOf(rel: string, fields: Record<string, string>): LintPage {
@@ -425,6 +432,88 @@ test("problems from several pages accumulate", () => {
   expect(problems).toHaveLength(4); // bad1: tier + missing checker; bad2: probe_level + checker
   expect(problems.filter((p) => p.includes("bad1.md"))).toHaveLength(2);
   expect(problems.filter((p) => p.includes("bad2.md"))).toHaveLength(2);
+});
+
+// --- the generated coverage matrix ------------------------------------------------------
+//
+// The matrix answers "which rules are enforced, and how far" in one place. Hand-maintaining
+// nineteen rows beside nineteen pages is the drift this wiki exists to fail on, so it is
+// derived from the same frontmatter the cross-checks above bind to the registry, and the lint
+// compares what is on the page against what the pages generate.
+
+/** An index page whose matrix section holds `body`, followed by another heading. */
+function indexWith(body: string): LintPage {
+  const page = pageOf("index.md", { type: "index" });
+  page.body = `# wiki\n\n## Rules\n\n${MATRIX_HEADING}\n\n${body}\n\n### Parsing\n\n- a link\n`;
+  return page;
+}
+
+test("sectionBody returns the lines up to the next heading of any depth", () => {
+  const md = "# t\n\n## A\n\nalpha\n\n### B\n\nbeta\n";
+  expect(sectionBody(md, "## A")).toBe("alpha");
+  expect(sectionBody(md, "### B")).toBe("beta");
+});
+
+test("sectionBody returns null for a heading the page does not have", () => {
+  expect(sectionBody("# t\n\n## A\n\nalpha\n", "## Z")).toBeNull();
+});
+
+// Prettier owns the formatting of every .md in the repo, and it pads table cells and re-wraps
+// prose. A generator that had to predict that would be re-implementing Prettier to keep a gate
+// green, so the comparison normalises instead.
+test("normalizeBlock ignores the cell padding and prose wrapping Prettier applies", () => {
+  const generated = "one two\nthree\n\n| a | bb |\n| --- | --- |\n| 1 | 2 |";
+  const prettified = "one two three\n\n| a   | bb  |\n| :-- | --: |\n| 1   | 2   |";
+  expect(normalizeBlock(prettified)).toBe(normalizeBlock(generated));
+});
+
+test("normalizeBlock still separates a changed cell", () => {
+  expect(normalizeBlock("| a | 1 |")).not.toBe(normalizeBlock("| a | 2 |"));
+});
+
+test("the matrix carries one row per rule page, sorted by rule id", () => {
+  const pages = [
+    rule("rules/streams/b1.md", { rule_id: "B1", tier: "core" }),
+    rule("rules/parsing/a1.md", { rule_id: "A1" }),
+    pageOf("concepts/x.md", { type: "concept" }),
+  ];
+  const rows = coverageMatrix(pages)
+    .split("\n")
+    .filter((l) => l.startsWith("| ["));
+  expect(rows).toEqual([
+    "| [A1](./rules/parsing/a1.md) | core | L0 | planned | partial | 3 |",
+    "| [B1](./rules/streams/b1.md) | core | L0 | planned | partial | 3 |",
+  ]);
+});
+
+test("the matrix totals the gaps it lists", () => {
+  const matrix = coverageMatrix([rule("rules/parsing/a1.md")]);
+  expect(matrix).toContain("1 rules · 0 `complete` · 1 `partial` · 3 named gaps.");
+});
+
+test("an index whose matrix matches the rule pages produces no problem", () => {
+  const pages = [rule("rules/parsing/a1.md")];
+  expect(matrixChecks([...pages, indexWith(coverageMatrix(pages))])).toEqual([]);
+});
+
+test("an index whose matrix is out of date is reported as STALE", () => {
+  const stale = coverageMatrix([rule("rules/parsing/a1.md", { tier: "diagnostic" })]);
+  const problems = matrixChecks([rule("rules/parsing/a1.md"), indexWith(stale)]);
+  expect(problems).toEqual([expect.stringContaining("STALE MATRIX")]);
+});
+
+test("an index with no matrix section at all is reported as MISSING", () => {
+  const index = pageOf("index.md", { type: "index" });
+  index.body = "# wiki\n\n## Rules\n\n### Parsing\n";
+  expect(matrixChecks([rule("rules/parsing/a1.md"), index])).toEqual([
+    expect.stringContaining("MISSING MATRIX"),
+  ]);
+});
+
+// A missing catalog is already the core lint's NO CATALOG problem, and reporting it twice would
+// send a maintainer to regenerate a file that does not exist.
+test("no index page at all produces no matrix problem", () => {
+  expect(matrixChecks([rule("rules/parsing/a1.md")])).toEqual([]);
 });
 
 // The forward direction (does a declared checker exist) is exercised live above — it no
