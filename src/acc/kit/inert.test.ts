@@ -19,7 +19,7 @@ describe("classifyInertness", () => {
   });
 
   test("accepts a flag-only invocation with no verb", () => {
-    expect(classifyInertness(inv(["--frmat", "json"], "no-verb"))).toBe("no-verb");
+    expect(classifyInertness(inv(["--frmat"], "no-verb"))).toBe("no-verb");
   });
 
   // THE IMPORTANT ONE. A checker that mislabels a real command as inert must be refused,
@@ -34,5 +34,16 @@ describe("classifyInertness", () => {
 
   test("REFUSES a claimed no-verb invocation that has a verb", () => {
     expect(() => assertInert(inv(["deploy", "--frmat"], "no-verb"))).toThrow(/not inert/i);
+  });
+
+  // A flag's value is syntactically identical to a verb — nothing distinguishes `--frmat json`
+  // from `--dry-run deploy` without knowing the flag's arity, which we never know for an
+  // unknown binary. The gate refuses the whole shape rather than guess.
+  test("REFUSES a claimed no-verb invocation carrying a value indistinguishable from a verb", () => {
+    expect(() => assertInert(inv(["--frmat", "json"], "no-verb"))).toThrow(/not inert/i);
+  });
+
+  test("REFUSES the motivating case: a boolean-looking flag followed by a real verb", () => {
+    expect(() => assertInert(inv(["--dry-run", "deploy"], "no-verb"))).toThrow(/not inert/i);
   });
 });

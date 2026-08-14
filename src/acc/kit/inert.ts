@@ -30,16 +30,13 @@ export function classifyInertness(inv: Invocation): Invocation["inertness"] | nu
       return inv.args.every((a) => HELP_TOKENS.has(a)) ? "help-path" : null;
     case "sentinel":
       return hasSentinel ? "sentinel" : null;
-    case "no-verb": {
-      // A token counts as a verb unless it is a flag's value — i.e. unless the token
-      // immediately before it is itself a flag. `--frmat json` has no verb: "json" can only be
-      // `--frmat`'s value. `deploy --frmat` does: nothing precedes "deploy", so it can only be
-      // a positional command.
-      const hasVerb = inv.args.some(
-        (a, i) => !looksLikeFlag(a) && !(i > 0 && looksLikeFlag(inv.args[i - 1])),
-      );
-      return hasVerb ? null : "no-verb";
-    }
+    case "no-verb":
+      // Every argument must look like a flag. A bare token after a flag (`--frmat json`) is
+      // indistinguishable from a verb (`--dry-run deploy`) without knowing that flag's arity,
+      // which we never know for a binary we didn't write — so we refuse the whole shape rather
+      // than guess. A probe that needs a flag WITH a value uses `sentinel` instead: that's
+      // provably invalid regardless of arity.
+      return inv.args.every(looksLikeFlag) ? "no-verb" : null;
     default:
       return null;
   }
