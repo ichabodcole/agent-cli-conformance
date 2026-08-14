@@ -7,7 +7,7 @@ description:
 tags: [streams, machine-mode, output, core]
 related: [concept/output-kind, concept/machine-mode, rule/stdout-carries-only-data]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: B3
 tier: core
 probe_level: L0
@@ -61,8 +61,16 @@ Inert (`L0`) — help output in machine mode, where such a path exists.
 
 ```
 <cli> --help --json          # or the tool's discovered machine-mode flag
-<cli> schema                 # when present
 ```
+
+One probe. A `<cli> schema` probe would be the natural second one, but it is not implemented
+and is not safe to add at `L0`: `schema` is a real verb, and the inertness gate refuses any
+invocation carrying a real verb precisely because a CLI that does not recognise it will run
+whatever it does recognise. Establishing that a discovered verb has no effects is `L1` work.
+
+Note also that `--format` is not treated as a machine-mode selector here even when discovery
+finds it: it takes a value, and a bare value token is indistinguishable from a verb without
+knowing the flag's arity. Only the `--json` pairing with `--help` is `L0`-safe.
 
 Passes when the captured stdout parses whole, as the declared kind.
 

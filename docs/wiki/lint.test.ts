@@ -242,6 +242,53 @@ test("a planned rule's probe_level is not checked against the registry, even if 
   expect(problems).toEqual([]);
 });
 
+// tier drift: `Checker.tier` decides whether a rule's failure BLOCKS conformance at all — the
+// more consequential of the two cross-checks, since a page claiming `core` while its checker
+// says `diagnostic` describes a gate that does not exist. `A1`'s real checker declares
+// tier "core"; the registry is ground truth here, not the frontmatter these tests write.
+test("an implemented rule whose tier disagrees with the checker's declared tier is reported as MISMATCH", () => {
+  const problems = forward([
+    rule("rules/a.md", {
+      checker_status: "implemented",
+      checker: "docs/wiki/lint.ts",
+      tier: "diagnostic",
+    }),
+  ]);
+  expect(problems).toEqual([
+    'MISMATCH tier rules/a.md: page declares "diagnostic", checker declares "core"',
+  ]);
+});
+
+test("an implemented rule whose tier agrees with the checker's declared tier produces no problem", () => {
+  const problems = forward([
+    rule("rules/a.md", {
+      checker_status: "implemented",
+      checker: "docs/wiki/lint.ts",
+      tier: "core",
+    }),
+  ]);
+  expect(problems).toEqual([]);
+});
+
+test("a planned rule's tier is not checked against the registry, even if it disagrees", () => {
+  const problems = forward([rule("rules/a.md", { checker_status: "planned", tier: "diagnostic" })]);
+  expect(problems).toEqual([]);
+});
+
+test("an already-invalid tier is reported once, not also as a MISMATCH", () => {
+  // BAD tier and MISMATCH tier would both fire on the same field; reporting both would tell a
+  // reader to fix a drift that is really a typo.
+  const problems = forward([
+    rule("rules/a.md", {
+      checker_status: "implemented",
+      checker: "docs/wiki/lint.ts",
+      tier: "Core",
+    }),
+  ]);
+  expect(problems).toHaveLength(1);
+  expect(problems[0]).toContain("BAD tier");
+});
+
 test("a rule_id the registry does not know about is not checked against it", () => {
   // No real checker carries rule_id "Z9", so there is nothing to compare the frontmatter to —
   // this must not be misread as a match (nor crash on an undefined lookup).

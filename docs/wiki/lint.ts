@@ -22,6 +22,7 @@ const CHECKERS_DIR = join(REPO_ROOT, "src/acc/kit/checkers");
 // CHECKERS is plain data — `probes`/`check` are function references, never invoked at import
 // time — so this import has no side effects and is safe from a lint entry point.
 const PROBE_LEVEL_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.probeLevel]));
+const TIER_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.tier]));
 
 const TIERS = new Set(["core", "diagnostic"]);
 const PROBE_LEVELS = new Set(["L0", "L1", "L2"]);
@@ -93,6 +94,19 @@ export function ruleChecks(pages: LintPage[]): string[] {
       if (checkerLevel && checkerLevel !== level)
         problems.push(
           `MISMATCH probe_level ${page.rel}: page declares "${level}", checker declares "${checkerLevel}"`,
+        );
+    }
+
+    // Same argument for `tier`, and it is the more consequential of the two: `Checker.tier`
+    // decides whether a failure BLOCKS conformance at all, so a page saying `core` while its
+    // checker says `diagnostic` describes a gate that does not exist. All 19 pairs agree
+    // today; this is about the gate, not about a live defect. Same guards as above — an
+    // already-reported BAD tier or a `planned` rule makes the comparison meaningless.
+    if (status === "implemented" && id && tier && TIERS.has(tier)) {
+      const checkerTier = TIER_BY_RULE_ID.get(id);
+      if (checkerTier && checkerTier !== tier)
+        problems.push(
+          `MISMATCH tier ${page.rel}: page declares "${tier}", checker declares "${checkerTier}"`,
         );
     }
   }

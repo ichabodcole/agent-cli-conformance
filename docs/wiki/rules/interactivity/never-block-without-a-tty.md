@@ -7,7 +7,7 @@ description:
 tags: [interactivity, silent-failure, safety, core]
 related: [concept/error-envelope, rule/bare-invocation-is-a-usage-error]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: E1
 tier: core
 probe_level: L0
@@ -59,12 +59,22 @@ Inert (`L0`) — help paths and invalid invocations only, never a command that w
 something real.
 
 ```
-<cli>            < /dev/null      # bare invocation
-<cli> --help     < /dev/null
-<cli> nonsense-verb-xyz < /dev/null
+<cli>                       < /dev/null   # bare invocation
+<cli> --help                < /dev/null
+<cli> --nonsense-flag-xyz   < /dev/null
+<cli> nonsense-verb-xyz     < /dev/null
 ```
 
-Passes when every invocation terminates within the probe deadline.
+Passes when **all four** terminate within the probe deadline. Each is a distinct path into the
+parser, and a CLI can block on one while returning cleanly from the others — the unknown-verb
+path in particular, which is where a tool that offers to confirm a guessed correction blocks.
+
+That third and fourth probe are what stop E1 being narrower than it looks. E1 is the
+catalogue's backstop for hangs — every other rule reports a hung probe as `unverified` rather
+than reading an empty stream as compliance — so a path E1 does not cover is a path where a
+hang is reported by nobody.
+
+Passing means **these four inert paths** terminated, and nothing more.
 
 Two implementation notes for the checker, both learned the hard way:
 

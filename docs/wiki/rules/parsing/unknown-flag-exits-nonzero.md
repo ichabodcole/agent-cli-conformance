@@ -7,7 +7,7 @@ description:
 tags: [parsing, silent-failure, exit-codes, core]
 related: [concept/exit-codes, decision/exit-codes-below-125]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: A1
 tier: core
 probe_level: L0
@@ -66,9 +66,13 @@ Passes when **all** of:
 - stdout is empty
 - stderr names the offending flag
 
-The checker also runs a near-miss variant (a one-character typo of a real flag, discovered
-from the CLI's own help output) because some parsers reject unrecognised flags but silently
-accept ones that prefix-match a known flag.
+**One probe, exactly as written.** The near-miss variant — a one-character typo of a real flag,
+discovered from the CLI's own help — belongs to
+[A5](./no-fuzzy-auto-correction.md), which declares and runs it. A1 does not.
+
+A hung probe is reported as a **failure**, not as unverified: blocking forever is not
+rejecting. That makes A1 one of four rules in the catalogue that own hangs rather than
+deferring them to [E1](../interactivity/never-block-without-a-tty.md).
 
 ## How to comply
 

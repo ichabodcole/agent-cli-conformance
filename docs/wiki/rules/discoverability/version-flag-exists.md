@@ -7,7 +7,7 @@ description:
 tags: [discoverability, versioning, core]
 related: [rule/help-exits-zero, concept/machine-mode]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: D1
 tier: core
 probe_level: L0
@@ -53,11 +53,23 @@ Inert (`L0`).
 <cli> --version
 ```
 
-Passes when it exits `0` with non-empty stdout and empty stderr, promptly.
+Passes when it exits `0` with non-empty stdout.
 
 The checker additionally runs it with a deliberately unusable `HOME` and `XDG_CONFIG_HOME`, to
 verify the no-configuration requirement — a `--version` that only works in a configured
 environment fails this rule even though it passes the naive probe.
+
+Two things the checker does **not** examine, despite the rule text above asking for them:
+
+- **stderr.** Chatter on stderr alongside a correct version on stdout is real-world common
+  (deprecation notices, update nags) and does not stop a caller reading the version. Nothing
+  in the checker reads the stream.
+- **promptness.** How quickly the first byte arrives is
+  [F2](../safety/first-byte-is-prompt.md)'s measurement, and F2 times `--version` specifically.
+  D1 would only duplicate it, at a different threshold.
+
+A hung probe is reported `unverified` rather than failed: D1 does not own hangs —
+[E1](../interactivity/never-block-without-a-tty.md) does.
 
 ## How to comply
 
