@@ -62,6 +62,13 @@ Inert (`L0`).
 
 Passes when each exits `0` with non-empty stdout.
 
+A help path that hits the probe deadline is reported as a **failure**, not `unverified`: help
+is a request, and a request that never returns has definitively not succeeded. That makes C1
+one of four rules in the catalogue that own hangs — with
+[A1](../parsing/unknown-flag-exits-nonzero.md),
+[D2](../discoverability/bare-invocation-is-a-usage-error.md) and
+[E1](../interactivity/never-block-without-a-tty.md) — rather than deferring them to E1.
+
 Not yet checked at `L0`: stderr emptiness on the help path, and the nested case (`<cli>
 <group> --help`). The nested case needs the discovered group to also be a leaf-or-group
 distinction `Discovery` does not currently carry — see `unknown-command.ts`'s checker for the

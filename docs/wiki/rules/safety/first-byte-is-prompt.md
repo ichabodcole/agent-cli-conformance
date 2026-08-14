@@ -84,6 +84,12 @@ argument dispatch.
 Cold-start effects are not controlled for. The checker reports the numbers it observed and does
 not claim they are the tool's inherent cost.
 
+**All three runs must complete.** If any of them hits the probe deadline the rule reports
+`unverified` and names how many, rather than measuring the survivors: a process the deadline
+killed may have written its first byte quickly and then blocked forever, and F2's claim is
+about the run as a whole. F2 is not one of the four rules that own hangs — the hang itself is
+[E1](../interactivity/never-block-without-a-tty.md)'s finding to report.
+
 ## How to comply
 
 Do nothing before dispatch. The usual cause of a slow `--help` is initialisation that runs

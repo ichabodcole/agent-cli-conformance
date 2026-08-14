@@ -11,10 +11,13 @@
 // was one checker at a time being written without the guard, so the test that prevents a
 // recurrence has to be one no new checker can be added without facing.
 
-import { describe, expect, test } from "bun:test";
+import { beforeAll, describe, expect, test } from "bun:test";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import { invocationId } from "./runner.ts";
-import type { Discovery, History, Observation } from "./types.ts";
+import type { Discovery, History, Observation, TargetInfo } from "./types.ts";
 
 // Rich enough that every checker declares its probes: A5 needs a long non-help flag to build a
 // near-miss from, B3 needs an advertised machine-mode flag, discovery must be readable.
@@ -111,4 +114,68 @@ describe("a timed-out probe is never evidence of compliance", () => {
     expect(details).not.toContain("help output identical across runs");
     expect(details).not.toContain("`--` ended option parsing");
   });
+});
+
+// The TOTAL hang above is the easy half. The one that survived it was PARTIAL: F2 recorded three
+// timing runs, dropped the ones the deadline killed, and reported `pass — first byte in 4ms
+// (runs: 4ms)` for a target where two of the three never terminated. Every probe hanging is the
+// case a checker notices; some of them hanging is the case it computes an average over.
+//
+// This half has to run a REAL recording. A partial hang means the surviving observations still
+// carry compliant output, and there is no generic way to synthesise "what this particular
+// checker considers a pass" for nineteen different rules — only a real conforming target
+// produces that. So: record once, then re-check each rule against a history in which exactly one
+// of ITS OWN probes was replaced by what runProbe writes for a killed process.
+const CONFORMING: TargetInfo = (() => {
+  const p = join(dirname(fileURLToPath(import.meta.url)), "fixtures/conforming.ts");
+  return { path: p, argv0: ["bun", p] };
+})();
+
+/** The same probe, recorded as the deadline killer would have left it: nothing written, no
+ *  status the target chose, no first byte. */
+const asHung = (o: Observation): Observation => ({
+  ...o,
+  stdout: "",
+  stderr: "",
+  exitCode: null,
+  timedOut: true,
+  durationMs: 10_000,
+  timeToFirstByteMs: null,
+});
+
+function withOneHungProbe(base: History, id: string): History {
+  const observations = base.observations.map((o) => (o.id === id ? asHung(o) : o));
+  return { ...base, observations, byId: new Map(observations.map((o) => [o.id, o])) };
+}
+
+describe("a PARTIAL hang is not evidence of compliance either", () => {
+  let real: History;
+  beforeAll(async () => {
+    real = await record(CONFORMING, CHECKERS);
+  }, 60_000);
+
+  test("the base recording is one the checkers actually pass", () => {
+    // Guards the test itself. If the fixture stopped conforming, every case below would be
+    // satisfied by a verdict that had nothing to do with the hang.
+    const passing = CHECKERS.filter((c) => c.check(real).verdict === "pass");
+    expect(passing.length).toBeGreaterThan(12);
+  });
+
+  test.each(CHECKERS.map((c) => [c.ruleId, c] as const))(
+    "%s reports the gap when one of its own probes hangs and the rest complete",
+    (ruleId, checker) => {
+      const expected = OWNS_HANGS.has(ruleId) ? "fail" : "unverified";
+      for (const inv of checker.probes(real.discovery)) {
+        const id = invocationId(inv);
+        // Every declared probe is recorded, so a miss means the checker asked for something
+        // record() never ran — worth knowing, and not something to skip past silently.
+        expect(real.byId.has(id)).toBe(true);
+        const label = `${ruleId} with \`${inv.args.join(" ") || "(bare)"}\` hung`;
+        const verdict = checker.check(withOneHungProbe(real, id)).verdict;
+        // Compared as a pair so a failure names the probe rather than just "expected pass".
+        expect([label, verdict]).toEqual([label, expected]);
+      }
+    },
+    60_000,
+  );
 });

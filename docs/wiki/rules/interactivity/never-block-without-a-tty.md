@@ -70,9 +70,14 @@ parser, and a CLI can block on one while returning cleanly from the others — t
 path in particular, which is where a tool that offers to confirm a guessed correction blocks.
 
 That third and fourth probe are what stop E1 being narrower than it looks. E1 is the
-catalogue's backstop for hangs — every other rule reports a hung probe as `unverified` rather
-than reading an empty stream as compliance — so a path E1 does not cover is a path where a
-hang is reported by nobody.
+catalogue's backstop for hangs, and the backstop is needed because coverage elsewhere is
+partial: three rules call a hang on their own probe a failure —
+[A1](../parsing/unknown-flag-exits-nonzero.md) (unknown flag),
+[C1](../exit-codes/help-exits-zero.md) (`--help`) and
+[D2](../discoverability/bare-invocation-is-a-usage-error.md) (bare) — and every other rule
+reports one as `unverified`, which is honest but is not a finding anyone can act on. Nothing
+but E1 covers the unknown-VERB path at all, which is precisely where a tool that offers to
+confirm a guessed correction blocks.
 
 Passing means **these four inert paths** terminated, and nothing more.
 

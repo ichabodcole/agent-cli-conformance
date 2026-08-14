@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, hungUnverified } from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -32,24 +32,28 @@ export const firstBytePromptChecker: Checker = {
     // other and with D1's own `--version` probes — findByArgs would return whichever of those
     // recorded first, silently.
     const runs = findByPurpose(h, "F2:");
-    // Timed-out runs are excluded from the sample, not merely tolerated. A process we killed
-    // may well have written a byte quickly and then blocked forever; reading that as "first
-    // byte was prompt" would certify responsiveness for a command that never finished. The
-    // catalogue's rule is that a killed probe is not evidence of compliance, and F2's
-    // compliance claim is about the run as a whole.
-    const completed = runs.filter((o) => !o.timedOut);
-    const times = completed.map((o) => o.timeToFirstByteMs).filter((t): t is number => t !== null);
+    if (runs.length === 0) return finding("unverified", "probes were not recorded", []);
+    // ALL the runs must complete, not just enough of them to compute a number.
+    //
+    // Excluding the killed runs and reporting on the survivors read as `pass` on a history where
+    // two of three probes never terminated — "first byte in 4ms (runs: 4ms)", with nothing said
+    // about the other two. A process we killed may well have written a byte quickly and then
+    // blocked forever, and F2's claim is about the run as a whole, so the survivors cannot carry
+    // it alone. F2 is not one of the four rules that own hangs (see finding.ts): it says it
+    // could not establish anything, and E1 reports the hang itself.
+    const hung = hungUnverified(finding, runs);
+    if (hung) return hung;
+
+    const times = runs.map((o) => o.timeToFirstByteMs).filter((t): t is number => t !== null);
     if (times.length === 0) {
       return finding(
         "unverified",
-        runs.length === completed.length
-          ? "no timing was captured"
-          : `no timing was captured: ${runs.length - completed.length} of ${runs.length} runs hit the deadline`,
+        "no timing was captured",
         runs.map((o) => o.id),
       );
     }
 
-    const evidence = completed.map((o) => o.id);
+    const evidence = runs.map((o) => o.id);
     // Best-of-N, not the mean: the interesting number is the floor, since a slow run usually
     // measures the machine rather than the tool. The spread is reported because high variance
     // is itself a finding.
