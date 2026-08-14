@@ -1,14 +1,9 @@
-import type { Checker, Finding, Invocation, Verdict } from "../../types.ts";
+import { findingFor } from "../../finding.ts";
+import type { Checker, Finding, Invocation } from "../../types.ts";
 
 const RULE_ID = "A4";
 
-/** Every Finding this checker emits, so the rule id is written once rather than per branch. */
-const finding = (verdict: Verdict, detail: string, evidence: string[]): Finding => ({
-  ruleId: RULE_ID,
-  verdict,
-  detail,
-  evidence,
-});
+const finding = findingFor(RULE_ID);
 
 /**
  * A4 — docs/wiki/rules/parsing/unexpected-positionals-rejected.md

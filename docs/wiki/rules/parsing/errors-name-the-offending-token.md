@@ -53,8 +53,11 @@ Inert (`L0`).
 <cli> nonsense-verb-xyz
 ```
 
-Passes when stderr contains the literal offending token in each case. In machine mode, passes
-when the envelope carries it as a field.
+Passes when stderr contains the literal offending token in each case, checked as a plain
+substring match, mode-agnostic. The checker does not currently invoke the target in machine
+mode or inspect the error envelope for the field "## The rule" above requires there — it
+verifies only the prose-message half. That is unchecked coverage, not a passing result: a
+target could satisfy this probe today and still violate the envelope half of the rule.
 
 The checker deliberately uses a distinctive token unlikely to appear incidentally, so a match
 is evidence the tool echoed it rather than coincidence.

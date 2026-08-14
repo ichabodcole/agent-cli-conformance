@@ -1,17 +1,12 @@
+import { findingFor } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
-import type { Checker, Finding, History, Invocation, Verdict } from "../../types.ts";
+import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
 
 const RULE_ID = "A2";
 const ROOT = [`${SENTINEL}-verb`];
 
-/** Every Finding this checker emits, so the rule id is written once rather than per branch. */
-const finding = (verdict: Verdict, detail: string, evidence: string[]): Finding => ({
-  ruleId: RULE_ID,
-  verdict,
-  detail,
-  evidence,
-});
+const finding = findingFor(RULE_ID);
 
 /**
  * A2 — docs/wiki/rules/parsing/unknown-command-exits-nonzero.md
@@ -44,8 +39,16 @@ export const unknownCommandChecker: Checker = {
     if (o.exitCode === 0) problems.push("unknown root verb exited 0");
     if (o.stdout !== "") problems.push("unknown root verb wrote to stdout");
 
+    // Scoped explicitly rather than a bare "rejected": this checker only ever probes the root,
+    // so the pass detail must say so — the rule itself requires rejection at every level of
+    // nesting, and a reader of the Finding alone (not this file) has no other way to know the
+    // nested case was never exercised.
     return problems.length
       ? finding("fail", problems.join("; "), [o.id])
-      : finding("pass", `rejected with exit ${o.exitCode}`, [o.id]);
+      : finding(
+          "pass",
+          `root verb rejected with exit ${o.exitCode}; nested case not probed at L0`,
+          [o.id],
+        );
   },
 };

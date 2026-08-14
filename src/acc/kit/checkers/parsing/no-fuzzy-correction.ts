@@ -1,15 +1,10 @@
-import type { Checker, Discovery, Finding, History, Invocation, Verdict } from "../../types.ts";
+import { findingFor } from "../../finding.ts";
+import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
 const RULE_ID = "A5";
 
-/** Every Finding this checker emits, so the rule id is written once rather than per branch. */
-const finding = (verdict: Verdict, detail: string, evidence: string[]): Finding => ({
-  ruleId: RULE_ID,
-  verdict,
-  detail,
-  evidence,
-});
+const finding = findingFor(RULE_ID);
 
 /** Drop one character — the edit a fuzzy matcher is most likely to "fix". */
 function nearMiss(token: string): string {

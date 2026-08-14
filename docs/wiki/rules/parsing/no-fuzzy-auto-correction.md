@@ -60,16 +60,24 @@ This is also why a suggestion is genuinely worth printing. The rule is not "don'
 Inert (`L0`), since a near-miss must not run.
 
 ```
-<cli> --<one-character-typo-of-a-real-flag> <value>
-<cli> <one-character-typo-of-a-real-verb>
+<cli> --<one-character-typo-of-a-real-flag>
 ```
 
-Passes when both exit non-zero. The checker derives the near-miss from a flag or verb found in
-the CLI's own help output, so the typo is genuinely one edit away from something real — the
-case a fuzzy matcher is most likely to "fix".
+Only a FLAG near-miss is probed — never a verb, and only alone, with no verb present anywhere
+in the invocation (the `no-verb` inertness class requires every argument to look like a flag).
+A near-miss VERB is excluded entirely: correcting `dpelte` to `delete` and then running it is
+exactly the failure this rule exists to catch, so testing that half would mean invoking a real
+command, which is only safe once the kit knows that command has no side effects — the same
+reason [unexpected positionals](./unexpected-positionals-rejected.md) moved off `L0`. The verb
+half of this rule is unverified until that effect classification exists.
 
-Distinguishing "suggested" from "acted on" is done by exit code and stdout: a suggestion
-accompanies a non-zero exit and empty stdout; an action produces the command's normal output.
+The typo is derived from a flag discovered in the CLI's own `--help` output (drop one
+character — the edit a fuzzy matcher is most likely to "fix"), so it's genuinely one edit away
+from something real. Where no suitable flag can be found, or the typo happens to collide with
+a real flag, the checker declines to probe and reports **unverified**.
+
+Passes when the invocation exits non-zero. Distinguishing "suggested" from "acted on" is done
+by exit code alone — the checker does not additionally require empty stdout.
 
 ## How to comply
 

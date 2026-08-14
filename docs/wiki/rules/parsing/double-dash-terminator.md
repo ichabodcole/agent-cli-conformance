@@ -45,16 +45,26 @@ is reserved for what binds everywhere.
 Inert (`L0`).
 
 ```
-<cli> <known-verb> -- --not-a-real-flag
+<cli> -- --<sentinel>-value
 ```
 
-Passes when the invocation does **not** fail with an unknown-flag error — i.e. `--not-a-real-flag`
-was treated as a value. Reported as **unverified** when no suitable verb accepting a positional
-can be discovered from help.
+No verb precedes the `--`. Prefixing one — `<known-verb> -- --<sentinel>-value` — would put the
+same question in front of this probe that closed off A2's nested case and dropped A4 to `L1`:
+`Discovery` has no way to know a verb is side-effect-free, and a target that does not honour
+`--` would run that verb for real, with the sentinel landing as its argument. Leaving the verb
+out entirely — and building the value after `--` from the sentinel — is what makes this probe
+inert without needing to know anything about the target's command surface: nothing in it names
+a valid command, whether or not `--` is honoured.
 
-Note the inversion: for most parsing rules the probe asserts a rejection, here it asserts the
-absence of one. That makes it the one parsing probe that is not obviously inert, which is why
-the checker selects a read-only-looking verb where it can and otherwise declines to probe.
+Passes when the invocation does **not** fail with an unknown-flag/-option error that names the
+sentinel value — i.e. `--<sentinel>-value` was treated as a positional, not re-parsed as a
+flag. The command may still exit non-zero for an unrelated reason (no verb was given), which is
+why the check reads stderr for that specific rejection rather than the exit code.
+
+Note the inversion: for most parsing rules the probe asserts a rejection; here it asserts the
+absence of one naming a specific token. That inversion is what makes the probe non-obvious, not
+a reason it's less inert — a value-shaped sentinel after `--` has nothing for even a maximally
+permissive parser to execute.
 
 ## How to comply
 

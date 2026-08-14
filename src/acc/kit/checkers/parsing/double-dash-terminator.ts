@@ -1,17 +1,12 @@
+import { findingFor } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
-import type { Checker, Finding, History, Invocation, Verdict } from "../../types.ts";
+import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
 
 const RULE_ID = "A6";
 const ARGS = ["--", `--${SENTINEL}-value`];
 
-/** Every Finding this checker emits, so the rule id is written once rather than per branch. */
-const finding = (verdict: Verdict, detail: string, evidence: string[]): Finding => ({
-  ruleId: RULE_ID,
-  verdict,
-  detail,
-  evidence,
-});
+const finding = findingFor(RULE_ID);
 
 /**
  * A6 — docs/wiki/rules/parsing/double-dash-terminator.md (diagnostic)
