@@ -33,6 +33,25 @@ export const DEFAULT_TIMEOUT_MS = 10_000;
 const FINALIZE_GRACE_MS = 250;
 
 /**
+ * Capture ceilings, per stream and combined.
+ *
+ * The target is an unknown binary and its output is unbounded by construction: nothing stops a
+ * noisy — or hostile — CLI from writing until the runner's heap is gone, and `record()` holds
+ * every observation for the whole run, so the cost compounds across probes rather than being
+ * paid once.
+ *
+ * 4 MiB is chosen against MEASURED legitimate output, not guessed: the largest thing an L0 probe
+ * can honestly elicit is help or a machine-mode schema dump, and the biggest observed here are
+ * `git help -a` at ~12 KB and `acc --help --json` at ~4.6 KB. 4 MiB is roughly 350x the largest
+ * of those, so no truthful CLI is ever truncated by it. The combined ceiling exists because two
+ * per-stream limits alone would permit ~8 MiB; 6 MiB caps a target that splits its flood evenly.
+ * Worst case a hostile target can pin is therefore ~(probe count x 6 MiB) ~= 120 MiB for the
+ * current catalogue — bounded, where the previous behaviour was not.
+ */
+export const MAX_STREAM_BYTES = 4 * 1024 * 1024;
+export const MAX_OUTPUT_BYTES = 6 * 1024 * 1024;
+
+/**
  * Run one probe and record what happened.
  *
  * Deadline is enforced IN-PROCESS. Shelling out to `timeout(1)` is a trap: it is GNU coreutils
@@ -71,8 +90,20 @@ export async function runProbe(
   return new Promise<Observation>((resolve) => {
     const startedAt = performance.now();
     let firstByteAt: number | null = null;
-    let stdout = "";
-    let stderr = "";
+    // Buffers, decoded ONCE at the end — never `string += chunk`.
+    //
+    // Appending a Buffer to a string decodes that chunk in isolation, so a UTF-8 sequence split
+    // across two writes becomes replacement characters on both sides of the boundary: a target
+    // that emitted `€` in two writes was recorded as `��`. That is fabricated evidence
+    // — it can invent a difference for D4, and it corrupts the bytes quoted in any finding.
+    // Concatenating first and decoding the whole capture is the only version that cannot get a
+    // boundary wrong (`StringDecoder` is the streaming equivalent; this needs the byte counts
+    // anyway, so it keeps the buffers).
+    const stdoutChunks: Buffer[] = [];
+    const stderrChunks: Buffer[] = [];
+    let stdoutBytes = 0;
+    let stderrBytes = 0;
+    let truncated = false;
     let timedOut = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let graceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -93,11 +124,15 @@ export async function runProbe(
         id: invocationId(inv),
         invocation: inv,
         purposes: [inv.purpose],
-        stdout,
-        stderr,
+        stdout: Buffer.concat(stdoutChunks).toString("utf8"),
+        stderr: Buffer.concat(stderrChunks).toString("utf8"),
+        stdoutBytes,
+        stderrBytes,
+        truncated,
         // A process WE killed did not choose its status. Recording 128+n as the target's exit
-        // code would fabricate evidence about a tool that never got to exit.
-        exitCode: timedOut ? null : code,
+        // code would fabricate evidence about a tool that never got to exit — and that is as
+        // true of the output-limit kill as it is of the deadline, so `truncated` nulls it too.
+        exitCode: timedOut || truncated ? null : code,
         timedOut,
         spawnFailed,
         durationMs: Math.round(performance.now() - startedAt),
@@ -176,13 +211,50 @@ export async function runProbe(
     const mark = () => {
       if (firstByteAt === null) firstByteAt = performance.now();
     };
-    child.stdout.on("data", (d) => {
+
+    /**
+     * Append what fits under both ceilings; kill the target the moment either is reached.
+     *
+     * The partial chunk IS kept: truncating at the exact byte gives a prefix that is still a
+     * faithful record of what the target wrote, which is what lets a checker call a violation it
+     * can already see in the prefix (see `truncatedUnverified` in finding.ts). The cut can land
+     * mid-code-point, and the decode will show that as a replacement character at the very end —
+     * honest for a capture that is explicitly flagged `truncated`, unlike the boundary corruption
+     * this rewrite removed, which appeared in the MIDDLE of intact output.
+     */
+    const absorb = (chunks: Buffer[], own: number, chunk: Buffer, streamLimit: number): number => {
       mark();
-      stdout += d;
+      const headroom = Math.min(streamLimit - own, MAX_OUTPUT_BYTES - (stdoutBytes + stderrBytes));
+      if (headroom <= 0) return own;
+      if (chunk.length <= headroom) {
+        chunks.push(chunk);
+        return own + chunk.length;
+      }
+      chunks.push(chunk.subarray(0, headroom));
+      return own + headroom;
+    };
+
+    const enforceLimits = () => {
+      if (truncated) return;
+      if (
+        stdoutBytes >= MAX_STREAM_BYTES ||
+        stderrBytes >= MAX_STREAM_BYTES ||
+        stdoutBytes + stderrBytes >= MAX_OUTPUT_BYTES
+      ) {
+        // Recorded BEFORE the kill, so `finish` sees it however the process ends: a target left
+        // running would keep filling the heap the limit exists to protect.
+        truncated = true;
+        killTree();
+      }
+    };
+
+    child.stdout.on("data", (d: Buffer) => {
+      stdoutBytes = absorb(stdoutChunks, stdoutBytes, d, MAX_STREAM_BYTES);
+      enforceLimits();
     });
-    child.stderr.on("data", (d) => {
-      mark();
-      stderr += d;
+    child.stderr.on("data", (d: Buffer) => {
+      stderrBytes = absorb(stderrChunks, stderrBytes, d, MAX_STREAM_BYTES);
+      enforceLimits();
     });
     child.stdin.end();
 

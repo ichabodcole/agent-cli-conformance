@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SENTINEL } from "./inert.ts";
-import { invocationId, runProbe } from "./runner.ts";
+import { invocationId, MAX_OUTPUT_BYTES, MAX_STREAM_BYTES, runProbe } from "./runner.ts";
 import type { Invocation, TargetInfo } from "./types.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -112,6 +112,81 @@ describe("runProbe", () => {
     const reader: TargetInfo = { path: "sh", argv0: ["sh", "-c", "read line; echo done"] };
     const o = await runProbe(reader, inv([`--${SENTINEL}`], "sentinel"));
     expect(o.timedOut).toBe(false);
+  });
+});
+
+// R2-3, first half: the runner used to do `stdout += chunk`, which decodes each Buffer on its
+// own. A UTF-8 sequence straddling two writes came back as replacement characters — evidence the
+// target never produced. That can invent a difference for D4 and corrupts the bytes any finding
+// quotes.
+describe("runProbe — the capture is byte-faithful", () => {
+  test("records a multi-byte character split across two writes, not replacement characters", async () => {
+    // `€` is E2 82 AC. The first two bytes are written, then a pause long enough to guarantee a
+    // separate `data` event, then the third — the exact boundary that used to be corrupted.
+    const split: TargetInfo = {
+      path: "sh",
+      argv0: ["sh", "-c", 'printf "\\342\\202"; sleep 0.1; printf "\\254"'],
+    };
+    const o = await runProbe(split, inv([`--${SENTINEL}`], "sentinel"), 5_000);
+    expect(o.stdout).toBe("€");
+    expect([...o.stdout].map((c) => c.codePointAt(0))).toEqual([0x20ac]);
+    // The byte count is of the BYTES, not of the JS string's UTF-16 units: `€` is one character
+    // and three bytes, and conflating the two is how the old code got here.
+    expect(o.stdoutBytes).toBe(3);
+    expect(o.truncated).toBe(false);
+  }, 15_000);
+
+  test("counts bytes, not characters, on both streams", async () => {
+    const both: TargetInfo = {
+      path: "sh",
+      argv0: ["sh", "-c", 'printf "héllo"; printf "wörld" >&2'],
+    };
+    const o = await runProbe(both, inv([`--${SENTINEL}`], "sentinel"), 5_000);
+    expect(o.stdout).toBe("héllo");
+    expect(o.stderr).toBe("wörld");
+    expect(o.stdoutBytes).toBe(6);
+    expect(o.stderrBytes).toBe(6);
+  }, 15_000);
+});
+
+// R2-3, second half: capture was unbounded, so a noisy or hostile target could exhaust the
+// runner's memory during the deadline window — the subject under test crashing the instrument.
+describe("runProbe — output is bounded", () => {
+  test("truncates and kills a target that floods one stream", async () => {
+    const flood: TargetInfo = { path: "sh", argv0: ["sh", "-c", "yes acc-probe-flood"] };
+    const startedAt = performance.now();
+    const o = await runProbe(flood, inv([`--${SENTINEL}`], "sentinel"), 20_000);
+    expect(o.truncated).toBe(true);
+    expect(o.stdoutBytes).toBe(MAX_STREAM_BYTES);
+    // The decoded text is the captured prefix and nothing else — the limit is a limit, and the
+    // capture is still exactly the bytes the target wrote up to it.
+    expect(Buffer.byteLength(o.stdout)).toBe(MAX_STREAM_BYTES);
+    // Killed by the limit, not by the deadline: this must resolve long before 20s, and the two
+    // reasons a probe can be cut short must stay distinguishable in the record.
+    expect(o.timedOut).toBe(false);
+    expect(performance.now() - startedAt).toBeLessThan(15_000);
+    // Same rule as the deadline: we killed it, so it did not choose a status. Recording 128+9
+    // here would fabricate an exit code exactly as the old timeout path would have.
+    expect(o.exitCode).toBeNull();
+  }, 40_000);
+
+  test("caps the two streams TOGETHER, not just each on its own", async () => {
+    // Two per-stream ceilings alone would permit 2 x MAX_STREAM_BYTES. The combined ceiling is
+    // what a target splitting its flood across both streams runs into.
+    const flood: TargetInfo = {
+      path: "sh",
+      argv0: ["sh", "-c", "yes acc-probe-flood-out & yes acc-probe-flood-err >&2"],
+    };
+    const o = await runProbe(flood, inv([`--${SENTINEL}`], "sentinel"), 20_000);
+    expect(o.truncated).toBe(true);
+    expect(o.stdoutBytes + o.stderrBytes).toBeLessThanOrEqual(MAX_OUTPUT_BYTES);
+  }, 40_000);
+
+  test("leaves an ordinary target unflagged", async () => {
+    const o = await runProbe(CONFORMING, inv(["--help"], "help-path"));
+    expect(o.truncated).toBe(false);
+    expect(o.stdoutBytes).toBe(Buffer.byteLength(o.stdout));
+    expect(o.stderrBytes).toBe(0);
   });
 });
 

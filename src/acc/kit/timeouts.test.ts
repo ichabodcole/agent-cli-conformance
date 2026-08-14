@@ -49,6 +49,9 @@ function everyProbeTimedOut(): History {
           purposes: [inv.purpose],
           stdout: "",
           stderr: "",
+          stdoutBytes: 0,
+          stderrBytes: 0,
+          truncated: false,
           // Both are what runProbe records for a killed process: we killed it, so it never
           // chose a status, and it never got to write anything.
           exitCode: null,

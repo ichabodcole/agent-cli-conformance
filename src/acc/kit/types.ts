@@ -29,9 +29,36 @@ export interface Observation {
    * requester's reason, and indexing on it would silently lose the others.
    */
   purposes: string[];
+  /**
+   * The captured bytes, decoded as UTF-8 once over the whole capture.
+   *
+   * Byte-faithful within the capture limit: the runner collects Buffers and concatenates before
+   * decoding, so a multi-byte character split across two of the target's writes survives intact.
+   * Decoding per chunk turned `€` written in two writes into replacement characters, which can
+   * fabricate a difference for D4 and corrupts the bytes any finding quotes as evidence.
+   */
   stdout: string;
   stderr: string;
-  /** null when the deadline killed it — a process we killed did not choose its status. */
+  /**
+   * Bytes RETAINED on each stream — the byte length of the captured prefix, not of what the
+   * target intended to write. When `truncated` is true the target was killed at the ceiling and
+   * what it would have written next is unknowable, so these are a floor, never a total.
+   */
+  stdoutBytes: number;
+  stderrBytes: number;
+  /**
+   * True when a capture ceiling (see MAX_STREAM_BYTES / MAX_OUTPUT_BYTES in runner.ts) stopped
+   * the recording and the runner killed the target.
+   *
+   * Evidence with this set is a PREFIX. It can still prove a violation the prefix contains — an
+   * ANSI escape that was emitted was emitted — but it can never establish an absence, and it
+   * carries no exit code, because the target did not choose to stop. Checkers must run it
+   * through `truncatedUnverified` (see finding.ts) exactly as they run a hang through
+   * `hungUnverified`.
+   */
+  truncated: boolean;
+  /** null when the deadline or the output ceiling killed it — a process we killed did not
+   *  choose its status. */
   exitCode: number | null;
   timedOut: boolean;
   /**
