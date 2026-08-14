@@ -66,11 +66,15 @@ quietly stop conforming.
 ```bash
 acc rules --tier core      # the rules a conforming CLI must satisfy
 acc show A1                # one rule, with its links in and out
-acc show A1 --body         # ...and the full text
-acc path A1 delegator      # shortest link path between two pages
+acc show exit-codes --body # ...and the full text
+acc path A6 delegator      # shortest path of OUTBOUND links; reversed, this is a valid exit 5
 acc tags
 acc schema                 # the machine-readable interface description
+acc schema | jq '.data.commands[].name'
 ```
+
+Each of those is declared in `src/acc/spec.ts` and executed by `src/acc/conformance.test.ts`,
+so a published invocation cannot quietly stop working.
 
 Its parser is built from `src/acc/spec.ts` — one declaration producing the parser, the help
 text, and `acc schema` together, so the three cannot drift. Adding a flag in one place adds it

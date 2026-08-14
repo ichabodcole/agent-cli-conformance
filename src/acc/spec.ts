@@ -134,17 +134,26 @@ export const COMMANDS: CommandSpec[] = [
   },
   {
     name: "path",
-    description: "Shortest link path between two pages.",
+    // Direction stated in the DESCRIPTION, not just in the failure hint. "Shortest link path"
+    // reads as symmetric, so `acc path A1 delegator` looked like a working example and exited
+    // 5; the caller learned the traversal was directed only by getting it wrong.
+    description: "Shortest path of outbound links from one page to another.",
     effects: "read_only",
     output_kind: "data",
     cardinality: "single",
     positionals: [
-      { name: "from", description: "Starting page handle.", required: true },
+      {
+        name: "from",
+        description: "Starting page handle. Traversal follows its links OUT.",
+        required: true,
+      },
       { name: "to", description: "Destination page handle.", required: true },
     ],
     args: [],
     errors: [ErrorKind.NotFound],
-    examples: ["acc path A1 exit-codes", "acc path B1 delegator --json"],
+    // Both directions shown, because the pair is the lesson: A6 links to the delegator
+    // archetype, so the reverse of the second example is a legitimate exit 5.
+    examples: ["acc path A1 exit-codes", "acc path A6 delegator", "acc path delegator B1 --json"],
   },
   {
     name: "tags",
@@ -193,6 +202,7 @@ export const COMMANDS: CommandSpec[] = [
     // whose first positional is free-form text, where the probe token is a prompt rather than
     // an unknown command. The kit cannot detect that shape, so the caller has to know.
     notes: [
+      "The target is YOUR binary; the examples below are placeholders for it.",
       "SAFETY: probes are inert against a CLI that dispatches on a fixed verb table — the probe",
       "token matches no flag and no command, so nothing runs. They are NOT inert against a CLI",
       "whose first positional is free-form text (claude, llm, aider): there the token is a",

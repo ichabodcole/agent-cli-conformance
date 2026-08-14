@@ -319,6 +319,113 @@ describe("machine mode", () => {
   });
 });
 
+// Published examples are a promise, and three of them were broken: `acc path A1 delegator` and
+// `acc path B1 delegator --json` both exited 5 because traversal follows OUTBOUND links only,
+// and `acc schema | jq '.commands[].name'` addressed a document whose commands live under
+// `.data`. Copy-pasteable text that does not work is worse than no example, because the reader
+// concludes the tool is broken rather than the documentation.
+//
+// This is the mechanism that stops them rotting: every example DECLARED in spec.ts is executed,
+// so a new one cannot be added without being true, and an existing one cannot be invalidated by
+// a change elsewhere without going red here.
+describe("every published example runs as written", () => {
+  const CONFORMING = join(dirname(CLI), "kit/fixtures/conforming.ts");
+
+  /**
+   * Resolve the object path a jq filter opens with: `.data.commands[].name` requires
+   * `data.commands` to be a non-empty array whose elements each carry `name`.
+   *
+   * Not a jq implementation — just enough to catch the failure this test exists for, where the
+   * published filter addressed `.commands` and jq answered `Cannot iterate over null`. Written
+   * here rather than shelling out to jq because jq is not installed everywhere, and a check
+   * that silently skips is not a check.
+   */
+  function resolveJqPath(document: unknown, filter: string): unknown[] {
+    let current: unknown[] = [document];
+    for (const token of filter.split(".").slice(1)) {
+      const iterate = token.endsWith("[]");
+      const key = iterate ? token.slice(0, -2) : token;
+      const next: unknown[] = [];
+      for (const value of current) {
+        const child = (value as Record<string, unknown> | null | undefined)?.[key];
+        if (child === undefined || child === null) return [];
+        if (iterate) {
+          if (!Array.isArray(child)) return [];
+          next.push(...child);
+        } else next.push(child);
+      }
+      current = next;
+    }
+    return current;
+  }
+
+  const examples = COMMANDS.flatMap((c) => c.examples.map((e) => [e, c.name] as const));
+
+  test("the walk found examples to run", () => {
+    expect(examples.length).toBeGreaterThan(10);
+  });
+
+  test.each(examples)(
+    "%s",
+    async (example, command) => {
+      const [invocation, ...piped] = example.split("|").map((s) => s.trim());
+      // `$(which gh)` is ONE argument, not two. Splitting on whitespace turned it into `$(which`
+      // and `gh)`, and the second became a surplus positional — a bug in the test, but exactly
+      // the class of bug the test exists to catch in the examples themselves.
+      const tokens = (invocation as string).match(/\$\([^)]*\)|'[^']*'|\S+/g) ?? [];
+      expect(tokens[0]).toBe("acc");
+      const args = tokens.slice(1);
+
+      // The ONE substitution. `check`'s target is the caller's own binary, so `./mycli` and
+      // `$(which gh)` are placeholders for something this repository cannot know; the fixture
+      // stands in for it. Derived from the declared positional's name, not from matching the
+      // placeholder text, so a renamed example cannot quietly opt out of being run.
+      const spec = COMMANDS.find((c) => c.name === command);
+      if (spec?.positionals[0]?.name === "target") {
+        const i = args.findIndex((a, n) => n > 0 && !a.startsWith("-"));
+        if (i > 0) args[i] = CONFORMING;
+      }
+
+      const r = await run(args);
+      // `check` answers 9 when the target is not conformant — a successful invocation with a
+      // negative answer, not a failure. Every other example is a plain success.
+      const acceptable = command === "check" ? [0, 9] : [0];
+      // Collapsed to a label so a failure prints the offending example AND the real code.
+      const code = acceptable.includes(r.code as number) ? "acceptable" : r.code;
+      expect({ example, acceptable, code }).toEqual({ example, acceptable, code: "acceptable" });
+      expect({ example, stderr: r.stderr }).toEqual({ example, stderr: "" });
+
+      // The harness always pipes, so every example above runs in machine mode: the shape a
+      // caller who pipes an example actually receives.
+      const document = JSON.parse(r.stdout);
+      expect({ example, ok: document.ok }).toEqual({ example, ok: true });
+
+      // ...and where the example goes on to query that document, the query must resolve.
+      for (const stage of piped) {
+        const filter = /^jq\s+'([^']+)'$/.exec(stage as string)?.[1];
+        expect({ example, stage, parsed: filter !== undefined }).toEqual({
+          example,
+          stage,
+          parsed: true,
+        });
+        const selected = resolveJqPath(document, filter as string);
+        expect({ example, filter, selected: selected.length > 0 }).toEqual({
+          example,
+          filter,
+          selected: true,
+        });
+        for (const value of selected)
+          expect({ example, filter, value }).not.toEqual({
+            example,
+            filter,
+            value: undefined,
+          });
+      }
+    },
+    90_000,
+  );
+});
+
 // A closed set the parser does not enforce is a lie the schema tells. `--format` declared
 // `text|json` and accepted anything, so `acc rules --format nonsense` returned data and exit 0
 // — the exact silent acceptance A1/A3 exist to catch in other CLIs, in the tool that checks
