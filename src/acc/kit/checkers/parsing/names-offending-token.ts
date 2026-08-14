@@ -1,4 +1,4 @@
-import { findingFor, hungUnverified } from "../../finding.ts";
+import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
@@ -30,6 +30,10 @@ export const namesOffendingTokenChecker: Checker = {
     // direction from a false pass, but wrong on the same evidence.
     const hung = hungUnverified(finding, [flag, verb]);
     if (hung) return hung;
+    // Both of this rule's clauses are ABSENCES in stderr, so a stderr we cut off mid-sentence
+    // establishes neither: the token may well have been named in the bytes we refused.
+    const cut = truncatedUnverified(finding, [flag, verb]);
+    if (cut) return cut;
 
     const evidence = [flag.id, verb.id];
     const problems: string[] = [];

@@ -1,4 +1,4 @@
-import { findingFor, hungUnverified } from "../../finding.ts";
+import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -44,14 +44,22 @@ export const noSecretsInHelpChecker: Checker = {
     const text = `${o.stdout}\n${o.stderr}`;
     const hits = PATTERNS.filter(([, re]) => re.test(text)).map(([label]) => label);
 
-    return hits.length
-      ? finding("fail", `credential pattern(s) in help: ${hits.join(", ")}`, [o.id])
-      : finding(
-          "pass",
-          // Honest about scope: a scanner cannot see a bespoke token format with no telltale
-          // prefix. "no secrets present" would be an overclaim this checker cannot back.
-          "no KNOWN credential pattern found (absence of a known pattern, not proof)",
-          [o.id],
-        );
+    // Scanned BEFORE the truncation guard: a credential printed in the captured prefix has
+    // already leaked, whatever the bytes we refused would have said. The clean result is the one
+    // a prefix cannot carry — this checker's pass is already scoped to "no KNOWN pattern", and
+    // "in the part we read" is a second qualifier it must not swallow silently.
+    if (hits.length) {
+      return finding("fail", `credential pattern(s) in help: ${hits.join(", ")}`, [o.id]);
+    }
+    const cut = truncatedUnverified(finding, [o]);
+    if (cut) return cut;
+
+    return finding(
+      "pass",
+      // Honest about scope: a scanner cannot see a bespoke token format with no telltale
+      // prefix. "no secrets present" would be an overclaim this checker cannot back.
+      "no KNOWN credential pattern found (absence of a known pattern, not proof)",
+      [o.id],
+    );
   },
 };

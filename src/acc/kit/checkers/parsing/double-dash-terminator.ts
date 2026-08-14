@@ -1,4 +1,4 @@
-import { findingFor, hungUnverified } from "../../finding.ts";
+import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
@@ -70,8 +70,15 @@ export const doubleDashTerminatorChecker: Checker = {
     // unknown option. The command may still fail for other reasons (no verb given), which is
     // why the check reads stderr rather than the exit code.
     const treatedAsFlag = /unknown (option|flag)/i.test(o.stderr) && o.stderr.includes(SENTINEL);
-    return treatedAsFlag
-      ? finding("fail", "a value after `--` was still parsed as an option", [o.id])
-      : finding("pass", "`--` ended option parsing", [o.id]);
+    if (treatedAsFlag) {
+      // A rejection already printed in the prefix is the violation; the rest of the stream
+      // cannot retract it. The PASS is the absence, and an absence over a cut-off stderr is
+      // precisely the overclaim the hang guard above exists to prevent.
+      return finding("fail", "a value after `--` was still parsed as an option", [o.id]);
+    }
+    const cut = truncatedUnverified(finding, [o]);
+    if (cut) return cut;
+
+    return finding("pass", "`--` ended option parsing", [o.id]);
   },
 };

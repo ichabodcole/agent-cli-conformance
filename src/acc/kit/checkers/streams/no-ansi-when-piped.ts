@@ -1,4 +1,4 @@
-import { findingFor, hungUnverified } from "../../finding.ts";
+import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -42,16 +42,24 @@ export const noAnsiWhenPipedChecker: Checker = {
     // Every probe the runner makes captures to a pipe, so the target was never writing to a
     // TTY — that is exactly the condition this rule requires. No TTY emulation needed.
     const offenders = relevant.filter((o) => ANSI.test(o.stdout) || ANSI.test(o.stderr));
-    return offenders.length
-      ? finding(
-          "fail",
-          `${offenders.length} invocation(s) emitted ANSI escapes with no terminal attached`,
-          offenders.map((o) => o.id),
-        )
-      : finding(
-          "pass",
-          `no escapes across ${relevant.length} invocation(s)`,
-          relevant.map((o) => o.id),
-        );
+    // Detected BEFORE the truncation guard, deliberately: an escape in the captured prefix was
+    // emitted, and no continuation of the output could un-emit it. The reverse does not hold —
+    // "no escapes in the bytes we allowed" is not "no escapes" — so a clean scan over a
+    // truncated capture must not become a pass.
+    if (offenders.length) {
+      return finding(
+        "fail",
+        `${offenders.length} invocation(s) emitted ANSI escapes with no terminal attached`,
+        offenders.map((o) => o.id),
+      );
+    }
+    const cut = truncatedUnverified(finding, relevant);
+    if (cut) return cut;
+
+    return finding(
+      "pass",
+      `no escapes across ${relevant.length} invocation(s)`,
+      relevant.map((o) => o.id),
+    );
   },
 };

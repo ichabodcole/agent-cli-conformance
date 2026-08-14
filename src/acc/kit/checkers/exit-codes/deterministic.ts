@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -35,6 +35,12 @@ export const deterministicChecker: Checker = {
     }
 
     const evidence = runs.map((o) => o.id);
+
+    // Same shape as the timeout below, same reason: a run killed at the output limit reports
+    // `exitCode: null`, and three nulls agree with each other perfectly while establishing
+    // nothing about determinism.
+    const cut = truncatedUnverified(finding, runs);
+    if (cut) return cut;
 
     // A timed-out run has no exit code to compare — `exitCode` is null because we killed it, not
     // because the target chose that status. Comparing nulls would let three timeouts read as

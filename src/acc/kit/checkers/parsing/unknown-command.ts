@@ -1,4 +1,4 @@
-import { findingFor, hungUnverified } from "../../finding.ts";
+import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
@@ -40,6 +40,18 @@ export const unknownCommandChecker: Checker = {
     // the detail "root verb rejected with exit null".
     const hung = hungUnverified(finding, [o]);
     if (hung) return hung;
+    // Same split as A1: stdout bytes in the prefix were written and stand as a violation, while
+    // "exited 0" cannot be read off a status the target never chose.
+    const cut = truncatedUnverified(finding, [o]);
+    if (cut) {
+      return o.stdout !== ""
+        ? finding(
+            "fail",
+            `unknown root verb wrote ${o.stdoutBytes}+ bytes to stdout before the output limit`,
+            [o.id],
+          )
+        : cut;
+    }
 
     const problems: string[] = [];
     if (o.exitCode === 0) problems.push("unknown root verb exited 0");

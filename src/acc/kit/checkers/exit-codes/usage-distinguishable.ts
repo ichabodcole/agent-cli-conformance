@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -27,6 +27,11 @@ export const usageDistinguishableChecker: Checker = {
     if (recorded.length < 2) {
       return finding("unverified", "probes were not recorded", []);
     }
+
+    // Every verdict below compares exit codes, and a probe killed at the output limit has none
+    // — `null` would collapse into "the same code twice" exactly as two hangs used to.
+    const cut = truncatedUnverified(finding, recorded);
+    if (cut) return cut;
 
     // A hung probe WAS recorded — it just never returned a code to compare. Reporting that as
     // "not recorded" would conflate two different outcomes A1 and C1 both take care to keep

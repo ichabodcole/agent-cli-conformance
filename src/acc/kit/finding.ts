@@ -48,3 +48,34 @@ export function hungUnverified(finding: Finder, runs: Observation[]): Finding | 
     hung.map((o) => o.id),
   );
 }
+
+/**
+ * THE SECOND CATALOGUE-WIDE INVARIANT: truncated evidence is a prefix, not a recording.
+ *
+ * When a probe exceeds the runner's capture ceiling (see MAX_STREAM_BYTES in runner.ts) the
+ * runner keeps what fits and kills the target. What survives is everything the target DID write
+ * up to that byte, and nothing about what it would have written next — and no exit code at all,
+ * because we killed it, so `exitCode` is null exactly as it is for a hang.
+ *
+ * That asymmetry is the whole rule, and it runs the opposite way from `hungUnverified`:
+ *
+ * - a violation the prefix CONTAINS is real. An ANSI escape that was emitted was emitted; a
+ *   credential that appeared in help appeared; help that already differed at byte 900 differed.
+ *   Those checkers detect the violation FIRST and return `fail`, then call this.
+ * - everything else — every clause resting on an exit code, on an absence, or on the output
+ *   being complete — is unestablished. Those checkers call this first, like a hang.
+ *
+ * Getting this wrong in either direction fabricates evidence: passing a target because the
+ * bytes we refused to read contained no escapes, or failing one for not naming a token in a
+ * stderr we cut off mid-sentence.
+ */
+export function truncatedUnverified(finding: Finder, runs: Observation[]): Finding | null {
+  const cut = runs.filter((o) => o.truncated);
+  if (cut.length === 0) return null;
+  const which = cut.map((o) => o.invocation.args.join(" ") || "(bare)").join(", ");
+  return finding(
+    "unverified",
+    `${cut.length} of ${runs.length} probe(s) exceeded the output limit and were killed (${which}) — the capture is a prefix with no exit code, so nothing the target had yet to do is established`,
+    cut.map((o) => o.id),
+  );
+}

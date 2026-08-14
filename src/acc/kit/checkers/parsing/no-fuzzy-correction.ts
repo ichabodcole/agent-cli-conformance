@@ -1,4 +1,4 @@
-import { findingFor, hungUnverified } from "../../finding.ts";
+import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -43,6 +43,10 @@ export const noFuzzyCorrectionChecker: Checker = {
     // this checker used to report "near-miss rejected with exit null".
     const hung = hungUnverified(finding, [o]);
     if (hung) return hung;
+    // Both verdicts below read `exitCode`, and a probe killed at the output limit never chose
+    // one — `null` would read as "not 0", i.e. as a pass, on a target we silenced ourselves.
+    const cut = truncatedUnverified(finding, [o]);
+    if (cut) return cut;
 
     return o.exitCode === 0
       ? finding(

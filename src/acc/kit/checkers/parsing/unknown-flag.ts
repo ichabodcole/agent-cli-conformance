@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
@@ -28,6 +28,20 @@ export const unknownFlagChecker: Checker = {
     if (!o) return finding("unverified", "probe was not recorded", []);
     if (o.timedOut) {
       return finding("fail", "hung on an unknown flag instead of rejecting it", [o.id]);
+    }
+    // A1 owns hangs but not floods, and of its three clauses exactly one survives a prefix.
+    // Bytes on stdout WERE written, and nothing the target had left to say could unwrite them —
+    // so that violation stands. The other two cannot: `exitCode` is null because we killed it,
+    // and "stderr did not name the flag" is an absence over a stream we cut off.
+    const cut = truncatedUnverified(finding, [o]);
+    if (cut) {
+      return o.stdout !== ""
+        ? finding(
+            "fail",
+            `stdout was not empty (${o.stdoutBytes}+ bytes) before the output limit`,
+            [o.id],
+          )
+        : cut;
     }
 
     const problems: string[] = [];

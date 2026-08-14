@@ -1,4 +1,4 @@
-import { findingFor, hungUnverified } from "../../finding.ts";
+import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -43,6 +43,11 @@ export const firstBytePromptChecker: Checker = {
     // could not establish anything, and E1 reports the hang itself.
     const hung = hungUnverified(finding, runs);
     if (hung) return hung;
+    // The first byte of a flooding run is real, but F2's claim is about the RUN, and a run we
+    // killed at the ceiling did not complete — the same reason the partial-hang case above is
+    // not averaged over its survivors.
+    const cut = truncatedUnverified(finding, runs);
+    if (cut) return cut;
 
     const times = runs.map((o) => o.timeToFirstByteMs).filter((t): t is number => t !== null);
     if (times.length === 0) {

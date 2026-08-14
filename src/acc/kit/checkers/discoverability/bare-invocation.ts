@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, truncatedUnverified } from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
 
@@ -32,6 +32,18 @@ export const bareInvocationChecker: Checker = {
     }
     if (o.timedOut) {
       return finding("fail", "bare invocation hung", [o.id]);
+    }
+    // D2 owns hangs but not floods. Stdout the target already wrote on a bare invocation is a
+    // violation a prefix establishes; "exited 0" is not, because we killed it.
+    const cut = truncatedUnverified(finding, [o]);
+    if (cut) {
+      return o.stdout !== ""
+        ? finding(
+            "fail",
+            `bare invocation wrote ${o.stdoutBytes}+ bytes to stdout before the output limit`,
+            [o.id],
+          )
+        : cut;
     }
 
     const problems: string[] = [];

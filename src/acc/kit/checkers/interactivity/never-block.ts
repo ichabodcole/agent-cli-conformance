@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -47,18 +47,25 @@ export const neverBlockChecker: Checker = {
     // E1 owns hangs outright — see finding.ts's hungUnverified, which exists because the other
     // fifteen checkers must NOT read a hang as compliance. Here the hang is the finding.
     const hung = runs.filter((o) => o.timedOut);
-    return hung.length
-      ? finding(
-          "fail",
-          `${hung.length} of ${runs.length} invocation(s) never terminated with stdin closed`,
-          hung.map((o) => o.id),
-        )
-      : finding(
-          "pass",
-          // Named, not counted: E1 only ever probes inert paths, so "all 4 terminated" must not
-          // be read as a claim about commands that legitimately prompt (that is L2 work).
-          `all ${runs.length} inert invocation(s) terminated (bare, --help, unknown flag, unknown verb)`,
-          runs.map((o) => o.id),
-        );
+    if (hung.length) {
+      return finding(
+        "fail",
+        `${hung.length} of ${runs.length} invocation(s) never terminated with stdin closed`,
+        hung.map((o) => o.id),
+      );
+    }
+    // Checked after the hang and before the pass. A probe killed at the output limit did not
+    // block — it was writing — so it is not E1's violation; but neither did it TERMINATE, which
+    // is exactly what E1's pass claims. The honest answer is that we ended it before it answered.
+    const cut = truncatedUnverified(finding, runs);
+    if (cut) return cut;
+
+    return finding(
+      "pass",
+      // Named, not counted: E1 only ever probes inert paths, so "all 4 terminated" must not
+      // be read as a claim about commands that legitimately prompt (that is L2 work).
+      `all ${runs.length} inert invocation(s) terminated (bare, --help, unknown flag, unknown verb)`,
+      runs.map((o) => o.id),
+    );
   },
 };

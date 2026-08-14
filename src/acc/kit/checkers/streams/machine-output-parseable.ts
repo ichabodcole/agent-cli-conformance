@@ -1,4 +1,4 @@
-import { findingFor, hungUnverified } from "../../finding.ts";
+import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -54,6 +54,11 @@ export const machineOutputParseableChecker: Checker = {
     // target for producing no output when in fact we killed it. Say which happened.
     const hung = hungUnverified(finding, [o]);
     if (hung) return hung;
+    // The one place truncation would produce a confidently WRONG fail: a valid JSON document cut
+    // at the ceiling does not parse, and "machine-mode stdout is neither one JSON document nor
+    // NDJSON" would blame the target for a bracket we refused to read.
+    const cut = truncatedUnverified(finding, [o]);
+    if (cut) return cut;
 
     if (o.stdout.trim() === "") {
       return finding("unverified", "machine-mode probe produced no stdout", [o.id]);

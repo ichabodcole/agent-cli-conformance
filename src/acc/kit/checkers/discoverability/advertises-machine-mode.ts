@@ -1,4 +1,4 @@
-import { findingFor, hungUnverified } from "../../finding.ts";
+import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -41,6 +41,10 @@ export const advertisesMachineModeChecker: Checker = {
       // output we never let it produce.
       const hung = hungUnverified(finding, [o]);
       if (hung) return hung;
+      // The scan below is an ABSENCE test over help text, so a prefix cannot settle it in
+      // either direction: the machine-mode row may be in the bytes we refused to read.
+      const cut = truncatedUnverified(finding, [o]);
+      if (cut) return cut;
     }
 
     const evidence = o ? [o.id] : [];

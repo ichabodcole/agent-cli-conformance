@@ -1,4 +1,4 @@
-import { findingFor, hungUnverified } from "../../finding.ts";
+import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -29,6 +29,11 @@ export const stdoutCarriesOnlyDataChecker: Checker = {
     // same way; B1 doing it by side effect made its verdict depend on how many probes hung.
     const hung = hungUnverified(finding, relevant);
     if (hung) return hung;
+    // B1's subject is stdout ON FAILURE, and failure here means a non-zero exit code. A probe
+    // killed at the output limit has `exitCode: null`, which the filter below would read as
+    // "failed" — so a target we cut off would be judged against a failure it never declared.
+    const cut = truncatedUnverified(finding, relevant);
+    if (cut) return cut;
 
     const failures = relevant.filter((o) => o.exitCode !== 0);
     if (failures.length === 0) {

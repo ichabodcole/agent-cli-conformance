@@ -1,4 +1,4 @@
-import { findingFor, hungUnverified } from "../../finding.ts";
+import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -41,6 +41,10 @@ export const versionFlagChecker: Checker = {
     // the honest verdict is that nothing was established.
     const hung = hungUnverified(finding, runs);
     if (hung) return hung;
+    // A `--version` that floods past the output limit is a defect, but it is not D1's: every
+    // clause here reads the exit code, which a probe we killed never chose.
+    const cut = truncatedUnverified(finding, runs);
+    if (cut) return cut;
 
     const evidence = runs.map((o) => o.id);
     const problems: string[] = [];

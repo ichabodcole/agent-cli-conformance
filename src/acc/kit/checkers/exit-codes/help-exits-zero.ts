@@ -1,4 +1,4 @@
-import { findingFor } from "../../finding.ts";
+import { findingFor, truncatedUnverified } from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -27,6 +27,12 @@ export const helpExitsZeroChecker: Checker = {
     if (observed.length < 2) {
       return finding("unverified", "probes were not recorded", []);
     }
+
+    // C1 owns HANGS (a help path that never returns has not succeeded) but not truncation: a
+    // target killed at the output limit was writing, not failing to, and the exit code C1 turns
+    // on is one we prevented it from choosing.
+    const cut = truncatedUnverified(finding, observed);
+    if (cut) return cut;
 
     const evidence = observed.map((o) => o.id);
     const problems: string[] = [];
