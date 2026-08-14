@@ -76,6 +76,21 @@ waiting (a hang is reported as a failure, not a pass with missing evidence). The
 requires only non-zero, not exactly `2` — an undeclared tool never agreed to the taxonomy — but
 records the observed code in the finding either way.
 
+## Current checker coverage
+
+[`bare-invocation.ts`](../../../../src/acc/kit/checkers/discoverability/bare-invocation.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- a bare invocation exits non-zero, writes nothing to stdout, and does not hang.
+
+**Gaps**
+
+- the exit code is only required to be non-zero here and not the declared 2
+- stderr is never checked to carry the usage summary
+
 ## How to comply
 
 Two lines in most frameworks: on no arguments, print usage to stderr and exit `2`. The trap is

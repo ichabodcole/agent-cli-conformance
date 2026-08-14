@@ -88,6 +88,10 @@ export const doubleDashTerminatorChecker: Checker = {
     const cut = truncatedUnverified(finding, [o]);
     if (cut) return cut;
 
-    return finding("pass", "`--` ended option parsing", [o.id]);
+    return finding(
+      "pass",
+      "the value after `--` was not re-parsed as an option; its arrival as a positional is not observed",
+      [o.id],
+    );
   },
 };

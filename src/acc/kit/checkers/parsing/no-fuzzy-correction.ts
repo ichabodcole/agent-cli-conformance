@@ -65,6 +65,13 @@ export const noFuzzyCorrectionChecker: Checker = {
           `a near-miss flag was accepted at exit 0 (${o.invocation.args.join(" ")})`,
           [o.id],
         )
-      : finding("pass", `near-miss rejected with exit ${o.exitCode}`, [o.id]);
+      : finding(
+          "pass",
+          // Scoped twice over, because both limits are invisible from the detail alone: only a
+          // near-miss FLAG is probed (a corrected verb would run), and "did no work" is read off
+          // the exit code rather than observed.
+          `near-miss flag rejected with exit ${o.exitCode}; that no work was done is inferred, not observed`,
+          [o.id],
+        );
   },
 };

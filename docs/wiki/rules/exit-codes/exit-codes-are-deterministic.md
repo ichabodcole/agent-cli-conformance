@@ -81,6 +81,23 @@ Deliberately excluded: any invocation that performs work. Repeating a real comma
 is the opposite of inert, and belongs to `L2` — where running twice is precisely how
 [idempotence](../../concepts/output-kind.md) claims get falsified.
 
+## Current checker coverage
+
+[`deterministic.ts`](../../../../src/acc/kit/checkers/exit-codes/deterministic.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- one usage-error invocation, repeated three times with byte-identical argv and environment,
+  returns the same exit code each time.
+
+**Gaps**
+
+- only one usage-error invocation shape is repeated and only three times
+- unchanged state is assumed rather than established
+- the retryable declaration for genuinely intermittent failures is not exercised
+
 ## How to comply
 
 Almost always satisfied for free. When it isn't, the usual causes are:

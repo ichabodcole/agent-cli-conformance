@@ -79,6 +79,23 @@ Stating this openly matters more than it might seem. A conformance report that q
 it checked something it could not check is the same defect as a CLI reporting success for work
 it did not do.
 
+## Current checker coverage
+
+[`usage-distinguishable.ts`](../../../../src/acc/kit/checkers/exit-codes/usage-distinguishable.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- two different usage errors — an unknown flag and an unknown verb — produce the same non-zero
+  exit code, and that code is `2`.
+
+**Gaps**
+
+- the internal-fault contrast is not established at L0 because no internal fault can be provoked
+  inertly
+- the taxonomy codes for more specific failures are not exercised
+
 ## How to comply
 
 Define the taxonomy once as constants and give every described failure an explicit code —

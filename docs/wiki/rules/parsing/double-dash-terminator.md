@@ -108,6 +108,24 @@ and nothing else — not a write through `HOME` or an absolute path, not a subpr
 credentials the child inherits, and not a network call. Do not point `acc check` at a CLI of
 that shape.
 
+## Current checker coverage
+
+[`double-dash-terminator.ts`](../../../../src/acc/kit/checkers/parsing/double-dash-terminator.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- a hyphen-leading value after a bare `--` is not rejected as an unknown option.
+- through a `bun` launcher the probe is undeliverable, and the verdict is `unverified` rather than
+  a measurement of an argv the target never received.
+
+**Gaps**
+
+- the value after the terminator is only shown not to be rejected as a flag and never shown to
+  arrive as a positional
+- the delegator passthrough requirement is not exercised
+
 ## How to comply
 
 Free in most parsers — POSIX-conformant option parsing includes it, and `clap`, `commander`,

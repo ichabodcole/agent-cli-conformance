@@ -79,6 +79,23 @@ A negative result is reported as a finding, not a failure — and it also disabl
 That coupling is the practical argument for the rule: an undiscoverable feature is, to a
 conformance kit, indistinguishable from an absent one.
 
+## Current checker coverage
+
+[`advertises-machine-mode.ts`](../../../../src/acc/kit/checkers/discoverability/advertises-machine-mode.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- the **human** root help names a machine-mode flag or a `schema` command row — falling back to a
+  forced-text form when plain help answers with a machine document, and reporting `unverified`
+  when the human surface cannot be observed at all.
+
+**Gaps**
+
+- help is only required to advertise either the machine-mode flag or a schema command and never
+  both
+
 ## How to comply
 
 One line in the root help. Two things worth doing beyond the minimum:

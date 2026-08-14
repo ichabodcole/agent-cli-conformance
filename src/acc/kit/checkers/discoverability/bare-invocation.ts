@@ -66,6 +66,10 @@ export const bareInvocationChecker: Checker = {
 
     return problems.length
       ? finding("fail", problems.join("; "), [o.id])
-      : finding("pass", `usage error, exit ${o.exitCode}, stdout empty`, [o.id]);
+      : finding(
+          "pass",
+          `bare invocation exited ${o.exitCode} with stdout empty; stderr not inspected`,
+          [o.id],
+        );
   },
 };

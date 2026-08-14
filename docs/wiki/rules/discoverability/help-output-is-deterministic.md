@@ -63,15 +63,37 @@ Passes when the two captures are identical. The second run carries a distinct, a
 var (rather than repeating the first invocation verbatim) purely so the runner's dedup — which
 merges identical probes into one recording — doesn't collapse the pair into a single sample.
 
-When they differ, the checker reports the **diff**, not merely the fact — a one-line delta
-containing a timestamp is a different problem from wholesale reordering, and the fix differs
-accordingly.
+When they differ, the checker reports the **index of the first differing character** — not a
+diff. That is enough to tell a one-character timestamp delta from wholesale reordering, and it
+is all the checker computes; a reader expecting a rendered delta will not find one. The index
+counts JS string offsets (UTF-16 code units), which diverge from byte offsets as soon as help
+contains a non-ASCII character.
 
 Deliberately not attempted: distinguishing "nondeterministic" from "changed because the
-environment changed". The probe runs both invocations in the same environment moments apart,
-which is the case that matters and the only one it can honestly speak to. `--version` is
-covered separately, by [D1](./version-flag-exists.md)'s own hostile-environment probe, rather
-than duplicated here.
+environment changed". Note that the two runs are therefore **not** identical invocations — the
+second carries `ACC_PROBE_NONCE`, so a CLI that echoes its environment into help would differ
+here for a legitimate reason. That is the price of getting two samples past dedup, and it is
+declared as a gap rather than described away. `--version` is covered separately, by
+[D1](./version-flag-exists.md)'s own hostile-environment probe, rather than duplicated here.
+
+## Current checker coverage
+
+[`help-deterministic.ts`](../../../../src/acc/kit/checkers/discoverability/help-deterministic.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- two root `--help` captures taken moments apart are byte-identical, and a difference is reported
+  with the index of the first differing character.
+
+**Gaps**
+
+- the two runs are not identical invocations because the second carries a probe nonce in its
+  environment
+- only root help is compared and never nested help
+- forbidden content such as a timestamp or a varying absolute path is only caught when it differs
+  between two adjacent runs
 
 ## How to comply
 

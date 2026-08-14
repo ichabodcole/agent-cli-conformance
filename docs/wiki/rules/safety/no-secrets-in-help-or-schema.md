@@ -71,12 +71,31 @@ in a URL.
 Two honest limits, both reported rather than glossed:
 
 - **It cannot catch a secret it does not recognise, and it only scans root `--help`.** A bespoke
-  token format with no telltale prefix passes; a discovered subcommand group's own help and a
-  `schema` subcommand (when present) are not yet scanned. A clean result means "no known pattern
-  found", not "no secret present", and the checker says so.
+  token format with no telltale prefix passes. Of the three surfaces the rule names — help,
+  schema output, error messages — one is scanned: a discovered subcommand group's own help, a
+  `schema` subcommand (when present), and every error path go unread, so the second and third
+  **MUST NOT** above are not exercised at all. A clean result means "no known pattern found in
+  root help", not "no secret present", and the checker's own pass detail says so.
 - **It cannot distinguish a real credential from a placeholder.** `--token sk-example-xxxx` in
   an example is flagged. That is the correct bias — a false positive costs one look, a false
   negative publishes a key — but it means findings need reading, not automatic trust.
+
+## Current checker coverage
+
+[`no-secrets-in-help.ts`](../../../../src/acc/kit/checkers/safety/no-secrets-in-help.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- root help and its stderr carry none of seven known credential shapes: OpenAI, GitHub and Slack
+  tokens, an AWS access key, a PEM private-key header, a JWT, and a password embedded in a URL.
+
+**Gaps**
+
+- only root help is scanned and never schema output or error messages
+- only seven known credential shapes are matched so a bespoke token is invisible
+- a secret carried as a flag default is only seen if help prints defaults
 
 ## How to comply
 

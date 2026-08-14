@@ -69,7 +69,7 @@ export const noAnsiWhenPipedChecker: Checker = {
 
     return finding(
       "pass",
-      `no escapes across ${relevant.length} invocation(s)`,
+      `no CSI escapes across ${relevant.length} non-TTY invocation(s)`,
       relevant.map((o) => o.id),
     );
   },

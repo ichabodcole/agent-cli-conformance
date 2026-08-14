@@ -68,7 +68,12 @@ The checker additionally runs it with a deliberately unusable `HOME` and `XDG_CO
 verify the no-configuration requirement — a `--version` that only works in a configured
 environment fails this rule even though it passes the naive probe.
 
-Two things the checker does **not** examine, despite the rule text above asking for them:
+The unusable-`HOME` probe establishes exactly one of the rule's four "no work" clauses — no
+configuration. No network, no credentials and no side effects are invisible to a runner that
+records argv, streams, exit status and timing, and the machine-mode clause is never asked for
+at all; all three are named under [gaps](#current-checker-coverage) below.
+
+Two further omissions are deliberate, and are **not** gaps, because another rule owns each:
 
 - **stderr.** Chatter on stderr alongside a correct version on stdout is real-world common
   (deprecation notices, update nags) and does not stop a caller reading the version. Nothing
@@ -79,6 +84,24 @@ Two things the checker does **not** examine, despite the rule text above asking 
 
 A hung probe is reported `unverified` rather than failed: D1 does not own hangs —
 [E1](../interactivity/never-block-without-a-tty.md) does.
+
+## Current checker coverage
+
+[`version-flag.ts`](../../../../src/acc/kit/checkers/discoverability/version-flag.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- `--version` exits `0` with non-empty stdout.
+- it still does so with `HOME` and `XDG_CONFIG_HOME` pointed at a path that does not exist — the
+  no-configuration clause, and the only one of the four "no work" clauses reachable here.
+
+**Gaps**
+
+- the structured machine-mode version payload is never inspected
+- no network and no credentials and no side effects cannot be observed at L0
+- the SHOULD to support -V is not probed
 
 ## How to comply
 

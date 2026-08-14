@@ -159,6 +159,22 @@ export function ruleChecks(pages: LintPage[]): string[] {
           `MISMATCH coverage_gaps ${page.rel}:\n     page: ${JSON.stringify(gaps)}\n  checker: ${JSON.stringify(checkerGaps)}`,
         );
     }
+
+    // ...and the same list a third time, in the page's own PROSE. Frontmatter is not what a
+    // reader reads: five rule pages described a broader measurement than their checker performs
+    // (review R3-6), every one of them while carrying correct `coverage_gaps` two lines above.
+    // The frontmatter is already bound to the checker, so binding the prose to the frontmatter
+    // binds all three — and the copy a reader actually sees stops being the unchecked one.
+    const stated = statedGaps(page.body);
+    if (stated === null) {
+      problems.push(
+        `MISSING COVERAGE  ${page.rel}: no "${COVERAGE_HEADING}" section with a ${GAPS_MARKER} list`,
+      );
+    } else if (stated.join(" ") !== gaps.join(" ")) {
+      problems.push(
+        `MISMATCH stated gaps ${page.rel}:\n        prose: ${JSON.stringify(stated)}\n  frontmatter: ${JSON.stringify(gaps)}`,
+      );
+    }
   }
 
   // The reverse direction: a checker with no rule page is an undocumented rule, which is how
@@ -176,6 +192,44 @@ export function ruleChecks(pages: LintPage[]): string[] {
 
 /** The index section the matrix owns. Everything between it and the next heading is generated. */
 export const MATRIX_HEADING = "### Coverage at a glance";
+
+/** The rule-page section that states what its checker does and does not establish. */
+export const COVERAGE_HEADING = "## Current checker coverage";
+
+/** The line inside it that introduces the gap list. */
+export const GAPS_MARKER = "**Gaps**";
+
+/**
+ * The gap phrases a rule page states in prose, or null when the section is absent.
+ *
+ * Reading the BODY and not just the frontmatter is the point (review R3-6). `coverage_gaps` is
+ * already bound to the checker, but a reader does not read frontmatter — they read the page, and
+ * a page whose prose describes a broader probe than the checker performs is the drift this
+ * project exists to fail on. Two copies of the list is the price; both are gated.
+ *
+ * Continuation lines are folded back into their bullet because Prettier re-wraps every list item
+ * in this repo, and backslashes are dropped because it escapes markdown punctuation on the way.
+ */
+export function statedGaps(body: string): string[] | null {
+  const section = sectionBody(body, COVERAGE_HEADING);
+  if (section === null) return null;
+  const lines = section.split("\n");
+  const marker = lines.findIndex((l) => l.trim().startsWith(GAPS_MARKER));
+  if (marker === -1) return null;
+
+  const gaps: string[] = [];
+  for (const raw of lines.slice(marker + 1)) {
+    const line = raw.trim();
+    if (line === "") {
+      if (gaps.length) break; // a blank line after the list ends it; before it, skip
+      continue;
+    }
+    if (line.startsWith("- ")) gaps.push(line.slice(2));
+    else if (gaps.length) gaps[gaps.length - 1] += ` ${line}`;
+    else break; // prose between the marker and the first bullet: not a list
+  }
+  return gaps.map((g) => g.replace(/\\/g, "").replace(/\s+/g, " ").trim());
+}
 
 /**
  * The rule / tier / probe level / checker_status / coverage / gap-count matrix (review R3-1).

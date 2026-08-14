@@ -61,6 +61,8 @@ export const unknownFlagChecker: Checker = {
 
     return problems.length
       ? finding("fail", problems.join("; "), [o.id])
-      : finding("pass", `rejected with exit ${o.exitCode}, stdout empty, flag named`, [o.id]);
+      : finding("pass", `root flag rejected with exit ${o.exitCode}, stdout empty, flag named`, [
+          o.id,
+        ]);
   },
 };

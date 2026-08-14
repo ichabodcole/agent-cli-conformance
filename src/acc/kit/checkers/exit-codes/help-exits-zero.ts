@@ -65,6 +65,6 @@ export const helpExitsZeroChecker: Checker = {
 
     return problems.length
       ? finding("fail", problems.join("; "), evidence)
-      : finding("pass", "--help and -h both exit 0 with non-empty stdout", evidence);
+      : finding("pass", "root --help and -h both exit 0 with non-empty stdout", evidence);
   },
 };

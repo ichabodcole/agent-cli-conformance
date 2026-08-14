@@ -125,6 +125,18 @@ withholds itself over, and what `acc check` prints when it does.
 Both fields for every rule are tabulated in [index.md](./index.md#coverage-at-a-glance), which
 is generated from this frontmatter by `bun run docs:sync` and fails the lint when it drifts.
 
+### `## Current checker coverage` is required on every rule page
+
+Frontmatter is not what a reader reads. Every rule page **MUST** carry a
+`## Current checker coverage` section holding an **Established** list — what a `pass` from this
+checker actually means — and a `**Gaps**` list whose bullets are the `coverage_gaps` above,
+**verbatim and in order**. The lint compares them, so closing a gap in prose without closing it
+in code fails the gate, exactly as it does for the frontmatter.
+
+Three copies of one list is the price of the copy a reader sees being the checked one. Five
+pages described a broader measurement than their checker performs while carrying correct
+frontmatter two lines above, which is what that buys.
+
 A gap phrase is read back by a deliberately small frontmatter parser that splits list items on
 a comma and on a space-hyphen-space sequence, so it must contain neither. The kit's own
 registry test rejects both at the source rather than letting the lint fail with a mismatch that
@@ -144,13 +156,13 @@ the exit codes the spec itself mandates.
 
 ## Per-type page shape
 
-| `type`      | Required sections                                                          |
-| ----------- | -------------------------------------------------------------------------- |
-| `concept`   | What it is · Why it matters for agents · The details · Related rules       |
-| `archetype` | Shape · What makes it hard · Rules that apply differently · Examples       |
-| `rule`      | The rule (normative) · Why · The probe · How to comply · Evidence          |
-| `decision`  | Context · Decision · Rationale · Consequences · What would change our mind |
-| `guide`     | Goal · Steps · Verification                                                |
+| `type`      | Required sections                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| `concept`   | What it is · Why it matters for agents · The details · Related rules                         |
+| `archetype` | Shape · What makes it hard · Rules that apply differently · Examples                         |
+| `rule`      | The rule (normative) · Why · The probe · Current checker coverage · How to comply · Evidence |
+| `decision`  | Context · Decision · Rationale · Consequences · What would change our mind                   |
+| `guide`     | Goal · Steps · Verification                                                                  |
 
 Normative language in `rule` pages follows RFC 2119: **MUST**, **MUST NOT**, **SHOULD**,
 **MAY**. Nothing else is normative — if a `concept` page seems to state a requirement, the

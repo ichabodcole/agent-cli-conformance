@@ -79,6 +79,24 @@ A hung probe is reported as a **failure**, not as unverified: blocking forever i
 rejecting. That makes A1 one of four rules in the catalogue that own hangs rather than
 deferring them to [E1](../interactivity/never-block-without-a-tty.md).
 
+## Current checker coverage
+
+[`unknown-flag.ts`](../../../../src/acc/kit/checkers/parsing/unknown-flag.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- a valueless flag unknown at the **root** exits non-zero, leaves stdout empty, and is named
+  verbatim on stderr.
+
+**Gaps**
+
+- a flag carrying a value is never probed so absorbing that value as a positional is not
+  established
+- only the root is probed so a flag unknown to a subcommand is not
+- the MUST NOT act on a suggested correction clause is not exercised here
+
 ## How to comply
 
 Most parsers support this; many do not enable it by default.

@@ -70,6 +70,6 @@ export const versionFlagChecker: Checker = {
 
     return problems.length
       ? finding("fail", problems.join("; "), evidence)
-      : finding("pass", "version reported with no configuration", evidence);
+      : finding("pass", "version reported with an unusable HOME and XDG_CONFIG_HOME", evidence);
   },
 };

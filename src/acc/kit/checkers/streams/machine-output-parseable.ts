@@ -76,7 +76,7 @@ export const machineOutputParseableChecker: Checker = {
       return finding("unverified", "machine-mode probe produced no stdout", [o.id]);
     }
     if (parses(o.stdout)) {
-      return finding("pass", "whole stdout parses as one document", [o.id]);
+      return finding("pass", "machine-mode help parses whole as one document", [o.id]);
     }
     // Nothing was DECLARED, so NDJSON is a plausible legitimate design. Failing it here would
     // punish a tool for a choice it was never asked to state. Hard check arrives at L1.

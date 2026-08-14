@@ -58,11 +58,32 @@ presentational output without performing work.
 <cli> --totally-made-up-flag    # stderr captured likewise, on the error path
 ```
 
-Passes when neither capture contains `\x1b[` (CSI) or any other escape introducer.
+Passes when neither capture contains `\x1b[`, the CSI introducer — and nothing else. OSC
+(`ESC ]`, used for hyperlinks and window titles), the single-character escapes (`ESC c`,
+`ESC 7`), and animation built from bare carriage returns all pass this probe. The three
+override clauses above are unreachable rather than unimplemented: they bind only when a TTY
+**is** present, and every probe the runner makes captures to a pipe.
 
 Because the runner always captures to a pipe, the CLI is by definition not writing to a TTY —
 so this probe tests the detection path a CLI would use anyway. A tool that colours
 unconditionally fails; a tool that checks `isatty` passes without special handling.
+
+## Current checker coverage
+
+[`no-ansi-when-piped.ts`](../../../../src/acc/kit/checkers/streams/no-ansi-when-piped.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- neither root help nor a usage error emits a CSI introducer (`ESC [`) on stdout or stderr, with
+  both streams attached to pipes.
+
+**Gaps**
+
+- only CSI escapes are detected and not OSC or single-character escape sequences
+- carriage-return animation is not detected
+- the NO_COLOR and --no-color and TERM=dumb overrides need a TTY and are never exercised
 
 ## How to comply
 

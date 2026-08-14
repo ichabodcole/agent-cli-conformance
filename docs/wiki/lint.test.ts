@@ -11,23 +11,51 @@
 
 import { expect, test } from "bun:test";
 import { join } from "node:path";
-import type { LintPage } from "../../scripts/docs-lint/index.ts";
+import { type LintPage, yamlList } from "../../scripts/docs-lint/index.ts";
 import {
+  COVERAGE_HEADING,
   coverageMatrix,
+  GAPS_MARKER,
   MATRIX_HEADING,
   matrixChecks,
   normalizeBlock,
   ruleChecks,
   sectionBody,
+  statedGaps,
 } from "./lint.ts";
 
-/** A `LintPage` carrying just the frontmatter under test. */
+/**
+ * A `LintPage` carrying just the frontmatter under test.
+ *
+ * A `rule` page also gets the `## Current checker coverage` body it owes, generated from its own
+ * `coverage_gaps` so the prose-versus-frontmatter check is satisfied by construction. Without
+ * that every test in this file about some OTHER field would also report a missing section.
+ */
 function pageOf(rel: string, fields: Record<string, string>): LintPage {
+  const gaps = yamlList(fields.coverage_gaps);
   return {
     path: join(import.meta.dir, rel),
     rel,
     fields: new Map(Object.entries(fields)),
-    body: "",
+    body:
+      fields.type === "rule"
+        ? [
+            "## The probe",
+            "",
+            COVERAGE_HEADING,
+            "",
+            "**Established**",
+            "",
+            "- the probe ran",
+            "",
+            GAPS_MARKER,
+            "",
+            ...gaps.map((g) => `- ${g}`),
+            "",
+            "## How to comply",
+            "",
+          ].join("\n")
+        : "",
   };
 }
 
@@ -432,6 +460,57 @@ test("problems from several pages accumulate", () => {
   expect(problems).toHaveLength(4); // bad1: tier + missing checker; bad2: probe_level + checker
   expect(problems.filter((p) => p.includes("bad1.md"))).toHaveLength(2);
   expect(problems.filter((p) => p.includes("bad2.md"))).toHaveLength(2);
+});
+
+// --- the stated gaps, in the page's own prose ---------------------------------------------
+//
+// `coverage_gaps` frontmatter is already bound to the checker, but frontmatter is not what a
+// reader reads. Five rule pages described a broader measurement than their checker performs
+// while carrying correct frontmatter two lines above (review R3-6), so the visible copy is
+// gated too.
+
+test("statedGaps folds Prettier's wrapping back into one bullet per gap", () => {
+  const body = [
+    COVERAGE_HEADING,
+    "",
+    GAPS_MARKER,
+    "",
+    "- a gap long enough that Prettier",
+    "  wrapped it across two lines",
+    "- a short one",
+    "",
+    "## How to comply",
+  ].join("\n");
+  expect(statedGaps(body)).toEqual([
+    "a gap long enough that Prettier wrapped it across two lines",
+    "a short one",
+  ]);
+});
+
+test("statedGaps returns null when the section or the marker is missing", () => {
+  expect(statedGaps("## The rule\n\ntext\n")).toBeNull();
+  expect(statedGaps(`${COVERAGE_HEADING}\n\n**Established**\n\n- a thing\n`)).toBeNull();
+});
+
+test("a rule page with no coverage section is reported", () => {
+  const page = rule("rules/parsing/a1.md");
+  page.body = "## The rule\n\ntext\n";
+  expect(forward([page])).toEqual([expect.stringContaining("MISSING COVERAGE")]);
+});
+
+test("a rule page whose prose gaps disagree with its frontmatter is reported", () => {
+  const page = rule("rules/parsing/a1.md");
+  page.body = page.body.replace(A1_GAPS[1] as string, "something else entirely");
+  expect(forward([page])).toEqual([expect.stringContaining("MISMATCH stated gaps")]);
+});
+
+test("prose gaps in a different order are reported — the list is compared in order", () => {
+  const page = rule("rules/parsing/a1.md");
+  page.body = pageOf("rules/parsing/a1.md", {
+    ...OK_RULE,
+    coverage_gaps: `[${[...A1_GAPS].reverse().join(", ")}]`,
+  }).body;
+  expect(forward([page])).toEqual([expect.stringContaining("MISMATCH stated gaps")]);
 });
 
 // --- the generated coverage matrix ------------------------------------------------------

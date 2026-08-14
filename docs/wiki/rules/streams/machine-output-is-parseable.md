@@ -79,14 +79,38 @@ knowing the flag's arity. Only the `--json` pairing with `--help` is `L0`-safe.
 
 Passes when the captured stdout parses whole, as the declared kind.
 
-Under `L0` nothing is declared, so the checker assumes `data`, and **downgrades a mismatch to a
-diagnostic** rather than failing: a stream of valid NDJSON is a plausible legitimate design,
-and failing it without a declaration would punish a tool for a choice it was never asked to
-state. Once the tool declares `output_kind`, the same probe becomes a hard `L1` check against
-the declaration.
+Under `L0` nothing is declared, so the checker reports valid NDJSON as **`unverified`** rather
+than failing it: a stream of valid NDJSON is a plausible legitimate design, and failing it
+without a declaration would punish a tool for a choice it was never asked to state. Once the
+tool declares `output_kind`, the same probe becomes a hard `L1` check against the declaration.
+
+Two things that is **not**. The rule stays **core** — nothing about the NDJSON case downgrades
+the tier, and a failure here still makes a target non-conformant. And `unverified` is not a
+diagnostic failure: it is the verdict for "the probe ran and established neither answer", so it
+blocks [full verification](../../concepts/conformance.md) without blocking conformance. The
+sentence above — undeclared output defaults to `data` — is the normative rule, and this is the
+one place the `L0` checker does not enforce it.
 
 Where no machine-mode flag can be discovered, the checker reports **unverified** and raises
 [help advertises machine mode](../discoverability/help-advertises-machine-mode.md) instead.
+
+## Current checker coverage
+
+[`machine-output-parseable.ts`](../../../../src/acc/kit/checkers/streams/machine-output-parseable.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- machine-mode help parses whole as exactly one JSON document, for a target whose help advertises
+  `--json`.
+
+**Gaps**
+
+- the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified
+  rather than failed
+- only machine-mode help is parsed and never a data command
+- shape stability across invocations and across commands is not compared
 
 ## How to comply
 

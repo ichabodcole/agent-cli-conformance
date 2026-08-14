@@ -116,6 +116,23 @@ The checker deliberately does **not** probe commands that legitimately prompt. E
 that a real confirmation path behaves correctly requires running it, which is `L2` work in a
 contained environment.
 
+## Current checker coverage
+
+[`never-block.ts`](../../../../src/acc/kit/checkers/interactivity/never-block.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- four inert invocations — bare, `--help`, an unknown flag, an unknown verb — all terminate with
+  stdin closed.
+
+**Gaps**
+
+- only inert paths are probed so a real confirmation path is never reached
+- the structured confirmation_required response and its exit 8 are not established
+- treating EOF or closed stdin as an answer is not detectable from termination alone
+
 ## How to comply
 
 Guard every prompt with an `isatty(stdin)` check, and make the non-TTY branch a structured

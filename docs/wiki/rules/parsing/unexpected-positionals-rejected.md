@@ -66,6 +66,21 @@ The checker therefore declares no probes and always reports **unverified** at th
 Testing arity for real requires waiting until the command's effects have been classified (L1),
 so it can be probed only for verbs already known to be read-only.
 
+## Current checker coverage
+
+[`unexpected-positionals.ts`](../../../../src/acc/kit/checkers/parsing/unexpected-positionals.ts) — `L1`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- nothing. This checker declares no probes and always reports `unverified` — see [the
+  probe](#the-probe) for why arity cannot be tested inertly.
+
+**Gaps**
+
+- no probe is declared so nothing about arity is established
+
 ## How to comply
 
 Declare arity explicitly rather than reading `argv` remainder. Parsers that expose positionals

@@ -74,7 +74,7 @@ export const firstBytePromptChecker: Checker = {
     // measures the machine rather than the tool. The spread is reported because high variance
     // is itself a finding.
     const best = Math.min(...times);
-    const detail = `first byte in ${best}ms (runs: ${times.join(", ")}ms)`;
+    const detail = `--version first byte in ${best}ms (runs: ${times.join(", ")}ms)`;
 
     return best <= THRESHOLD_MS
       ? finding("pass", detail, evidence)

@@ -76,6 +76,22 @@ shared pipe — measuring stream separation through a merged stream cannot work,
 attempt at exactly that produced identical byte counts for both streams and nearly went
 unnoticed.
 
+## Current checker coverage
+
+[`stdout-carries-only-data.ts`](../../../../src/acc/kit/checkers/streams/stdout-carries-only-data.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- stdout is empty on the invocations that failed — two usage errors, an unknown flag and an
+  unknown verb.
+
+**Gaps**
+
+- only usage-error failures are probed and never a runtime failure
+- stdout on a SUCCESSFUL command is never inspected for diagnostics
+
 ## How to comply
 
 Route every write through a single emitter that knows which stream it is addressing, rather

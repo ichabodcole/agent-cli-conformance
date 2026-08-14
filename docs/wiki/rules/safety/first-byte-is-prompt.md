@@ -99,6 +99,22 @@ A run killed at the checker's **output limit** is treated the same way, for the 
 first byte is real, but the run did not complete, and averaging over the ones that happened to
 stay under the ceiling would be measuring the limit rather than the tool.
 
+## Current checker coverage
+
+[`first-byte-prompt.ts`](../../../../src/acc/kit/checkers/safety/first-byte-prompt.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- the fastest of three `--version` runs emits its first byte within 100 ms.
+
+**Gaps**
+
+- only --version is timed and never help or an argument-validation failure
+- the stream first-record and per-record flush requirement is not exercised
+- the progress signal a long-running command owes stderr is not exercised
+
 ## How to comply
 
 Do nothing before dispatch. The usual cause of a slow `--help` is initialisation that runs

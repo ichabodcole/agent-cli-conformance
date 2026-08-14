@@ -67,6 +67,23 @@ target could satisfy this probe today and still violate the envelope half of the
 The checker deliberately uses a distinctive token unlikely to appear incidentally, so a match
 is evidence the tool echoed it rather than coincidence.
 
+## Current checker coverage
+
+[`names-offending-token.ts`](../../../../src/acc/kit/checkers/parsing/names-offending-token.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- the rejection of an unknown root flag names that flag verbatim on stderr.
+- the rejection of an unknown root verb names that verb verbatim on stderr.
+
+**Gaps**
+
+- the machine-mode error envelope field is never inspected
+- only an unknown flag and an unknown verb are probed
+- the SHOULD to enumerate a closed set as choices is not exercised
+
 ## How to comply
 
 Nearly free — most parsers already include the token in their default message. The work is

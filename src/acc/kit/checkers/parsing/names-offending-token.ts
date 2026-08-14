@@ -55,6 +55,10 @@ export const namesOffendingTokenChecker: Checker = {
 
     return problems.length
       ? finding("fail", problems.join("; "), evidence)
-      : finding("pass", "both rejections named the offending token", evidence);
+      : finding(
+          "pass",
+          "the unknown-flag and unknown-verb rejections both named the offending token",
+          evidence,
+        );
   },
 };

@@ -81,6 +81,22 @@ unknown command, runs that subcommand for real. `Discovery` has no way to tell a
 from a command group, so the kit cannot build this probe safely at L0. The checker verifies the
 root case only until effect classification (L1) makes the nested probe safe to run.
 
+## Current checker coverage
+
+[`unknown-command.ts`](../../../../src/acc/kit/checkers/parsing/unknown-command.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- an unknown verb at the **root** exits non-zero and leaves stdout empty.
+
+**Gaps**
+
+- nested subcommands are not probed at L0
+- the exit code is only required to be non-zero here and not the declared 2
+- naming the offending verb on stderr is not asserted
+
 ## How to comply
 
 Most frameworks handle the root case. Verify the nested case explicitly; it is the one that

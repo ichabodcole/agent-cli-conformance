@@ -84,6 +84,22 @@ Not yet checked at `L0`: stderr emptiness on the help path, and the nested case 
 distinction `Discovery` does not currently carry — see `unknown-command.ts`'s checker for the
 same limitation — so it is left for a later probe level rather than guessed at.
 
+## Current checker coverage
+
+[`help-exits-zero.ts`](../../../../src/acc/kit/checkers/exit-codes/help-exits-zero.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- root `--help` and root `-h` each exit `0` with non-empty stdout, and neither hangs.
+
+**Gaps**
+
+- nested help is not probed at L0
+- a help subcommand is not probed
+- appending --help to an otherwise complete invocation is not probed
+
 ## How to comply
 
 Universal across parsers — this is the single most consistently implemented behaviour in the

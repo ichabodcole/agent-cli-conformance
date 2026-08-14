@@ -65,7 +65,7 @@ export const stdoutCarriesOnlyDataChecker: Checker = {
         )
       : finding(
           "pass",
-          `stdout empty across ${failures.length} failing invocation(s)`,
+          `stdout empty across ${failures.length} failing usage-error invocation(s)`,
           failures.map((o) => o.id),
         );
   },

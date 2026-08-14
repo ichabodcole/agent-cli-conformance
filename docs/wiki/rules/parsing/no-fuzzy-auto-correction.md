@@ -84,6 +84,24 @@ a real flag, the checker declines to probe and reports **unverified**.
 Passes when the invocation exits non-zero. Distinguishing "suggested" from "acted on" is done
 by exit code alone — the checker does not additionally require empty stdout.
 
+## Current checker coverage
+
+[`no-fuzzy-correction.ts`](../../../../src/acc/kit/checkers/parsing/no-fuzzy-correction.ts) — `L0`,
+`coverage: partial`. A pass means nothing under **Established** was violated; the **Gaps** are
+the rest of this page, unexamined.
+
+**Established**
+
+- a one-character near-miss of a **flag** discovered in root help exits non-zero rather than being
+  silently corrected.
+- when no suitable flag can be discovered, the verdict is `unverified` rather than a pass.
+
+**Gaps**
+
+- only a near-miss FLAG is probed and never a near-miss verb
+- performing no work is inferred from a non-zero exit rather than observed
+- the MUST NOT prompt to confirm a guess clause is not exercised here
+
 ## How to comply
 
 Turn off fuzzy execution; keep fuzzy suggestion.

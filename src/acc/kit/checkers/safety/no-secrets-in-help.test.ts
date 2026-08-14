@@ -16,7 +16,9 @@ describe("F1 — help and schema never contain secrets", () => {
     const h = await record(fixture("conforming.ts"), [noSecretsInHelpChecker]);
     const f = noSecretsInHelpChecker.check(h);
     expect(f.verdict).toBe("pass");
-    expect(f.detail).toContain("no KNOWN credential pattern found");
+    // Scope, not just the verdict: the pass says WHERE it looked and how weak the claim is, and
+    // the rule page's `## Current checker coverage` section has to say the same thing.
+    expect(f.detail).toContain("no KNOWN credential pattern in root help");
     expect(f.ruleId).toBe("F1");
   });
 

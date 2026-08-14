@@ -94,7 +94,11 @@ export const helpDeterministicChecker: Checker = {
     if (cut) return cut;
 
     return a.stdout === b.stdout
-      ? finding("pass", "help output identical across runs", evidence)
+      ? finding(
+          "pass",
+          "help identical across two runs differing only by a probe nonce in the environment",
+          evidence,
+        )
       : finding("fail", `help output differed between runs, first at index ${firstDiff}`, evidence);
   },
 };

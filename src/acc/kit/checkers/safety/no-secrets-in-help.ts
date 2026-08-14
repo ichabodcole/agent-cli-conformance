@@ -70,7 +70,7 @@ export const noSecretsInHelpChecker: Checker = {
       "pass",
       // Honest about scope: a scanner cannot see a bespoke token format with no telltale
       // prefix. "no secrets present" would be an overclaim this checker cannot back.
-      "no KNOWN credential pattern found (absence of a known pattern, not proof)",
+      "no KNOWN credential pattern in root help (absence of a known pattern, not proof)",
       [o.id],
     );
   },
