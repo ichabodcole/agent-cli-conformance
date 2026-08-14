@@ -447,4 +447,25 @@ describe("acc check — the outcome exit code", () => {
       rmSync(notABinary, { force: true });
     }
   }, 30_000);
+
+  // Same class of target, opposite spawn failure. With the exec bit SET and no shebang the
+  // kernel gets far enough to refuse with ENOEXEC, which `spawn()` throws synchronously — so
+  // `child.on("error")` never fired, `spawnFailed` was never set, and this escaped the abort
+  // above as `{"kind":"internal","exit_code":1}`. A wrong-architecture binary fails the same
+  // way, and that is precisely what the not_found hint tells the caller to go and check.
+  test("reports not_found, not internal, for a file the kernel refuses to exec", async () => {
+    const notABinary = join(tmpdir(), `acc-enoexec-${process.pid}`);
+    writeFileSync(notABinary, "hello\n");
+    chmodSync(notABinary, 0o755);
+    try {
+      const r = await run(["check", notABinary, "--json"]);
+      expect(r.code).toBe(5);
+      expect(r.stdout).toBe("");
+      const env = JSON.parse(r.stderr);
+      expect(env.error.kind).toBe("not_found");
+      expect(env.error.message).toContain("could not be executed");
+    } finally {
+      rmSync(notABinary, { force: true });
+    }
+  }, 30_000);
 });

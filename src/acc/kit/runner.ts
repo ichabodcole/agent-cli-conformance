@@ -1,8 +1,9 @@
-import { spawn } from "node:child_process";
+import { type ChildProcessByStdio, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { Readable, Writable } from "node:stream";
 import { assertInert } from "./inert.ts";
 import type { Invocation, Observation, TargetInfo } from "./types.ts";
 
@@ -48,35 +49,13 @@ export async function runProbe(
   return new Promise<Observation>((resolve) => {
     const startedAt = performance.now();
     let firstByteAt: number | null = null;
-    const child = spawn(cmd, [...base, ...inv.args], {
-      stdio: ["pipe", "pipe", "pipe"],
-      cwd: sandbox,
-      env: { ...process.env, ...inv.env },
-    });
-
     let stdout = "";
     let stderr = "";
-    const mark = () => {
-      if (firstByteAt === null) firstByteAt = performance.now();
-    };
-    child.stdout.on("data", (d) => {
-      mark();
-      stdout += d;
-    });
-    child.stderr.on("data", (d) => {
-      mark();
-      stderr += d;
-    });
-    child.stdin.end();
-
     let timedOut = false;
-    const timer = setTimeout(() => {
-      timedOut = true;
-      child.kill("SIGKILL");
-    }, timeoutMs);
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
     const finish = (code: number | null, spawnFailed = false) => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       // `force` so a probe that already removed its own cwd doesn't turn cleanup into a crash;
       // the recording is the point, and a leftover temp directory is not worth losing it over.
       rmSync(sandbox, { recursive: true, force: true });
@@ -96,11 +75,54 @@ export async function runProbe(
       });
     };
 
+    // Some spawn failures never reach the `error` event: an exec-bit-set file with no shebang,
+    // and a wrong-architecture binary — the very thing the not-executable hint tells the caller
+    // to check — make posix_spawn fail with ENOEXEC, which `spawn()` reports by THROWING
+    // synchronously. Left uncaught that escaped record()'s abort entirely and surfaced as
+    // `{"kind":"internal"}`, the wrong error class for a whole family of unexecutable targets.
+    // Routing it through `finish` gives it the same `spawnFailed` recording as the async path.
+    //
+    // Typed to the stdio tuple below rather than to bare `ChildProcess`, so the three pipes stay
+    // non-nullable and this keeps reading them without a `?.` that would hide a wiring mistake.
+    let child: ChildProcessByStdio<Writable, Readable, Readable>;
+    try {
+      child = spawn(cmd, [...base, ...inv.args], {
+        stdio: ["pipe", "pipe", "pipe"],
+        cwd: sandbox,
+        env: { ...process.env, ...inv.env },
+      });
+    } catch {
+      finish(127, true);
+      return;
+    }
+
+    const mark = () => {
+      if (firstByteAt === null) firstByteAt = performance.now();
+    };
+    child.stdout.on("data", (d) => {
+      mark();
+      stdout += d;
+    });
+    child.stderr.on("data", (d) => {
+      mark();
+      stderr += d;
+    });
+    child.stdin.end();
+
+    timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, timeoutMs);
+
     child.on("close", (code) => finish(code));
     // A target that cannot be spawned at all (ENOENT, EACCES, a file with no exec bit) is an
     // observation too, not a crash — but it must be FLAGGED as one. 127 alone is a code a real
     // CLI can choose to return, so without `spawnFailed` a file that never executed is
     // indistinguishable from one that ran and answered; see Observation.spawnFailed.
+    //
+    // Both `error` and `close` fire for an async failure (ENOENT). `error` lands first, and the
+    // promise is already settled by the time `close` arrives, so the `spawnFailed` recording is
+    // the one that survives — resolve() is a no-op the second time and rmSync is `force`.
     child.on("error", () => finish(127, true));
   });
 }

@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { record, TargetNotExecutableError } from "./record.ts";
@@ -68,6 +70,26 @@ describe("record", () => {
     await expect(
       record({ path: notABinary, argv0: [notABinary] }, [stubChecker("X1", [helpProbe])]),
     ).rejects.toBeInstanceOf(TargetNotExecutableError);
+  });
+
+  // The EXEC-BIT-SET half of the same failure, which the EACCES test above never reached: a file
+  // the kernel agrees to try and then refuses (no shebang, or a wrong-architecture binary — the
+  // case the not-executable hint tells the caller to check) fails with ENOEXEC, and `spawn()`
+  // reports that by THROWING SYNCHRONOUSLY. `child.on("error")` never runs, so `spawnFailed` was
+  // never set and this whole abort path was bypassed: the run surfaced as an `internal` error
+  // instead of the not-executable one, for a whole family of unexecutable targets.
+  test("a synchronous spawn failure (ENOEXEC) aborts the run like an async one", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-noexec-"));
+    const notABinary = join(dir, "hello");
+    writeFileSync(notABinary, "hello\n");
+    chmodSync(notABinary, 0o755);
+    try {
+      await expect(
+        record({ path: notABinary, argv0: [notABinary] }, [stubChecker("X1", [helpProbe])]),
+      ).rejects.toBeInstanceOf(TargetNotExecutableError);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   test("the abort names the target and the probe that could not be spawned", async () => {
