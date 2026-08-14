@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { record } from "../../record.ts";
-import type { TargetInfo } from "../../types.ts";
+import type { History, TargetInfo } from "../../types.ts";
 import { usageDistinguishableChecker } from "./usage-distinguishable.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -10,6 +10,49 @@ const fixture = (rel: string): TargetInfo => {
   const p = join(HERE, "../../fixtures", rel);
   return { path: p, argv0: ["bun", p] };
 };
+
+// Both "C2:" probes recorded, but one hung. Built by hand: a fixture that actually blocks for
+// the runner's ~10s deadline would make this file slow on every run.
+function historyWithOneTimedOutProbe(): History {
+  const observations = [
+    {
+      id: "fake-flag",
+      invocation: {
+        args: ["--acc-probe-xyzzy-flag"],
+        inertness: "sentinel" as const,
+        purpose: "C2: usage error via flag",
+      },
+      purposes: ["C2: usage error via flag"],
+      stdout: "",
+      stderr: "",
+      exitCode: null,
+      timedOut: true,
+      durationMs: 10_000,
+      timeToFirstByteMs: null,
+    },
+    {
+      id: "fake-verb",
+      invocation: {
+        args: ["acc-probe-xyzzy-verb"],
+        inertness: "sentinel" as const,
+        purpose: "C2: usage error via verb",
+      },
+      purposes: ["C2: usage error via verb"],
+      stdout: "",
+      stderr: "",
+      exitCode: 2,
+      timedOut: false,
+      durationMs: 5,
+      timeToFirstByteMs: 1,
+    },
+  ];
+  return {
+    target: { path: "x", argv0: ["x"] },
+    discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false },
+    observations,
+    byId: new Map(observations.map((o) => [o.id, o])),
+  };
+}
 
 describe("C2 — usage errors are distinguishable", () => {
   test("PASSES the conforming fixture", async () => {
@@ -40,5 +83,16 @@ describe("C2 — usage errors are distinguishable", () => {
     const f = usageDistinguishableChecker.check(h);
     expect(f.evidence.length).toBeGreaterThan(0);
     for (const id of f.evidence) expect(h.byId.has(id)).toBe(true);
+  });
+
+  // A hung probe WAS recorded — it just returned no code to compare. The detail must say so
+  // rather than "probes were not recorded", which would conflate two different outcomes A1 and
+  // C1 both take care to keep separate: missing evidence vs. evidence that the target hung.
+  test("distinguishes a timed-out probe from a probe that was never recorded", () => {
+    const f = usageDistinguishableChecker.check(historyWithOneTimedOutProbe());
+    expect(f.verdict).toBe("unverified");
+    expect(f.detail).toContain("timed out");
+    expect(f.detail).not.toContain("not recorded");
+    expect(f.ruleId).toBe("C2");
   });
 });

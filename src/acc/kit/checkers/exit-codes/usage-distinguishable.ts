@@ -22,9 +22,22 @@ export const usageDistinguishableChecker: Checker = {
     // findByPurpose, not an `invocation.purpose` scan: these probes are byte-identical to A1's,
     // A3's and B1's, so dedup in record() merges all four checkers' requests into one recording
     // per args, and `invocation.purpose` only ever holds the FIRST requester's reason.
-    const usage = findByPurpose(h, "C2:").filter((o) => !o.timedOut);
-    if (usage.length < 2) {
+    const recorded = findByPurpose(h, "C2:");
+    if (recorded.length < 2) {
       return finding("unverified", "probes were not recorded", []);
+    }
+
+    // A hung probe WAS recorded — it just never returned a code to compare. Reporting that as
+    // "not recorded" would conflate two different outcomes A1 and C1 both take care to keep
+    // separate: missing evidence vs. evidence that says the target hung.
+    const usage = recorded.filter((o) => !o.timedOut);
+    if (usage.length < 2) {
+      const timedOutCount = recorded.length - usage.length;
+      return finding(
+        "unverified",
+        `${timedOutCount} of ${recorded.length} probes timed out instead of returning a usage error`,
+        recorded.map((o) => o.id),
+      );
     }
 
     const evidence = usage.map((o) => o.id);

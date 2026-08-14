@@ -34,6 +34,22 @@ export const deterministicChecker: Checker = {
     }
 
     const evidence = runs.map((o) => o.id);
+
+    // A timed-out run has no exit code to compare — `exitCode` is null because we killed it, not
+    // because the target chose that status. Comparing nulls would let three timeouts read as
+    // "all agreed", which is not evidence of determinism; it's evidence the tool hung on a
+    // deliberately-invalid flag. That hang IS a real defect, but it's E1's finding, not C3's —
+    // E1 probes for exactly this. C3's job is narrower: does the exit code vary. When it can't
+    // see one, it says so rather than fabricating agreement out of absence.
+    const timedOut = runs.filter((o) => o.timedOut);
+    if (timedOut.length > 0) {
+      return finding(
+        "unverified",
+        `could not compare exit codes: ${timedOut.length} of ${runs.length} runs timed out`,
+        evidence,
+      );
+    }
+
     const codes = runs.map((o) => o.exitCode);
     return new Set(codes).size === 1
       ? finding(

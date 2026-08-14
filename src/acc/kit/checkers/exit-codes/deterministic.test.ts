@@ -12,8 +12,9 @@ const fixture = (rel: string): TargetInfo => {
 };
 
 // A History with fewer than three "C3:" observations, built by hand rather than recorded. Used
-// below for the `unverified` branch — see that test for why the OTHER branch (varying codes)
-// has no fixture-based negative control at all.
+// below for the "too few runs" `unverified` branch — see the timeout test for the other
+// `unverified` branch, and its comment for why the THIRD branch (genuinely varying codes) has
+// no fixture-based negative control at all.
 function historyWithRuns(n: 0 | 1 | 2): History {
   const observations = Array.from({ length: n }, (_, i) => ({
     id: `fake-${i}`,
@@ -38,6 +39,33 @@ function historyWithRuns(n: 0 | 1 | 2): History {
   };
 }
 
+// Three runs, all timed out — exitCode is null on each because the runner killed the process,
+// not because the target chose that status. Built by hand: getting a real fixture to hang
+// exactly three times against the runner's ~10s deadline would make this file slow.
+function historyWithTimedOutRuns(): History {
+  const observations = [1, 2, 3].map((n) => ({
+    id: `fake-timeout-${n}`,
+    invocation: {
+      args: [`--acc-probe-xyzzy-repeat-${n}`],
+      inertness: "sentinel" as const,
+      purpose: `C3: repeat ${n}`,
+    },
+    purposes: [`C3: repeat ${n}`],
+    stdout: "",
+    stderr: "",
+    exitCode: null,
+    timedOut: true,
+    durationMs: 10_000,
+    timeToFirstByteMs: null,
+  }));
+  return {
+    target: { path: "x", argv0: ["x"] },
+    discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false },
+    observations,
+    byId: new Map(observations.map((o) => [o.id, o])),
+  };
+}
+
 describe("C3 — exit codes are deterministic", () => {
   test("PASSES the conforming fixture", async () => {
     const h = await record(fixture("conforming.ts"), [deterministicChecker]);
@@ -46,19 +74,34 @@ describe("C3 — exit codes are deterministic", () => {
     expect(f.ruleId).toBe("C3");
   });
 
-  // The negative control for the `unverified` branch (fewer than three runs recorded), built by
-  // hand rather than against a fixture. There is deliberately NO negative control here for the
-  // OTHER failing branch — an exit code that genuinely varies between three back-to-back,
-  // otherwise-identical invocations. Writing a fixture that behaves nondeterministically on
-  // purpose is either not really nondeterministic (e.g. it counts its own invocations, which is
-  // deterministic-by-construction and proves nothing about detecting real nondeterminism) or is
-  // genuinely racy and therefore flaky in CI. Neither is worth having. The `codes.size !== 1`
-  // branch is exercised only by direct inspection of `deterministic.ts`.
   test("reports unverified when fewer than three runs were recorded", () => {
     const f = deterministicChecker.check(historyWithRuns(2));
     expect(f.verdict).toBe("unverified");
     expect(f.ruleId).toBe("C3");
   });
+
+  // The negative control for a triple timeout. Before this test existed, a target that hung on
+  // all three probes recorded `exitCode: null` three times, `new Set([null,null,null]).size`
+  // is 1, and the checker reported a clean PASS — "all three runs agreed", which is not evidence
+  // of determinism, it's evidence the tool hung on a deliberately-invalid flag. That hang is a
+  // real defect, but it's E1's finding (it probes for exactly this), not C3's: C3 only answers
+  // "does the exit code vary", and when it can't see a code it must say so instead of comparing
+  // nulls. Deliberately NOT `fail`, for the same reason.
+  test("reports unverified, not pass, when every run times out", () => {
+    const f = deterministicChecker.check(historyWithTimedOutRuns());
+    expect(f.verdict).toBe("unverified");
+    expect(f.detail).toContain("timed out");
+    expect(f.detail).toContain("3 of 3");
+    expect(f.ruleId).toBe("C3");
+  });
+
+  // There is deliberately NO negative control for the remaining branch — an exit code that
+  // genuinely varies between three back-to-back, otherwise-identical, non-timed-out
+  // invocations. Writing a fixture that behaves nondeterministically on purpose is either not
+  // really nondeterministic (e.g. it counts its own invocations, which is
+  // deterministic-by-construction and proves nothing about detecting real nondeterminism) or is
+  // genuinely racy and therefore flaky in CI. Neither is worth having. The `codes.size !== 1`
+  // branch is exercised only by direct inspection of `deterministic.ts`.
 
   test("cites the observations backing its verdict", async () => {
     const h = await record(fixture("conforming.ts"), [deterministicChecker]);
