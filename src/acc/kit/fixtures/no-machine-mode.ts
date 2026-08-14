@@ -1,8 +1,15 @@
 #!/usr/bin/env bun
-// Same shape as conforming.ts and conforming at every L0 rule, but its help never advertises a
-// machine-mode flag (no --json, --format, or --output anywhere in the Options block). POSITIVE
-// control for B3's "unverified" branch: discovery finds `machineModeFlag: null`, so B3 has
-// nothing to probe or parse and must say so rather than silently passing or guessing.
+// Same shape as conforming.ts, but its help never advertises a machine-mode flag (no --json,
+// --format, or --output anywhere in the Options block). POSITIVE control for B3's "unverified"
+// branch: discovery finds `machineModeFlag: null`, so B3 has nothing to probe or parse and must
+// say so rather than silently passing or guessing.
+//
+// It VIOLATES no L0 rule, which is a different and weaker claim than "conforming at every L0
+// rule" (what this comment used to say). Three verdicts are not passes: D3 FAILS by design —
+// advertising no machine-readable path is the defect this fixture embodies — and A5 and B3 come
+// back `unverified`, since a CLI with no discoverable non-help flags offers nothing to build a
+// near-miss from and nothing to parse. The kit reports it CONFORMANT but not fullyVerified; see
+// docs/wiki/concepts/conformance.md for why those are separate claims.
 const args = process.argv.slice(2);
 const HELP = `usage: fixture <command>
 
