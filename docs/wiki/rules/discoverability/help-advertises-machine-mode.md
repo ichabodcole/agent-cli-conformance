@@ -7,7 +7,7 @@ description:
 tags: [discoverability, machine-mode, diagnostic]
 related: [concept/machine-mode, rule/machine-output-is-parseable]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: D3
 tier: diagnostic
 probe_level: L0
@@ -46,10 +46,29 @@ Inert (`L0`).
 
 ```
 <cli> --help
+<cli> --help --format=text
 ```
 
-Passes when the captured help text mentions a machine-mode flag or an introspection command.
-The checker looks for the conventional spellings and reports which it found.
+Passes when the captured **human** help mentions a machine-mode flag or an introspection
+command. The checker looks for the conventional spellings and reports which it found.
+
+The second probe is what makes the first sentence true. The runner always gives the target a
+pipe for stdout, so a CLI that switches to machine mode when stdout is not a terminal answers
+plain `--help` with its **schema** — and a schema necessarily contains the spelling of the
+machine-mode flag it declares. Scanning that would make this rule test its own machine output
+rather than the human surface it is named after, and hand a free pass to every auto-switching
+tool. `acc` was one: its human root help listed only `--version` and `--help` while this
+checker reported a pass.
+
+So plain `--help` is used when it is human text, and the forced-text form only when it is not.
+When help parses as a machine document and no forced-text form is available, the verdict is
+`unverified` — the surface the rule is about was never observed, and both a pass and a fail
+would be claims about something unseen.
+
+The second probe runs only against a target whose help advertises `--format` — asking a CLI
+with no such flag to force text mode is an invocation it can only reject. `--format=text` is
+written as one token so the probe stays flag-only; see the safety argument in
+[`src/acc/kit/inert.ts`](../../../../src/acc/kit/inert.ts).
 
 A negative result is reported as a finding, not a failure — and it also disables other probes:
 [machine output is parseable](../streams/machine-output-is-parseable.md) is reported

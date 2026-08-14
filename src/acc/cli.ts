@@ -29,6 +29,12 @@ import { VERSION } from "./version.ts";
  */
 function earlyMode(argv: string[]): OutputMode {
   if (argv.includes("--json")) return resolveMode("json");
+  // BOTH spellings. Commander accepts `--format=text`, and matching only the separated form
+  // meant `acc --help --format=text` was read as having no explicit format at all: detection
+  // then chose json on a pipe and answered with the schema, silently ignoring a format the
+  // caller had stated outright.
+  const attached = argv.find((a) => a.startsWith("--format="));
+  if (attached) return resolveMode(attached.slice("--format=".length));
   const i = argv.indexOf("--format");
   const value = i >= 0 ? argv[i + 1] : undefined;
   return resolveMode(value);
@@ -150,6 +156,24 @@ if (mode === "json" && (argv.includes("--version") || argv.includes("-V"))) {
   process.exit(ExitCode.Success);
 }
 
+/** One Commander option, derived from its declaration — closed-set enforcement included. */
+function toOption(a: ArgSpec): Option {
+  const option = new Option(
+    a.type === "boolean" ? a.name : `${a.name} <${a.valueHint ?? "value"}>`,
+    a.description,
+  );
+  // Validation is DERIVED from the declaration, never restated beside it. An ArgSpec that names
+  // a closed set gets a parser that enforces it, so a flag cannot be added with a set the
+  // parser then ignores — which is exactly how `--format` came to accept anything.
+  if (a.values?.length) {
+    option.argParser((value: string) => {
+      rejectOutOfSet(a, value);
+      return value;
+    });
+  }
+  return option;
+}
+
 const program = new Command();
 let commanderStderr = "";
 
@@ -168,30 +192,24 @@ program
     },
   });
 
+// Globals go on the ROOT as well as on every subcommand below.
+//
+// The loop's own warning is about attaching them ONLY to the root — the citty gotcha, where
+// `mycli sub --format json` silently returns human text because the root flag never reaches the
+// subcommand. Attaching to BOTH is what that argument actually calls for: `acc rules --help`
+// documented `--format`/`--json` while `acc --help` listed only `--version` and `--help`, so
+// the first surface a caller reaches never named the machine-readable path (rule D3).
+for (const a of GLOBAL_ARGS) program.addOption(toOption(a));
+
 for (const spec of COMMANDS) {
   const cmd = program.command(spec.name).description(spec.description);
   for (const p of spec.positionals) {
     cmd.argument(p.required ? `<${p.name}>` : `[${p.name}]`, p.description);
   }
-  // Global args are attached to EVERY command in this loop rather than to the root. Declaring
-  // them once on the root is the citty gotcha: root flags do not reach subcommands, so
-  // `mycli sub --format json` silently returns human text.
-  for (const a of [...spec.args, ...GLOBAL_ARGS]) {
-    const option = new Option(
-      a.type === "boolean" ? a.name : `${a.name} <${a.valueHint ?? "value"}>`,
-      a.description,
-    );
-    // Validation is DERIVED from the declaration, never restated beside it. An ArgSpec that
-    // names a closed set gets a parser that enforces it, so a flag cannot be added with a set
-    // the parser then ignores — which is exactly how `--format` came to accept anything.
-    if (a.values?.length) {
-      option.argParser((value: string) => {
-        rejectOutOfSet(a, value);
-        return value;
-      });
-    }
-    cmd.addOption(option);
-  }
+  // Global args are attached to EVERY command in this loop as well as to the root above.
+  // Declaring them once on the root is the citty gotcha: root flags do not reach subcommands,
+  // so `mycli sub --format json` silently returns human text.
+  for (const a of [...spec.args, ...GLOBAL_ARGS]) cmd.addOption(toOption(a));
   // Notes before examples: a caveat a caller must read BEFORE running the command is worth
   // nothing underneath the copy-pasteable invocation it is warning about.
   if (spec.notes?.length)
@@ -202,7 +220,13 @@ for (const spec of COMMANDS) {
     // commander passes: ...positionals, options, command
     const positionals = actionArgs.slice(0, spec.positionals.length) as string[];
     const opts = actionArgs[spec.positionals.length] as Record<string, string | boolean>;
-    const resolved = resolveMode(opts.json ? "json" : (opts.format as string | undefined));
+    // Both scopes, subcommand first. Now that the globals also live on the root, `acc --json
+    // rules` parses — and reading only the subcommand's options would accept the flag and
+    // ignore it, which is the same silent acceptance the citty gotcha produces in reverse.
+    const root = program.opts();
+    const resolved = resolveMode(
+      opts.json || root.json ? "json" : ((opts.format ?? root.format) as string | undefined),
+    );
 
     switch (spec.name) {
       case "rules":

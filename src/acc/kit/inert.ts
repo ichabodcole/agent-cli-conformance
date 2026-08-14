@@ -16,8 +16,15 @@ const HELP_TOKENS = new Set(["--help", "-h", "help", "--version", "-V", "-v"]);
  * Output-format selectors. They change how a command RENDERS its result, never what work it
  * does — so combined with a help token they are still inert, and B3 needs exactly that pairing
  * to check machine-mode help (`--help --json`).
+ *
+ * D3 needs the OPPOSITE pairing — format forced back to text — to read the human help of a CLI
+ * that switches to machine mode when stdout is a pipe, which the runner's stdout always is.
+ * Written with an attached `=` on purpose: `--format text` would mean whitelisting the bare
+ * word `text`, and a bare word in a probe is a positional on any CLI whose root argument is
+ * free-form. Every token here still starts with a dash, which is the property that makes the
+ * help-path class provably safe.
  */
-const FORMAT_TOKENS = new Set(["--json"]);
+const FORMAT_TOKENS = new Set(["--json", "--format=text", "--format=json"]);
 
 /**
  * Env keys a probe may set. Anything else could change what the target DOES, not just how it

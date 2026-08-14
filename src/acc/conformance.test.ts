@@ -238,6 +238,36 @@ describe("D — discoverability", () => {
     expect(r.stdout).toMatch(/--json|--format|schema/);
   });
 
+  // ...and in the HUMAN help, which is the surface the rule names. The probe above is run with
+  // stdout on a pipe, so it receives the schema — where `--json` appears whether or not the
+  // help a person reads mentions it. Root help listed only `--version` and `--help`, because
+  // the globals were attached per-subcommand.
+  test("D3 the human ROOT help names the machine-mode flags, not just subcommand help", async () => {
+    const root = await run(["--help", "--format=text"]);
+    expect(root.code).toBe(0);
+    for (const flag of GLOBAL_ARGS.map((a) => a.name)) {
+      expect({ flag, present: root.stdout.includes(flag) }).toEqual({ flag, present: true });
+    }
+  });
+
+  // The globals reach BOTH scopes. Attaching them only to the root is the citty gotcha
+  // (`mycli sub --format json` silently returns human text); attaching only per-subcommand is
+  // what hid them from root help. Each spelling has to actually take effect, not just parse.
+  test("a global works at the root and on the subcommand alike", async () => {
+    for (const args of [
+      ["--format", "text", "tags"],
+      ["tags", "--format", "text"],
+      ["--format=text", "tags"],
+    ]) {
+      const r = await run(args);
+      expect({ args, code: r.code, parses: parses(r.stdout) }).toEqual({
+        args,
+        code: 0,
+        parses: false,
+      });
+    }
+  });
+
   test("D4 help output is byte-identical between runs", async () => {
     const [a, b] = await Promise.all([run(["--help"]), run(["--help"])]);
     expect(a?.stdout).toBe(b?.stdout as string);

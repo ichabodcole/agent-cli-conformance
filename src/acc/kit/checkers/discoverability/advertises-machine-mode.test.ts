@@ -11,37 +11,76 @@ const fixture = (rel: string): TargetInfo => {
   return { path: p, argv0: ["bun", p] };
 };
 
-/**
- * A History whose help text is exactly `text` and whose discovery found no machine-mode flag,
- * so the checker's fallback scan for a `schema` command is the only thing that can pass it.
- * Built by hand rather than as fixtures: the whole question here is what shape of help TEXT
- * counts, and writing six near-identical CLIs to vary one line would obscure that.
- */
-function historyWithHelp(text: string, subcommands: string[] = []): History {
-  const o = {
-    id: "fake-help",
-    invocation: {
-      args: ["--help"],
-      inertness: "help-path" as const,
-      purpose: "D3: help mentions machine mode",
-    },
-    purposes: ["D3: help mentions machine mode"],
+/** One recorded probe. Built by hand rather than as fixtures: the question in this file is
+ *  what shape of help TEXT counts, and six near-identical CLIs varying one line would bury it. */
+function observation(id: string, args: string[], purpose: string, text: string, exitCode = 0) {
+  return {
+    id,
+    invocation: { args, inertness: "help-path" as const, purpose },
+    purposes: [purpose],
     stdout: text,
     stderr: "",
     stdoutBytes: Buffer.byteLength(text),
     stderrBytes: 0,
     truncated: false,
-    exitCode: 0,
+    exitCode,
     timedOut: false,
     spawnFailed: false,
     durationMs: 1,
     timeToFirstByteMs: 1,
   };
+}
+
+/**
+ * A History whose help text is exactly `text` and whose discovery found no machine-mode flag,
+ * so the checker's fallback scan for a `schema` command is the only thing that can pass it.
+ */
+function historyWithHelp(text: string, subcommands: string[] = []): History {
+  const o = observation("fake-help", ["--help"], "D3: help mentions machine mode", text);
   return {
     target: { path: "x", argv0: ["x"] },
     discovery: { subcommands, flags: [], machineModeFlag: null, helpReadable: true },
     observations: [o],
     byId: new Map([[o.id, o]]),
+  };
+}
+
+/**
+ * The shape the rule was blind to: a CLI whose plain `--help` becomes MACHINE output because
+ * stdout is a pipe, plus whatever it answers when text is forced back on.
+ *
+ * `discovery` is populated from the machine document on purpose — that is what `record` does,
+ * and consulting it was the bug.
+ */
+function historyWithAutoMachineHelp(machineHelp: string, forcedHelp: string | null): History {
+  const plain = observation(
+    "fake-plain",
+    ["--help"],
+    "D3: help mentions machine mode",
+    machineHelp,
+  );
+  const forced = observation(
+    "fake-forced",
+    ["--help", "--format=text"],
+    "D3: human help, with machine mode forced off",
+    forcedHelp ?? "",
+    forcedHelp === null ? 2 : 0,
+  );
+  return {
+    target: { path: "x", argv0: ["x"] },
+    // Exactly what discovery derives from the machine document: it names `--json`, because a
+    // schema that describes a machine-mode flag necessarily contains its spelling.
+    discovery: {
+      subcommands: ["schema"],
+      flags: ["--json", "--format"],
+      machineModeFlag: "--json",
+      helpReadable: true,
+    },
+    observations: [plain, forced],
+    byId: new Map([
+      [plain.id, plain],
+      [forced.id, forced],
+    ]),
   };
 }
 
@@ -109,5 +148,60 @@ describe("D3 — help advertises the machine-readable path", () => {
       const h = historyWithHelp("SUBCOMMANDS\n\tschema\tEmit it.\n", ["schema"]);
       expect(advertisesMachineModeChecker.check(h).verdict).toBe("pass");
     });
+  });
+
+  // The rule names the HUMAN help surface. The probe used to be plain `--help`, which the
+  // runner always runs with stdout on a pipe — so a CLI that switches to machine mode when
+  // piped answered with its SCHEMA, and a schema necessarily spells `--json`. D3 was therefore
+  // scanning its own machine output for a string that output could not fail to contain: it
+  // passed every auto-switching tool for free, including `acc` itself, whose human root help
+  // named neither `--format` nor `--json` at the time.
+  describe("measures human help, not the machine document it gets on a pipe", () => {
+    const SCHEMA_HELP = JSON.stringify({
+      ok: true,
+      data: { global_args: [{ name: "--json" }, { name: "--format" }] },
+    });
+
+    test("FAILS when the machine document names --json but the human help does not", () => {
+      const humanHelp = "Usage: t [command]\n\nOptions:\n  -V, --version\n  -h, --help\n";
+      const f = advertisesMachineModeChecker.check(
+        historyWithAutoMachineHelp(SCHEMA_HELP, humanHelp),
+      );
+      expect(f.verdict).toBe("fail");
+      // ...and it cites the human help it actually read, not the machine document it ignored.
+      expect(f.evidence).toEqual(["fake-forced"]);
+    });
+
+    test("PASSES when the human help itself names the machine-mode flag", () => {
+      const humanHelp = "Usage: t [command]\n\nOptions:\n  --json  Machine output.\n  -h, --help\n";
+      const f = advertisesMachineModeChecker.check(
+        historyWithAutoMachineHelp(SCHEMA_HELP, humanHelp),
+      );
+      expect(f.verdict).toBe("pass");
+      expect(f.evidence).toEqual(["fake-forced"]);
+    });
+
+    // Neither a pass nor a fail is honest here: the surface the rule is about was never seen.
+    // Passing on the machine document is the defect; failing would blame a target for help we
+    // could not make it print.
+    test("reports unverified when no human help can be obtained at all", () => {
+      const f = advertisesMachineModeChecker.check(historyWithAutoMachineHelp(SCHEMA_HELP, null));
+      expect(f.verdict).toBe("unverified");
+      expect(f.detail).toContain("human help surface");
+    });
+
+    // The same claim end to end, against a real process rather than a hand-built history — so
+    // the probe, the inertness gate, the recording and the check are all in the loop. This
+    // fixture PASSED the previous checker, which is the whole point of keeping it.
+    test("FAILS the fixture that hides its machine mode from human help", async () => {
+      const h = await record(fixture("broken/machine-mode-hidden-in-human-help.ts"), [
+        advertisesMachineModeChecker,
+      ]);
+      // Discovery still reports `--json`, because it reads the machine document. A checker
+      // trusting that value cannot fail this target.
+      expect(h.discovery.machineModeFlag).toBe("--json");
+      const f = advertisesMachineModeChecker.check(h);
+      expect(f.verdict).toBe("fail");
+    }, 30_000);
   });
 });
