@@ -11,7 +11,8 @@ updated: 2026-08-13
 rule_id: F2
 tier: diagnostic
 probe_level: L0
-checker: scripts/checkers/safety/first-byte-prompt.ts
+checker: src/acc/kit/checkers/safety/first-byte-prompt.ts
+checker_status: planned
 ---
 
 # First byte arrives promptly

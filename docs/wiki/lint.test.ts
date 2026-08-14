@@ -15,7 +15,7 @@ import { join } from "node:path";
 import type { LintPage } from "../../scripts/docs-lint/index.ts";
 import { ruleChecks } from "./lint.ts";
 
-const CHECKERS_DIR = join(import.meta.dir, "../../scripts/checkers");
+const CHECKERS_DIR = join(import.meta.dir, "../../src/acc/kit/checkers");
 
 /** A `LintPage` carrying just the frontmatter under test. */
 function pageOf(rel: string, fields: Record<string, string>): LintPage {
@@ -34,6 +34,7 @@ const OK_RULE: Record<string, string> = {
   tier: "core",
   probe_level: "L0",
   checker: "scripts/checkers/parsing/unknown-flag.ts",
+  checker_status: "planned",
 };
 
 const rule = (rel: string, over: Record<string, string> = {}): LintPage =>
@@ -146,6 +147,59 @@ test("a missing checker is reported", () => {
   expect(problems[0]).toMatch(/^MISSING checker rules\/a\.md\s+\(name the file that enforces/);
 });
 
+test.each(["planned", "implemented"])("checker_status %s is accepted", (checker_status) => {
+  // "implemented" also demands the file exist (covered below) — point at one that does, so
+  // this case is isolated to the enum check.
+  const checker = checker_status === "implemented" ? "docs/wiki/lint.ts" : OK_RULE.checker;
+  expect(ruleChecks([rule("rules/a.md", { checker_status, checker })])).toEqual([]);
+});
+
+test.each(["", "Planned", "PLANNED", "done", "planned ", "in-progress"])(
+  "checker_status %j is rejected",
+  (checker_status) => {
+    const problems = ruleChecks([rule("rules/a.md", { checker_status })]);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("BAD checker_status");
+    expect(problems[0]).toContain("not in {planned, implemented}");
+  },
+);
+
+test("a missing checker_status is reported as BAD checker_status with an empty value", () => {
+  const problems = ruleChecks([pageOf("rules/a.md", without("checker_status"))]);
+  expect(problems).toHaveLength(1);
+  expect(problems[0]).toMatch(
+    /^BAD checker_status rules\/a\.md: "" not in \{planned, implemented\}$/,
+  );
+});
+
+// The ratchet: a `planned` rule owes nothing on disk, no matter what path it names — that is
+// what lets a rule declare its checker before the file exists.
+test("a planned rule with a checker path that does not exist produces no problem", () => {
+  const problems = ruleChecks([
+    rule("rules/a.md", { checker_status: "planned", checker: "src/acc/kit/checkers/nope.ts" }),
+  ]);
+  expect(problems).toEqual([]);
+});
+
+test("an implemented rule whose checker file does not exist is reported as MISSING CHECKER", () => {
+  const problems = ruleChecks([
+    rule("rules/a.md", {
+      checker_status: "implemented",
+      checker: "src/acc/kit/checkers/nope.ts",
+    }),
+  ]);
+  expect(problems).toEqual([
+    'MISSING CHECKER rules/a.md: declares "src/acc/kit/checkers/nope.ts", which does not exist',
+  ]);
+});
+
+test("an implemented rule whose checker file exists produces no problem", () => {
+  const problems = ruleChecks([
+    rule("rules/a.md", { checker_status: "implemented", checker: "docs/wiki/lint.ts" }),
+  ]);
+  expect(problems).toEqual([]);
+});
+
 test("every defect on one page is reported, in field order", () => {
   const problems = ruleChecks([
     pageOf("rules/broken.md", { type: "rule", tier: "wrong", probe_level: "L9" }),
@@ -169,18 +223,19 @@ test("problems from several pages accumulate", () => {
   expect(problems.filter((p) => p.includes("bad2.md"))).toHaveLength(2);
 });
 
-// The checker-file half of the check is deliberately dormant until the conformance kit
-// exists: a gate that fails on absent future work only teaches you to ignore the gate.
+// The forward direction (does a declared checker exist) is exercised live above — it no
+// longer needs `src/acc/kit/checkers/` on disk, because `checker_status` governs it, not
+// directory existence. Only the REVERSE direction still needs the directory: it walks
+// `src/acc/kit/checkers/` for files no rule page declares, and there is nothing to walk before
+// that directory exists.
 //
-// WHEN `scripts/checkers/` IS ADDED, this test skips itself — replace it with the live cases:
-// a declared-but-absent checker must be MISSING CHECKER, and a checker file no rule page
-// declares must be UNDOCUMENTED. Those two need real files on disk, which is why they are not
-// covered today (creating `scripts/checkers/` was out of scope for this change).
+// WHEN `src/acc/kit/checkers/` IS ADDED, this test skips itself — replace it with a live case:
+// a checker file on disk that no rule page's `checker` field names must be UNDOCUMENTED.
 test.skipIf(existsSync(CHECKERS_DIR))(
-  "checker-file existence checks stay dormant while scripts/checkers/ is absent",
+  "the undocumented-checker check stays dormant while src/acc/kit/checkers/ is absent",
   () => {
     const problems = ruleChecks([
-      rule("rules/a.md", { checker: "scripts/checkers/definitely/not/here.ts" }),
+      rule("rules/a.md", { checker: "src/acc/kit/checkers/definitely/not/here.ts" }),
       rule("rules/b.md", { rule_id: "A2", checker: "not-even-a-plausible-path" }),
     ]);
     expect(problems).toEqual([]);

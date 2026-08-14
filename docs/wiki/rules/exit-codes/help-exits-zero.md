@@ -11,7 +11,8 @@ updated: 2026-08-13
 rule_id: C1
 tier: core
 probe_level: L0
-checker: scripts/checkers/exit-codes/help-exits-zero.ts
+checker: src/acc/kit/checkers/exit-codes/help-exits-zero.ts
+checker_status: planned
 ---
 
 # Help is a request, and it succeeds

@@ -11,7 +11,8 @@ updated: 2026-08-13
 rule_id: A2
 tier: core
 probe_level: L0
-checker: scripts/checkers/parsing/unknown-command.ts
+checker: src/acc/kit/checkers/parsing/unknown-command.ts
+checker_status: planned
 ---
 
 # Unknown commands must exit non-zero

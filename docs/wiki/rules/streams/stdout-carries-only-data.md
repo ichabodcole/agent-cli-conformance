@@ -11,7 +11,8 @@ updated: 2026-08-13
 rule_id: B1
 tier: core
 probe_level: L0
-checker: scripts/checkers/streams/stdout-carries-only-data.ts
+checker: src/acc/kit/checkers/streams/stdout-carries-only-data.ts
+checker_status: planned
 ---
 
 # stdout carries only data

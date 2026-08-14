@@ -11,7 +11,8 @@ updated: 2026-08-13
 rule_id: D2
 tier: core
 probe_level: L0
-checker: scripts/checkers/discoverability/bare-invocation.ts
+checker: src/acc/kit/checkers/discoverability/bare-invocation.ts
+checker_status: planned
 ---
 
 # Bare invocation is a usage error

@@ -11,7 +11,8 @@ updated: 2026-08-13
 rule_id: A4
 tier: core
 probe_level: L0
-checker: scripts/checkers/parsing/unexpected-positionals.ts
+checker: src/acc/kit/checkers/parsing/unexpected-positionals.ts
+checker_status: planned
 ---
 
 # Unexpected positional arguments are rejected

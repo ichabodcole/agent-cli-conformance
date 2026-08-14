@@ -11,7 +11,8 @@ updated: 2026-08-13
 rule_id: F1
 tier: core
 probe_level: L0
-checker: scripts/checkers/safety/no-secrets-in-help.ts
+checker: src/acc/kit/checkers/safety/no-secrets-in-help.ts
+checker_status: planned
 ---
 
 # Help and schema never contain secrets

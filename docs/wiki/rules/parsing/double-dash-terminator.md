@@ -11,7 +11,8 @@ updated: 2026-08-13
 rule_id: A6
 tier: diagnostic
 probe_level: L0
-checker: scripts/checkers/parsing/double-dash-terminator.ts
+checker: src/acc/kit/checkers/parsing/double-dash-terminator.ts
+checker_status: planned
 ---
 
 # Honour the `--` end-of-options terminator

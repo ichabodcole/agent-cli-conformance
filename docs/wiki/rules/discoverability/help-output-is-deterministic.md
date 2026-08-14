@@ -11,7 +11,8 @@ updated: 2026-08-13
 rule_id: D4
 tier: core
 probe_level: L0
-checker: scripts/checkers/discoverability/help-deterministic.ts
+checker: src/acc/kit/checkers/discoverability/help-deterministic.ts
+checker_status: planned
 ---
 
 # Help output is byte-identical between runs

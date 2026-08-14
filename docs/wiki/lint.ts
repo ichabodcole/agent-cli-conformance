@@ -16,7 +16,7 @@ import { type LintPage, runDocsLint } from "../../scripts/docs-lint/index.ts";
 
 const WIKI_ROOT = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(WIKI_ROOT, "../..");
-const CHECKERS_DIR = join(REPO_ROOT, "scripts/checkers");
+const CHECKERS_DIR = join(REPO_ROOT, "src/acc/kit/checkers");
 
 const TIERS = new Set(["core", "diagnostic"]);
 const PROBE_LEVELS = new Set(["L0", "L1", "L2"]);
@@ -26,9 +26,12 @@ const PROBE_LEVELS = new Set(["L0", "L1", "L2"]);
  * `checker`) so the spec and the kit can be cross-checked against each other. Docs drift
  * becomes a failing gate instead of something noticed six months later.
  *
- * The checker-file half only activates once `scripts/checkers/` exists — before the kit is
- * built there is nothing to point at, and a lint that fails on absent future work just
- * trains you to ignore it.
+ * The checker-file existence check is gated by `checker_status`, not by whether the kit
+ * exists yet: a `planned` rule may declare its future path before the file is written, and
+ * only an `implemented` rule owes one on disk. A lint that failed on honestly-declared future
+ * work would just train you to ignore it. The reverse direction (a checker file with no rule
+ * page) stays dormant until `src/acc/kit/checkers/` exists at all — there is nothing to walk
+ * before then.
  */
 export function ruleChecks(pages: LintPage[]): string[] {
   const problems: string[] = [];
@@ -63,8 +66,15 @@ export function ruleChecks(pages: LintPage[]): string[] {
       problems.push(`MISSING checker ${page.rel}  (name the file that enforces this rule)`);
       continue;
     }
+    const status = page.fields.get("checker_status");
+    if (status !== "planned" && status !== "implemented")
+      problems.push(
+        `BAD checker_status ${page.rel}: "${status ?? ""}" not in {planned, implemented}`,
+      );
     declaredCheckers.add(checker);
-    if (existsSync(CHECKERS_DIR) && !existsSync(join(REPO_ROOT, checker)))
+    // Only an `implemented` rule owes a file. `planned` is the ratchet: declare the path now,
+    // land the checker later, and the count of planned rules is the visible remaining work.
+    if (status === "implemented" && !existsSync(join(REPO_ROOT, checker)))
       problems.push(`MISSING CHECKER ${page.rel}: declares "${checker}", which does not exist`);
   }
 

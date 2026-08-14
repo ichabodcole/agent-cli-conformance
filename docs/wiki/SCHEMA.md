@@ -89,7 +89,12 @@ rule_id: A1 # stable, unique; cited verbatim in conformance output
 tier: core # core (binary pass/fail) | diagnostic (reported, non-fatal)
 probe_level: L0 # L0 inert | L1 declared read-only | L2 contained mutating
 checker: scripts/checkers/parsing/unknown-flag.ts
+checker_status: planned # planned | implemented
 ```
+
+`checker_status` is the ratchet. A rule may declare its `checker` path before the file exists;
+the lint only requires the file once the status is `implemented`. The count of `planned` rules
+is the remaining work, and it only ever goes down.
 
 Two properties this buys, and the reason rules are pages rather than sections:
 

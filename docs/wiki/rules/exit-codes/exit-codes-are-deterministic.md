@@ -11,7 +11,8 @@ updated: 2026-08-13
 rule_id: C3
 tier: core
 probe_level: L0
-checker: scripts/checkers/exit-codes/deterministic.ts
+checker: src/acc/kit/checkers/exit-codes/deterministic.ts
+checker_status: planned
 ---
 
 # Identical invocations produce identical exit codes

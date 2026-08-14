@@ -10,7 +10,8 @@ updated: 2026-08-13
 rule_id: B2
 tier: core
 probe_level: L0
-checker: scripts/checkers/streams/no-ansi-when-piped.ts
+checker: src/acc/kit/checkers/streams/no-ansi-when-piped.ts
+checker_status: planned
 ---
 
 # No ANSI escapes when output is not a terminal
