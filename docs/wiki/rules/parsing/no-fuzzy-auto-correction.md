@@ -12,7 +12,7 @@ rule_id: A5
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/no-fuzzy-correction.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Never act on a guessed correction

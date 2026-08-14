@@ -1,3 +1,8 @@
+import { doubleDashTerminatorChecker } from "./checkers/parsing/double-dash-terminator.ts";
+import { namesOffendingTokenChecker } from "./checkers/parsing/names-offending-token.ts";
+import { noFuzzyCorrectionChecker } from "./checkers/parsing/no-fuzzy-correction.ts";
+import { unexpectedPositionalsChecker } from "./checkers/parsing/unexpected-positionals.ts";
+import { unknownCommandChecker } from "./checkers/parsing/unknown-command.ts";
 import { unknownFlagChecker } from "./checkers/parsing/unknown-flag.ts";
 import type { Checker } from "./types.ts";
 
@@ -8,4 +13,11 @@ import type { Checker } from "./types.ts";
  * rule page is an undocumented rule, and an `implemented` rule page with no checker file is a
  * promise the kit does not keep.
  */
-export const CHECKERS: Checker[] = [unknownFlagChecker];
+export const CHECKERS: Checker[] = [
+  unknownFlagChecker,
+  unknownCommandChecker,
+  namesOffendingTokenChecker,
+  unexpectedPositionalsChecker,
+  noFuzzyCorrectionChecker,
+  doubleDashTerminatorChecker,
+];

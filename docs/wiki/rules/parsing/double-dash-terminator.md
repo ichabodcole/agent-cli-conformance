@@ -12,7 +12,7 @@ rule_id: A6
 tier: diagnostic
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/double-dash-terminator.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Honour the `--` end-of-options terminator

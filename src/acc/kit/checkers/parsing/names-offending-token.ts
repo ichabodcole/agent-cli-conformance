@@ -1,0 +1,44 @@
+import { SENTINEL } from "../../inert.ts";
+import type { Checker, Finding, History, Invocation, Verdict } from "../../types.ts";
+import { findByArgs } from "../../types.ts";
+
+const RULE_ID = "A3";
+const FLAG = [`--${SENTINEL}-flag`];
+const VERB = [`${SENTINEL}-verb`];
+
+/** Every Finding this checker emits, so the rule id is written once rather than per branch. */
+const finding = (verdict: Verdict, detail: string, evidence: string[]): Finding => ({
+  ruleId: RULE_ID,
+  verdict,
+  detail,
+  evidence,
+});
+
+/** A3 — docs/wiki/rules/parsing/errors-name-the-offending-token.md */
+export const namesOffendingTokenChecker: Checker = {
+  ruleId: RULE_ID,
+  rulePath: "docs/wiki/rules/parsing/errors-name-the-offending-token.md",
+  tier: "core",
+
+  probes: (): Invocation[] => [
+    { args: FLAG, inertness: "sentinel", purpose: "A3: the rejection must name the flag" },
+    { args: VERB, inertness: "sentinel", purpose: "A3: the rejection must name the verb" },
+  ],
+
+  check: (h: History): Finding => {
+    const flag = findByArgs(h, FLAG);
+    const verb = findByArgs(h, VERB);
+    if (!flag || !verb) return finding("unverified", "probes were not recorded", []);
+
+    const evidence = [flag.id, verb.id];
+    const problems: string[] = [];
+    // The sentinel is distinctive enough that a match is evidence the tool echoed it, not
+    // coincidence.
+    if (!flag.stderr.includes(SENTINEL)) problems.push("flag rejection did not name the flag");
+    if (!verb.stderr.includes(SENTINEL)) problems.push("verb rejection did not name the verb");
+
+    return problems.length
+      ? finding("fail", problems.join("; "), evidence)
+      : finding("pass", "both rejections named the offending token", evidence);
+  },
+};

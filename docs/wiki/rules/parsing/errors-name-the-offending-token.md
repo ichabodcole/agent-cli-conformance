@@ -12,7 +12,7 @@ rule_id: A3
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/names-offending-token.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Errors name the offending token

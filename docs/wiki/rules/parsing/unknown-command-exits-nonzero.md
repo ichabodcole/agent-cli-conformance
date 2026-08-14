@@ -12,7 +12,7 @@ rule_id: A2
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/unknown-command.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Unknown commands must exit non-zero
@@ -46,15 +46,17 @@ Inert (`L0`) — an unknown verb should perform no work by definition.
 
 ```
 <cli> nonsense-verb-xyz
-<cli> <known-group> nonsense-verb-xyz     # nested; discovered from --help
 ```
 
-Passes when both invocations exit non-zero with empty stdout and a stderr message naming the
+Passes when the invocation exits non-zero with empty stdout and a stderr message naming the
 unrecognised verb.
 
-The nested probe only runs when a command group can be discovered from help output. Where no
-group is found, the checker reports the nested case as **unverified** rather than passing it —
-a probe that could not run is not a probe that succeeded.
+The nested case (`<cli> <known-group> nonsense-verb-xyz`) is not currently probed. Building it
+requires prefixing the sentinel with a real, discovered subcommand — but a CLI that treats an
+unrecognised nested token as an ordinary extra positional, rather than rejecting it as an
+unknown command, runs that subcommand for real. `Discovery` has no way to tell a leaf command
+from a command group, so the kit cannot build this probe safely at L0. The checker verifies the
+root case only until effect classification (L1) makes the nested probe safe to run.
 
 ## How to comply
 

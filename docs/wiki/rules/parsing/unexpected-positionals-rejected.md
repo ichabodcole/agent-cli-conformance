@@ -10,9 +10,9 @@ status: current
 updated: 2026-08-13
 rule_id: A4
 tier: core
-probe_level: L0
+probe_level: L1
 checker: src/acc/kit/checkers/parsing/unexpected-positionals.ts
-checker_status: planned
+checker_status: implemented
 ---
 
 # Unexpected positional arguments are rejected
@@ -46,18 +46,22 @@ class of mistake, and a caller has to defeat both to get a silent wrong answer.
 
 ## The probe
 
-Inert (`L0`).
+Not safe at `L0`, and this rule is probed at `L1` accordingly.
 
 ```
 <cli> <known-verb> unexpected-value-xyz
 <cli> <known-verb> --<known-flag> <value> extra-one extra-two
 ```
 
-Passes when both exit non-zero with empty stdout and stderr naming the unexpected value.
+reads like an inert, sentinel-only invocation, but it isn't one: both lines put a REAL verb in
+front of the sentinel extras. A CLI that ignores extra positionals — the exact defect this rule
+exists to catch — runs that verb for real. `Discovery` carries no signal for whether a verb is
+read-only, so at L0 the kit cannot tell "list" from "deploy" before invoking either, and the
+safety gate correctly refuses to build this probe.
 
-The checker only probes verbs it can discover from help output and that appear to take no
-positionals. Where arity cannot be determined, it reports **unverified** rather than guessing —
-a command that legitimately takes variadic arguments must not be failed for accepting them.
+The checker therefore declares no probes and always reports **unverified** at this probe level.
+Testing arity for real requires waiting until the command's effects have been classified (L1),
+so it can be probed only for verbs already known to be read-only.
 
 ## How to comply
 
