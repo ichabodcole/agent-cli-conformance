@@ -1,5 +1,5 @@
 import type { Expectations } from "./expectations.ts";
-import type { Checker, Finding, History, ProbeLevel } from "./types.ts";
+import type { Checker, Coverage, Finding, History, ProbeLevel } from "./types.ts";
 
 /** Numeric order for comparing probe levels — L0 < L1 < L2. */
 const LEVEL_RANK: Record<ProbeLevel, number> = { L0: 0, L1: 1, L2: 2 };
@@ -13,6 +13,15 @@ export interface ReportedFinding extends Finding {
   /** The rule's minimum probe level, carried through so a mislabelled level is visible on the
    *  finding itself rather than only inferable from `applicable`. */
   probeLevel: ProbeLevel;
+  /**
+   * How much of the rule the checker that produced this finding actually establishes — carried
+   * onto the finding so a `pass` can never be read without the scope it was made in. A
+   * `partial` pass means "nothing this checker looked at was violated", which is a strictly
+   * weaker sentence than the one a reader hears when they see PASS.
+   */
+  coverage: Coverage;
+  /** The assertions `coverage: "partial"` is referring to. Empty when coverage is complete. */
+  coverageGaps: string[];
   /**
    * False when `probeLevel` exceeds the level this report was run at. This is "out of scope
    * here", a different claim from `unverified`'s "tried and could not establish it" — conflating
@@ -41,8 +50,25 @@ export interface Report {
    * claims made all three lines look alike. `fullyVerified` carries that second claim.
    */
   conformant: boolean;
-  /** `conformant` AND no applicable core rule is `unverified`. The stronger claim: every core
-   *  rule was actually established, not merely left unfalsified. */
+  /**
+   * EVERY APPLICABLE CORE RULE WAS ACTUALLY ESTABLISHED, at this run's probe level. Three
+   * conditions, all required:
+   *
+   * 1. `conformant` — nothing core was violated;
+   * 2. every applicable core finding has verdict `pass` — INCLUDING excused ones. An excuse is
+   *    an organisation deciding it can live with a defect; it is not evidence. Filtering
+   *    `!excused` here let an expectations entry delete an unverified core rule from the
+   *    EVIDENCE claim as well as from the conformance gate, so a project could write itself a
+   *    note and receive "fully verified" over a rule nothing had established (review R3-4);
+   * 3. every applicable core checker declares `coverage: "complete"`. A checker whose own pass
+   *    detail says "internal-fault contrast unverified at L0" is reporting a gap, and counting
+   *    that as a full pass is how `fullyVerified` came to speak over acknowledged holes
+   *    (review R1-4).
+   *
+   * Bounded by `level`, and only meaningful alongside it: "fully verified at L0" is a claim
+   * about the rules L0 can reach, not about the catalogue. A4 is core and excluded here because
+   * it is not applicable below L1 — see `ReportedFinding.applicable`.
+   */
   fullyVerified: boolean;
   counts: {
     core: number;
@@ -50,12 +76,32 @@ export interface Report {
     coreFailures: number;
     diagnosticFailures: number;
     unverified: number;
-    /** Unexcused applicable CORE findings that are `unverified` — the set that gates
-     *  `fullyVerified`, as distinct from `unverified`, which counts every tier. */
+    /**
+     * Applicable CORE findings that are `unverified`, EXCUSED ONES INCLUDED — the evidence
+     * gap, as distinct from `unverified`, which counts every tier. Excuses are deliberately not
+     * subtracted: this number answers "what was left unestablished", and an expectations entry
+     * changes who is accountable for a gap, never whether the gap exists. `coreFailures` is the
+     * count that excuses do reduce, because that one gates conformance.
+     */
     coreUnverified: number;
+    /** Applicable core findings that PASSED but whose checker declares `coverage: "partial"` —
+     *  passes that are narrower than the rule they are filed under. Counted separately from
+     *  `corePassed` rather than deducted from it: the probe did run and did not find a
+     *  violation, which is a real result; it is only the SCOPE that is smaller than the page. */
+    corePartial: number;
     /** Findings whose rule is out of scope at this run's level — see `ReportedFinding.applicable`. */
     notApplicable: number;
   };
+  /**
+   * Why `fullyVerified` is false, per rule, in terms a reader can act on. One entry for every
+   * applicable core rule that blocks the claim, carrying the checker's declared `coverageGaps`
+   * and — for a rule that did not pass — the verdict and detail that stopped it.
+   *
+   * Empty exactly when `fullyVerified` is true. A bare `false` would be the same
+   * information-free verdict this project criticises a CLI for emitting: the caller learns that
+   * something is missing and nothing about what.
+   */
+  evidenceGaps: Array<{ ruleId: string; gaps: string[] }>;
   findings: ReportedFinding[];
   /** Rule ids excluded from this run because their `probeLevel` exceeds `level`. Surfaced by
    *  name, not just by count, so a rule mislabelled with too high a `probeLevel` is visible
@@ -112,13 +158,17 @@ export function buildReport(
     const c = byId.get(f.ruleId);
     // A checker not found in `checkers` (shouldn't happen outside tests) defaults to core/L0 —
     // the least forgiving assumption, so a wiring bug shows up as a conformance blocker rather
-    // than silently vanishing.
+    // than silently vanishing. `coverage` follows the same discipline for the same reason: an
+    // unknown checker is assumed `partial`, because the alternative is a missing registration
+    // silently upgrading a rule to "fully established".
     const probeLevel = c?.probeLevel ?? "L0";
     return {
       ...f,
       tier: c?.tier ?? "core",
       rulePath: c?.rulePath ?? "",
       probeLevel,
+      coverage: c?.coverage ?? "partial",
+      coverageGaps: c?.coverageGaps ?? ["no checker was found for this rule id"],
       applicable: LEVEL_RANK[probeLevel] <= LEVEL_RANK[level],
       // `unverified` is excusable too, not just `fail`. Excusing only failures left a project
       // blocked by an unverified core rule with no path to green: nothing it could change
@@ -139,15 +189,38 @@ export function buildReport(
   // for. Only applicable findings count: a rule out of scope at this level is a different
   // claim again from "tried and could not establish it".
   const unverified = applicable.filter((f) => f.verdict === "unverified");
-  const unverifiedCore = core.filter((f) => f.verdict === "unverified" && !f.excused);
+  // NOT filtered on `!excused` — see counts.coreUnverified. An excuse suppresses the
+  // conformance gate above; it must not also delete the gap from the evidence count, or a
+  // project can make an unestablished core rule disappear by writing itself a note about it.
+  const unverifiedCore = core.filter((f) => f.verdict === "unverified");
 
   const conformant = coreFailures.length === 0;
+
+  // The two things that block full verification, kept as predicates rather than as a count of
+  // `evidenceGaps` rows: the boolean must not be able to come out true because a `partial`
+  // checker happened to list no gaps.
+  const coreNotPassed = core.filter((f) => f.verdict !== "pass");
+  const coreIncomplete = core.filter((f) => f.coverage === "partial");
+
+  // ...and the same two predicates, rendered as the reason. A rule can appear for either or
+  // both: a non-pass verdict contributes what the checker said it could not establish, partial
+  // coverage contributes the clauses it never looks at. Built here, from the same filters, so
+  // the boolean and its explanation cannot drift apart.
+  const evidenceGaps = core
+    .filter((f) => f.verdict !== "pass" || f.coverage === "partial")
+    .map((f) => ({
+      ruleId: f.ruleId,
+      gaps: [
+        ...(f.verdict === "pass" ? [] : [`${f.verdict}: ${f.detail}`]),
+        ...(f.coverage === "partial" ? f.coverageGaps : []),
+      ],
+    }));
 
   return {
     target: h.target.path,
     level,
     conformant,
-    fullyVerified: conformant && unverifiedCore.length === 0,
+    fullyVerified: conformant && coreNotPassed.length === 0 && coreIncomplete.length === 0,
     counts: {
       core: core.length,
       corePassed: core.filter((f) => f.verdict === "pass").length,
@@ -156,8 +229,10 @@ export function buildReport(
         .length,
       unverified: unverified.length,
       coreUnverified: unverifiedCore.length,
+      corePartial: core.filter((f) => f.verdict === "pass" && f.coverage === "partial").length,
       notApplicable: notApplicable.length,
     },
+    evidenceGaps,
     findings: reported,
     notApplicable: notApplicable.map((f) => f.ruleId),
     knownFailures: Object.entries(expectations.knownFailures).map(([ruleId, reason]) => ({

@@ -13,6 +13,11 @@ tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/unknown-flag.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - a flag carrying a value is never probed so absorbing that value as a positional is not established
+  - only the root is probed so a flag unknown to a subcommand is not
+  - the MUST NOT act on a suggested correction clause is not exercised here
 ---
 
 # Unknown flags must exit non-zero

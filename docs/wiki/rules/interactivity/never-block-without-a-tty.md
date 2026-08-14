@@ -13,6 +13,11 @@ tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/interactivity/never-block.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - only inert paths are probed so a real confirmation path is never reached
+  - the structured confirmation_required response and its exit 8 are not established
+  - treating EOF or closed stdin as an answer is not detectable from termination alone
 ---
 
 # Never block on input without a terminal

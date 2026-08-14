@@ -608,7 +608,32 @@ describe("acc checks itself, through the kit", () => {
       (f) => f.applicable && f.tier === "core" && f.verdict === "unverified",
     );
     expect(unverified.map((f) => `${f.ruleId}: ${f.detail}`)).toEqual([]);
-    expect(r.fullyVerified).toBe(true);
+  }, 60_000);
+
+  // ...and `fullyVerified` is nonetheless FALSE, deliberately (review R1-4). Every applicable
+  // core rule passes and none is unverified — the assertion above — but every core checker in
+  // the registry currently declares `coverage: "partial"`, because every one of the nineteen
+  // rule pages states normative clauses its L0 probe does not reach. The old `true` here was
+  // the review's headline example: the positive control certifying itself over gaps its own
+  // pass details already admitted to.
+  //
+  // This is the honest resting state of an L0 run, not a regression to fix. It flips to `true`
+  // for a target only when every applicable core checker reaches `coverage: "complete"`, which
+  // is what the higher probe levels are for — so this assertion is also the ratchet: raising
+  // any checker to `complete` without the evidence to back it goes red here.
+  test("...but NOT fully verified, because every core checker's coverage is partial", async () => {
+    const h = await record(ACC, CHECKERS);
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations("."), "L0");
+    expect(r.fullyVerified).toBe(false);
+    expect(r.counts.corePartial).toBe(r.counts.core);
+    // The withheld claim must arrive with its reasons attached, one entry per blocking rule.
+    expect(r.evidenceGaps.map((e) => e.ruleId)).toEqual(
+      r.findings.filter((f) => f.applicable && f.tier === "core").map((f) => f.ruleId),
+    );
+    for (const e of r.evidenceGaps)
+      expect({ ...e, gaps: e.gaps.length > 0 }).toMatchObject({
+        gaps: true,
+      });
   }, 60_000);
 
   test("the kit detects a CLI that is NOT conformant", async () => {

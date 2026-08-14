@@ -7,12 +7,17 @@ description:
 tags: [discoverability, determinism, testing, core]
 related: [rule/exit-codes-are-deterministic, rule/help-exits-zero]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: D4
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/help-deterministic.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - the two runs are not identical invocations because the second carries a probe nonce in its environment
+  - only root help is compared and never nested help
+  - forbidden content such as a timestamp or a varying absolute path is only caught when it differs between two adjacent runs
 ---
 
 # Help output is byte-identical between runs

@@ -12,6 +12,19 @@ export const helpDeterministicChecker: Checker = {
   rulePath: "docs/wiki/rules/discoverability/help-output-is-deterministic.md",
   tier: "core",
   probeLevel: "L0",
+  // The first gap is a property of the workaround directly below: the two runs are NOT the same
+  // invocation, because run B carries `ACC_PROBE_NONCE` to survive record()'s dedup. A CLI that
+  // echoes its environment into help would differ here for a legitimate reason. (C3 now takes
+  // the other route — a recorder-only `repeat` that never reaches the target; D4 predates it
+  // and changing the probe is not this field's job.) The second is the same nesting boundary
+  // C1 hits, and the third is the rule's list of forbidden CONTENT, which byte comparison can
+  // only catch when it happens to vary between two runs a few milliseconds apart.
+  coverage: "partial",
+  coverageGaps: [
+    "the two runs are not identical invocations because the second carries a probe nonce in its environment",
+    "only root help is compared and never nested help",
+    "forbidden content such as a timestamp or a varying absolute path is only caught when it differs between two adjacent runs",
+  ],
 
   // Two runs of the SAME invocation would be deduplicated by the runner (see record.ts), so
   // determinism is probed through a distinct env that must not affect help output.

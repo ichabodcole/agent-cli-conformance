@@ -7,12 +7,15 @@ description:
 tags: [parsing, silent-failure, core]
 related: [rule/unknown-flag-exits-nonzero, rule/double-dash-terminator]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: A4
 tier: core
 probe_level: L1
 checker: src/acc/kit/checkers/parsing/unexpected-positionals.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - no probe is declared so nothing about arity is established
 ---
 
 # Unexpected positional arguments are rejected

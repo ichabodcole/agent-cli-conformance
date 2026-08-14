@@ -13,6 +13,11 @@ tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/version-flag.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - the structured machine-mode version payload is never inspected
+  - no network and no credentials and no side effects cannot be observed at L0
+  - the SHOULD to support -V is not probed
 ---
 
 # A version is reportable without side effects

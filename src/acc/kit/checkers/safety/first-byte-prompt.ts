@@ -15,6 +15,17 @@ export const firstBytePromptChecker: Checker = {
   rulePath: "docs/wiki/rules/safety/first-byte-is-prompt.md",
   tier: "diagnostic",
   probeLevel: "L0",
+  // The rule names three no-I/O commands and this times one of them. The other two clauses are
+  // about commands that do work: a `stream` command's first record and per-record flush, and
+  // the progress signal a long command owes stderr. Neither is inert, so neither is reachable
+  // at L0 — and the timing table on the rule page is comparative on one machine, which is a
+  // caveat about the THRESHOLD rather than about coverage and stays on the page.
+  coverage: "partial",
+  coverageGaps: [
+    "only --version is timed and never help or an argument-validation failure",
+    "the stream first-record and per-record flush requirement is not exercised",
+    "the progress signal a long-running command owes stderr is not exercised",
+  ],
 
   probes: (): Invocation[] =>
     RUNS.map((n) => ({

@@ -19,6 +19,17 @@ export const noFuzzyCorrectionChecker: Checker = {
   rulePath: "docs/wiki/rules/parsing/no-fuzzy-auto-correction.md",
   tier: "core",
   probeLevel: "L0",
+  // "Performed no work" is the clause that matters and the one L0 cannot see: the runner
+  // records argv, streams, status and timing, so a non-zero exit is the only proxy available
+  // and a tool that acts THEN reports failure is indistinguishable from one that refused. The
+  // verb half of the rule is refused deliberately (see `probes` — a corrected verb runs), and
+  // the prompt-to-confirm clause is E1's probe.
+  coverage: "partial",
+  coverageGaps: [
+    "only a near-miss FLAG is probed and never a near-miss verb",
+    "performing no work is inferred from a non-zero exit rather than observed",
+    "the MUST NOT prompt to confirm a guess clause is not exercised here",
+  ],
 
   probes: (d: Discovery): Invocation[] => {
     // Only flags, and only at root with no verb: a near-miss VERB could be corrected into a

@@ -18,6 +18,17 @@ export const deterministicChecker: Checker = {
   rulePath: "docs/wiki/rules/exit-codes/exit-codes-are-deterministic.md",
   tier: "core",
   probeLevel: "L0",
+  // The first gap is the rule's own subject, which is why it is stated first and bluntly: the
+  // three probes are textually DIFFERENT flags (see REPEATS above), so what agrees is three
+  // equivalent usage errors, not one invocation repeated. A parser that hashed the token into
+  // its exit code would fail this deterministically and one that is genuinely nondeterministic
+  // on identical input would pass it.
+  coverage: "partial",
+  coverageGaps: [
+    "three textually distinct flags are compared rather than one invocation repeated",
+    "only usage-error invocations are compared and only three times",
+    "the retryable declaration for genuinely intermittent failures is not exercised",
+  ],
 
   probes: (): Invocation[] =>
     REPEATS.map((args, i) => ({

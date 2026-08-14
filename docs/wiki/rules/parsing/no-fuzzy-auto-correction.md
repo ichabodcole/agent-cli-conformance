@@ -7,12 +7,17 @@ description:
 tags: [parsing, safety, core]
 related: [rule/unknown-flag-exits-nonzero, concept/error-envelope]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: A5
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/no-fuzzy-correction.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - only a near-miss FLAG is probed and never a near-miss verb
+  - performing no work is inferred from a non-zero exit rather than observed
+  - the MUST NOT prompt to confirm a guess clause is not exercised here
 ---
 
 # Never act on a guessed correction

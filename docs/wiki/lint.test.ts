@@ -24,6 +24,15 @@ function pageOf(rel: string, fields: Record<string, string>): LintPage {
   };
 }
 
+// The live `A1` checker's declared gaps, verbatim. The baseline below mirrors them so that a
+// test flipping `checker_status` to `implemented` — several do, to reach the tier and
+// probe_level cross-checks — does not also trip the coverage cross-check it isn't about.
+const A1_GAPS = [
+  "a flag carrying a value is never probed so absorbing that value as a positional is not established",
+  "only the root is probed so a flag unknown to a subcommand is not",
+  "the MUST NOT act on a suggested correction clause is not exercised here",
+];
+
 /** Frontmatter of a rule page that satisfies every check. */
 const OK_RULE: Record<string, string> = {
   type: "rule",
@@ -32,6 +41,8 @@ const OK_RULE: Record<string, string> = {
   probe_level: "L0",
   checker: "scripts/checkers/parsing/unknown-flag.ts",
   checker_status: "planned",
+  coverage: "partial",
+  coverage_gaps: `[${A1_GAPS.join(", ")}]`,
 };
 
 const rule = (rel: string, over: Record<string, string> = {}): LintPage =>
@@ -312,6 +323,96 @@ test("every defect on one page is reported, in field order", () => {
     expect.stringContaining("BAD tier"),
     expect.stringContaining("BAD probe_level"),
     expect.stringContaining("MISSING checker"),
+  ]);
+});
+
+// `coverage` decides whether a `pass` from this rule's checker means the whole rule held or
+// only the part the checker looked at, so a page and a checker disagreeing about it
+// misdescribes what a run actually established — the same argument as `tier` and `probe_level`
+// above, applied to the claim rather than to the gate.
+const A1_LIVE = {
+  checker: "src/acc/kit/checkers/parsing/unknown-flag.ts",
+  checker_status: "implemented",
+};
+
+test("a missing coverage is reported as BAD coverage with an empty value", () => {
+  const problems = forward([pageOf("rules/parsing/a1.md", without("coverage"))]);
+  expect(problems).toEqual(['BAD coverage   rules/parsing/a1.md: "" not in {complete, partial}']);
+});
+
+test("a coverage outside the closed set is reported", () => {
+  const problems = forward([rule("rules/parsing/a1.md", { coverage: "mostly" })]);
+  expect(problems).toEqual([
+    'BAD coverage   rules/parsing/a1.md: "mostly" not in {complete, partial}',
+  ]);
+});
+
+// The invariant the whole field exists for. `partial` with no gaps is a page admitting a hole
+// and describing none of it, which is exactly the information-free verdict the project
+// criticises a CLI for emitting.
+test("partial coverage naming no gaps is reported", () => {
+  const problems = forward([
+    pageOf("rules/parsing/a1.md", { ...without("coverage_gaps"), coverage: "partial" }),
+  ]);
+  expect(problems).toEqual([expect.stringContaining("MISSING coverage_gaps rules/parsing/a1.md")]);
+});
+
+test("complete coverage naming gaps is reported", () => {
+  const problems = forward([rule("rules/parsing/a1.md", { coverage: "complete" })]);
+  expect(problems).toEqual([expect.stringContaining("EXTRA coverage_gaps rules/parsing/a1.md")]);
+});
+
+test("complete coverage with no gaps produces no problem", () => {
+  const problems = forward([
+    pageOf("rules/parsing/a1.md", { ...without("coverage_gaps"), coverage: "complete" }),
+  ]);
+  expect(problems).toEqual([]);
+});
+
+test("an implemented rule whose coverage disagrees with the checker's is reported as MISMATCH", () => {
+  const problems = forward([
+    pageOf("rules/parsing/a1.md", {
+      ...without("coverage_gaps"),
+      ...A1_LIVE,
+      coverage: "complete",
+    }),
+  ]);
+  expect(problems).toEqual([
+    'MISMATCH coverage rules/parsing/a1.md: page declares "complete", checker declares "partial"',
+    // The gap list drifts with it, and is reported separately: a page can agree about
+    // `complete`/`partial` and still describe the wrong holes, so one message cannot stand in
+    // for the other.
+    expect.stringContaining("MISMATCH coverage_gaps"),
+  ]);
+});
+
+test("an implemented rule whose coverage_gaps disagree with the checker's is reported as MISMATCH", () => {
+  const problems = forward([
+    rule("rules/parsing/a1.md", {
+      ...A1_LIVE,
+      coverage_gaps: `[${A1_GAPS.slice(0, 2).join(", ")}]`,
+    }),
+  ]);
+  expect(problems).toEqual([expect.stringContaining("MISMATCH coverage_gaps")]);
+});
+
+test("an implemented rule matching the checker's coverage and gaps produces no problem", () => {
+  expect(forward([rule("rules/parsing/a1.md", A1_LIVE)])).toEqual([]);
+});
+
+// Same ratchet as `tier` and `probe_level`: a rule may declare honest coverage before its
+// checker exists, and there is nothing to compare it against until then.
+test("a planned rule's coverage is not checked against the registry, even if it disagrees", () => {
+  const problems = forward([
+    pageOf("rules/parsing/a1.md", { ...without("coverage_gaps"), coverage: "complete" }),
+  ]);
+  expect(problems).toEqual([]);
+});
+
+test("an already-invalid coverage is reported once, not also as a MISMATCH", () => {
+  const problems = forward([rule("rules/parsing/a1.md", { ...A1_LIVE, coverage: "mostly" })]);
+  expect(problems).toEqual([
+    'BAD coverage   rules/parsing/a1.md: "mostly" not in {complete, partial}',
   ]);
 });
 

@@ -6,12 +6,17 @@ description:
 tags: [streams, machine-mode, output, core]
 related: [concept/machine-mode, rule/machine-output-is-parseable]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: B2
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/streams/no-ansi-when-piped.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - only CSI escapes are detected and not OSC or single-character escape sequences
+  - carriage-return animation is not detected
+  - the NO_COLOR and --no-color and TERM=dumb overrides need a TTY and are never exercised
 ---
 
 # No ANSI escapes when output is not a terminal

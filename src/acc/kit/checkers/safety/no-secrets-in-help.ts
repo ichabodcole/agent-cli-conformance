@@ -22,6 +22,18 @@ export const noSecretsInHelpChecker: Checker = {
   rulePath: "docs/wiki/rules/safety/no-secrets-in-help-or-schema.md",
   tier: "core",
   probeLevel: "L0",
+  // The rule names three surfaces — help, schema output, error messages — and one probe reads
+  // the first. `schema` is a verb this kit will not invoke blind at L0, and the error surface
+  // would need a credential to echo back before it could echo one. The pattern list above is
+  // seven known shapes, which is already scoped in the pass detail ("absence of a known
+  // pattern, not proof"); a flag default is invisible for a different reason — help prints the
+  // default only if the CLI chooses to.
+  coverage: "partial",
+  coverageGaps: [
+    "only root help is scanned and never schema output or error messages",
+    "only seven known credential shapes are matched so a bespoke token is invisible",
+    "a secret carried as a flag default is only seen if help prints defaults",
+  ],
 
   probes: (): Invocation[] => [
     { args: ["--help"], inertness: "help-path", purpose: "F1: scan help" },

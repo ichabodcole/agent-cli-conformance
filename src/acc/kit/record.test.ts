@@ -24,6 +24,11 @@ function stubChecker(ruleId: string, probes: Invocation[]): Checker {
     rulePath: `docs/wiki/rules/stub/${ruleId}.md`,
     tier: "core",
     probeLevel: "L0",
+    // Irrelevant to recording — this file is about dedup and history construction, and nothing
+    // downstream of `record()` reads coverage. Declared `complete` so a stub can never be
+    // mistaken for a statement about a real rule's gaps.
+    coverage: "complete",
+    coverageGaps: [],
     probes: () => probes,
     check: (h: History): Finding => ({
       ruleId,

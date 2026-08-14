@@ -26,6 +26,18 @@ export const machineOutputParseableChecker: Checker = {
   rulePath: "docs/wiki/rules/streams/machine-output-is-parseable.md",
   tier: "core",
   probeLevel: "L0",
+  // The page says an undeclared `output_kind` defaults to `data`, which makes NDJSON a
+  // violation; the NDJSON branch below returns `unverified` instead, because nothing was
+  // DECLARED and punishing a tool for a choice it was never asked to state is the wrong error.
+  // That is a deliberate softening of the rule, so it belongs here rather than only in a
+  // comment. The other two: the only probe is machine-mode HELP, and the two MUST NOTs about
+  // shape stability need at least two invocations to compare, which this checker never makes.
+  coverage: "partial",
+  coverageGaps: [
+    "the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed",
+    "only machine-mode help is parsed and never a data command",
+    "shape stability across invocations and across commands is not compared",
+  ],
 
   probes: (d: Discovery): Invocation[] =>
     // `--format` is deliberately NOT treated as a format selector here (see inert.ts's

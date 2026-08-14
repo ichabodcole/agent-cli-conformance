@@ -7,12 +7,17 @@ description:
 tags: [parsing, errors, remediation, core]
 related: [concept/error-envelope, rule/unknown-flag-exits-nonzero]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: A3
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/names-offending-token.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - the machine-mode error envelope field is never inspected
+  - only an unknown flag and an unknown verb are probed
+  - the SHOULD to enumerate a closed set as choices is not exercised
 ---
 
 # Errors name the offending token

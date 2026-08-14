@@ -12,7 +12,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type LintPage, runDocsLint } from "../../scripts/docs-lint/index.ts";
+import { type LintPage, runDocsLint, yamlList } from "../../scripts/docs-lint/index.ts";
 import { CHECKERS } from "../../src/acc/kit/registry.ts";
 
 const WIKI_ROOT = dirname(fileURLToPath(import.meta.url));
@@ -23,9 +23,12 @@ const CHECKERS_DIR = join(REPO_ROOT, "src/acc/kit/checkers");
 // time — so this import has no side effects and is safe from a lint entry point.
 const PROBE_LEVEL_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.probeLevel]));
 const TIER_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.tier]));
+const COVERAGE_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.coverage]));
+const COVERAGE_GAPS_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.coverageGaps]));
 
 const TIERS = new Set(["core", "diagnostic"]);
 const PROBE_LEVELS = new Set(["L0", "L1", "L2"]);
+const COVERAGES = new Set(["complete", "partial"]);
 
 /**
  * Rule pages carry machine-readable frontmatter (`rule_id`, `tier`, `probe_level`,
@@ -107,6 +110,47 @@ export function ruleChecks(pages: LintPage[]): string[] {
       if (checkerTier && checkerTier !== tier)
         problems.push(
           `MISMATCH tier ${page.rel}: page declares "${tier}", checker declares "${checkerTier}"`,
+        );
+    }
+
+    // `coverage` is the third pair, and the one a reader is most likely to take on trust: it is
+    // the difference between "a pass means the whole rule held" and "a pass means nothing the
+    // checker looked at was violated". Unlike `tier` and `probe_level` it is checked on EVERY
+    // rule page including `planned` ones — a page may honestly declare `partial` before its
+    // checker exists, and the cross-check below only fires once there is a checker to compare
+    // against, so nothing is lost by validating the field itself unconditionally.
+    const coverage = page.fields.get("coverage");
+    if (!coverage || !COVERAGES.has(coverage)) {
+      problems.push(
+        `BAD coverage   ${page.rel}: "${coverage ?? ""}" not in {${[...COVERAGES].join(", ")}}`,
+      );
+      continue;
+    }
+    // The invariant the field exists for. `partial` naming no gaps is a page admitting a hole
+    // while describing none of it — the information-free verdict this project criticises a CLI
+    // for emitting. `complete` naming one is a page contradicting itself.
+    const gaps = yamlList(page.fields.get("coverage_gaps"));
+    if (coverage === "partial" && gaps.length === 0)
+      problems.push(`MISSING coverage_gaps ${page.rel}: "partial" must name at least one gap`);
+    if (coverage === "complete" && gaps.length > 0)
+      problems.push(
+        `EXTRA coverage_gaps ${page.rel}: "complete" must name none, found ${gaps.length}`,
+      );
+
+    if (status === "implemented" && id) {
+      const checkerCoverage = COVERAGE_BY_RULE_ID.get(id);
+      if (checkerCoverage && checkerCoverage !== coverage)
+        problems.push(
+          `MISMATCH coverage ${page.rel}: page declares "${coverage}", checker declares "${checkerCoverage}"`,
+        );
+      // Compared element by element, in order, not as a set or a count: the gaps are the text
+      // `acc check` prints when it withholds `fullyVerified`, so a page and a checker disagreeing
+      // about their wording means the report and the wiki tell a reader two different stories
+      // about the same hole.
+      const checkerGaps = COVERAGE_GAPS_BY_RULE_ID.get(id);
+      if (checkerGaps && checkerGaps.join(" ") !== gaps.join(" "))
+        problems.push(
+          `MISMATCH coverage_gaps ${page.rel}:\n     page: ${JSON.stringify(gaps)}\n  checker: ${JSON.stringify(checkerGaps)}`,
         );
     }
   }

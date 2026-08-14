@@ -14,6 +14,16 @@ export const unknownFlagChecker: Checker = {
   rulePath: "docs/wiki/rules/parsing/unknown-flag-exits-nonzero.md",
   tier: "core",
   probeLevel: "L0",
+  // The probe carries a valueless flag at the root, so two of the page's MUST NOTs are outside
+  // what it can see. "Absorb its value as a positional" needs a flag WITH a value, and a
+  // free-form-positional CLI would then receive that value as data — the shape inert.ts refuses
+  // to guess at. Acting on a suggested correction is A5's probe, not this one's.
+  coverage: "partial",
+  coverageGaps: [
+    "a flag carrying a value is never probed so absorbing that value as a positional is not established",
+    "only the root is probed so a flag unknown to a subcommand is not",
+    "the MUST NOT act on a suggested correction clause is not exercised here",
+  ],
 
   probes: (): Invocation[] => [
     {

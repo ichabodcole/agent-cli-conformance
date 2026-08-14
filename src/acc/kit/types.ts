@@ -132,6 +132,17 @@ export interface Finding {
  */
 export type ProbeLevel = "L0" | "L1" | "L2";
 
+/**
+ * How much of the rule page's normative text this checker's assertions actually establish.
+ *
+ * `complete` is the claim that a `pass` from this checker means the WHOLE rule held. `partial`
+ * is the claim that it means "nothing this checker looked at was violated" — a weaker sentence
+ * that several checkers were already saying in their pass detail (C2's "internal-fault contrast
+ * unverified at L0", A2's "nested case not probed at L0") while `buildReport` counted them as
+ * ordinary passes and let `fullyVerified` speak over the gap.
+ */
+export type Coverage = "complete" | "partial";
+
 export interface Checker {
   ruleId: string;
   /** Wiki path, quoted in output so a failure points at the rule that explains it. */
@@ -142,6 +153,26 @@ export interface Checker {
    *  from "tried and could not establish it", and a report that conflates them cannot be acted
    *  on. Must match the rule page's `probe_level` frontmatter. */
   probeLevel: ProbeLevel;
+  /**
+   * REQUIRED, with no default. A default would let the next checker inherit `complete` by
+   * saying nothing, which is the drift this field exists to remove: every one of the nineteen
+   * had `checker_status: implemented`, and a reader took that for "the rule is enforced".
+   *
+   * Must match the rule page's `coverage` frontmatter — `docs/wiki/lint.ts` compares them in
+   * both directions, exactly as it does for `tier` and `probe_level`.
+   */
+  coverage: Coverage;
+  /**
+   * One short phrase per normative assertion on the rule page that this checker does NOT
+   * establish at `probeLevel`. `complete` MUST carry none; `partial` MUST carry at least one —
+   * enforced by registry.test.ts, so `partial` can never be a bare flag with no accounting.
+   *
+   * These are reproduced verbatim in the rule page's `coverage_gaps` frontmatter, which the
+   * wiki lint round-trips through its own deliberately small YAML reader. That reader splits
+   * list items on `,` and on ` - `, so a phrase containing either cannot survive the trip;
+   * registry.test.ts rejects both rather than letting the lint fail somewhere unrelated.
+   */
+  coverageGaps: string[];
   probes: (d: Discovery) => Invocation[];
   check: (h: History) => Finding;
 }

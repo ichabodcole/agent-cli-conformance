@@ -7,12 +7,16 @@ description:
 tags: [streams, silent-failure, errors, core]
 related: [concept/error-envelope, concept/output-kind, rule/machine-output-is-parseable]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: B1
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/streams/stdout-carries-only-data.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - only usage-error failures are probed and never a runtime failure
+  - stdout on a SUCCESSFUL command is never inspected for diagnostics
 ---
 
 # stdout carries only data

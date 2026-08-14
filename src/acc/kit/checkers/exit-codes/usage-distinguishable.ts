@@ -13,6 +13,16 @@ export const usageDistinguishableChecker: Checker = {
   rulePath: "docs/wiki/rules/exit-codes/usage-errors-are-distinguishable.md",
   tier: "core",
   probeLevel: "L0",
+  // The rule is a CONTRAST — 2 for the caller's mistake, 1 for ours — and only one side of it
+  // is reachable here. The pass detail has always said so ("internal-fault contrast unverified
+  // at L0"); this is that sentence in a field the report can count, which is the whole of
+  // R1-4. The taxonomy clause is the same problem one step out: provoking a rate limit or a
+  // permission fault in an arbitrary binary is not an inert act.
+  coverage: "partial",
+  coverageGaps: [
+    "the internal-fault contrast is not established at L0 because no internal fault can be provoked inertly",
+    "the taxonomy codes for more specific failures are not exercised",
+  ],
 
   probes: (): Invocation[] => [
     { args: [`--${SENTINEL}-flag`], inertness: "sentinel", purpose: "C2: usage error via flag" },

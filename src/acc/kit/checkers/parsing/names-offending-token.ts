@@ -15,6 +15,17 @@ export const namesOffendingTokenChecker: Checker = {
   rulePath: "docs/wiki/rules/parsing/errors-name-the-offending-token.md",
   tier: "core",
   probeLevel: "L0",
+  // The rule has three clauses and this checker reads one: the token appears verbatim in the
+  // prose diagnostic. The machine-envelope clause is the one the review named — nothing here
+  // ever runs the target in machine mode, let alone parses its error envelope for the field —
+  // and the two token classes probed are the two that are inert, so the malformed-identifier
+  // and out-of-range-value cases the page also names go unexercised.
+  coverage: "partial",
+  coverageGaps: [
+    "the machine-mode error envelope field is never inspected",
+    "only an unknown flag and an unknown verb are probed",
+    "the SHOULD to enumerate a closed set as choices is not exercised",
+  ],
 
   probes: (): Invocation[] => [
     { args: FLAG, inertness: "sentinel", purpose: "A3: the rejection must name the flag" },

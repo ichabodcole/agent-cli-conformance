@@ -12,6 +12,18 @@ export const helpExitsZeroChecker: Checker = {
   rulePath: "docs/wiki/rules/exit-codes/help-exits-zero.md",
   tier: "core",
   probeLevel: "L0",
+  // Two of the rule's three sentences are about reach, and both need a real verb in the argv.
+  // "At every level" means `<cli> <group> --help`, and "regardless of what else is on the
+  // command line" means appending `--help` to an otherwise complete invocation — a CLI that
+  // ignores the flag then runs that invocation for real, which is the L1 boundary A2 and A4
+  // ran into first. A bare `help` subcommand is the same problem: `Discovery` cannot tell a
+  // help verb from any other verb before running it.
+  coverage: "partial",
+  coverageGaps: [
+    "nested help is not probed at L0",
+    "a help subcommand is not probed",
+    "appending --help to an otherwise complete invocation is not probed",
+  ],
 
   probes: (): Invocation[] => [
     { args: ["--help"], inertness: "help-path", purpose: "C1: --help" },

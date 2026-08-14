@@ -25,6 +25,15 @@ export const doubleDashTerminatorChecker: Checker = {
   rulePath: "docs/wiki/rules/parsing/double-dash-terminator.md",
   tier: "diagnostic",
   probeLevel: "L0",
+  // The assertion is an ABSENCE — no unknown-option error naming the sentinel — which rules out
+  // "parsed as a flag" without ruling in "received as a positional": a CLI that silently drops
+  // everything after `--` passes exactly as one that honours it. The delegator half of the rule
+  // is the stronger MUST and needs a child process to observe, which L0 has no way to reach.
+  coverage: "partial",
+  coverageGaps: [
+    "the value after the terminator is only shown not to be rejected as a flag and never shown to arrive as a positional",
+    "the delegator passthrough requirement is not exercised",
+  ],
 
   probes: (): Invocation[] => [
     { args: ARGS, inertness: "sentinel", purpose: "A6: `--` must end option parsing" },

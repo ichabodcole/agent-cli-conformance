@@ -27,6 +27,17 @@ export const unknownCommandChecker: Checker = {
   rulePath: "docs/wiki/rules/parsing/unknown-command-exits-nonzero.md",
   tier: "core",
   probeLevel: "L0",
+  // The nested gap is the one the class comment above spends its length on; the other two are
+  // clauses the page states flatly and this checker never reads. It asserts `exitCode !== 0`,
+  // not the declared `2`, and it never looks at stderr at all — A3 happens to assert the
+  // verb-naming clause over the byte-identical recording, but that is A3's evidence, not this
+  // rule's, and a report that borrowed it would be citing a finding it did not make.
+  coverage: "partial",
+  coverageGaps: [
+    "nested subcommands are not probed at L0",
+    "the exit code is only required to be non-zero here and not the declared 2",
+    "naming the offending verb on stderr is not asserted",
+  ],
 
   probes: (): Invocation[] => [
     { args: ROOT, inertness: "sentinel", purpose: "A2: unknown root verb" },

@@ -13,6 +13,11 @@ tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/streams/machine-output-parseable.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed
+  - only machine-mode help is parsed and never a data command
+  - shape stability across invocations and across commands is not compared
 ---
 
 # Machine output parses as its declared kind

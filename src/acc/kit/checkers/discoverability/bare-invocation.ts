@@ -12,6 +12,16 @@ export const bareInvocationChecker: Checker = {
   rulePath: "docs/wiki/rules/discoverability/bare-invocation-is-a-usage-error.md",
   tier: "core",
   probeLevel: "L0",
+  // Two clauses of the four are read here (not 0, stdout empty) and the hang clause is owned
+  // outright. The two below are simply not asserted: the check tests `exitCode === 0` rather
+  // than `!== 2`, so a bare invocation exiting 1 passes, and nothing ever looks at stderr — a
+  // CLI that exits 2 in total silence satisfies this checker while failing the sentence that
+  // says where the usage summary goes.
+  coverage: "partial",
+  coverageGaps: [
+    "the exit code is only required to be non-zero here and not the declared 2",
+    "stderr is never checked to carry the usage summary",
+  ],
 
   probes: (): Invocation[] => [
     // `bare` is its own inertness class (see inert.ts), not `no-verb`: `no-verb` requires a

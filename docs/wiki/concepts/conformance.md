@@ -27,14 +27,15 @@ could apply at this probe level either passed, or was excused in the project's e
 file. This is the headline verdict, and it is what the exit code reflects: a non-conformant
 target exits `9`.
 
-**Fully verified** — conformant, **and no applicable core rule is `unverified`.** Every core
-rule was actually established, not merely left unfalsified.
+**Fully verified** — conformant, **and every applicable core rule passed, and every applicable
+core checker declares `coverage: complete`.** Every core rule was actually established, not
+merely left unfalsified.
 
 Three verdicts feed those two claims, and the middle one is the whole point:
 
 | Verdict      | Meaning                                     | Blocks conformance | Blocks full verification |
 | ------------ | ------------------------------------------- | ------------------ | ------------------------ |
-| `pass`       | the probe ran and the rule held             | no                 | no                       |
+| `pass`       | the probe ran and the rule held             | no                 | only if `partial`        |
 | `fail`       | the probe ran and the rule was broken       | **yes**            | **yes**                  |
 | `unverified` | the probe could not establish either answer | no                 | **yes**                  |
 
@@ -42,6 +43,37 @@ A fourth state, **not applicable**, is not a verdict at all: the rule's `probe_l
 the level the run was made at, so it was never attempted. "Out of scope here" and "tried and
 could not establish it" are different claims, and a report that collapses them cannot be acted
 on.
+
+**Full verification is scoped to the run's probe level, always.** "Fully verified at `L0`" is a
+claim about the rules `L0` can reach, not about the catalogue — which is why the level is
+printed beside the verdict rather than left implicit.
+
+### Coverage: a pass can be narrower than its rule
+
+The `pass` row above carries a qualifier the other two do not, and it is the second half of
+what `fullyVerified` had to be taught. A rule page states several normative clauses; a checker
+establishes some subset of them. Every rule page declares which case it is in:
+
+| `coverage` | What a `pass` from that checker means                                  |
+| ---------- | ---------------------------------------------------------------------- |
+| `complete` | the whole rule held                                                    |
+| `partial`  | nothing the checker looked at was violated — the rest was not examined |
+
+A `partial` page must list its `coverage_gaps`: one phrase per normative clause the checker
+does not establish. The kit's own lint compares that list against the checker file in both
+directions, so a gap cannot be closed in prose without being closed in code.
+
+This was not a hypothetical. [C2](../rules/exit-codes/usage-errors-are-distinguishable.md)
+returned `pass` with the detail `internal-fault contrast unverified at L0`;
+[A2](../rules/parsing/unknown-command-exits-nonzero.md) returned `pass` with
+`nested case not probed at L0`. Both admissions were true, and both were counted as ordinary
+passes — so `fullyVerified` could be `true` over gaps the report itself had already printed. In
+the text report a narrow pass is marked `PASS+`, and every gap blocking the claim is named in
+full beneath the findings.
+
+At `L0`, **every** core checker in the catalogue is `partial`, so `acc check` on `acc` itself
+reports `conformant: true, fullyVerified: false`. That is the correct answer, not a defect to
+paper over: closing those gaps is what the higher probe levels are for.
 
 `core` versus `diagnostic` is the other axis. Only core rules bind: a diagnostic failure is
 reported, counted, and never blocks either claim.
@@ -55,14 +87,14 @@ something false. `git` is the illustration, and it is a good one precisely becau
 clean sheet. `acc check $(which git)`, against git 2.55.0, with the twelve passing rules elided:
 
 ```
-NOT CONFORMANT (L0) — 2 violated, 1 unverified
+NOT CONFORMANT (L0) — 2 core violated, 1 core unverified, 12 core partially covered
 
   UNVR  B3  no machine-mode flag was advertised in help, so there is nothing to parse
   FAIL  C2  the same error class produced different codes (129,1)
   FAIL  D2  bare invocation wrote 2290 bytes to stdout
   FAIL  D3  help names no machine-mode flag or schema command; B3 will be unverified as a result
 
-  core 12/15 · violations 2 · unverified 1 (all tiers; 1 core) · diagnostics 1
+  core 12/15 · violations 2 · unverified 1 (all tiers; 1 core) · partial coverage 12 core · diagnostics 1
 ```
 
 D3 is `diagnostic`, so it is reported and binds nothing. Of the two that do bind, both are real
@@ -89,6 +121,11 @@ adopts the kit by getting to conformant, then works the unverified list down —
 declaring something the kit currently has to guess at, which is exactly the direction the spec
 wants a tool to move.
 
+`fullyVerified` is a goal for the kit as much as for the target. Half of it is the target's
+work — nothing failing, nothing unverified. The other half is the kit's own, and no core
+checker has earned complete coverage yet. Reporting the target's half as if it were both is the
+failure mode this section exists to prevent.
+
 ## The details
 
 ### The excuse ratchet
@@ -103,23 +140,47 @@ an unverified rule with nothing it could change to clear it. When an excused rul
 passing, the run reports it as a **stale expectation** — that is the ratchet tightening, and
 the line to delete.
 
+**An excuse suppresses the conformance gate. It never suppresses the evidence claim.** Exactly
+what it changes, and what it does not:
+
+| Field                   | Effect of an excuse                                         |
+| ----------------------- | ----------------------------------------------------------- |
+| `conformant`            | an excused `fail` no longer blocks it                       |
+| `counts.coreFailures`   | an excused `fail` is not counted                            |
+| `fullyVerified`         | **unchanged** — an excused rule that did not pass blocks it |
+| `counts.coreUnverified` | **unchanged** — the gap is still counted                    |
+| `evidenceGaps`          | **unchanged** — the gap is still named                      |
+| `staleExpectations`     | gains the rule id once it starts passing                    |
+
+The reason for the split is that an excuse is a decision, not evidence. A project writing
+itself a note about a rule nothing has established has changed who is accountable for the gap;
+it has not made the gap go away, and a boolean called "fully verified" must not be purchasable
+by writing a sentence in a JSON file.
+
 ### What the counts mean
 
-The text verdict line states both claims at once. Both of its numbers are core and unexcused,
-and both say so:
+The text verdict line states both claims at once, and names the scope of each number:
 
 ```
-CONFORMANT (L0) — 0 core violated, 2 core unverified
-NOT CONFORMANT (L0) — 3 core violated, 1 core unverified
+CONFORMANT (L0) — 0 core violated, 2 core unverified, 13 core partially covered
+NOT CONFORMANT (L0) — 3 core violated, 1 core unverified, 11 core partially covered
 ```
+
+`core violated` is core, applicable and **unexcused** — it gates conformance.
+`core unverified` and `core partially covered` are core and applicable but count excused rules
+too, because they describe the evidence rather than the gate.
 
 The summary line at the foot of the report counts `unverified` across **every** tier, so the
 two lines can legitimately disagree — a target with one diagnostic gap and no core one shows
 `0` above and `1` below. Both scopes are named rather than left to the reader to reconcile:
 
 ```
-  core 12/15 · violations 2 · unverified 1 (all tiers; 1 core) · diagnostics 1
+  core 12/15 · violations 2 · unverified 1 (all tiers; 1 core) · partial coverage 11 core · diagnostics 1
 ```
+
+A rule counted under `partial coverage` is also a rule that **passed**, so it appears in
+`core 12/15` as well. The two are not alternatives: the probe ran and found no violation, and
+the scope of that probe was narrower than the page.
 
 The level is named because it bounds the claim: at `L0`,
 [A4](../rules/parsing/unexpected-positionals-rejected.md) is core but out of scope, so a bare

@@ -7,12 +7,17 @@ description:
 tags: [performance, streaming, diagnostic]
 related: [concept/output-kind, rule/help-exits-zero]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: F2
 tier: diagnostic
 probe_level: L0
 checker: src/acc/kit/checkers/safety/first-byte-prompt.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - only --version is timed and never help or an argument-validation failure
+  - the stream first-record and per-record flush requirement is not exercised
+  - the progress signal a long-running command owes stderr is not exercised
 ---
 
 # First byte arrives promptly

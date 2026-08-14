@@ -7,12 +7,16 @@ description:
 tags: [discoverability, exit-codes, silent-failure, core]
 related: [rule/help-exits-zero, concept/exit-codes]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: D2
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/bare-invocation.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - the exit code is only required to be non-zero here and not the declared 2
+  - stderr is never checked to carry the usage summary
 ---
 
 # Bare invocation is a usage error

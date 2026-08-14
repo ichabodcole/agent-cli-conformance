@@ -16,6 +16,17 @@ export const noAnsiWhenPipedChecker: Checker = {
   rulePath: "docs/wiki/rules/streams/no-ansi-when-piped.md",
   tier: "core",
   probeLevel: "L0",
+  // The ANSI constant above is `ESC [` — the CSI introducer, and nothing else. That misses OSC
+  // (`ESC ]`, used for hyperlinks and window titles), the single-character escapes (`ESC c`,
+  // `ESC 7`), and animation built from bare carriage returns, which needs no escape byte at
+  // all. The three override clauses are worse than unimplemented: they only bind when a TTY IS
+  // present, and every probe the runner makes captures to a pipe, so no probe can reach them.
+  coverage: "partial",
+  coverageGaps: [
+    "only CSI escapes are detected and not OSC or single-character escape sequences",
+    "carriage-return animation is not detected",
+    "the NO_COLOR and --no-color and TERM=dumb overrides need a TTY and are never exercised",
+  ],
 
   probes: (): Invocation[] => [
     { args: ["--help"], inertness: "help-path", purpose: "B2: help must be escape-free" },

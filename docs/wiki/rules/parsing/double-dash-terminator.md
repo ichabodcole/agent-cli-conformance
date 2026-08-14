@@ -13,6 +13,10 @@ tier: diagnostic
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/double-dash-terminator.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - the value after the terminator is only shown not to be rejected as a flag and never shown to arrive as a positional
+  - the delegator passthrough requirement is not exercised
 ---
 
 # Honour the `--` end-of-options terminator

@@ -13,6 +13,16 @@ export const stdoutCarriesOnlyDataChecker: Checker = {
   rulePath: "docs/wiki/rules/streams/stdout-carries-only-data.md",
   tier: "core",
   probeLevel: "L0",
+  // Both probes are usage errors, which is the cheapest failure to provoke and the least like
+  // the one that matters: a command that half-completes and then writes a placeholder result is
+  // the defect this rule names, and reaching it means running a real verb (L1). The rule's
+  // first sentence — stdout carries the RESULT and nothing else — is about the success path,
+  // which this checker never inspects at all.
+  coverage: "partial",
+  coverageGaps: [
+    "only usage-error failures are probed and never a runtime failure",
+    "stdout on a SUCCESSFUL command is never inspected for diagnostics",
+  ],
 
   probes: (): Invocation[] => [
     { args: [`--${SENTINEL}-flag`], inertness: "sentinel", purpose: "B1: failure via bad flag" },

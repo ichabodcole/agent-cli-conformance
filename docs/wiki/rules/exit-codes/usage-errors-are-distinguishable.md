@@ -7,12 +7,16 @@ description:
 tags: [exit-codes, errors, core]
 related: [concept/exit-codes, decision/exit-codes-below-125]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: C2
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/exit-codes/usage-distinguishable.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - the internal-fault contrast is not established at L0 because no internal fault can be provoked inertly
+  - the taxonomy codes for more specific failures are not exercised
 ---
 
 # "You invoked me wrong" is distinguishable from "I broke"

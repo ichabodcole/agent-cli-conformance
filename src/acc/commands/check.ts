@@ -107,28 +107,37 @@ export async function checkCommand(
   // ranking (violations before gaps, and the rule that owns a failure mode before whatever
   // happens to come first in the registry).
   const firstCoreProblem = primaryProblem(history, report);
+  // ...falling back to the first rule with an evidence gap, which is the only outstanding thing
+  // on a run where every applicable core rule PASSED and some of those passes were partial.
+  // `primaryProblem` ranks verdicts and has nothing to say about that case; offering a hardcoded
+  // "acc show A1" for it would send the caller to a rule that passed cleanly.
+  const nextRule = firstCoreProblem?.ruleId ?? report.evidenceGaps[0]?.ruleId;
 
   emit({
     mode,
     command: "check",
     startedAt,
     data: report,
-    // Offered whenever something core is outstanding, violation or gap: a caller staring at an
-    // unverified core rule needs the page just as much as one staring at a failure.
-    next: report.fullyVerified
-      ? []
-      : [
+    // Offered whenever something core is outstanding — violation, gap, or a pass narrower than
+    // its rule. A caller staring at an unverified core rule needs the page just as much as one
+    // staring at a failure, and a caller staring at `fullyVerified: false` over nothing but
+    // partial coverage needs it more, because no line in the findings list looks wrong.
+    next: nextRule
+      ? [
           {
-            command: `acc show ${firstCoreProblem?.ruleId ?? "A1"}`,
+            command: `acc show ${nextRule}`,
             // Not "the FIRST violation" any more: for a hang the offer is E1, which may sit
             // well after the other rules the hang tripped. Naming a position the ranking no
             // longer guarantees would be a small lie in the field that tells the caller what
             // they are about to read.
-            when: report.conformant
-              ? "to read the rule that could not be verified"
-              : "to read the rule that best explains the violations",
+            when: !report.conformant
+              ? "to read the rule that best explains the violations"
+              : firstCoreProblem
+                ? "to read the rule that could not be verified"
+                : "to read a rule whose checker establishes only part of it",
           },
-        ],
+        ]
+      : [],
     renderText: (r) => {
       const bold = useColor() ? "\x1b[1m" : "";
       const reset = useColor() ? "\x1b[0m" : "";
@@ -141,9 +150,19 @@ export async function checkCommand(
         if (f.verdict === "fail") return "FAIL";
         return f.applicable ? "UNVR" : "N/A ";
       };
+      // A `+` on a PASS whose checker declares `coverage: "partial"`. Without it the strongest
+      // glyph in the report sits beside a rule the kit only sampled, and the reader has to know
+      // to cross-reference the gap block below to find out which passes were narrow ones.
       const lines = r.findings.map(
-        (f) => `  ${mark(f)}  ${f.ruleId.padEnd(3)} ${f.detail}${f.excused ? " (excused)" : ""}`,
+        (f) =>
+          `  ${mark(f)}${f.verdict === "pass" && f.coverage === "partial" ? "+" : " "} ${f.ruleId.padEnd(3)} ${f.detail}${f.excused ? " (excused)" : ""}`,
       );
+      // Named, not counted. `fullyVerified: false` with nothing beside it is the same
+      // information-free verdict this project criticises a CLI for emitting — the caller learns
+      // that something is missing and nothing about what. Printed in full rather than
+      // summarised because these ARE the report's caveats; the JSON carries the same list under
+      // `evidenceGaps`.
+      const gaps = r.evidenceGaps.map((e) => `    ${e.ruleId.padEnd(3)} ${e.gaps.join("; ")}`);
       // Both claims, on one line, always. The verdict answers "did anything VIOLATE a core
       // rule"; the counts beside it answer "and was everything actually established". Naming
       // the level is part of the claim, not decoration — A4 is core and silently excluded as
@@ -155,13 +174,26 @@ export async function checkCommand(
       // nothing on either line naming the scope that made them differ.
       const verdict = r.conformant ? "CONFORMANT" : "NOT CONFORMANT";
       return [
-        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified  ${r.target}`,
+        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered  ${r.target}`,
         "",
         ...lines,
         "",
-        `  core ${r.counts.corePassed}/${r.counts.core} · violations ${r.counts.coreFailures} · unverified ${r.counts.unverified} (all tiers; ${r.counts.coreUnverified} core) · diagnostics ${r.counts.diagnosticFailures}`,
-        `  ${r.fullyVerified ? "every applicable core rule was verified" : "conformance means no core rule was VIOLATED; an unverified rule was probed and could not be established"}`,
+        `  core ${r.counts.corePassed}/${r.counts.core} · violations ${r.counts.coreFailures} · unverified ${r.counts.unverified} (all tiers; ${r.counts.coreUnverified} core) · partial coverage ${r.counts.corePartial} core · diagnostics ${r.counts.diagnosticFailures}`,
+        // Two claims, and the weaker one now has to say what it is short of. "Conformant but not
+        // fully verified" is the honest resting state of an L0 run against almost any target,
+        // including acc itself, and a report that did not spell out the difference would leave a
+        // reader assuming the headline covered both.
+        `  ${
+          r.fullyVerified
+            ? "every applicable core rule was verified in full"
+            : "conformance means no core rule was VIOLATED; it does not mean every core rule was established"
+        }`,
+        ...(gaps.length
+          ? ["", `  NOT FULLY VERIFIED (${r.level}) — what the evidence does not cover:`, ...gaps]
+          : []),
+        "",
         "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable at this level",
+        "  PASS+ passed, but the checker establishes only part of its rule — see the gaps above",
         ...(r.staleExpectations.length
           ? [`  stale expectations (now passing, remove them): ${r.staleExpectations.join(", ")}`]
           : []),

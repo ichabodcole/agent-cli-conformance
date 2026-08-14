@@ -7,12 +7,17 @@ description:
 tags: [safety, schema, secrets, core]
 related: [concept/machine-mode, rule/help-output-is-deterministic]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: F1
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/safety/no-secrets-in-help.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - only root help is scanned and never schema output or error messages
+  - only seven known credential shapes are matched so a bespoke token is invisible
+  - a secret carried as a flag default is only seen if help prints defaults
 ---
 
 # Help and schema never contain secrets

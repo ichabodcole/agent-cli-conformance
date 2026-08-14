@@ -13,6 +13,9 @@ tier: diagnostic
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/advertises-machine-mode.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - help is only required to advertise either the machine-mode flag or a schema command and never both
 ---
 
 # Help advertises the machine-readable path

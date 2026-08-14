@@ -21,6 +21,18 @@ export const neverBlockChecker: Checker = {
   rulePath: "docs/wiki/rules/interactivity/never-block-without-a-tty.md",
   tier: "core",
   probeLevel: "L0",
+  // Every probe below is inert BY CONSTRUCTION, and an operation that genuinely requires a
+  // decision is by definition not inert — so the paths where a CLI would actually prompt are
+  // exactly the paths this checker is forbidden to reach at L0. Its pass detail already scopes
+  // itself to "inert invocations" for that reason. The exit-8 clause needs one of those paths
+  // to reach at all, and the EOF clause is invisible to a runner that only sees termination: a
+  // CLI reading closed stdin as "yes" terminates just as promptly as one that refuses.
+  coverage: "partial",
+  coverageGaps: [
+    "only inert paths are probed so a real confirmation path is never reached",
+    "the structured confirmation_required response and its exit 8 are not established",
+    "treating EOF or closed stdin as an answer is not detectable from termination alone",
+  ],
 
   // The unknown-VERB probe is not decoration. E1 is the catalogue's backstop for hangs, and
   // the verb path is where an agent-facing CLI is most likely to block: a tool that "corrects"

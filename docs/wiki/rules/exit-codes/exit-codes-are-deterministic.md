@@ -7,12 +7,17 @@ description:
 tags: [exit-codes, determinism, core]
 related: [concept/exit-codes, rule/help-output-is-deterministic]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: C3
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/exit-codes/deterministic.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - three textually distinct flags are compared rather than one invocation repeated
+  - only usage-error invocations are compared and only three times
+  - the retryable declaration for genuinely intermittent failures is not exercised
 ---
 
 # Identical invocations produce identical exit codes

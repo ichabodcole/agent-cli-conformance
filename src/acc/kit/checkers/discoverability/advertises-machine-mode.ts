@@ -54,6 +54,15 @@ export const advertisesMachineModeChecker: Checker = {
   rulePath: "docs/wiki/rules/discoverability/help-advertises-machine-mode.md",
   tier: "diagnostic",
   probeLevel: "L0",
+  // The rule asks for the flag AND the `schema` command "where one exists"; the verdict below
+  // is a disjunction, so a CLI with an unadvertised `schema` command passes on `--json` alone.
+  // Black-box, there is no way to know a schema command exists without finding it in the help
+  // this rule is testing, so the conjunction is not checkable at L0 — which is the reason for
+  // the disjunction, not an excuse for leaving it undeclared.
+  coverage: "partial",
+  coverageGaps: [
+    "help is only required to advertise either the machine-mode flag or a schema command and never both",
+  ],
 
   probes: (d): Invocation[] => [
     { args: ["--help"], inertness: "help-path", purpose: PLAIN },

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildReport, primaryProblem } from "./report.ts";
-import type { Checker, Finding, History, Observation, ProbeLevel } from "./types.ts";
+import type { Checker, Coverage, Finding, History, Observation, ProbeLevel } from "./types.ts";
 
 const H: History = {
   target: { path: "x", argv0: ["x"] },
@@ -9,15 +9,23 @@ const H: History = {
   byId: new Map(),
 };
 
+// `coverage` defaults to `complete` HERE and nowhere else. The Checker interface deliberately
+// has no default, because a real checker inheriting `complete` in silence is the drift the
+// field exists to remove; in this file most cases are about the verdict algebra and would be
+// obscured by repeating a coverage argument on every line. The cases that ARE about coverage
+// pass it explicitly.
 const checker = (
   ruleId: string,
   tier: "core" | "diagnostic",
   probeLevel: ProbeLevel = "L0",
+  coverage: Coverage = "complete",
 ): Checker => ({
   ruleId,
   rulePath: `docs/wiki/rules/x/${ruleId}.md`,
   tier,
   probeLevel,
+  coverage,
+  coverageGaps: coverage === "partial" ? [`${ruleId} does not probe the nested case`] : [],
   probes: () => [],
   check: () => ({ ruleId, verdict: "pass", detail: "", evidence: [] }),
 });
@@ -157,7 +165,11 @@ describe("buildReport", () => {
   // rule with no path to green: nothing it could change would clear the rule, and the
   // expectations file had no way to acknowledge that.
   describe("the ratchet excuses unverified, not only failures", () => {
-    test("an excused unverified core rule does not gate fullyVerified", () => {
+    // Review R3-4. The excuse used to be subtracted from `coreUnverified` as well, which let a
+    // project write itself a note about a rule nothing had established and receive "fully
+    // verified" over the hole. An excuse is an organisation deciding it can live with a defect;
+    // it is not evidence, so it suppresses the CONFORMANCE gate and nothing else.
+    test("an excused unverified core rule still gates fullyVerified, but not conformance", () => {
       const r = buildReport(
         H,
         [finding("B3", "unverified")],
@@ -166,8 +178,26 @@ describe("buildReport", () => {
         "L0",
       );
       expect(r.findings[0]?.excused).toBe(true);
-      expect(r.fullyVerified).toBe(true);
-      expect(r.counts.coreUnverified).toBe(0);
+      expect(r.conformant).toBe(true);
+      expect(r.fullyVerified).toBe(false);
+      // The gap is still counted, and still named.
+      expect(r.counts.coreUnverified).toBe(1);
+      expect(r.evidenceGaps).toEqual([{ ruleId: "B3", gaps: ["unverified: d"] }]);
+    });
+
+    // The other half of the same ruling: an excused core FAILURE does clear conformance, which
+    // is the whole point of the expectations file, and it still cannot buy full verification.
+    test("an excused core failure clears conformance and not the evidence claim", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "fail")],
+        [checker("A1", "core")],
+        { knownFailures: { A1: "legacy parser" } },
+        "L0",
+      );
+      expect(r.conformant).toBe(true);
+      expect(r.fullyVerified).toBe(false);
+      expect(r.evidenceGaps).toEqual([{ ruleId: "A1", gaps: ["fail: d"] }]);
     });
 
     test("an UNexcused unverified core rule still gates fullyVerified", () => {
@@ -201,6 +231,102 @@ describe("buildReport", () => {
         "L0",
       );
       expect(r.findings[0]?.excused).toBe(false);
+    });
+  });
+
+  // Review R1-4. Several checkers pass while their own detail admits part of the rule was never
+  // established — C2's "internal-fault contrast unverified at L0", A2's "nested case not probed
+  // at L0". `buildReport` counted those as ordinary passes, so `fullyVerified` spoke over
+  // acknowledged holes. `coverage` is that admission moved somewhere the report can count.
+  describe("partial coverage: a pass that is narrower than the rule it is filed under", () => {
+    test("a passing core rule with partial coverage blocks fullyVerified, not conformance", () => {
+      const r = buildReport(
+        H,
+        [finding("C2", "pass")],
+        [checker("C2", "core", "L0", "partial")],
+        { knownFailures: {} },
+        "L0",
+      );
+      expect(r.conformant).toBe(true);
+      expect(r.fullyVerified).toBe(false);
+      // Still a pass, and still counted as one: the probe ran and found no violation. It is the
+      // SCOPE that is smaller than the page, which is what the separate count is for.
+      expect(r.counts.corePassed).toBe(1);
+      expect(r.counts.corePartial).toBe(1);
+      expect(r.counts.coreUnverified).toBe(0);
+    });
+
+    test("the report names the gaps, so `false` is never the whole answer", () => {
+      const r = buildReport(
+        H,
+        [finding("C2", "pass")],
+        [checker("C2", "core", "L0", "partial")],
+        { knownFailures: {} },
+        "L0",
+      );
+      expect(r.evidenceGaps).toEqual([
+        { ruleId: "C2", gaps: ["C2 does not probe the nested case"] },
+      ]);
+    });
+
+    test("a rule that both failed to pass AND has gaps reports both reasons", () => {
+      const r = buildReport(
+        H,
+        [finding("C2", "unverified")],
+        [checker("C2", "core", "L0", "partial")],
+        { knownFailures: {} },
+        "L0",
+      );
+      expect(r.evidenceGaps).toEqual([
+        { ruleId: "C2", gaps: ["unverified: d", "C2 does not probe the nested case"] },
+      ]);
+    });
+
+    test("partial coverage on a DIAGNOSTIC rule gates neither claim", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "pass"), finding("F2", "pass")],
+        [checker("A1", "core"), checker("F2", "diagnostic", "L0", "partial")],
+        { knownFailures: {} },
+        "L0",
+      );
+      expect(r.fullyVerified).toBe(true);
+      expect(r.counts.corePartial).toBe(0);
+      expect(r.evidenceGaps).toEqual([]);
+    });
+
+    test("partial coverage ABOVE the run level gates neither claim", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "pass"), finding("A4", "pass")],
+        [checker("A1", "core"), checker("A4", "core", "L1", "partial")],
+        { knownFailures: {} },
+        "L0",
+      );
+      expect(r.fullyVerified).toBe(true);
+      expect(r.evidenceGaps).toEqual([]);
+    });
+
+    // Same fallback discipline as `probeLevel`: an unregistered checker is assumed core, L0 and
+    // now `partial`, so a wiring bug shows up as a withheld claim rather than silently
+    // upgrading a rule to "fully established".
+    test("a finding with no matching checker is assumed partial, never complete", () => {
+      const r = buildReport(H, [finding("A1", "pass")], [], { knownFailures: {} }, "L0");
+      expect(r.findings[0]?.coverage).toBe("partial");
+      expect(r.fullyVerified).toBe(false);
+      expect(r.evidenceGaps[0]?.ruleId).toBe("A1");
+    });
+
+    test("evidenceGaps is empty exactly when fullyVerified is true", () => {
+      const complete = buildReport(
+        H,
+        [finding("A1", "pass")],
+        [checker("A1", "core")],
+        { knownFailures: {} },
+        "L0",
+      );
+      expect(complete.fullyVerified).toBe(true);
+      expect(complete.evidenceGaps).toEqual([]);
     });
   });
 

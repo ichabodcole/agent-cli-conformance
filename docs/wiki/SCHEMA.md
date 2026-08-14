@@ -90,18 +90,35 @@ tier: core # core (binary pass/fail) | diagnostic (reported, non-fatal)
 probe_level: L0 # L0 inert | L1 declared read-only | L2 contained mutating
 checker: src/acc/kit/checkers/parsing/unknown-flag.ts
 checker_status: planned # planned | implemented
+coverage: partial # complete | partial — how much of THIS page the checker establishes
+coverage_gaps: # one phrase per normative clause the checker does not establish
+  - only the root is probed so a flag unknown to a subcommand is not
 ```
 
 `checker_status` is the ratchet. A rule may declare its `checker` path before the file exists;
 the lint only requires the file once the status is `implemented`. The count of `planned` rules
 is the remaining work, and it only ever goes down.
 
+`coverage` is a different axis, and the two are routinely confused: `checker_status` says a
+file exists, `coverage` says how much of this page's normative text that file establishes. A
+rule stating five **MUST**s whose checker tests two is `partial`, however finished the checker
+is. `complete` **MUST** carry an empty `coverage_gaps`; `partial` **MUST** carry at least one
+entry, so it can never be a bare flag admitting a hole while naming none of it. The gaps are
+what [`fullyVerified`](./concepts/conformance.md#coverage-a-pass-can-be-narrower-than-its-rule)
+withholds itself over, and what `acc check` prints when it does.
+
+A gap phrase is read back by a deliberately small frontmatter parser that splits list items on
+a comma and on a space-hyphen-space sequence, so it must contain neither. The kit's own
+registry test rejects both at the source rather than letting the lint fail with a mismatch that
+explains nothing.
+
 Two properties this buys, and the reason rules are pages rather than sections:
 
 - **Conformance failures cite the page.** The kit emits the rule's path, so whoever hit the
   failure lands on one atomic page explaining the rule and how to fix it.
 - **The lint is bidirectional.** Every `rule_id` must have its declared checker file, and
-  every checker must have a rule page. Documentation drift fails the gate.
+  every checker must have a rule page. `tier`, `probe_level`, `coverage` and `coverage_gaps`
+  must be identical on both sides. Documentation drift fails the gate.
 
 `rule_id` values are **append-only**. They appear in conformance reports that outlive any
 given release — renumbering one silently invalidates every stored report. Same discipline as

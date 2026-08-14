@@ -13,6 +13,11 @@ tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/unknown-command.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - nested subcommands are not probed at L0
+  - the exit code is only required to be non-zero here and not the declared 2
+  - naming the offending verb on stderr is not asserted
 ---
 
 # Unknown commands must exit non-zero

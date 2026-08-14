@@ -23,6 +23,12 @@ export const unexpectedPositionalsChecker: Checker = {
   rulePath: "docs/wiki/rules/parsing/unexpected-positionals-rejected.md",
   tier: "core",
   probeLevel: "L1",
+  // The whole rule is the gap, which is the honest reading of a checker that declares no probes
+  // and returns one fixed `unverified`. `coverage` describes what a PASS from this file would
+  // mean, and there is no pass to describe yet — `complete` here would be a promise about an
+  // L1 implementation that does not exist.
+  coverage: "partial",
+  coverageGaps: ["no probe is declared so nothing about arity is established"],
 
   probes: (): Invocation[] => [],
   check: (): Finding =>

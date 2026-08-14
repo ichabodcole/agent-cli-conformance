@@ -7,12 +7,17 @@ description:
 tags: [exit-codes, discoverability, core]
 related: [concept/exit-codes, rule/bare-invocation-is-a-usage-error]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: C1
 tier: core
 probe_level: L0
 checker: src/acc/kit/checkers/exit-codes/help-exits-zero.ts
 checker_status: implemented
+coverage: partial
+coverage_gaps:
+  - nested help is not probed at L0
+  - a help subcommand is not probed
+  - appending --help to an otherwise complete invocation is not probed
 ---
 
 # Help is a request, and it succeeds

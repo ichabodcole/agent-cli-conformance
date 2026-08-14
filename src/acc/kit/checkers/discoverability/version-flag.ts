@@ -12,6 +12,18 @@ export const versionFlagChecker: Checker = {
   rulePath: "docs/wiki/rules/discoverability/version-flag-exists.md",
   tier: "core",
   probeLevel: "L0",
+  // The hostile-HOME probe establishes exactly one of the four "no work" clauses: no
+  // configuration. No network, no credentials and no side effects are unobservable from what
+  // the runner records (argv, streams, status, timing) — establishing them needs the network
+  // and filesystem observation L1/L2 are for. The machine-mode clause is the one the reference
+  // CLI itself violated for months: `--version --json` emitted the bare string `0.0.0`, and no
+  // probe here ever asks for machine mode.
+  coverage: "partial",
+  coverageGaps: [
+    "the structured machine-mode version payload is never inspected",
+    "no network and no credentials and no side effects cannot be observed at L0",
+    "the SHOULD to support -V is not probed",
+  ],
 
   probes: (): Invocation[] => [
     { args: ["--version"], inertness: "help-path", purpose: "D1: --version" },
