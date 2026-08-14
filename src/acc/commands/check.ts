@@ -150,13 +150,18 @@ export async function checkCommand(
       // rule"; the counts beside it answer "and was everything actually established". Naming
       // the level is part of the claim, not decoration — A4 is core and silently excluded as
       // N/A at L0, so a bare "CONFORMANT" overstates what was checked.
+      //
+      // Both counts here are CORE, and both say so. The summary line below counts `unverified`
+      // across every tier, so the two lines legitimately disagree — a target with one
+      // diagnostic gap and no core one printed "0 unverified" above "unverified 1", with
+      // nothing on either line naming the scope that made them differ.
       const verdict = r.conformant ? "CONFORMANT" : "NOT CONFORMANT";
       return [
-        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} violated, ${r.counts.coreUnverified} unverified  ${r.target}`,
+        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified  ${r.target}`,
         "",
         ...lines,
         "",
-        `  core ${r.counts.corePassed}/${r.counts.core} · violations ${r.counts.coreFailures} · unverified ${r.counts.unverified} · diagnostics ${r.counts.diagnosticFailures}`,
+        `  core ${r.counts.corePassed}/${r.counts.core} · violations ${r.counts.coreFailures} · unverified ${r.counts.unverified} (all tiers; ${r.counts.coreUnverified} core) · diagnostics ${r.counts.diagnosticFailures}`,
         `  ${r.fullyVerified ? "every applicable core rule was verified" : "conformance means no core rule was VIOLATED; an unverified rule was probed and could not be established"}`,
         "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable at this level",
         ...(r.staleExpectations.length

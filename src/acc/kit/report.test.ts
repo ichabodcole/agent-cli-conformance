@@ -55,10 +55,11 @@ describe("buildReport", () => {
 
   // The ruling this file's `conformant` semantics rest on — see
   // docs/wiki/concepts/conformance.md. `conformant` answers "did anything VIOLATE a core rule";
-  // `fullyVerified` answers "and was every core rule actually established". Conflating them
-  // made `git`, `gh` and `kubectl` non-conformant with zero violations: for not advertising
-  // --json (B3 unverified) and for exiting 1 rather than 2 (C2 unverified), neither of which
-  // breaks any rule.
+  // `fullyVerified` answers "and was every core rule actually established". `acc check
+  // $(which git)` is the case that separates them: B3 comes back `unverified` because git
+  // advertises no machine-mode flag — nothing git did wrong — in the same report as two things
+  // it did do (C2, an unknown flag exiting 129 against an unknown verb exiting 1; D2, bare
+  // `git` writing its usage to stdout). Conflating the claims made those three indistinguishable.
   describe("conformance is about VIOLATIONS; verification is a separate claim", () => {
     test("an UNVERIFIED core rule does not count as a pass", () => {
       const r = buildReport(

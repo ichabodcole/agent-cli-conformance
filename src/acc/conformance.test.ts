@@ -372,7 +372,10 @@ describe("acc check — the outcome exit code", () => {
   test("the text verdict states both claims and names the probe level", async () => {
     const conforming = join(dirname(CLI), "kit/fixtures/conforming.ts");
     const r = await run(["check", conforming, "--format", "text"]);
-    expect(r.stdout).toMatch(/CONFORMANT \(L0\) — \d+ violated, \d+ unverified/);
+    expect(r.stdout).toMatch(/CONFORMANT \(L0\) — \d+ core violated, \d+ core unverified/);
+    // The headline is core-scoped and the summary counts every tier, so the same word carries
+    // two different numbers three lines apart. Both must name their scope.
+    expect(r.stdout).toMatch(/unverified \d+ \(all tiers; \d+ core\)/);
   }, 30_000);
 
   // Finding 4: the not_found path (a target that doesn't exist) had no coverage at all — `check`

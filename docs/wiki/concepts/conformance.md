@@ -51,14 +51,33 @@ reported, counted, and never blocks either claim.
 Splitting the two claims is a correctness fix, not a softening.
 
 Conflating them — treating an unverified core rule as disqualifying — makes the verdict say
-something false. `git`, `gh` and `kubectl` all come back non-conformant with **zero
-violations**: `git` because it advertises no machine-mode flag, so
-[B3](../rules/streams/machine-output-is-parseable.md) has nothing to parse, and because it
-exits `129` rather than the declared `2`, which
-[C2](../rules/exit-codes/usage-errors-are-distinguishable.md) reports as unverified rather than
-guessing. Neither is a violation of anything. A verdict that calls them failures is a verdict
-nobody can act on, and the first thing a maintainer does with an unactionable gate is turn it
-off.
+something false. `git` is the illustration, and it is a good one precisely because it is not a
+clean sheet. `acc check $(which git)`, against git 2.55.0, with the twelve passing rules elided:
+
+```
+NOT CONFORMANT (L0) — 2 violated, 1 unverified
+
+  UNVR  B3  no machine-mode flag was advertised in help, so there is nothing to parse
+  FAIL  C2  the same error class produced different codes (129,1)
+  FAIL  D2  bare invocation wrote 2290 bytes to stdout
+  FAIL  D3  help names no machine-mode flag or schema command; B3 will be unverified as a result
+
+  core 12/15 · violations 2 · unverified 1 (all tiers; 1 core) · diagnostics 1
+```
+
+D3 is `diagnostic`, so it is reported and binds nothing. Of the two that do bind, both are real
+violations and `git` is non-conformant for them, on their own merits:
+[C2](../rules/exit-codes/usage-errors-are-distinguishable.md) because an unknown flag exits
+`129` while an unknown verb exits `1`, so one error class answers with two codes; and
+[D2](../rules/discoverability/bare-invocation-is-a-usage-error.md) because bare `git` writes
+its usage text to stdout, where a consumer reads it as output, rather than to stderr.
+
+The third line is not a violation of anything. `git` advertises no machine-mode flag, so
+[B3](../rules/streams/machine-output-is-parseable.md) has nothing to parse and says so —
+"could not establish it", not "broke it". Counted as a failure it would have told git's
+maintainers they had broken three rules, one of which names nothing they did wrong, mixed in
+with two they can act on today. The first thing a maintainer does with a gate that cannot tell
+those apart is turn it off.
 
 The opposite error is worse, and it is the one this whole catalogue exists to prevent: letting
 `unverified` quietly count as a pass. A probe that could not run is not a probe that succeeded.
@@ -86,14 +105,23 @@ the line to delete.
 
 ### What the counts mean
 
-The text verdict line states both claims at once:
+The text verdict line states both claims at once. Both of its numbers are core and unexcused,
+and both say so:
 
 ```
-CONFORMANT (L0) — 0 violated, 2 unverified
-NOT CONFORMANT (L0) — 3 violated, 1 unverified
+CONFORMANT (L0) — 0 core violated, 2 core unverified
+NOT CONFORMANT (L0) — 3 core violated, 1 core unverified
 ```
 
-Both numbers are core and unexcused. The level is named because it bounds the claim: at `L0`,
+The summary line at the foot of the report counts `unverified` across **every** tier, so the
+two lines can legitimately disagree — a target with one diagnostic gap and no core one shows
+`0` above and `1` below. Both scopes are named rather than left to the reader to reconcile:
+
+```
+  core 12/15 · violations 2 · unverified 1 (all tiers; 1 core) · diagnostics 1
+```
+
+The level is named because it bounds the claim: at `L0`,
 [A4](../rules/parsing/unexpected-positionals-rejected.md) is core but out of scope, so a bare
 "CONFORMANT" would overstate what was checked.
 

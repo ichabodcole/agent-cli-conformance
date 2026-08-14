@@ -34,9 +34,11 @@ export interface Report {
    * number rather than fixing the implementation (the Acid3 "Potemkin village" critique).
    *
    * Deliberately NOT "everything was verified". An unverified core rule is a gap in the
-   * EVIDENCE, not a defect in the target, and conflating the two made `git`, `gh` and
-   * `kubectl` non-conformant for not advertising `--json` and for exiting 1 rather than 2 —
-   * neither of which is a violation of anything. `fullyVerified` carries that second claim.
+   * EVIDENCE, not a defect in the target, and `git` is the case that settles the difference:
+   * B3 reports `unverified` because git advertises no machine-mode flag, which is nothing git
+   * did wrong — in the same report as two things it did (C2: an unknown flag exits 129 while
+   * an unknown verb exits 1; D2: bare `git` writes its usage to stdout). Conflating the two
+   * claims made all three lines look alike. `fullyVerified` carries that second claim.
    */
   conformant: boolean;
   /** `conformant` AND no applicable core rule is `unverified`. The stronger claim: every core
