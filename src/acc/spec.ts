@@ -37,11 +37,32 @@ export interface CommandSpec {
   cardinality: "single" | "bounded" | "unbounded";
   positionals: PositionalSpec[];
   args: ArgSpec[];
+  /** ADDITIONAL kinds this command's handler can produce. The parser-level kinds every command
+   *  can hit are added by `errorsOf` — declaring them here would be restating them six times. */
   errors: ErrorKindValue[];
   examples: string[];
   /** Caveats a caller must read BEFORE running the command, rendered above the examples in
    *  help. Distinct from `description`, which has to stay one line for the command list. */
   notes?: string[];
+}
+
+/**
+ * Error kinds EVERY command can produce, whatever its handler declares.
+ *
+ * `usage` because the parser runs before any handler: an unknown option or a stray positional
+ * fails identically on `tags` and on `check`. `internal` because an unclassified fault is
+ * reported as `internal` by the boundary in cli.ts, and no command can promise it has none.
+ *
+ * These are unioned into every command by `errorsOf` rather than restated six times. `acc tags
+ * extra` and `acc schema --bogus` were both structured `usage` errors at exit 2 while the
+ * schema declared only `["internal"]` for those commands — telling a machine caller an outcome
+ * could not happen when it plainly could.
+ */
+export const PARSER_ERRORS: ErrorKindValue[] = [ErrorKind.Usage, ErrorKind.Internal];
+
+/** Every kind a command can produce: the parser's, plus whatever its handler declares. */
+export function errorsOf(spec: CommandSpec): ErrorKindValue[] {
+  return [...new Set([...spec.errors, ...PARSER_ERRORS])];
 }
 
 /** Available on every command. Declared once so no subcommand can forget it — the citty
@@ -91,7 +112,7 @@ export const COMMANDS: CommandSpec[] = [
         valueHint: "tag",
       },
     ],
-    errors: [ErrorKind.Usage, ErrorKind.Internal],
+    errors: [],
     examples: ["acc rules", "acc rules --tier core", "acc rules --tag silent-failure --json"],
   },
   {
@@ -108,7 +129,7 @@ export const COMMANDS: CommandSpec[] = [
       },
     ],
     args: [{ name: "--body", type: "boolean", description: "Include the full page text." }],
-    errors: [ErrorKind.NotFound, ErrorKind.Usage, ErrorKind.Internal],
+    errors: [ErrorKind.NotFound],
     examples: ["acc show A1", "acc show exit-codes --body", "acc show A1 --json"],
   },
   {
@@ -122,7 +143,7 @@ export const COMMANDS: CommandSpec[] = [
       { name: "to", description: "Destination page handle.", required: true },
     ],
     args: [],
-    errors: [ErrorKind.NotFound, ErrorKind.Usage, ErrorKind.Internal],
+    errors: [ErrorKind.NotFound],
     examples: ["acc path A1 exit-codes", "acc path B1 delegator --json"],
   },
   {
@@ -133,7 +154,7 @@ export const COMMANDS: CommandSpec[] = [
     cardinality: "bounded",
     positionals: [],
     args: [],
-    errors: [ErrorKind.Internal],
+    errors: [],
     examples: ["acc tags", "acc tags --json"],
   },
   {
@@ -144,7 +165,7 @@ export const COMMANDS: CommandSpec[] = [
     cardinality: "single",
     positionals: [],
     args: [],
-    errors: [ErrorKind.Internal],
+    errors: [],
     examples: ["acc schema", "acc schema | jq '.commands[].name'"],
   },
   {
@@ -164,7 +185,7 @@ export const COMMANDS: CommandSpec[] = [
         valueHint: "dir",
       },
     ],
-    errors: [ErrorKind.NotFound, ErrorKind.Usage, ErrorKind.Internal],
+    errors: [ErrorKind.NotFound],
     // The gate's guarantee, stated where someone is about to point this at a binary. L0 probes
     // are inert against a CLI that dispatches on a verb table; they are NOT inert against one
     // whose first positional is free-form text, where the probe token is a prompt rather than

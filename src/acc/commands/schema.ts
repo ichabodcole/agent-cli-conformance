@@ -1,6 +1,6 @@
 import { emit, type OutputMode } from "../envelope.ts";
 import { ERROR_KINDS } from "../exit-codes.ts";
-import { COMMANDS, GLOBAL_ARGS } from "../spec.ts";
+import { COMMANDS, errorsOf, GLOBAL_ARGS } from "../spec.ts";
 import { VERSION } from "../version.ts";
 
 /**
@@ -27,7 +27,10 @@ export function schemaCommand(mode: OutputMode, startedAt: number): void {
       cardinality: c.cardinality,
       positionals: c.positionals,
       args: c.args,
-      errors: c.errors,
+      // Derived, not copied. Every command can fail in the parser before its handler runs, so
+      // `usage` belongs to all six whether or not any of them declared it — a schema that says
+      // an outcome cannot happen, while it plainly can, is worse than one that says nothing.
+      errors: errorsOf(c),
       examples: c.examples,
       // Serialised too: a caveat that only a human reading `--help` can see is invisible to
       // exactly the caller this whole tool is built for.

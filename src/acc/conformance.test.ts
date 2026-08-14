@@ -360,6 +360,42 @@ describe("every declared closed set is enforced", () => {
   });
 });
 
+// A schema that omits an outcome tells a machine caller the outcome cannot happen. `acc tags
+// extra` and `acc schema --bogus` were both structured `usage` errors at exit 2 while the
+// schema declared only `["internal"]` for those two commands.
+//
+// Provoked against EVERY command, both ways, because the parser runs before every handler:
+// nothing about `tags` made it immune, it simply never declared what it could already do.
+describe("the schema declares every error kind a command can produce", () => {
+  const provocations = COMMANDS.flatMap((c) => {
+    // One filler token per declared positional, so the extra one is the ONLY thing wrong —
+    // otherwise `acc show extra` is a missing-argument error, not a surplus-argument one.
+    const filler = c.positionals.map((_, i) => `acc-probe-positional-${i}`);
+    return [
+      [`${c.name}: unknown option`, c.name, [c.name, ...filler, "--acc-probe-bogus-xyz"]],
+      [`${c.name}: extra positional`, c.name, [c.name, ...filler, "acc-probe-extra-xyz"]],
+    ] as const;
+  });
+
+  test("every provoked kind is declared for the command that produced it", async () => {
+    const schema = JSON.parse((await run(["schema", "--json"])).stdout).data;
+    const declared = new Map<string, string[]>(
+      schema.commands.map((c: { name: string; errors: string[] }) => [c.name, c.errors]),
+    );
+
+    for (const [label, command, args] of provocations) {
+      const r = await run([...args, "--json"]);
+      const env = JSON.parse(r.stderr);
+      expect({ label, code: r.code, stdout: r.stdout }).toEqual({ label, code: 2, stdout: "" });
+      expect({ label, kind: env.error.kind, declared: declared.get(command) }).toEqual({
+        label,
+        kind: env.error.kind,
+        declared: expect.arrayContaining([env.error.kind]),
+      });
+    }
+  }, 30_000);
+});
+
 describe("schema", () => {
   test("describes every command the parser accepts, and nothing it does not", async () => {
     const r = await run(["schema"]);
