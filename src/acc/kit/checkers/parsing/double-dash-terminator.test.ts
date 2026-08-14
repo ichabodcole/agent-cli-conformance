@@ -8,32 +8,32 @@ import { doubleDashTerminatorChecker } from "./double-dash-terminator.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /**
- * A6's probe leads with a bare `--` (see `double-dash-terminator.ts`), which is correct for a
- * real target binary — the OS delivers argv to a spawned process unmodified.
+ * A6 is the one rule in the catalogue that cannot be exercised against a `.ts` fixture at all.
  *
- * Our own fixtures are `.ts` files interpreted BY Bun, though, and Bun's own CLI silently
- * consumes exactly one leading `--` immediately after the script path before the script ever
- * sees `process.argv` — confirmed by direct experiment (`bun script.ts -- --x` delivers
- * `process.argv.slice(2)` as `["--x"]`, not `["--", "--x"]`; true with a shebang, with
- * `bun run`, and independent of any other flags). That is a property of how Bun launches
- * scripts, not a bug in the checker or in `runProbe`/`record` — it would equally strip the
- * leading `--` from a real Bun-authored CLI probed the same way, but never applies to the
- * compiled or non-Bun-interpreted binaries this kit is built to target.
+ * Its probe leads with a bare `--`, and Bun consumes exactly one such token immediately after
+ * the script path before the script sees `process.argv` — confirmed by direct experiment, and
+ * true of `bun <script>`, `bun run <script>`, `bun --bun <script>` and `bun -- <script>`
+ * alike. This test file used to work around it by appending a placeholder `--` to `argv0` so
+ * Bun would eat that one instead. That kept the TEST honest while the PRODUCT measured A1
+ * dressed as A6 for every `.ts` target — including `acc` itself, whose real answer is the
+ * opposite of the one it reported.
  *
- * The fix stays local to this test file: append one extra placeholder `--` to `argv0`. Bun
- * consumes THAT one (it is what's immediately after the script path), which leaves the
- * checker's own `--` intact for the fixture to see — restoring the exact argv the checker
- * declared, without touching the checker itself or the plain `fixture()` shape every other
- * checker's test uses (their probes don't start with `--`, so they never hit this).
+ * The checker now refuses to guess: any target launched through `bun` is `unverified`. So the
+ * fixtures here are POSIX shell, which passes a script's arguments through untouched.
  */
-const fixture = (rel: string): TargetInfo => {
+const shFixture = (rel: string): TargetInfo => {
+  const p = join(HERE, "../../fixtures/sh", rel);
+  return { path: p, argv0: ["sh", p] };
+};
+
+const bunFixture = (rel: string): TargetInfo => {
   const p = join(HERE, "../../fixtures", rel);
-  return { path: p, argv0: ["bun", p, "--"] };
+  return { path: p, argv0: ["bun", p] };
 };
 
 describe("A6 — the `--` terminator", () => {
-  test("PASSES the conforming fixture", async () => {
-    const h = await record(fixture("conforming.ts"), [doubleDashTerminatorChecker]);
+  test("PASSES a CLI that honours `--`", async () => {
+    const h = await record(shFixture("honours-double-dash.sh"), [doubleDashTerminatorChecker]);
     const f = doubleDashTerminatorChecker.check(h);
     expect(f.verdict).toBe("pass");
     expect(f.ruleId).toBe("A6");
@@ -42,14 +42,29 @@ describe("A6 — the `--` terminator", () => {
   // The negative control: a CLI that never honours `--` at all keeps scanning tokens after it
   // for flag shapes, so `-- --<sentinel>-value` is rejected as an unknown option.
   test("FAILS a CLI that ignores `--`", async () => {
-    const h = await record(fixture("broken/ignores-double-dash.ts"), [doubleDashTerminatorChecker]);
+    const h = await record(shFixture("ignores-double-dash.sh"), [doubleDashTerminatorChecker]);
     const f = doubleDashTerminatorChecker.check(h);
     expect(f.verdict).toBe("fail");
     expect(f.detail).toContain("still parsed as an option");
   });
 
+  // The regression this rule's rewrite exists for. Both fixtures below are `.ts`, and they
+  // disagree about `--` — conforming.ts honours it, ignores-double-dash.ts does not — so a
+  // checker that still believed the probe was delivered would return two different verdicts
+  // here. Through Bun neither ever receives the terminator, so the only honest answer is the
+  // same one for both.
+  test.each(["conforming.ts", "broken/ignores-double-dash.ts"])(
+    "reports unverified for %s, because bun swallows the probe's `--`",
+    async (rel) => {
+      const h = await record(bunFixture(rel), [doubleDashTerminatorChecker]);
+      const f = doubleDashTerminatorChecker.check(h);
+      expect(f.verdict).toBe("unverified");
+      expect(f.detail).toContain("bun");
+    },
+  );
+
   test("cites the observations backing its verdict", async () => {
-    const h = await record(fixture("conforming.ts"), [doubleDashTerminatorChecker]);
+    const h = await record(shFixture("honours-double-dash.sh"), [doubleDashTerminatorChecker]);
     const f = doubleDashTerminatorChecker.check(h);
     expect(f.evidence.length).toBeGreaterThan(0);
     for (const id of f.evidence) expect(h.byId.has(id)).toBe(true);

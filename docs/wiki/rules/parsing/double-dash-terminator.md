@@ -7,7 +7,7 @@ description:
 tags: [parsing, posix, diagnostic]
 related: [rule/unexpected-positionals-rejected, archetype/delegator]
 status: current
-updated: 2026-08-13
+updated: 2026-08-14
 rule_id: A6
 tier: diagnostic
 probe_level: L0
@@ -63,8 +63,29 @@ why the check reads stderr for that specific rejection rather than the exit code
 
 Note the inversion: for most parsing rules the probe asserts a rejection; here it asserts the
 absence of one naming a specific token. That inversion is what makes the probe non-obvious, not
-a reason it's less inert — a value-shaped sentinel after `--` has nothing for even a maximally
-permissive parser to execute.
+a reason it's less inert.
+
+### Where this probe cannot be delivered
+
+**Any target launched through `bun` reports `unverified`.** `bun <script> -- --x` hands the
+script `["--x"]`: Bun consumes exactly one bare `--` immediately after the script path, which
+is exactly this probe's shape. The target never receives the terminator, so what gets measured
+is [A1](./unknown-flag-exits-nonzero.md) wearing A6's name. No launcher form avoids it —
+`bun run`, `bun --bun` and `bun -- <script>` all strip the same token. The checker refuses to
+guess rather than reporting a verdict about an argv the target never saw.
+
+The kit's `.ts` fixtures inherit this, so A6's own tests use POSIX shell fixtures instead.
+
+### Where this probe is not inert
+
+After a terminator the sentinel is **guaranteed** to arrive as a positional — that is what the
+probe is testing. For a CLI whose root positional is a verb, nothing dispatches and nothing
+happens. For a CLI whose root positional is **free-form data** — `claude "…"`, `llm "…"`,
+`aider "…"` — the sentinel is a prompt, and running it spends money and may take actions.
+
+The kit cannot detect that shape and does not try: a wrong guess is worse than a documented
+limit. Probes run in a fresh temporary working directory, which bounds filesystem damage, but
+nothing bounds a network call. Do not point `acc check` at a CLI of that shape.
 
 ## How to comply
 
