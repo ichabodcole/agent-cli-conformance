@@ -16,6 +16,20 @@ export interface Invocation {
   inertness: "help-path" | "sentinel" | "no-verb" | "bare";
   /** Human-readable reason this probe exists; appears in findings as evidence. */
   purpose: string;
+  /**
+   * RECORDER-ONLY repetition index. Participates in `invocationId` so `record()`'s dedup keeps
+   * repetitions distinct, and is NEVER passed to the target — not as an argument, not through
+   * the environment. The target sees byte-identical argv across every repeat.
+   *
+   * This exists because C3's rule is "the SAME invocation produces the same exit code", and
+   * dedup made that unaskable: three identical probes collapsed into one recording. C3 worked
+   * around it with three textually distinct flags, which tests a different claim — a parser
+   * that hashed the token into its exit code would fail that deterministically, and one that is
+   * genuinely nondeterministic on repeated identical input would pass it (review R3-5). D4 and
+   * F2 predate this and still perturb `env` instead; that is visible to the target, and D4
+   * declares it as a coverage gap.
+   */
+  repeat?: number;
 }
 
 /** What actually happened. The unit the whole kit reasons over. */
@@ -180,10 +194,14 @@ export interface Checker {
 /**
  * Find a recorded observation by the exact args it was run with.
  *
- * Matches on `args` only — `env` is ignored. A checker that deliberately reuses identical args
- * under different env (D1's `--version` with a hostile `HOME`, D4's `--help` run twice, F2's
- * three timing runs) will have several observations collide on the same args, and this returns
- * whichever was recorded first, silently. Those checkers must use `findByPurpose` instead.
+ * Matches on `args` only — `env` AND `repeat` are ignored, and both are ways to produce the
+ * collision. A checker that deliberately reuses identical args under different env (D1's
+ * `--version` with a hostile `HOME`, D4's `--help` run twice, F2's three timing runs) or under
+ * a different `repeat` (C3's three identical runs) will have several observations collide on
+ * the same args, and this returns whichever was recorded first, silently. `repeat` is the
+ * sharper trap of the two: its whole design is that nothing in `args` distinguishes the
+ * repetitions, so a checker reaching for this function gets exactly one of the N runs it asked
+ * for. Those checkers must use `findByPurpose` instead.
  */
 export function findByArgs(h: History, args: string[]): Observation | undefined {
   const key = args.join("\0");

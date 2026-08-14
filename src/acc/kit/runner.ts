@@ -7,10 +7,17 @@ import type { Readable, Writable } from "node:stream";
 import { assertInert } from "./inert.ts";
 import type { Invocation, Observation, TargetInfo } from "./types.ts";
 
-/** Stable id over everything that affects the result, so two checkers asking for the same
- *  probe share one recording. */
+/**
+ * Stable id over everything that affects the result, so two checkers asking for the same probe
+ * share one recording.
+ *
+ * `repeat` is the one field in here that the target never sees (see `Invocation.repeat`): it
+ * exists solely to keep a deliberate repetition out of the dedup, which is what lets C3 ask
+ * "does the SAME invocation answer the same way" instead of perturbing the argv to get past
+ * `record()`. Everything else in this hash is something the child observes.
+ */
 export function invocationId(inv: Invocation): string {
-  const material = JSON.stringify({ args: inv.args, env: inv.env ?? {} });
+  const material = JSON.stringify({ args: inv.args, env: inv.env ?? {}, repeat: inv.repeat ?? 0 });
   return createHash("sha256").update(material).digest("hex").slice(0, 12);
 }
 

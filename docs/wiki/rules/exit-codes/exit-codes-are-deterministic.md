@@ -15,8 +15,8 @@ checker: src/acc/kit/checkers/exit-codes/deterministic.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - three textually distinct flags are compared rather than one invocation repeated
-  - only usage-error invocations are compared and only three times
+  - only one usage-error invocation shape is repeated and only three times
+  - unchanged state is assumed rather than established
   - the retryable declaration for genuinely intermittent failures is not exercised
 ---
 
@@ -51,18 +51,25 @@ two different things.
 Inert (`L0`).
 
 ```
-<cli> --<sentinel>-repeat-1
-<cli> --<sentinel>-repeat-2
-<cli> --<sentinel>-repeat-3
+<cli> --<sentinel>-flag
+<cli> --<sentinel>-flag
+<cli> --<sentinel>-flag
 ```
 
-Three textually distinct unknown-flag invocations, each rejected the same way by any conforming
-parser. They must stay distinct strings rather than three copies of one flag: the runner
-deduplicates invocations by their exact args before recording, and three identical args would
-collapse into a single recorded run — silently defeating the check. `--help` is not repeated
-here; a single sentinel-flag probe class is enough to catch gross nondeterminism cheaply, and
-`--help` repeated three times would need its own three distinct-but-equivalent invocations to
-survive the same dedup, for no additional coverage.
+One unknown-flag invocation, run three times. Byte-identical argv on every run, and an
+environment identical to the other two — which is what the rule's first word requires.
+
+Getting there needed a change in the recorder. The runner deduplicates invocations by an id
+derived from args and environment, so three identical probes used to collapse into one recorded
+run. The workaround was to send three textually distinct flags
+(`--<sentinel>-repeat-1/-2/-3`), and it measured the wrong thing: agreement across three
+_equivalent usage errors_ rather than repetition of one invocation. A parser that hashed the
+offending token into its exit code would fail that probe deterministically, and a parser
+genuinely nondeterministic on repeated identical input would pass it. `Invocation.repeat` now
+carries a recorder-only index — it takes part in the invocation id, so the repetitions stay
+distinct recordings, and it is never passed to the target as an argument or through the
+environment. A test using an argv-echoing fixture asserts exactly that, because a `repeat` that
+leaked into argv would silently restore the defect.
 
 Passes when all three runs return the same code.
 

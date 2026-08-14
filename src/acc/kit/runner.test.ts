@@ -205,4 +205,19 @@ describe("invocationId", () => {
     const b: Invocation = { ...a, env: { AI_AGENT: "probe" } };
     expect(invocationId(a)).not.toBe(invocationId(b));
   });
+
+  // The whole point of `repeat`: it must reach the id, so record()'s dedup keeps a deliberate
+  // repetition as N recordings, while reaching nothing the target can see. Without this, C3
+  // cannot ask its own question — three identical probes collapse into one.
+  test("distinguishes invocations that differ only by repeat", () => {
+    const a: Invocation = { args: ["--help"], inertness: "help-path", purpose: "p" };
+    expect(invocationId({ ...a, repeat: 1 })).not.toBe(invocationId({ ...a, repeat: 2 }));
+  });
+
+  // An absent `repeat` and `repeat: 0` are the same invocation, so adding the field to this
+  // hash did not renumber every existing probe's id.
+  test("an absent repeat hashes as 0", () => {
+    const a: Invocation = { args: ["--help"], inertness: "help-path", purpose: "p" };
+    expect(invocationId(a)).toBe(invocationId({ ...a, repeat: 0 }));
+  });
 });

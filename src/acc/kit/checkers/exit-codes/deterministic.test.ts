@@ -118,3 +118,60 @@ describe("C3 — exit codes are deterministic", () => {
     for (const id of f.evidence) expect(h.byId.has(id)).toBe(true);
   });
 });
+
+// The probe tests the rule its title names — falsified, not asserted.
+//
+// C3 used to run three textually DIFFERENT flags (`--<sentinel>-repeat-1/-2/-3`) because
+// record()'s dedup collapses identical probes into one recording. Agreement across those tests
+// "equivalent usage errors use a consistent exit code", which is a different claim in both
+// directions: a parser that hashed the offending token into its exit code fails it
+// deterministically, and a parser genuinely nondeterministic on repeated identical input passes
+// it (review R3-5).
+//
+// `Invocation.repeat` fixes that by giving the repetitions a recorder-only identity. The danger
+// is precisely that the fix could be undone invisibly — a `repeat` that leaked into argv or the
+// environment would restore the old defect while every test above still passed — so the
+// assertions below run against a fixture that reports what it actually received.
+describe("C3's three probes are the SAME invocation, three times", () => {
+  const ECHO = fixture("echoes-argv.ts");
+
+  test("identical args, distinct ids, and no repeat anywhere in the invocation", async () => {
+    const h = await record(ECHO, [deterministicChecker]);
+    const runs = h.observations.filter((o) => o.purposes.some((p) => p.startsWith("C3:")));
+    expect(runs).toHaveLength(3);
+
+    // One args vector, byte for byte, across all three.
+    const argSets = new Set(runs.map((o) => JSON.stringify(o.invocation.args)));
+    expect([...argSets]).toHaveLength(1);
+
+    // ...and three recordings nonetheless, which is what `repeat` buys. Without it, dedup keys
+    // on args + env and these three become one.
+    expect(new Set(runs.map((o) => o.id)).size).toBe(3);
+    expect(runs.map((o) => o.invocation.repeat).sort()).toEqual([1, 2, 3]);
+
+    // The repeat index reaches the id and nothing else the kit builds for the child.
+    for (const o of runs) {
+      expect({ id: o.id, args: o.invocation.args.join(" ") }).toEqual({
+        id: o.id,
+        args: expect.not.stringContaining("repeat"),
+      });
+      expect({ id: o.id, env: o.invocation.env }).toEqual({ id: o.id, env: undefined });
+    }
+  }, 30_000);
+
+  // The child's own account, which is the only witness that matters: the Observation stores the
+  // Invocation the KIT built, so a leak would be recorded just as faithfully as anything else.
+  test("the target observed identical argv, and no probe identity in its environment", async () => {
+    const h = await record(ECHO, [deterministicChecker]);
+    const runs = h.observations.filter((o) => o.purposes.some((p) => p.startsWith("C3:")));
+    const seen = runs.map((o) => JSON.parse(o.stderr) as { argv: string[]; injected: object });
+
+    expect(seen).toHaveLength(3);
+    // The fixture is only reached through `bun <path>`, so its own argv is the probe's args and
+    // nothing else — one distinct value across three runs.
+    const argvs = new Set(seen.map((s) => JSON.stringify(s.argv)));
+    expect([...argvs]).toHaveLength(1);
+    expect(seen[0]?.argv).toEqual(runs[0]?.invocation.args as string[]);
+    for (const s of seen) expect(s.injected).toEqual({});
+  }, 30_000);
+});

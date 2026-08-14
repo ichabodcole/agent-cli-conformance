@@ -7,10 +7,18 @@ const RULE_ID = "C3";
 
 const finding = findingFor(RULE_ID);
 
-// Three textually distinct arg vectors, all semantically identical (unknown-flag usage errors),
-// so the runner's dedup in record() does not collapse three "repeated" invocations into one
-// recording — which would defeat the entire point of a determinism check.
-const REPEATS = [1, 2, 3].map((n) => [`--${SENTINEL}-repeat-${n}`]);
+// ONE arg vector, run three times. The rule is "the SAME invocation, against unchanged state,
+// produces the same exit code", so the probe has to actually repeat an invocation.
+//
+// It used to be three textually DIFFERENT flags (`--<sentinel>-repeat-1/-2/-3`), because
+// record()'s dedup is keyed on the invocation id and three identical probes collapsed into one
+// recording. That measured agreement across three equivalent usage errors, which is a different
+// claim in both directions: a parser that hashed the offending token into its exit code would
+// fail it deterministically, and a parser genuinely nondeterministic on repeated identical
+// input would pass it (review R3-5). `Invocation.repeat` is the fix — a recorder-only index
+// that distinguishes the ids without reaching the target's argv or environment.
+const ARGS = [`--${SENTINEL}-flag`];
+const REPEATS = [1, 2, 3];
 
 /** C3 — docs/wiki/rules/exit-codes/exit-codes-are-deterministic.md */
 export const deterministicChecker: Checker = {
@@ -18,28 +26,31 @@ export const deterministicChecker: Checker = {
   rulePath: "docs/wiki/rules/exit-codes/exit-codes-are-deterministic.md",
   tier: "core",
   probeLevel: "L0",
-  // The first gap is the rule's own subject, which is why it is stated first and bluntly: the
-  // three probes are textually DIFFERENT flags (see REPEATS above), so what agrees is three
-  // equivalent usage errors, not one invocation repeated. A parser that hashed the token into
-  // its exit code would fail this deterministically and one that is genuinely nondeterministic
-  // on identical input would pass it.
+  // The probe now repeats one invocation, so "three distinct flags are compared" is no longer
+  // a gap. What remains is scope: one inert invocation shape, three times, which is a smoke
+  // test rather than proof — and the rule's second sentence, about declaring an intermittent
+  // failure as its own `retryable` code, needs a declaration the target has no way to make at
+  // L0.
   coverage: "partial",
   coverageGaps: [
-    "three textually distinct flags are compared rather than one invocation repeated",
-    "only usage-error invocations are compared and only three times",
+    "only one usage-error invocation shape is repeated and only three times",
+    "unchanged state is assumed rather than established",
     "the retryable declaration for genuinely intermittent failures is not exercised",
   ],
 
   probes: (): Invocation[] =>
-    REPEATS.map((args, i) => ({
-      args,
+    REPEATS.map((n) => ({
+      args: ARGS,
+      repeat: n,
       inertness: "sentinel" as const,
-      purpose: `C3: repeat ${i + 1}`,
+      purpose: `C3: repeat ${n}`,
     })),
 
   check: (h: History): Finding => {
-    // findByPurpose, not findByArgs: each repeat's args are unique by construction, but staying
-    // consistent with every other checker here avoids re-litigating which lookup is safe.
+    // findByPurpose is now REQUIRED, not a stylistic preference: all three repeats share one
+    // args vector with each other (and with A1's, A3's, B1's and C2's probes), and findByArgs
+    // matches on args while ignoring both env and repeat — it would return exactly one
+    // recording where three are needed. See types.ts's doc comment on findByArgs.
     const runs = findByPurpose(h, "C3:");
     if (runs.length < 3) {
       return finding("unverified", "fewer than three runs recorded", []);
@@ -72,8 +83,10 @@ export const deterministicChecker: Checker = {
     return new Set(codes).size === 1
       ? finding(
           "pass",
-          // Three runs is a smoke test, not proof. Report what was done, not what it implies.
-          `three equivalent invocations all exited ${codes[0]}`,
+          // Three runs is a smoke test, not proof. Report what was done, not what it implies —
+          // and say IDENTICAL, because "equivalent" is what this probe used to measure and the
+          // two words name different claims.
+          `three identical invocations all exited ${codes[0]}`,
           evidence,
         )
       : finding("fail", `exit codes varied: ${codes.join(",")}`, evidence);
