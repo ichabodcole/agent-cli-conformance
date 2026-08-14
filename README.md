@@ -55,10 +55,39 @@ invocations, so it is safe to run against any binary with no cooperation and no 
 a command declaring `read_only` is run in a snapshotted sandbox and the filesystem is diffed.
 A declaration that cannot be falsified is a comment that lies.
 
+### `acc`, the reference implementation
+
+`acc` explores the spec — and is built to satisfy it. That second part is the reason it
+exists: **a conformance kit with nothing that provably passes cannot tell "found a real
+defect" from "the checker is wrong."** `acc` is the positive control, and
+`src/acc/conformance.test.ts` runs the L0 probes against it on every commit, so it cannot
+quietly stop conforming.
+
+```bash
+acc rules --tier core      # the rules a conforming CLI must satisfy
+acc show A1                # one rule, with its links in and out
+acc show A1 --body         # ...and the full text
+acc path A1 delegator      # shortest link path between two pages
+acc tags
+acc schema                 # the machine-readable interface description
+```
+
+Its parser is built from `src/acc/spec.ts` — one declaration producing the parser, the help
+text, and `acc schema` together, so the three cannot drift. Adding a flag in one place adds it
+to all three; there is no way to add it to only one.
+
+Try the error contract directly:
+
+```bash
+acc show A99 --json        # exit 5, kind: not_found, and every valid handle as `choices`
+acc rules --tier nonsense  # exit 2, kind: usage, choices: ["core","diagnostic"]
+```
+
 ## Layout
 
 ```
 docs/wiki/     the spec and its rationale — see docs/wiki/SCHEMA.md before editing
+src/acc/       the reference implementation; spec.ts is its single source of truth
 research/      the evidence trail: four reports on case studies, frameworks,
                CLI-vs-MCP, and testing methodology. Cited by decision pages; not maintained.
 scripts/

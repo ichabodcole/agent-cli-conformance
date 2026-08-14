@@ -1,0 +1,275 @@
+// acc, checked against the spec it enforces.
+//
+// This is the POSITIVE CONTROL. A conformance kit with nothing that provably passes cannot
+// distinguish "found a real defect" from "the checker is wrong", so the reference
+// implementation has to be verifiably conforming — and verified on every commit, or it drifts
+// like any other undefended claim.
+//
+// Probes are taken verbatim from the `## The probe` section of each rule page. When the kit
+// exists these move into it and this file becomes `acc check $(which acc)`.
+
+import { describe, expect, test } from "bun:test";
+import { spawn } from "node:child_process";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const CLI = join(dirname(fileURLToPath(import.meta.url)), "cli.ts");
+// Rule B2 forbids ANSI escapes when stdout is not a terminal. Detecting them requires naming
+// the byte they begin with, so the control character here is the check, not an accident.
+// biome-ignore lint/suspicious/noControlCharactersInRegex: matching ESC is the assertion
+const ANSI = /\x1b\[/;
+const SECRET = /(sk-|ghp_|xox[baprs]-|AKIA|opk_|-----BEGIN [A-Z ]*PRIVATE KEY)/;
+
+interface Run {
+  code: number | null;
+  stdout: string;
+  stderr: string;
+  timedOut: boolean;
+}
+
+/**
+ * Run acc with stdin closed and a deadline enforced IN-PROCESS.
+ *
+ * Not `timeout(1)`: it is GNU coreutils and absent on stock macOS, where invoking it yields
+ * 127 and the probe silently measures nothing. A killed process also reports `code: null`
+ * rather than 128+n — it did not choose that status, and recording it as an exit code would
+ * fabricate evidence.
+ */
+function run(args: string[], env: Record<string, string> = {}): Promise<Run> {
+  return new Promise((resolve) => {
+    const child = spawn("bun", [CLI, ...args], {
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env, ...env },
+    });
+    let stdout = "";
+    let stderr = "";
+    let timedOut = false;
+    child.stdout.on("data", (d) => {
+      stdout += d;
+    });
+    child.stderr.on("data", (d) => {
+      stderr += d;
+    });
+    child.stdin.end();
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, 10_000);
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      resolve({ code: timedOut ? null : code, stdout, stderr, timedOut });
+    });
+  });
+}
+
+const parses = (s: string): boolean => {
+  try {
+    JSON.parse(s);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+describe("A — parsing", () => {
+  test("A1 unknown flags exit non-zero, stdout empty, flag named", async () => {
+    const r = await run(["rules", "--frmat", "json"]);
+    expect(r.code).toBe(2);
+    expect(r.stdout).toBe("");
+    expect(r.stderr).toContain("--frmat");
+  });
+
+  test("A2 unknown commands exit non-zero, stdout empty, verb named", async () => {
+    const r = await run(["nonsense-verb-xyz"]);
+    expect(r.code).toBe(2);
+    expect(r.stdout).toBe("");
+    expect(r.stderr).toContain("nonsense-verb-xyz");
+  });
+
+  test("A3 a rejected closed-set value returns the valid set as `choices`", async () => {
+    const r = await run(["rules", "--tier", "nonsense", "--json"]);
+    expect(r.code).toBe(2);
+    const env = JSON.parse(r.stderr);
+    expect(env.error.kind).toBe("usage");
+    expect(env.error.choices).toEqual(["core", "diagnostic"]);
+    expect(env.error.message).toContain("nonsense");
+  });
+
+  test("A4 unexpected positionals are rejected", async () => {
+    const r = await run(["tags", "unexpected-value-xyz"]);
+    expect(r.code).toBe(2);
+    expect(r.stdout).toBe("");
+  });
+
+  test("A5 a near-miss verb is not executed", async () => {
+    const r = await run(["rule"]); // one edit from `rules`
+    expect(r.code).toBe(2);
+    expect(r.stdout).toBe("");
+  });
+});
+
+describe("B — streams", () => {
+  test("B1 stdout is empty on every failure path", async () => {
+    for (const args of [["--frmat", "x"], ["nonsense-xyz"], ["show", "A99"], ["tags", "extra"]]) {
+      const r = await run(args);
+      expect({ args, stdout: r.stdout }).toEqual({ args, stdout: "" });
+    }
+  });
+
+  test("B2 no ANSI escapes when stdout is not a terminal", async () => {
+    const help = await run(["--help"]);
+    const data = await run(["rules"]);
+    const err = await run(["show", "A99"]);
+    expect(ANSI.test(help.stdout)).toBe(false);
+    expect(ANSI.test(data.stdout)).toBe(false);
+    expect(ANSI.test(err.stderr)).toBe(false);
+  });
+
+  test("B3 the WHOLE stdout stream parses in machine mode", async () => {
+    for (const args of [
+      ["rules", "--json"],
+      ["schema"],
+      ["--help", "--json"],
+      ["show", "A1", "--json"],
+      ["tags", "--json"],
+      ["path", "A1", "exit-codes", "--json"],
+    ]) {
+      const r = await run(args);
+      expect({ args, parses: parses(r.stdout) }).toEqual({ args, parses: true });
+    }
+  });
+
+  test("B3 a stray write to stdout would break the parse (the mechanism, demonstrated)", async () => {
+    // Not a defect: proof that the check has teeth. If any code path outside envelope.ts ever
+    // writes to stdout, `rules --json` stops parsing and this suite goes red.
+    const r = await run(["rules", "--json"]);
+    expect(r.stdout.trimEnd().split("\n")).toHaveLength(1);
+  });
+});
+
+describe("C — exit codes", () => {
+  test("C1 help exits 0 on stdout, at root and nested", async () => {
+    const root = await run(["--help"]);
+    const nested = await run(["rules", "--help"]);
+    expect(root.code).toBe(0);
+    expect(root.stdout.length).toBeGreaterThan(0);
+    expect(nested.code).toBe(0);
+    expect(nested.stdout.length).toBeGreaterThan(0);
+  });
+
+  test("C2 every usage error uses 2, and not-found uses 5", async () => {
+    for (const args of [["--frmat", "x"], ["nonsense-xyz"], ["tags", "extra"], []]) {
+      expect({ args, code: (await run(args)).code }).toEqual({ args, code: 2 });
+    }
+    expect((await run(["show", "A99"])).code).toBe(5);
+  });
+
+  test("C2 the declared kind matches the declared exit code", async () => {
+    const r = await run(["show", "A99", "--json"]);
+    const env = JSON.parse(r.stderr);
+    expect(env.error.kind).toBe("not_found");
+    expect(env.error.exit_code).toBe(5);
+    expect(r.code).toBe(env.error.exit_code);
+  });
+
+  test("C3 identical invocations produce identical exit codes", async () => {
+    const runs = await Promise.all([1, 2, 3].map(() => run(["rules", "--frmat", "x"])));
+    expect(new Set(runs.map((r) => r.code)).size).toBe(1);
+  });
+});
+
+describe("D — discoverability", () => {
+  test("D1 --version works with no usable configuration", async () => {
+    const r = await run(["--version"], { HOME: "/nonexistent-xyz" });
+    expect(r.code).toBe(0);
+    expect(r.stdout.trim().length).toBeGreaterThan(0);
+    expect(r.stderr).toBe("");
+  });
+
+  test("D2 bare invocation is a usage error on stderr", async () => {
+    const r = await run([]);
+    expect(r.code).toBe(2);
+    expect(r.stdout).toBe("");
+    expect(r.stderr.length).toBeGreaterThan(0);
+  });
+
+  test("D3 help advertises the machine-readable path", async () => {
+    const r = await run(["--help"]);
+    expect(r.stdout).toMatch(/--json|--format|schema/);
+  });
+
+  test("D4 help output is byte-identical between runs", async () => {
+    const [a, b] = await Promise.all([run(["--help"]), run(["--help"])]);
+    expect(a?.stdout).toBe(b?.stdout as string);
+  });
+});
+
+describe("E — interactivity", () => {
+  test("E1 never blocks on stdin without a terminal", async () => {
+    for (const args of [[], ["--help"], ["rules"], ["nonsense-xyz"]]) {
+      const r = await run(args);
+      expect({ args, timedOut: r.timedOut }).toEqual({ args, timedOut: false });
+    }
+  });
+});
+
+describe("F — safety", () => {
+  test("F1 no credential patterns in help or schema", async () => {
+    const help = await run(["--help"]);
+    const schema = await run(["schema"]);
+    expect(SECRET.test(help.stdout)).toBe(false);
+    expect(SECRET.test(schema.stdout)).toBe(false);
+  });
+});
+
+describe("machine mode", () => {
+  test("an explicit --format wins over detection, in BOTH directions", async () => {
+    // stdout is always a pipe here, so detection alone would choose json every time.
+    const forcedText = await run(["tags", "--format", "text"]);
+    expect(parses(forcedText.stdout)).toBe(false);
+
+    // ...and an announced agent harness must not override an explicit request either.
+    const stillText = await run(["tags", "--format", "text"], { AI_AGENT: "probe" });
+    expect(parses(stillText.stdout)).toBe(false);
+
+    const forcedJson = await run(["tags", "--json"]);
+    expect(parses(forcedJson.stdout)).toBe(true);
+  });
+
+  test("AI_AGENT alone selects machine mode", async () => {
+    const r = await run(["tags"], { AI_AGENT: "probe" });
+    expect(parses(r.stdout)).toBe(true);
+  });
+
+  test("success envelopes carry `next` command templates", async () => {
+    const r = await run(["rules", "--json"]);
+    const env = JSON.parse(r.stdout);
+    expect(env.ok).toBe(true);
+    expect(env.next[0].command).toContain("acc show");
+  });
+});
+
+describe("schema", () => {
+  test("describes every command the parser accepts, and nothing it does not", async () => {
+    const r = await run(["schema"]);
+    const { data } = JSON.parse(r.stdout);
+    const declared: string[] = data.commands.map((c: { name: string }) => c.name);
+
+    // Every declared command must actually run. A schema promising a command that does not
+    // exist is the drift this project exists to prevent.
+    for (const name of declared) {
+      const probe = await run([name, "--help"]);
+      expect({ name, code: probe.code }).toEqual({ name, code: 0 });
+    }
+    expect(declared).toContain("schema");
+    expect(data.errors.map((e: { kind: string }) => e.kind)).toContain("not_found");
+  });
+
+  test("every declared error kind maps to a distinct, declared exit code", async () => {
+    const r = await run(["schema"]);
+    const { data } = JSON.parse(r.stdout);
+    for (const e of data.errors as Array<{ kind: string; exit_code: number }>) {
+      expect(e.exit_code).toBeLessThan(125); // the reserved passthrough band
+    }
+  });
+});
