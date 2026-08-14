@@ -40,10 +40,16 @@ export class AccError extends Error {
   }
 }
 
-/** The invocation was malformed. */
+/**
+ * The invocation was malformed.
+ *
+ * `details` is accepted here as well as on `notFoundError` because a usage error can be about a
+ * FILE the invocation named — a malformed expectations file is the caller's mistake, not an
+ * internal fault, and the path belongs in a field rather than only in the prose message.
+ */
 export function usageError(
   message: string,
-  opts: { hint?: string; choices?: string[] } = {},
+  opts: { hint?: string; choices?: string[]; details?: Record<string, unknown> } = {},
 ): AccError {
   return new AccError(ErrorKind.Usage, message, opts);
 }

@@ -64,7 +64,7 @@ describeIfGit("the kit against a real system binary (git)", () => {
 
   test("builds a coherent report", async () => {
     const h = await record(target, CHECKERS);
-    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations("."), "L0");
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations(undefined), "L0");
 
     // Deliberately NO assertion about `conformant`. What git scores is git's business; this
     // test is about whether the kit survives a real CLI, and pinning a verdict here would make

@@ -585,7 +585,7 @@ const ACC: TargetInfo = { path: CLI, argv0: ["bun", CLI] };
 describe("acc checks itself, through the kit", () => {
   test("is conformant", async () => {
     const h = await record(ACC, CHECKERS);
-    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations("."), "L0");
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations(undefined), "L0");
     if (!r.conformant) {
       const failed = r.findings.filter((f) => f.verdict !== "pass" && f.tier === "core");
       throw new Error(
@@ -603,7 +603,7 @@ describe("acc checks itself, through the kit", () => {
   // bun launcher, so it gates neither.)
   test("every applicable core rule is verified, not merely unfailed", async () => {
     const h = await record(ACC, CHECKERS);
-    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations("."), "L0");
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations(undefined), "L0");
     const unverified = r.findings.filter(
       (f) => f.applicable && f.tier === "core" && f.verdict === "unverified",
     );
@@ -623,7 +623,7 @@ describe("acc checks itself, through the kit", () => {
   // any checker to `complete` without the evidence to back it goes red here.
   test("...but NOT fully verified, because every core checker's coverage is partial", async () => {
     const h = await record(ACC, CHECKERS);
-    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations("."), "L0");
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadExpectations(undefined), "L0");
     expect(r.fullyVerified).toBe(false);
     expect(r.counts.corePartial).toBe(r.counts.core);
     // The withheld claim must arrive with its reasons attached, one entry per blocking rule.
@@ -711,6 +711,20 @@ describe("acc check — the outcome exit code", () => {
     expect(env.error.kind).toBe("not_found");
     expect(env.error.exit_code).toBe(5);
   }, 15_000);
+
+  // A bad expectations file is the CALLER's mistake — a file they own, in a directory they
+  // named — so it is `usage` at exit 2 with the path in `details`. Reported as `internal` it
+  // would read as a defect in acc, and silently ignored (the old behaviour) it would fail rules
+  // the project believed it had excused.
+  test("exits 2 (usage) when --expectations names a directory that does not exist", async () => {
+    const conforming = join(dirname(CLI), "kit/fixtures/conforming.ts");
+    const r = await run(["check", conforming, "--expectations", "/no/such/dir-xyz", "--json"]);
+    expect(r.code).toBe(2);
+    expect(r.stdout).toBe("");
+    const env = JSON.parse(r.stderr);
+    expect(env.error.kind).toBe("usage");
+    expect(env.error.details.path).toContain("/no/such/dir-xyz");
+  }, 30_000);
 
   // A6, through the product's own target-resolution path rather than a hand-built TargetInfo.
   //

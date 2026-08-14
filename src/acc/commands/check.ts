@@ -1,9 +1,9 @@
 import { closeSync, existsSync, openSync, readSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { emit, type OutputMode, useColor } from "../envelope.ts";
-import { notFoundError } from "../errors.ts";
+import { notFoundError, usageError } from "../errors.ts";
 import { Outcome } from "../exit-codes.ts";
-import { loadExpectations } from "../kit/expectations.ts";
+import { type Expectations, ExpectationsError, loadExpectations } from "../kit/expectations.ts";
 import { record, TargetNotExecutableError } from "../kit/record.ts";
 import { CHECKERS } from "../kit/registry.ts";
 import { buildReport, primaryProblem, type ReportedFinding, runCheckers } from "../kit/report.ts";
@@ -100,7 +100,28 @@ export async function checkCommand(
   // Run at L0: everything the kit can probe without effect-classifying subcommands first. A
   // checker whose rule needs a higher level (e.g. A4) is reported not-applicable here rather
   // than unverified — see buildReport's `level` parameter.
-  const expectations = loadExpectations(opts.expectations ?? ".");
+  //
+  // `opts.expectations` is passed through UNDEFAULTED: the kit distinguishes "nobody asked" (a
+  // missing file in the cwd is normal) from "the caller named a path" (a missing one is their
+  // mistake, and continuing with an empty set would fail rules they believed were excused).
+  // The registry goes in so a mistyped id is rejected rather than silently excusing nothing.
+  let expectations: Expectations;
+  try {
+    expectations = loadExpectations(
+      opts.expectations,
+      CHECKERS.map((c) => c.ruleId),
+    );
+  } catch (err) {
+    // `usage`, not `internal`: every one of these is something the caller can fix by editing a
+    // file they own. Reported as `internal` it would read as a defect in acc.
+    if (err instanceof ExpectationsError) {
+      throw usageError(`${err.path} ${err.message}`, {
+        hint: "Fix the expectations file, or drop --expectations to skip it.",
+        details: { path: err.path },
+      });
+    }
+    throw err;
+  }
   const report = buildReport(history, findings, CHECKERS, expectations, "L0");
 
   // The rule that actually explains the report's headline — see primaryProblem, which owns the
