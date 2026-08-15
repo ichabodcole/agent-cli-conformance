@@ -21,8 +21,9 @@ const finding = findingFor(RULE_ID);
  * doesn't honour `--` would run that verb for real with the sentinel value as its argument.
  *
  * SAFETY LIMIT: after a terminator the sentinel is GUARANTEED to arrive as a positional. For a
- * CLI whose root positional is a verb that is harmless (nothing dispatches). For a CLI whose
- * root positional is free-form data — `claude "…"`, `llm "…"`, `aider "…"` — it is a prompt.
+ * CLI whose root positional is a verb, the token names no declared command, so the probe reaches
+ * no declared code path — risk-reduced, not harmless. For a CLI whose root positional is
+ * free-form data — `claude "…"`, `llm "…"`, `aider "…"` — it is a prompt.
  * See inert.ts: the gate cannot detect that shape and does not claim to.
  */
 export const doubleDashTerminatorChecker: Checker = {

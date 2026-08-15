@@ -212,19 +212,29 @@ export const COMMANDS: CommandSpec[] = [
     // binary. The residual risks are listed rather than summarised as "low": a reader who is
     // told a probe is safe stops reading, and every item below is something they can act on by
     // choosing a different target.
+    //
+    // This note used to END with "Probes are inert against a CLI that dispatches on a fixed verb
+    // table" — one sentence after correctly naming bare-invocation work, an ignored flag followed
+    // by a default root action, and pre-dispatch global initialisation, none of which a fixed verb
+    // table prevents and one of which (the bare invocation) the probe set sends regardless
+    // (review R6-4). A summary that contradicts the list above it is worse than no summary,
+    // because it is the part a reader remembers. The claim is deleted rather than softened: what
+    // a sentinel token establishes is that it names nothing DECLARED, and that is now all the
+    // sentence says. "Risk-reduced, not inert" is the wording used everywhere else — README,
+    // inert.ts, the A2 and A6 rule pages — and it is used here too.
     notes: [
       "The target is YOUR binary; the examples below are placeholders for it.",
-      "SAFETY: this command EXECUTES the target. L0 reduces the risk, it does not remove it —",
+      "SAFETY: this command EXECUTES the target. L0 is RISK-REDUCED, not inert —",
       "only help paths, sentinel-bearing arguments, and bare invocations, which is a far smaller",
       "blast radius than arbitrary probing. It is NOT a sandbox, and does not prevent: a CLI that",
       "does real work on a bare invocation; a fixed-verb CLI that ignores an unknown flag and",
       "runs a default root action; --help or --version handled only after global init; writes",
       "through HOME, XDG paths, absolute paths or subprocesses (the fresh temporary working",
       "directory redirects RELATIVE paths only); credentials, which the child inherits with the",
-      "rest of the environment; or any network call. Probes are inert against a CLI that",
-      "dispatches on a fixed verb table — the probe token matches no flag and no command — but",
-      "NOT against one whose first positional is free-form text (claude, llm, aider), where",
-      "that token is a prompt. Point this only at a binary you are willing to run.",
+      "rest of the environment; or any network call. A sentinel token establishes exactly one",
+      "thing: it names no declared verb and no declared flag. That buys least against a CLI whose",
+      "first positional is free-form text (claude, llm, aider), where the token is a prompt.",
+      "Point this only at a binary you are willing to run.",
     ],
     examples: ["acc check ./mycli", "acc check $(which gh) --json"],
   },

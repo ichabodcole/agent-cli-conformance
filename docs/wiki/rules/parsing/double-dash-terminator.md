@@ -104,9 +104,11 @@ declares no other interpreter.
 ### Where this probe is not inert
 
 After a terminator the sentinel is **guaranteed** to arrive as a positional — that is what the
-probe is testing. For a CLI whose root positional is a verb, nothing dispatches and nothing
-happens. For a CLI whose root positional is **free-form data** — `claude "…"`, `llm "…"`,
-`aider "…"` — the sentinel is a prompt, and running it spends money and may take actions.
+probe is testing. For a CLI whose root positional is a verb, the sentinel names no declared
+command, so the probe reaches no declared code path: **risk-reduced, not inert**, since nothing
+here prevents a default root action or work done before dispatch. For a CLI whose root positional
+is **free-form data** — `claude "…"`, `llm "…"`, `aider "…"` — the sentinel is a prompt, and
+running it spends money and may take actions.
 
 The kit cannot detect that shape and does not try: a wrong guess is worse than a documented
 limit. Probes run in a fresh temporary working directory, which redirects **relative** paths

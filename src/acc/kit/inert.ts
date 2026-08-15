@@ -47,15 +47,17 @@ const ALLOWED_ENV = /^(ACC_[A-Z0-9_]+|AI_AGENT|HOME|XDG_CONFIG_HOME|NO_COLOR|TER
  *
  * ## What this gate actually buys
  *
- * It classifies ARGV. Against a **verb-dispatching** CLI — one whose first positional selects a
- * command from a fixed table — the classes below only ever produce help paths and invocations
- * that fail argument parsing. There is no verb for `acc-probe-xyzzy-verb` and no flag for
- * `--acc-probe-xyzzy-flag`, so dispatch never happens and no work is performed. That covers the
- * great majority of CLIs, and every tool in the case-study survey.
+ * It classifies ARGV, and what it establishes is a NEGATIVE about the tokens: `acc-probe-xyzzy-verb`
+ * names no verb any CLI declares and `--acc-probe-xyzzy-flag` names no flag. Against a
+ * **verb-dispatching** CLI — one whose first positional selects a command from a fixed table —
+ * that is enough to keep the probe off every declared code path, which covers the great majority
+ * of CLIs and every tool in the case-study survey.
  *
- * That is a REDUCTION IN RISK, not a proof of inertness, and the difference is the whole reason
- * this comment is long. "L0 is inert" is a statement about the arguments; "running L0 is safe"
- * would be a statement about the target, and nothing here can make it.
+ * It is NOT enough to say no work is performed, and this comment used to say exactly that one
+ * paragraph above the list that contradicts it. A REDUCTION IN RISK is the whole claim, and the
+ * difference is the reason this comment is long: "the probe names nothing declared" is a
+ * statement about the arguments, while "running L0 is safe" would be a statement about the
+ * target, and nothing here can make it.
  *
  * ## What it does NOT buy
  *

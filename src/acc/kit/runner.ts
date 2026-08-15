@@ -107,10 +107,11 @@ export function digestOfText(text: string): string {
  * backgrounded a `sleep 30` holding stdout took 30 seconds against a 50ms deadline. See
  * `killTree` for the platform limit.
  *
- * Every probe runs in a FRESH TEMPORARY DIRECTORY, removed afterwards. The kit's probes are
- * inert by construction against a verb-dispatching CLI, but `inert.ts` cannot prove anything
- * about a CLI whose root positional is free-form data, and inheriting the caller's cwd meant a
- * misjudged probe wrote into the user's project. This does not make an unsafe probe safe — it
+ * Every probe runs in a FRESH TEMPORARY DIRECTORY, removed afterwards. The kit's probes name
+ * nothing a verb-dispatching CLI declares, which is a reduction in risk rather than a proof of
+ * inertness, and `inert.ts` cannot prove anything at all about a CLI whose root positional is
+ * free-form data — while inheriting the caller's cwd meant a misjudged probe wrote into the
+ * user's project. This does not make an unsafe probe safe — it
  * bounds what an unsafe probe can reach, at no cost. Nothing bounds a network call.
  */
 export async function runProbe(

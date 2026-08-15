@@ -60,8 +60,11 @@ exactly that. A2 is only about the exit code and the stream.
 
 ### Where this probe is not inert
 
-The probe is inert against a **verb-dispatching** CLI, which is what it assumes: there is no
-command called `acc-probe-xyzzy-verb`, so nothing dispatches and no work is done.
+What the sentinel establishes is a **negative about the token**: there is no command called
+`acc-probe-xyzzy-verb`, so against a **verb-dispatching** CLI the probe reaches no declared code
+path. That is **risk-reduced, not inert** — it does not stop a CLI that ignores an unrecognised
+token and runs a default root action, and it says nothing about initialisation that happens
+before dispatch.
 
 It is **not** inert against a CLI whose root positional is **free-form data**. For
 `claude "…"`, `llm "…"`, `aider "…"` the probe token is not an unknown verb, it is a **prompt**
