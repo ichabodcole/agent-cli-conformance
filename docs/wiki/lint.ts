@@ -155,7 +155,7 @@ export function ruleChecks(pages: LintPage[]): string[] {
       // about their wording means the report and the wiki tell a reader two different stories
       // about the same hole.
       const checkerGaps = COVERAGE_GAPS_BY_RULE_ID.get(id);
-      if (checkerGaps && checkerGaps.join(" ") !== gaps.join(" "))
+      if (checkerGaps && checkerGaps.join("\0") !== gaps.join("\0"))
         problems.push(
           `MISMATCH coverage_gaps ${page.rel}:\n     page: ${JSON.stringify(gaps)}\n  checker: ${JSON.stringify(checkerGaps)}`,
         );
