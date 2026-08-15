@@ -27,6 +27,9 @@ const checker = (
   probeLevel,
   coverage,
   coverageGaps: coverage === "partial" ? [`${ruleId} does not probe the nested case`] : [],
+  // Unconditional, unlike the gaps above: `coverageEstablished` is required non-empty whatever
+  // the coverage, so a `complete` stub owes one too.
+  coverageEstablished: [`${ruleId} probes the root case`],
   probes: () => [],
   check: () => ({ ruleId, verdict: "pass", detail: "", evidence: [] }),
 });

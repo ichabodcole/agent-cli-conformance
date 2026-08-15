@@ -30,6 +30,9 @@ export const bareInvocationChecker: Checker = {
     "stderr is never checked to carry the usage summary",
     "the bare invocation is only run against pipes so a wizard that starts only with a terminal attached is out of reach",
   ],
+  coverageEstablished: [
+    "the bare invocation exits non-zero with stdout empty and terminates rather than waiting for input",
+  ],
 
   probes: (): Invocation[] => [
     // `bare` is its own inertness class (see inert.ts), not `no-verb`: `no-verb` requires a

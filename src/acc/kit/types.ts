@@ -280,6 +280,35 @@ export interface Checker {
    * registry.test.ts rejects both rather than letting the lint fail somewhere unrelated.
    */
   coverageGaps: string[];
+  /**
+   * The other half of the same accounting: one phrase per thing a `pass` from this checker
+   * licenses the reader to believe, SCOPED TO THE PATHS ACTUALLY SAMPLED.
+   *
+   * REQUIRED and NON-EMPTY for every checker, whatever its `coverage` — a checker that
+   * establishes nothing is not a checker. `complete` is not held to anything further here: it
+   * already means `coverageGaps` is empty, and "the established list covers the page" is a claim
+   * no string comparison can make, so requiring more would be a gate that only looks like one.
+   * A4 is the standing exception and it is written as one rather than waved through with `[]`:
+   * it declares no probes and returns a fixed `unverified`, so its single entry says exactly
+   * that, in words, where a reader meets it.
+   *
+   * "no CSI introducer on stdout or stderr for root help or one usage error with both streams
+   * attached to pipes" is the standard. "no ANSI escapes" is the overclaim to avoid: it is what
+   * B2's rule says, not what B2's checker looked at, and the distance between those two sentences
+   * is the whole reason this field exists.
+   *
+   * WHY IT IS LINTED AT ALL. `coverage_gaps` was bound to the checker in both directions and to
+   * the page's prose on top of that; the **Established** list beside it was checked by nothing,
+   * so a page could claim a broader measurement than its checker performs and the gate stayed
+   * green (review DTX-8). That is not hypothetical — SCHEMA.md records it happening to five
+   * pages. Same round trip, same reader, same separator restrictions: no `,` and no ` - `.
+   *
+   * WHAT THE LINT CANNOT DO, said here because the field would otherwise be read as proof. It
+   * establishes that the page and the checker's DECLARATION agree. It cannot establish that the
+   * declaration is true of the checker's code — only a mutation fixture can, by breaking the
+   * property and watching the checker catch it. See docs/roadmap.md, R4-8.
+   */
+  coverageEstablished: string[];
   probes: (d: Discovery) => Invocation[];
   check: (h: History) => Finding;
 }

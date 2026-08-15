@@ -43,6 +43,9 @@ export const firstBytePromptChecker: Checker = {
     "the progress signal a long-running command owes stderr is not exercised",
     "the verdict is the fastest of three runs so a target that is usually slower still passes",
   ],
+  coverageEstablished: [
+    "the fastest of three --version runs with identical argv and identical environment emitted its first byte within 100 ms",
+  ],
 
   probes: (): Invocation[] =>
     RUNS.map((n) => ({

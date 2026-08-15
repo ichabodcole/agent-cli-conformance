@@ -38,6 +38,9 @@ export const unknownFlagChecker: Checker = {
     "only a long valueless flag is probed so a short flag or a cluster of short flags is not",
     "that the command did not otherwise proceed is inferred from a non-zero exit rather than observed",
   ],
+  coverageEstablished: [
+    "one unknown long flag given at the root exits non-zero with stdout empty and the sentinel from that flag present on stderr",
+  ],
 
   probes: (): Invocation[] => [
     {

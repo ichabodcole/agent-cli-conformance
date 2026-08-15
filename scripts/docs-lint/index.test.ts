@@ -518,6 +518,19 @@ describe("yamlList", () => {
   test("splits a value containing a spaced hyphen (documented limitation)", () => {
     expect(yamlList("[before - after]")).toEqual(["before", "after"]);
   });
+
+  // REGRESSION: the block-sequence dash strip used to be `/^-\s*/`, and the optional whitespace
+  // made it bite one character off any item that begins with a hyphen. A flag name is exactly
+  // the kind of value these lists carry — a rule page's `coverage_established` bullet starting
+  // `--version` arrived as `-version` — and the resulting lint mismatch printed two strings a
+  // reader would call identical.
+  test("an item beginning with a hyphen keeps every character", () => {
+    expect(yamlList("- --version exits 0 - --json is advertised")).toEqual([
+      "--version exits 0",
+      "--json is advertised",
+    ]);
+    expect(yamlList("[--version exits 0]")).toEqual(["--version exits 0"]);
+  });
 });
 
 // ---------------------------------------------------------------------------------------

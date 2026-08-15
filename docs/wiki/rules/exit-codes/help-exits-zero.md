@@ -19,6 +19,8 @@ coverage_gaps:
   - a help subcommand is not probed
   - appending --help to an otherwise complete invocation is not probed
   - stdout is only required to be non-empty and is never checked to contain help text
+coverage_established:
+  - root --help and root -h each exit 0 with non-empty stdout and neither hangs nor dies on a fault signal
 ---
 
 # Help is a request, and it succeeds
@@ -120,8 +122,8 @@ the rest of this page, unexamined.
 
 **Established**
 
-- root `--help` and root `-h` each exit `0` with non-empty stdout, and neither hangs nor ends on
-  a signal of any kind.
+- root --help and root -h each exit 0 with non-empty stdout and neither hangs nor dies on a fault
+  signal
 
 The gaps below are unchanged by the signal split above, and deliberately so: `coverage: partial`
 qualifies a **pass**, and narrowing the crash exception moved nothing into the pass branch. Help

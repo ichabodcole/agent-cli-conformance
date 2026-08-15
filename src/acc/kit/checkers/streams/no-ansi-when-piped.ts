@@ -44,6 +44,9 @@ export const noAnsiWhenPipedChecker: Checker = {
     "only root help and one usage error are sampled so nested help and version output and successful command output and other diagnostics are never inspected",
     "machine mode is never selected although the rule binds whenever machine mode is active",
   ],
+  coverageEstablished: [
+    "no CSI introducer appears on stdout or stderr for root help or one usage error with both streams attached to pipes",
+  ],
 
   probes: (): Invocation[] => [
     { args: ["--help"], inertness: "help-path", purpose: "B2: help must be escape-free" },

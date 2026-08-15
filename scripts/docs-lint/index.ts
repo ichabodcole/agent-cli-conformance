@@ -232,13 +232,24 @@ export function parseFrontmatter(fm: string): Map<string, string> {
   return out;
 }
 
-/** `[a, b]` (flow, possibly Prettier-wrapped) or `- a` (block) -> ["a", "b"]. */
+/**
+ * `[a, b]` (flow, possibly Prettier-wrapped) or `- a` (block) -> ["a", "b"].
+ *
+ * The final `replace` strips the block sequence's leading dash from the FIRST item only — the
+ * split already consumed it for every later one — and the whitespace after that dash is
+ * REQUIRED. It used to be optional, and an optional space made the pattern eat one character off
+ * any item that merely BEGINS with a hyphen: a `coverage_established` bullet opening with the
+ * word `--version` came back opening with `-version`, which the wiki lint then reported as a
+ * page/checker mismatch whose two sides looked identical to a reader. A flag name is exactly the
+ * kind of value these lists carry, so this is a defect and not a documented limitation like the
+ * spaced-hyphen split below it.
+ */
 export function yamlList(raw: string | undefined): string[] {
   if (!raw) return [];
   return raw
     .replace(/^\[|\]$/g, "")
     .split(/,|\s+-\s+/)
-    .map((s) => s.trim().replace(/^-\s*/, ""))
+    .map((s) => s.trim().replace(/^-\s+/, ""))
     .filter(Boolean);
 }
 

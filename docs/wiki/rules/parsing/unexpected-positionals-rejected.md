@@ -16,6 +16,8 @@ checker_status: implemented
 coverage: partial
 coverage_gaps:
   - no probe is declared so nothing about arity is established
+coverage_established:
+  - nothing because no probe is declared and the verdict is always unverified so there is no pass to license anything
 ---
 
 # Unexpected positional arguments are rejected
@@ -74,8 +76,11 @@ the rest of this page, unexamined.
 
 **Established**
 
-- nothing. This checker declares no probes and always reports `unverified` — see [the
-  probe](#the-probe) for why arity cannot be tested inertly.
+- nothing because no probe is declared and the verdict is always unverified so there is no pass to
+  license anything
+
+There is no pass to describe rather than a pass with a narrow scope: `check` returns one fixed
+`unverified`, and [the probe](#the-probe) says why arity cannot be tested inertly.
 
 **Gaps**
 

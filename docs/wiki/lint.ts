@@ -32,6 +32,9 @@ const PROBE_LEVEL_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.probeLev
 const TIER_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.tier]));
 const COVERAGE_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.coverage]));
 const COVERAGE_GAPS_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.coverageGaps]));
+const COVERAGE_ESTABLISHED_BY_RULE_ID = new Map(
+  CHECKERS.map((c) => [c.ruleId, c.coverageEstablished]),
+);
 
 const TIERS = new Set(["core", "diagnostic"]);
 const PROBE_LEVELS = new Set(["L0", "L1", "L2"]);
@@ -144,6 +147,17 @@ export function ruleChecks(pages: LintPage[]): string[] {
         `EXTRA coverage_gaps ${page.rel}: "complete" must name none, found ${gaps.length}`,
       );
 
+    // The other half of the same accounting, and — unlike the gaps — its invariant does not
+    // branch on `coverage`. Every rule page owes at least one entry whatever its coverage:
+    // a checker that establishes nothing is not a checker, and `complete` is not held to
+    // anything FURTHER here, because "the established list covers the page" is a claim no
+    // string comparison can make and a gate that only looks like one is worse than none.
+    const established = yamlList(page.fields.get("coverage_established"));
+    if (established.length === 0)
+      problems.push(
+        `MISSING coverage_established ${page.rel}: every rule page must name what a pass establishes`,
+      );
+
     if (status === "implemented" && id) {
       const checkerCoverage = COVERAGE_BY_RULE_ID.get(id);
       if (checkerCoverage && checkerCoverage !== coverage)
@@ -158,6 +172,16 @@ export function ruleChecks(pages: LintPage[]): string[] {
       if (checkerGaps && checkerGaps.join("\0") !== gaps.join("\0"))
         problems.push(
           `MISMATCH coverage_gaps ${page.rel}:\n     page: ${JSON.stringify(gaps)}\n  checker: ${JSON.stringify(checkerGaps)}`,
+        );
+      // Same comparison for what the page says a PASS means, and it is the half that used to be
+      // checked by nothing (review DTX-8). The gap list was bound to the checker in both
+      // directions and to the page's prose on top of that, while the **Established** list beside
+      // it was free to claim a broader measurement than the checker performs — which SCHEMA.md
+      // records happening, to five pages, with correct `coverage_gaps` two lines above.
+      const checkerEstablished = COVERAGE_ESTABLISHED_BY_RULE_ID.get(id);
+      if (checkerEstablished && checkerEstablished.join("\0") !== established.join("\0"))
+        problems.push(
+          `MISMATCH coverage_established ${page.rel}:\n     page: ${JSON.stringify(established)}\n  checker: ${JSON.stringify(checkerEstablished)}`,
         );
     }
 
@@ -174,6 +198,22 @@ export function ruleChecks(pages: LintPage[]): string[] {
     } else if (stated.join(" ") !== gaps.join(" ")) {
       problems.push(
         `MISMATCH stated gaps ${page.rel}:\n        prose: ${JSON.stringify(stated)}\n  frontmatter: ${JSON.stringify(gaps)}`,
+      );
+    }
+
+    // ...and the third copy of the established list, for the identical reason. Reported
+    // separately from the gaps above rather than folded into one COVERAGE message: a page can
+    // state its holes correctly and still overstate what a pass means, which is precisely the
+    // failure this half was added for, and one message standing in for the other would say the
+    // section is wrong without saying which claim is.
+    const claimed = statedEstablished(page.body);
+    if (claimed === null) {
+      problems.push(
+        `MISSING ESTABLISHED ${page.rel}: no "${COVERAGE_HEADING}" section with an ${ESTABLISHED_MARKER} list`,
+      );
+    } else if (claimed.join(" ") !== established.join(" ")) {
+      problems.push(
+        `MISMATCH stated established ${page.rel}:\n        prose: ${JSON.stringify(claimed)}\n  frontmatter: ${JSON.stringify(established)}`,
       );
     }
   }
@@ -307,36 +347,54 @@ export const COVERAGE_HEADING = "## Current checker coverage";
 /** The line inside it that introduces the gap list. */
 export const GAPS_MARKER = "**Gaps**";
 
+/** ...and the one introducing the list of what a `pass` from the checker actually means. */
+export const ESTABLISHED_MARKER = "**Established**";
+
 /**
- * The gap phrases a rule page states in prose, or null when the section is absent.
+ * The bullets a rule page states under `marker`, or null when the section or the marker is absent.
  *
- * Reading the BODY and not just the frontmatter is the point (review R3-6). `coverage_gaps` is
+ * Reading the BODY and not just the frontmatter is the point (review R3-6). Both lists are
  * already bound to the checker, but a reader does not read frontmatter — they read the page, and
  * a page whose prose describes a broader probe than the checker performs is the drift this
- * project exists to fail on. Two copies of the list is the price; both are gated.
+ * project exists to fail on. Two copies of each list is the price; both are gated.
+ *
+ * ONE reader for both markers, rather than a second function beside it. The gap check shipped
+ * first and the established check was added later (review DTX-8); a parallel implementation would
+ * be two chances to disagree about what a bullet is, on a page where the two lists sit six lines
+ * apart. The marker is the only thing that differs, so the marker is the only parameter.
  *
  * Continuation lines are folded back into their bullet because Prettier re-wraps every list item
  * in this repo, and backslashes are dropped because it escapes markdown punctuation on the way.
  */
-export function statedGaps(body: string): string[] | null {
+export function statedList(body: string, marker: string): string[] | null {
   const section = sectionBody(body, COVERAGE_HEADING);
   if (section === null) return null;
   const lines = section.split("\n");
-  const marker = lines.findIndex((l) => l.trim().startsWith(GAPS_MARKER));
-  if (marker === -1) return null;
+  const at = lines.findIndex((l) => l.trim().startsWith(marker));
+  if (at === -1) return null;
 
-  const gaps: string[] = [];
-  for (const raw of lines.slice(marker + 1)) {
+  const bullets: string[] = [];
+  for (const raw of lines.slice(at + 1)) {
     const line = raw.trim();
     if (line === "") {
-      if (gaps.length) break; // a blank line after the list ends it; before it, skip
+      if (bullets.length) break; // a blank line after the list ends it; before it, skip
       continue;
     }
-    if (line.startsWith("- ")) gaps.push(line.slice(2));
-    else if (gaps.length) gaps[gaps.length - 1] += ` ${line}`;
+    if (line.startsWith("- ")) bullets.push(line.slice(2));
+    else if (bullets.length) bullets[bullets.length - 1] += ` ${line}`;
     else break; // prose between the marker and the first bullet: not a list
   }
-  return gaps.map((g) => g.replace(/\\/g, "").replace(/\s+/g, " ").trim());
+  return bullets.map((g) => g.replace(/\\/g, "").replace(/\s+/g, " ").trim());
+}
+
+/** The gap phrases a rule page states in prose, or null when the section is absent. */
+export function statedGaps(body: string): string[] | null {
+  return statedList(body, GAPS_MARKER);
+}
+
+/** What the page says in prose that a `pass` establishes, or null when the section is absent. */
+export function statedEstablished(body: string): string[] | null {
+  return statedList(body, ESTABLISHED_MARKER);
 }
 
 /**

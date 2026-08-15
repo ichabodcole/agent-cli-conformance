@@ -43,6 +43,9 @@ export const noFuzzyCorrectionChecker: Checker = {
     "only a single deletion near-miss of one discovered flag is probed so a transposition or an insertion or a case change is not",
     "the near-miss is sent at the root so a near-miss of a flag belonging to a subcommand is never built",
   ],
+  coverageEstablished: [
+    "a flag one deletion away from a flag discovered in root help exits non-zero when sent at the root with no verb",
+  ],
 
   probes: (d: Discovery): Invocation[] => {
     // Only flags, and only at root with no verb: a near-miss VERB could be corrected into a

@@ -29,6 +29,10 @@ function stubChecker(ruleId: string, probes: Invocation[]): Checker {
     // mistaken for a statement about a real rule's gaps.
     coverage: "complete",
     coverageGaps: [],
+    // Non-empty because the interface requires it of every checker, stub or not: "establishes
+    // nothing" is not a state a checker is allowed to be in, and a fixture that got there by
+    // exception would make the invariant untestable from inside the type.
+    coverageEstablished: [`${ruleId} stub establishes nothing beyond having been recorded`],
     probes: () => probes,
     check: (h: History): Finding => ({
       ruleId,

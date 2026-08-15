@@ -19,6 +19,8 @@ coverage_gaps:
   - the exit code is only required to be non-zero here and not the declared 2
   - naming the offending verb on stderr is not asserted
   - only a sentinel-shaped token is probed so a verb that near-misses a real command is never offered
+coverage_established:
+  - one unknown verb given at the root exits non-zero and leaves stdout empty
 ---
 
 # Unknown commands must exit non-zero
@@ -93,7 +95,7 @@ the rest of this page, unexamined.
 
 **Established**
 
-- an unknown verb at the **root** exits non-zero and leaves stdout empty.
+- one unknown verb given at the root exits non-zero and leaves stdout empty
 
 **Gaps**
 

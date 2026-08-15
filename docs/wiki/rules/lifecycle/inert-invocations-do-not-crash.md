@@ -19,6 +19,8 @@ coverage_gaps:
   - no invocation that does real work is sent at L0 so a crash on the paths a caller actually uses is out of reach
   - a crash provoked by the probe's own sentinel token is not distinguished from one the target would suffer on any input
   - only the target's own termination is recorded so a fault in a child process it spawned is never observed
+coverage_established:
+  - every invocation the run recorded — the union of every other checker's probes — reached an exit of the target's own choosing rather than a fault signal or an unattributable one or the kit's own kill
 ---
 
 # Inert invocations must not crash the tool
@@ -181,9 +183,9 @@ the rest of this page, unexamined.
 
 **Established**
 
-- every inert invocation the run recorded — the union of every other checker's probes — reached
-  an exit of the target's own choosing rather than being ended by a fault signal, an
-  unattributable one, or the kit's own kill.
+- every invocation the run recorded — the union of every other checker's probes — reached an exit of
+  the target's own choosing rather than a fault signal or an unattributable one or the kit's own
+  kill
 
 **Gaps**
 

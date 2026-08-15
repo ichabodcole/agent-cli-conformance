@@ -19,6 +19,9 @@ coverage_gaps:
   - no network and no credentials and no side effects cannot be observed at L0
   - the SHOULD to support -V is not probed
   - stdout is only required to be non-empty and is never checked to carry a version string
+coverage_established:
+  - --version exits 0 with non-empty stdout
+  - --version still does so with HOME and XDG_CONFIG_HOME pointed at a path that does not exist
 ---
 
 # A version is reportable without side effects
@@ -94,9 +97,8 @@ the rest of this page, unexamined.
 
 **Established**
 
-- `--version` exits `0` with non-empty stdout.
-- it still does so with `HOME` and `XDG_CONFIG_HOME` pointed at a path that does not exist — the
-  no-configuration clause, and the only one of the four "no work" clauses reachable here.
+- --version exits 0 with non-empty stdout
+- --version still does so with HOME and XDG_CONFIG_HOME pointed at a path that does not exist
 
 **Gaps**
 

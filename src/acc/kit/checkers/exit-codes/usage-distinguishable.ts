@@ -30,6 +30,7 @@ export const usageDistinguishableChecker: Checker = {
     "the taxonomy codes for more specific failures are not exercised",
     "only an unknown flag and an unknown verb are contrasted so an unexpected positional and a malformed value and the bare invocation are never compared",
   ],
+  coverageEstablished: ["an unknown root flag and an unknown root verb both exit 2"],
 
   probes: (): Invocation[] => [
     { args: [`--${SENTINEL}-flag`], inertness: "sentinel", purpose: "C2: usage error via flag" },

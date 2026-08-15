@@ -19,6 +19,8 @@ coverage_gaps:
   - the structured confirmation_required response and its exit 8 are not established
   - treating EOF or closed stdin as an answer is not detectable from termination alone
   - blocking is only detected when it outlasts the kit's deadline so a prompt that gives up sooner reads as terminating
+coverage_established:
+  - four inert invocations — bare and --help and an unknown flag and an unknown verb — all terminate inside the kit's deadline with stdin closed
 ---
 
 # Never block on input without a terminal
@@ -125,8 +127,8 @@ the rest of this page, unexamined.
 
 **Established**
 
-- four inert invocations — bare, `--help`, an unknown flag, an unknown verb — all terminate with
-  stdin closed.
+- four inert invocations — bare and --help and an unknown flag and an unknown verb — all terminate
+  inside the kit's deadline with stdin closed
 
 **Gaps**
 

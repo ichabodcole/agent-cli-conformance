@@ -18,6 +18,8 @@ coverage_gaps:
   - the internal-fault contrast is not established at L0 because no internal fault can be provoked inertly
   - the taxonomy codes for more specific failures are not exercised
   - only an unknown flag and an unknown verb are contrasted so an unexpected positional and a malformed value and the bare invocation are never compared
+coverage_established:
+  - an unknown root flag and an unknown root verb both exit 2
 ---
 
 # "You invoked me wrong" is distinguishable from "I broke"
@@ -88,8 +90,7 @@ the rest of this page, unexamined.
 
 **Established**
 
-- two different usage errors — an unknown flag and an unknown verb — produce the same non-zero
-  exit code, and that code is `2`.
+- an unknown root flag and an unknown root verb both exit 2
 
 **Gaps**
 

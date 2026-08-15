@@ -59,6 +59,9 @@ export const noSecretsInHelpChecker: Checker = {
     "a secret carried as a flag default is only seen if help prints defaults",
     "nested subcommand help is never scanned even though a flag default usually belongs to a leaf command",
   ],
+  coverageEstablished: [
+    "the stdout and stderr of root help match none of seven known credential patterns",
+  ],
 
   probes: (): Invocation[] => [
     { args: ["--help"], inertness: "help-path", purpose: "F1: scan help" },

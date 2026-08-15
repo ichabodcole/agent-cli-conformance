@@ -410,10 +410,28 @@ those tests now. One pattern, in one file, found by accident — which is the ar
 systematic sweep, not against it.
 
 **What is already half-built.** The coverage-assertion half partly exists: every checker declares
-`coverage_gaps`, the lint compares three copies of that list (frontmatter, page prose, checker
-source) and fails on any divergence, and every report carries `evidenceGaps` naming what the
-verdict withheld itself over. What is missing is that the gaps are phrases a human wrote, not a
-mechanical enumeration of a page's **MUST** clauses. Nothing checks that the list is _complete_.
+`coverage_gaps` and `coverage_established`, the lint compares three copies of each list
+(frontmatter, page prose, checker source) and fails on any divergence, and every report carries
+`evidenceGaps` naming what the verdict withheld itself over. What is missing is that the phrases
+are ones a human wrote, not a mechanical enumeration of a page's **MUST** clauses. Nothing checks
+that either list is _complete_.
+
+**What the established lint proves, and the exact thing it does not.** `coverage_established`
+landed with the same bidirectional discipline as the gaps (review DTX-8): the checker declares
+what a `pass` licenses, the page's frontmatter repeats it, the page's prose repeats it again, and
+the gate fails on any of the three disagreeing. That closes the drift it was built for — a page
+can no longer claim a broader measurement than its checker _declares_.
+
+**It cannot close the drift underneath.** Every copy is a copy of the DECLARATION. A checker
+whose `coverageEstablished` reads "root `--help` exits 0 with non-empty stdout" while its `check`
+forgot the stdout half satisfies this lint on all three copies and is wrong on all three. The
+lint compares strings to strings; nothing in it ever runs the checker. **Only a mutation fixture
+establishes that an entry is true of the code** — a target built to violate exactly the named
+property, and the checker made to catch it. Twenty checkers now carry 24 established entries
+between them, and that is 22 mutation fixtures owed, one per claim, which is the concrete shape
+this step takes for the first time. Until they exist, `coverageEstablished` is a declaration in
+the same sense the project's own thesis warns about, distinguished only by being one the authors
+were careful with. That is a reason to write the fixtures, not a reason to trust the care.
 
 **A distinction `coverage_gaps` currently cannot make, recorded here rather than acted on.** A
 false-positive risk and ordinary undercoverage push the headline in **opposite** directions, and
@@ -430,6 +448,44 @@ audit of every declared gap asking which direction it pushes — the shape of wo
 for, and the same population its false-positive fixtures are written against. If enough instances
 turn up, the gap list needs splitting; if G1's was the only one, the honest conclusion is that a
 false-positive risk is a bug to fix rather than a caveat to publish.
+
+**That audit has now happened, and it found two.** The R6-5 sweep read all twenty checkers
+closely and asked of each verdict branch: could this report a violation a conforming target did
+not commit? G1's original instance is excluded — it was resolved by narrowing G1 and C1 to fault
+signals, not by publishing it. Two survive, and neither is expressible as a coverage gap, because
+`coverage: partial` qualifies a `pass` and both of these widen a `fail`:
+
+- **B3 fails a tool whose help is not JSON.** Its only probe is `--help --json`, sent to any
+  target whose root help advertises `--json`, and a stream that is neither one document nor NDJSON
+  is a `fail` on a **core** rule — `conformant: false`, exit `9`. A tool whose `--json` governs
+  its data commands while `--help` keeps printing human help has violated nothing on any data
+  path, and B1's own page carves help out as "the one deliberate exception" for a closely related
+  reason. The rule's application to the help path is contested, and B3's only evidence comes from
+  it.
+- **D3 fails a machine mode it does not recognise.** The verdict turns on `MACHINE_FLAGS` in
+  `discovery.ts` — the literals `--json`, `--format`, `--output` — plus a row-shaped regex for a
+  `schema` command. A target advertising `--porcelain`, `-o json`, or a `schema` command described
+  in prose gets `help names no machine-mode flag or schema command`: a reported violation of a
+  rule it satisfies. `diagnostic` tier caps the blast radius at the report rather than the exit
+  code, which makes it cheaper, not correct.
+
+Two considered and **not** counted, because naming a weak instance would inflate the very number
+this decision turns on. A5 can build its near-miss from an incomplete flag list and so could send
+a token that is really a valid flag, but that needs the target to own two flags differing by one
+interior deletion, which is close to hypothetical. F2 measures from spawn, so an interpreted
+target's runtime startup counts against the 100 ms — and that is the rule as written, since the
+caller waits for it too; the caveat there is about the threshold and already sits on the page.
+
+**Recommended, not built: a distinct `falsePositiveRisks: string[]`**, sibling to `coverageGaps`,
+surfaced in the report beside a `fail` rather than beside a `pass`, and empty for the eighteen
+checkers with none. Two instances clear the bar this section set for minting a field, and they
+argue for it in the way the section asked: the two above cannot be filed anywhere today, so they
+are prose in a roadmap instead of data in a verdict — which is the position `coverage_gaps` was in
+before it existed. It is recommended rather than landed because the honest first move for both
+instances is to fix the checker, exactly as G1's was fixed: B3 needs a probe that is not the help
+path, and D3 needs discovery that is not a list of three literals. Both fixes are already blocked
+on step 6, and a field minted now would be carrying two entries whose intended lifetime is until
+step 6 lands.
 
 **A candidate rule this phase declined to mint: stdout must be valid UTF-8.** The review that
 found D4 certifying two different byte streams as identical offered two remedies — keep a

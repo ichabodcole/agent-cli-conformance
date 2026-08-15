@@ -19,6 +19,8 @@ coverage_gaps:
   - the stream first-record and per-record flush requirement is not exercised
   - the progress signal a long-running command owes stderr is not exercised
   - the verdict is the fastest of three runs so a target that is usually slower still passes
+coverage_established:
+  - the fastest of three --version runs with identical argv and identical environment emitted its first byte within 100 ms
 ---
 
 # First byte arrives promptly
@@ -120,8 +122,8 @@ the rest of this page, unexamined.
 
 **Established**
 
-- the fastest of three `--version` runs — identical argv, identical environment — emits its first
-  byte within 100 ms.
+- the fastest of three --version runs with identical argv and identical environment emitted its
+  first byte within 100 ms
 
 **Gaps**
 

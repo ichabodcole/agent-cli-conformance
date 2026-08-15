@@ -40,6 +40,9 @@ export const neverBlockChecker: Checker = {
     "treating EOF or closed stdin as an answer is not detectable from termination alone",
     "blocking is only detected when it outlasts the kit's deadline so a prompt that gives up sooner reads as terminating",
   ],
+  coverageEstablished: [
+    "four inert invocations — bare and --help and an unknown flag and an unknown verb — all terminate inside the kit's deadline with stdin closed",
+  ],
 
   // The unknown-VERB probe is not decoration. E1 is the catalogue's backstop for hangs, and
   // the verb path is where an agent-facing CLI is most likely to block: a tool that "corrects"

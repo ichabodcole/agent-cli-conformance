@@ -18,6 +18,7 @@ import {
   COVERAGE_HEADING,
   catalogEntries,
   coverageMatrix,
+  ESTABLISHED_MARKER,
   FAULT_SIGNALS_MARKER,
   GAPS_MARKER,
   hookChecks,
@@ -29,6 +30,7 @@ import {
   sectionBody,
   signalScopeChecks,
   slugChecks,
+  statedEstablished,
   statedGaps,
   statedSignals,
 } from "./lint.ts";
@@ -37,11 +39,13 @@ import {
  * A `LintPage` carrying just the frontmatter under test.
  *
  * A `rule` page also gets the `## Current checker coverage` body it owes, generated from its own
- * `coverage_gaps` so the prose-versus-frontmatter check is satisfied by construction. Without
- * that every test in this file about some OTHER field would also report a missing section.
+ * `coverage_established` and `coverage_gaps` so the two prose-versus-frontmatter checks are
+ * satisfied by construction. Without that every test in this file about some OTHER field would
+ * also report a missing section.
  */
 function pageOf(rel: string, fields: Record<string, string>): LintPage {
   const gaps = yamlList(fields.coverage_gaps);
+  const established = yamlList(fields.coverage_established);
   return {
     path: join(import.meta.dir, rel),
     rel,
@@ -53,9 +57,9 @@ function pageOf(rel: string, fields: Record<string, string>): LintPage {
             "",
             COVERAGE_HEADING,
             "",
-            "**Established**",
+            ESTABLISHED_MARKER,
             "",
-            "- the probe ran",
+            ...established.map((e) => `- ${e}`),
             "",
             GAPS_MARKER,
             "",
@@ -80,6 +84,11 @@ const A1_GAPS = [
   "that the command did not otherwise proceed is inferred from a non-zero exit rather than observed",
 ];
 
+/** ...and the live `A1` checker's established list, mirrored for the same reason. */
+const A1_ESTABLISHED = [
+  "one unknown long flag given at the root exits non-zero with stdout empty and the sentinel from that flag present on stderr",
+];
+
 /** Frontmatter of a rule page that satisfies every check. */
 const OK_RULE: Record<string, string> = {
   type: "rule",
@@ -90,6 +99,7 @@ const OK_RULE: Record<string, string> = {
   checker_status: "planned",
   coverage: "partial",
   coverage_gaps: `[${A1_GAPS.join(", ")}]`,
+  coverage_established: `[${A1_ESTABLISHED.join(", ")}]`,
 };
 
 const rule = (rel: string, over: Record<string, string> = {}): LintPage =>
@@ -507,7 +517,12 @@ test("statedGaps returns null when the section or the marker is missing", () => 
 test("a rule page with no coverage section is reported", () => {
   const page = rule("rules/parsing/a1.md");
   page.body = "## The rule\n\ntext\n";
-  expect(forward([page])).toEqual([expect.stringContaining("MISSING COVERAGE")]);
+  // BOTH lists, not one message standing in for the section. The section carries two independent
+  // claims, and a page missing it is missing both of them.
+  expect(forward([page])).toEqual([
+    expect.stringContaining("MISSING COVERAGE"),
+    expect.stringContaining("MISSING ESTABLISHED"),
+  ]);
 });
 
 test("a rule page whose prose gaps disagree with its frontmatter is reported", () => {
@@ -523,6 +538,99 @@ test("prose gaps in a different order are reported — the list is compared in o
     coverage_gaps: `[${[...A1_GAPS].reverse().join(", ")}]`,
   }).body;
   expect(forward([page])).toEqual([expect.stringContaining("MISMATCH stated gaps")]);
+});
+
+// --- the established list, in frontmatter and in the page's own prose ----------------------
+//
+// The half that used to be checked by nothing (review DTX-8). `coverage_gaps` was bound in both
+// directions and to the prose on top of that, while the **Established** list beside it could
+// claim a broader measurement than the checker performs and the gate stayed green — which is the
+// exact failure SCHEMA.md records having already happened, to five pages.
+
+test("a rule page naming no coverage_established is reported", () => {
+  const problems = forward([pageOf("rules/parsing/a1.md", without("coverage_established"))]);
+  // ONE message, not two. The fixture's prose list is generated from the same absent field, so
+  // the marker is present with nothing under it and the prose AGREES with the frontmatter —
+  // both empty. The `MISSING ESTABLISHED` message is for a page with no marker at all, which is
+  // a different defect and has its own case above.
+  expect(problems).toEqual([
+    "MISSING coverage_established rules/parsing/a1.md: every rule page must name what a pass establishes",
+  ]);
+});
+
+// Unlike `coverage_gaps`, this invariant does not branch on `coverage`: `complete` requires an
+// EMPTY gap list and a NON-EMPTY established list, because a checker that establishes nothing is
+// not a checker whatever its coverage.
+test("complete coverage still owes a coverage_established entry", () => {
+  const problems = forward([
+    pageOf("rules/parsing/a1.md", {
+      ...without("coverage_gaps"),
+      coverage: "complete",
+      coverage_established: `[${A1_ESTABLISHED.join(", ")}]`,
+    }),
+  ]);
+  expect(problems).toEqual([]);
+});
+
+test("complete coverage naming no coverage_established is still reported", () => {
+  const { coverage_established: _e, ...rest } = without("coverage_gaps");
+  const problems = forward([pageOf("rules/parsing/a1.md", { ...rest, coverage: "complete" })]);
+  expect(problems).toEqual([expect.stringContaining("MISSING coverage_established")]);
+});
+
+test("an implemented rule whose coverage_established disagrees with the checker's is reported as MISMATCH", () => {
+  const problems = forward([
+    rule("rules/parsing/a1.md", {
+      ...A1_LIVE,
+      coverage_established: "[the probe ran and something happened]",
+    }),
+  ]);
+  expect(problems).toEqual([expect.stringContaining("MISMATCH coverage_established")]);
+});
+
+test("an implemented rule matching the checker's coverage_established produces no problem", () => {
+  expect(forward([rule("rules/parsing/a1.md", A1_LIVE)])).toEqual([]);
+});
+
+test("statedEstablished reads the Established list and not the Gaps list beside it", () => {
+  const body = [
+    COVERAGE_HEADING,
+    "",
+    ESTABLISHED_MARKER,
+    "",
+    "- an established claim long enough that Prettier",
+    "  wrapped it across two lines",
+    "",
+    GAPS_MARKER,
+    "",
+    "- a gap",
+    "",
+    "## How to comply",
+  ].join("\n");
+  expect(statedEstablished(body)).toEqual([
+    "an established claim long enough that Prettier wrapped it across two lines",
+  ]);
+  expect(statedGaps(body)).toEqual(["a gap"]);
+});
+
+test("statedEstablished returns null when the section or the marker is missing", () => {
+  expect(statedEstablished("## The rule\n\ntext\n")).toBeNull();
+  expect(statedEstablished(`${COVERAGE_HEADING}\n\n${GAPS_MARKER}\n\n- a gap\n`)).toBeNull();
+});
+
+test("a rule page whose prose established list disagrees with its frontmatter is reported", () => {
+  const page = rule("rules/parsing/a1.md");
+  page.body = page.body.replace(A1_ESTABLISHED[0] as string, "the whole rule held");
+  expect(forward([page])).toEqual([expect.stringContaining("MISMATCH stated established")]);
+});
+
+// The failure the field exists to catch, spelled out end to end: a page overstating what a pass
+// means while its gaps stay correct. Both lists are reported on independently, so the gap list
+// being right does not buy the established list any silence.
+test("a page overstating what a pass establishes fails even with correct gaps", () => {
+  const page = rule("rules/parsing/a1.md", A1_LIVE);
+  page.body = page.body.replace(A1_ESTABLISHED[0] as string, "no unknown flag is ever accepted");
+  expect(forward([page])).toEqual([expect.stringContaining("MISMATCH stated established")]);
 });
 
 // --- the generated coverage matrix ------------------------------------------------------

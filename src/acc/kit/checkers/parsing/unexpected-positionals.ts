@@ -29,6 +29,9 @@ export const unexpectedPositionalsChecker: Checker = {
   // L1 implementation that does not exist.
   coverage: "partial",
   coverageGaps: ["no probe is declared so nothing about arity is established"],
+  coverageEstablished: [
+    "nothing because no probe is declared and the verdict is always unverified so there is no pass to license anything",
+  ],
 
   probes: (): Invocation[] => [],
   check: (): Finding =>

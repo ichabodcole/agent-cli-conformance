@@ -35,6 +35,10 @@ export const versionFlagChecker: Checker = {
     "the SHOULD to support -V is not probed",
     "stdout is only required to be non-empty and is never checked to carry a version string",
   ],
+  coverageEstablished: [
+    "--version exits 0 with non-empty stdout",
+    "--version still does so with HOME and XDG_CONFIG_HOME pointed at a path that does not exist",
+  ],
 
   probes: (): Invocation[] => [
     { args: ["--version"], inertness: "help-path", purpose: "D1: --version" },

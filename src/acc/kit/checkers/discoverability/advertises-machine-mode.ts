@@ -78,6 +78,9 @@ export const advertisesMachineModeChecker: Checker = {
     "the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it",
     "a pass establishes only that help names the flag and never that the flag is accepted",
   ],
+  coverageEstablished: [
+    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row",
+  ],
 
   probes: (d): Invocation[] => [
     { args: ["--help"], inertness: "help-path", purpose: PLAIN },

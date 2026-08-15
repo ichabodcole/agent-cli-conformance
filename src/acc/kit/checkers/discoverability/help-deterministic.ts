@@ -51,6 +51,9 @@ export const helpDeterministicChecker: Checker = {
     "forbidden content such as a timestamp or a varying absolute path is only caught when it differs between two adjacent runs",
     "only stdout is compared and never stderr",
   ],
+  coverageEstablished: [
+    "two runs of root --help with identical argv and identical environment have the same SHA-256 digest over their raw stdout bytes",
+  ],
 
   probes: (): Invocation[] =>
     REPEATS.map((n) => ({

@@ -93,6 +93,8 @@ checker_status: planned # planned | implemented
 coverage: partial # complete | partial — how much of THIS page the checker establishes
 coverage_gaps: # one phrase per normative clause the checker does not establish
   - only the root is probed so a flag unknown to a subcommand is not
+coverage_established: # one phrase per thing a PASS licenses, scoped to the paths sampled
+  - one unknown long flag given at the root exits non-zero with stdout empty
 ```
 
 ### Two fields, two questions
@@ -122,33 +124,66 @@ never be a bare flag admitting a hole while naming none of it. The gaps are what
 [`fullyVerified`](./concepts/conformance.md#coverage-a-pass-can-be-narrower-than-its-rule)
 withholds itself over, and what `acc check` prints when it does.
 
+`coverage_established` is the other half of the same accounting, and its invariant does **not**
+branch on `coverage`: every rule page **MUST** name at least one entry whatever its coverage,
+`complete` included — where the gap list is required to be empty and this one is still required
+not to be. A checker that establishes nothing is not a checker. `complete` is held to nothing
+further here, because "the established list covers the page" is a claim no string comparison can
+make, and a gate that only looks like one is worse than none.
+
+Each entry says what a **pass** licenses the reader to believe, scoped to the paths actually
+sampled. `no CSI introducer on stdout or stderr for root help or one usage error with both
+streams attached to pipes` is the standard; `no ANSI escapes` is the overclaim to avoid — that is
+what B2's rule says, not what B2's checker looked at, and the distance between those two sentences
+is why the field exists.
+
+There is one page whose honest entry is that there is nothing to license:
+[A4](./rules/parsing/unexpected-positionals-rejected.md) declares no probe and returns a fixed
+`unverified`. It says so, in words, rather than passing an empty list through a gate built to
+catch exactly that.
+
 Both fields for every rule are tabulated in [index.md](./index.md#coverage-at-a-glance), which
 is generated from this frontmatter by `bun run docs:sync` and fails the lint when it drifts.
 
 ### `## Current checker coverage` is required on every rule page
 
 Frontmatter is not what a reader reads. Every rule page **MUST** carry a
-`## Current checker coverage` section holding an **Established** list — what a `pass` from this
-checker actually means — and a `**Gaps**` list whose bullets are the `coverage_gaps` above,
+`## Current checker coverage` section holding an **Established** list whose bullets are the
+`coverage_established` above and a `**Gaps**` list whose bullets are the `coverage_gaps`, both
 **verbatim and in order**. The lint compares them, so closing a gap in prose without closing it
-in code fails the gate, exactly as it does for the frontmatter.
+in code fails the gate, exactly as it does for the frontmatter — and so does widening the
+**Established** list without widening the checker.
 
-Three copies of one list is the price of the copy a reader sees being the checked one. Five
+Three copies of each list is the price of the copy a reader sees being the checked one. Five
 pages described a broader measurement than their checker performs while carrying correct
 frontmatter two lines above, which is what that buys.
 
-A gap phrase is read back by a deliberately small frontmatter parser that splits list items on
-a comma and on a space-hyphen-space sequence, so it must contain neither. The kit's own
-registry test rejects both at the source rather than letting the lint fail with a mismatch that
-explains nothing.
+**Established** was the unchecked half until recently, which is worth recording because the
+failure above is exactly the one it invites: `coverage_gaps` was bound to the checker in both
+directions and to the prose on top of that, while the list of what a `pass` MEANS sat six lines
+away, gated by nothing at all (review DTX-8). The two lists are now enforced identically, and
+each is reported on independently — a page can state its holes correctly and still overstate what
+a pass means, so one message never stands in for the other.
+
+**What that enforcement does not establish, stated here so the field is not read as proof.** It
+binds the page to the checker's **declaration**. It cannot bind the declaration to the checker's
+**code**: a checker whose `coverageEstablished` claims more than its assertions perform passes
+this lint on every copy. Only a mutation fixture closes that — break the property, watch the
+checker catch it — and that work is scoped at
+[`docs/roadmap.md`, R4-8](../roadmap.md#8-r4-8--test-the-checker-as-a-measurement-instrument).
+
+A gap or established phrase is read back by a deliberately small frontmatter parser that splits
+list items on a comma and on a space-hyphen-space sequence, so it must contain neither. The kit's
+own registry test rejects both at the source rather than letting the lint fail with a mismatch
+that explains nothing.
 
 Two properties this buys, and the reason rules are pages rather than sections:
 
 - **Conformance failures cite the page.** The kit emits the rule's path, so whoever hit the
   failure lands on one atomic page explaining the rule and how to fix it.
 - **The lint is bidirectional.** Every `rule_id` must have its declared checker file, and
-  every checker must have a rule page. `tier`, `probe_level`, `coverage` and `coverage_gaps`
-  must be identical on both sides. Documentation drift fails the gate.
+  every checker must have a rule page. `tier`, `probe_level`, `coverage`, `coverage_gaps` and
+  `coverage_established` must be identical on both sides. Documentation drift fails the gate.
 
 `rule_id` values are **append-only**. They appear in conformance reports that outlive any
 given release — renumbering one silently invalidates every stored report. Same discipline as

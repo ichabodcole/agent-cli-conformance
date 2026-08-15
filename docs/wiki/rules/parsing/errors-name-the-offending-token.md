@@ -19,6 +19,9 @@ coverage_gaps:
   - only an unknown flag and an unknown verb are probed
   - the SHOULD to enumerate a closed set as choices is not exercised
   - the assertion is that the sentinel substring reached stderr and not that the whole offending token appears verbatim
+coverage_established:
+  - the stderr of an unknown root flag rejection contains the probe's sentinel string
+  - the stderr of an unknown root verb rejection contains the probe's sentinel string
 ---
 
 # Errors name the offending token
@@ -76,8 +79,8 @@ the rest of this page, unexamined.
 
 **Established**
 
-- the rejection of an unknown root flag names that flag verbatim on stderr.
-- the rejection of an unknown root verb names that verb verbatim on stderr.
+- the stderr of an unknown root flag rejection contains the probe's sentinel string
+- the stderr of an unknown root verb rejection contains the probe's sentinel string
 
 **Gaps**
 

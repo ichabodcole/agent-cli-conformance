@@ -50,6 +50,9 @@ export const unknownCommandChecker: Checker = {
     "naming the offending verb on stderr is not asserted",
     "only a sentinel-shaped token is probed so a verb that near-misses a real command is never offered",
   ],
+  coverageEstablished: [
+    "one unknown verb given at the root exits non-zero and leaves stdout empty",
+  ],
 
   probes: (): Invocation[] => [
     { args: ROOT, inertness: "sentinel", purpose: "A2: unknown root verb" },

@@ -25,18 +25,21 @@ export const helpExitsZeroChecker: Checker = {
   // the pass branch. Help that ended on any signal, attributable or not, still never passes here
   // — it fails or it reports the gap. So there is no new hole in what a `pass` means, and none
   // of the three below closed.
-  coverage: "partial",
   //
   // The fourth is a DETECTOR limit rather than a reach one (review R6-5), and it is the half of
   // the rule this file reads least carefully. "Write the help text to stdout" is asserted as
   // `stdout.trim() !== ""`, so a `--help` that exits 0 after printing a single character passes
   // the clause about help text. Recognising help as help needs a claim about what help looks
   // like that this kit does not have and would guess at badly.
+  coverage: "partial",
   coverageGaps: [
     "nested help is not probed at L0",
     "a help subcommand is not probed",
     "appending --help to an otherwise complete invocation is not probed",
     "stdout is only required to be non-empty and is never checked to contain help text",
+  ],
+  coverageEstablished: [
+    "root --help and root -h each exit 0 with non-empty stdout and neither hangs nor dies on a fault signal",
   ],
 
   probes: (): Invocation[] => [

@@ -19,6 +19,8 @@ coverage_gaps:
   - only seven known credential shapes are matched so a bespoke token is invisible
   - a secret carried as a flag default is only seen if help prints defaults
   - nested subcommand help is never scanned even though a flag default usually belongs to a leaf command
+coverage_established:
+  - the stdout and stderr of root help match none of seven known credential patterns
 ---
 
 # Help and schema never contain secrets
@@ -89,8 +91,7 @@ the rest of this page, unexamined.
 
 **Established**
 
-- root help and its stderr carry none of seven known credential shapes: OpenAI, GitHub and Slack
-  tokens, an AWS access key, a PEM private-key header, a JWT, and a password embedded in a URL.
+- the stdout and stderr of root help match none of seven known credential patterns
 
 **Gaps**
 

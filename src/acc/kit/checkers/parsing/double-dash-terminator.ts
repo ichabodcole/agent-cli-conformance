@@ -49,6 +49,9 @@ export const doubleDashTerminatorChecker: Checker = {
     "a rejection is recognised only from an English unknown-option or unknown-flag phrase so a differently worded rejection reads as a pass",
     "only a bare terminator at the root followed by a single value is probed",
   ],
+  coverageEstablished: [
+    "a hyphen-leading value after a bare terminator at the root draws no English unknown-option rejection naming it on stderr",
+  ],
 
   probes: (): Invocation[] => [
     { args: ARGS, inertness: "sentinel", purpose: "A6: `--` must end option parsing" },

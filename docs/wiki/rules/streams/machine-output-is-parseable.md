@@ -19,6 +19,8 @@ coverage_gaps:
   - only machine-mode help is parsed and never a data command
   - shape stability across invocations and across commands is not compared
   - the stream and opaque output kinds are never exercised because no declaration exists at L0 to select them
+coverage_established:
+  - for a target whose root help advertises --json the entire stdout of machine-mode help parses as exactly one JSON document
 ---
 
 # Machine output parses as its declared kind
@@ -103,8 +105,8 @@ the rest of this page, unexamined.
 
 **Established**
 
-- machine-mode help parses whole as exactly one JSON document, for a target whose help advertises
-  `--json`.
+- for a target whose root help advertises --json the entire stdout of machine-mode help parses as
+  exactly one JSON document
 
 **Gaps**
 

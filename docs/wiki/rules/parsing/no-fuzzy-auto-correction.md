@@ -20,6 +20,8 @@ coverage_gaps:
   - the MUST NOT prompt to confirm a guess clause is not exercised here
   - only a single deletion near-miss of one discovered flag is probed so a transposition or an insertion or a case change is not
   - the near-miss is sent at the root so a near-miss of a flag belonging to a subcommand is never built
+coverage_established:
+  - a flag one deletion away from a flag discovered in root help exits non-zero when sent at the root with no verb
 ---
 
 # Never act on a guessed correction
@@ -94,9 +96,11 @@ the rest of this page, unexamined.
 
 **Established**
 
-- a one-character near-miss of a **flag** discovered in root help exits non-zero rather than being
-  silently corrected.
-- when no suitable flag can be discovered, the verdict is `unverified` rather than a pass.
+- a flag one deletion away from a flag discovered in root help exits non-zero when sent at the root
+  with no verb
+
+When no suitable flag can be discovered to build a near-miss from, the verdict is `unverified`
+rather than a pass — a probe that could not be built is not a probe that succeeded.
 
 **Gaps**
 

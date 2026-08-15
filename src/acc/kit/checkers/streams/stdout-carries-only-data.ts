@@ -37,6 +37,9 @@ export const stdoutCarriesOnlyDataChecker: Checker = {
     "stderr is never required to carry the diagnostic so a failure that reports nothing at all passes",
     "machine mode is never selected so an error envelope written to stdout only in machine mode is not seen",
   ],
+  coverageEstablished: [
+    "every one of an unknown root flag and an unknown root verb that exited non-zero left stdout empty",
+  ],
 
   probes: (): Invocation[] => [
     { args: [`--${SENTINEL}-flag`], inertness: "sentinel", purpose: "B1: failure via bad flag" },

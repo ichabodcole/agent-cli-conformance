@@ -47,6 +47,9 @@ export const deterministicChecker: Checker = {
     "only a usage-error path is repeated so a success path or a real command is never compared",
     "the three runs land within milliseconds of each other so variation that appears only over a longer interval is invisible",
   ],
+  coverageEstablished: [
+    "one usage-error invocation repeated three times with byte-identical argv and environment returns the same exit code each time",
+  ],
 
   probes: (): Invocation[] =>
     REPEATS.map((n) => ({

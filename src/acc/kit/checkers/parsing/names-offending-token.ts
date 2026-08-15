@@ -38,6 +38,10 @@ export const namesOffendingTokenChecker: Checker = {
     "the SHOULD to enumerate a closed set as choices is not exercised",
     "the assertion is that the sentinel substring reached stderr and not that the whole offending token appears verbatim",
   ],
+  coverageEstablished: [
+    "the stderr of an unknown root flag rejection contains the probe's sentinel string",
+    "the stderr of an unknown root verb rejection contains the probe's sentinel string",
+  ],
 
   probes: (): Invocation[] => [
     { args: FLAG, inertness: "sentinel", purpose: "A3: the rejection must name the flag" },

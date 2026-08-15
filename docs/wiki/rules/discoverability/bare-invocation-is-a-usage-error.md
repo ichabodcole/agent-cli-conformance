@@ -18,6 +18,8 @@ coverage_gaps:
   - the exit code is only required to be non-zero here and not the declared 2
   - stderr is never checked to carry the usage summary
   - the bare invocation is only run against pipes so a wizard that starts only with a terminal attached is out of reach
+coverage_established:
+  - the bare invocation exits non-zero with stdout empty and terminates rather than waiting for input
 ---
 
 # Bare invocation is a usage error
@@ -85,7 +87,7 @@ the rest of this page, unexamined.
 
 **Established**
 
-- a bare invocation exits non-zero, writes nothing to stdout, and does not hang.
+- the bare invocation exits non-zero with stdout empty and terminates rather than waiting for input
 
 **Gaps**
 

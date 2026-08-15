@@ -21,6 +21,8 @@ coverage_gaps:
   - the exit code is only required to be non-zero here and not the declared 2
   - only a long valueless flag is probed so a short flag or a cluster of short flags is not
   - that the command did not otherwise proceed is inferred from a non-zero exit rather than observed
+coverage_established:
+  - one unknown long flag given at the root exits non-zero with stdout empty and the sentinel from that flag present on stderr
 ---
 
 # Unknown flags must exit non-zero
@@ -90,8 +92,8 @@ the rest of this page, unexamined.
 
 **Established**
 
-- a valueless flag unknown at the **root** exits non-zero, leaves stdout empty, and is named
-  verbatim on stderr.
+- one unknown long flag given at the root exits non-zero with stdout empty and the sentinel from
+  that flag present on stderr
 
 **Gaps**
 

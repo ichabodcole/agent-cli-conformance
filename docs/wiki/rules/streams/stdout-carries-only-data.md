@@ -19,6 +19,8 @@ coverage_gaps:
   - stdout on a SUCCESSFUL command is never inspected for diagnostics
   - stderr is never required to carry the diagnostic so a failure that reports nothing at all passes
   - machine mode is never selected so an error envelope written to stdout only in machine mode is not seen
+coverage_established:
+  - every one of an unknown root flag and an unknown root verb that exited non-zero left stdout empty
 ---
 
 # stdout carries only data
@@ -86,8 +88,7 @@ the rest of this page, unexamined.
 
 **Established**
 
-- stdout is empty on the invocations that failed — two usage errors, an unknown flag and an
-  unknown verb.
+- every one of an unknown root flag and an unknown root verb that exited non-zero left stdout empty
 
 **Gaps**
 

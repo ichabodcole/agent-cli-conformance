@@ -18,6 +18,8 @@ coverage_gaps:
   - only root help is compared and never nested help
   - forbidden content such as a timestamp or a varying absolute path is only caught when it differs between two adjacent runs
   - only stdout is compared and never stderr
+coverage_established:
+  - two runs of root --help with identical argv and identical environment have the same SHA-256 digest over their raw stdout bytes
 ---
 
 # Help output is byte-identical between runs
@@ -110,10 +112,8 @@ the rest of this page, unexamined.
 
 **Established**
 
-- two captures of the SAME root `--help` invocation taken moments apart — identical argv,
-  identical environment — have the same SHA-256 digest over their raw stdout bytes, and a
-  difference is reported with the index of the first differing character where the decoded strings
-  carry one.
+- two runs of root --help with identical argv and identical environment have the same SHA-256 digest
+  over their raw stdout bytes
 
 **Gaps**
 

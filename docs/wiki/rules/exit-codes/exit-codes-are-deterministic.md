@@ -20,6 +20,8 @@ coverage_gaps:
   - the retryable declaration for genuinely intermittent failures is not exercised
   - only a usage-error path is repeated so a success path or a real command is never compared
   - the three runs land within milliseconds of each other so variation that appears only over a longer interval is invisible
+coverage_established:
+  - one usage-error invocation repeated three times with byte-identical argv and environment returns the same exit code each time
 ---
 
 # Identical invocations produce identical exit codes
@@ -91,8 +93,8 @@ the rest of this page, unexamined.
 
 **Established**
 
-- one usage-error invocation, repeated three times with byte-identical argv and environment,
-  returns the same exit code each time.
+- one usage-error invocation repeated three times with byte-identical argv and environment returns
+  the same exit code each time
 
 **Gaps**
 

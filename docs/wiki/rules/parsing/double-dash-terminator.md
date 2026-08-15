@@ -19,6 +19,8 @@ coverage_gaps:
   - the delegator passthrough requirement is not exercised
   - a rejection is recognised only from an English unknown-option or unknown-flag phrase so a differently worded rejection reads as a pass
   - only a bare terminator at the root followed by a single value is probed
+coverage_established:
+  - a hyphen-leading value after a bare terminator at the root draws no English unknown-option rejection naming it on stderr
 ---
 
 # Honour the `--` end-of-options terminator
@@ -126,9 +128,11 @@ the rest of this page, unexamined.
 
 **Established**
 
-- a hyphen-leading value after a bare `--` is not rejected as an unknown option.
-- through a `bun` launcher the probe is undeliverable, and the verdict is `unverified` rather than
-  a measurement of an argv the target never received.
+- a hyphen-leading value after a bare terminator at the root draws no English unknown-option
+  rejection naming it on stderr
+
+Through a `bun` launcher the probe is undeliverable — bun swallows the leading `--` — and the
+verdict is `unverified` rather than a measurement of an argv the target never received.
 
 **Gaps**
 

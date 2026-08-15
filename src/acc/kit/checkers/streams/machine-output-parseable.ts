@@ -51,6 +51,9 @@ export const machineOutputParseableChecker: Checker = {
     "shape stability across invocations and across commands is not compared",
     "the stream and opaque output kinds are never exercised because no declaration exists at L0 to select them",
   ],
+  coverageEstablished: [
+    "for a target whose root help advertises --json the entire stdout of machine-mode help parses as exactly one JSON document",
+  ],
 
   probes: (d: Discovery): Invocation[] =>
     // `--format` is deliberately NOT treated as a format selector here (see inert.ts's
