@@ -45,12 +45,16 @@ export interface Observation {
    */
   purposes: string[];
   /**
-   * The captured bytes, decoded as UTF-8 once over the whole capture.
+   * The captured bytes, decoded as UTF-8 once over the whole capture. A RENDERING of the stream,
+   * for a human to read and for a checker to search — not the stream itself.
    *
-   * Byte-faithful within the capture limit: the runner collects Buffers and concatenates before
+   * Faithful across CHUNK BOUNDARIES: the runner collects Buffers and concatenates before
    * decoding, so a multi-byte character split across two of the target's writes survives intact.
    * Decoding per chunk turned `€` written in two writes into replacement characters, which can
    * fabricate a difference for D4 and corrupts the bytes any finding quotes as evidence.
+   *
+   * NOT faithful to bytes that are not valid UTF-8 — those collapse, irreversibly and many-to-one,
+   * which is what `stdoutDigest` and `stdoutLossy` below exist to say out loud.
    */
   stdout: string;
   stderr: string;
@@ -61,6 +65,40 @@ export interface Observation {
    */
   stdoutBytes: number;
   stderrBytes: number;
+  /**
+   * SHA-256 over the RAW captured bytes of each stream, taken BEFORE the decode above.
+   *
+   * THE FIELD THAT MAKES `stdout` STOP BEING THE EVIDENCE. UTF-8 decoding is not injective:
+   * bytes `0x80`, `0x81` and `0xC8` are each invalid on their own and each decodes to the single
+   * replacement character `U+FFFD`, which re-encodes to `EF BF BD`. So two targets writing one
+   * different byte apiece produce observations that are equal in `stdout` AND equal in
+   * `stdoutBytes` — byte-identical evidence for two byte-different streams (review R6-1). D4
+   * compared those decoded strings while claiming byte identity, so it could certify different
+   * raw output as identical. Every byte-identity comparison in the catalogue compares THESE.
+   *
+   * THE RAW BYTES ARE DELIBERATELY NOT RETAINED, and that is a choice rather than an oversight.
+   * They are already bounded (MAX_STREAM_BYTES / MAX_OUTPUT_BYTES in runner.ts), so keeping them
+   * would be affordable — but it would double every observation's footprint to buy nothing a
+   * 32-byte digest does not already buy for an equality question, and it would put an unbounded
+   * binary blob into the serialisable observation artifact that `docs/roadmap.md` step 4
+   * specifies, which then needs an encoding, a redaction story and a retention story of its own.
+   * A digest answers "are these the same bytes?" and refuses to answer "what were they?", which
+   * is exactly the split this kit wants: the display string renders, the digest adjudicates.
+   */
+  stdoutDigest: string;
+  stderrDigest: string;
+  /**
+   * True when re-encoding the decoded string does NOT reproduce the captured bytes — i.e. the
+   * decode lost information and the display string above is a rendering, not the evidence.
+   *
+   * Set by invalid UTF-8 (every ill-formed sequence collapses to `U+FFFD`) and by a `truncated`
+   * capture whose cut landed mid-code-point. It is the honest companion to the digest: the digest
+   * says two streams differ, and this says WHY a reader looking at `stdout` cannot see it. A
+   * checker that must point at an offset has to check this first — there is no offset to give
+   * when the difference lives in bytes the decode collapsed.
+   */
+  stdoutLossy: boolean;
+  stderrLossy: boolean;
   /**
    * True when a capture ceiling (see MAX_STREAM_BYTES / MAX_OUTPUT_BYTES in runner.ts) stopped
    * the recording and the runner killed the target.

@@ -4,7 +4,7 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
-import type { Checker, Finding, History, Invocation } from "../../types.ts";
+import type { Checker, Finding, History, Invocation, Observation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
 const RULE_ID = "D4";
@@ -90,19 +90,16 @@ export const helpDeterministicChecker: Checker = {
     // A difference found INSIDE the region both runs actually produced is a real difference,
     // whether or not either capture was cut short afterwards — so it is decided before the
     // truncation guard. A mismatch only in LENGTH is not: at the output ceiling that is our cut
-    // showing through, not the target's nondeterminism. Hence `firstDiff < minLen`, not
-    // `a.stdout !== b.stdout`, as the condition that survives truncation.
-    if (firstDiff < minLen) {
-      return finding(
-        "fail",
-        // Report the DIFF location, not just the fact: a one-line delta containing a timestamp
-        // is a different problem from wholesale reordering, and the fix differs accordingly.
-        // "index", not "byte": these are JS string offsets, i.e. UTF-16 code units, which
-        // diverge from byte offsets the moment help contains a non-ASCII character.
-        `help output differed between runs, first at index ${firstDiff}`,
-        evidence,
-      );
-    }
+    // showing through, not the target's nondeterminism. Hence `firstDiff < minLen`, not a
+    // whole-stream comparison, as the condition that survives truncation.
+    //
+    // This scan is a DIFFERENCE DETECTOR over the decoded strings, not the identity test. That
+    // direction is sound and the other is not: two decoded strings that differ cannot have come
+    // from identical bytes, while two that MATCH can (see `Observation.stdoutDigest`). It is here
+    // rather than below because it is the only comparison that can survive truncation — a digest
+    // covers the whole capture, so two prefixes cut at different points have nothing to say to
+    // each other, while their common region still does.
+    if (firstDiff < minLen) return finding("fail", differedAt(a, b, firstDiff), evidence);
 
     // Two prefixes that agree as far as they go are not two identical help outputs.
     const cut = truncatedUnverified(finding, [a, b]);
@@ -114,7 +111,14 @@ export const helpDeterministicChecker: Checker = {
     const crashed = crashedUnverified(finding, [a, b]);
     if (crashed) return crashed;
 
-    return a.stdout === b.stdout
+    // THE IDENTITY TEST, and it is over the DIGESTS. Both captures are complete here — neither
+    // was truncated, neither crashed — so the digests cover the same question the rule asks.
+    //
+    // `a.stdout === b.stdout` is what this line used to say, and it is a strictly weaker claim
+    // wearing the words of a stronger one: the UTF-8 decode maps every ill-formed byte to one
+    // `U+FFFD`, so a target emitting `0x80` on the first run and `0x81` on the second produced
+    // equal strings, equal `stdoutBytes`, and a `pass` asserting byte identity (review R6-1).
+    return a.stdoutDigest === b.stdoutDigest
       ? finding(
           "pass",
           // IDENTICAL, and say so: "differing only by a probe nonce in the environment" is what
@@ -122,6 +126,28 @@ export const helpDeterministicChecker: Checker = {
           "help identical across two runs of the same invocation",
           evidence,
         )
-      : finding("fail", `help output differed between runs, first at index ${firstDiff}`, evidence);
+      : finding("fail", differedAt(a, b, firstDiff), evidence);
   },
 };
+
+/**
+ * How the two runs differed, said only as precisely as the evidence allows.
+ *
+ * Three cases, and the third is the one this function exists for. When the decoded strings differ
+ * there is an offset to quote — a JS string index, in UTF-16 code units, which is NOT a byte
+ * offset the moment help contains a non-ASCII character, and which is worth quoting because a
+ * one-character timestamp delta is a different problem from wholesale reordering. When they are
+ * equal but the digests are not, the difference lives in bytes the decode collapsed and NO offset
+ * exists to point at: the honest finding names the byte counts and says where the answer isn't.
+ * Inventing an index there would be the same overclaim in a new place.
+ */
+function differedAt(a: Observation, b: Observation, firstDiff: number): string {
+  if (a.stdout !== b.stdout) {
+    return `help output differed between runs, first at decoded-string index ${firstDiff} (UTF-16 code units, not bytes)`;
+  }
+  return (
+    `help output differed between runs in bytes the UTF-8 decode collapsed — ${a.stdoutBytes} and ` +
+    `${b.stdoutBytes} bytes rendering to the same text, so no offset can be given; ` +
+    `stdout digests ${a.stdoutDigest.slice(0, 12)} and ${b.stdoutDigest.slice(0, 12)}`
+  );
+}

@@ -221,7 +221,8 @@ nicety the review files it as.
 three separate operations rather than one pass. The artifact carries at least: target identity
 and executable digest; spec, checker, report and artifact format versions; platform and
 controlled-environment metadata; exact argv and the probe level and sandbox policy in force;
-byte-faithful stdout and stderr with truncation metadata; status, signal, timing, timeout and
+stdout and stderr with their raw-byte digests, lossy-decode flags and truncation metadata; status,
+signal, timing, timeout and
 cancellation information; and filesystem or network observations where the probe level supports
 them.
 
@@ -240,9 +241,12 @@ turns a conformance run into a credential-exfiltration format, and one without a
 turns every bug report into an indefinite copy of someone's environment.
 
 **What already exists.** More than the framing suggests. An `Observation` today carries argv and
-env overrides, byte-faithful streams decoded once over the whole capture, `truncated` with
+env overrides, streams decoded once over the whole capture with a SHA-256 digest of the raw bytes
+beside each one and a `lossy` flag saying when the decode threw information away, `truncated` with
 retained byte counts, `exitCode`, `signal` and `crashed`, `timedOut`, `spawnFailed`, `durationMs`
-and `timeToFirstByteMs`. What it lacks is the target digest, every version coordinate, platform
+and `timeToFirstByteMs`. The digest is deliberately the whole of the byte-level record: retaining
+the bytes as well would double the artifact for an equality question a 32-byte hash already
+answers, and would hand the redaction and retention problems below an unbounded binary field. What it lacks is the target digest, every version coordinate, platform
 and environment metadata, the sandbox policy, cancellation state, and any filesystem or network
 observation. This is a schema-and-persistence job over a data model that is substantially there —
 not a rewrite.
@@ -410,6 +414,21 @@ source) and fails on any divergence, and every report carries `evidenceGaps` nam
 verdict withheld itself over. What is missing is that the gaps are phrases a human wrote, not a
 mechanical enumeration of a page's **MUST** clauses. Nothing checks that the list is _complete_.
 
+**A candidate rule this phase declined to mint: stdout must be valid UTF-8.** The review that
+found D4 certifying two different byte streams as identical offered two remedies — keep a
+representation the comparison can trust, or narrow the contract so ill-formed output is itself a
+violation. The first was taken (`Observation.stdoutDigest`, and `stdoutLossy` to stop the display
+string being read as the evidence). The second is a real rule and it is written down here rather
+than in the catalogue, because a rule id is minted when a checker design exists to give it and
+not when the rule merely sounds right — the discipline stated at
+[design guidance](#design-guidance-that-is-not-yet-normative) and argued for at length in the
+[exit-code decision](./wiki/decisions/exit-codes-below-125.md#rationale). What it would need
+first: a decision about which streams and which modes it binds (machine mode certainly; a human
+help path emitting a locale-encoded string is a different question), and about what it says when
+a `truncated` capture is ill-formed only because the kit's own ceiling cut it mid-code-point.
+Note the interaction with the SIGPIPE clause at [step 7](#7-r4-5--the-lifecycle-rule-family):
+"corrupt trailing output" on a closed pipe is the same defect arriving by another route.
+
 **Blocked on.** Nothing, technically — and it is placed late anyway, for a reason worth stating
 because it is the one item where late placement is a risk rather than a saving. Mutation and
 metamorphic suites are written against a checker corpus, and that corpus changes shape at steps 5
@@ -543,8 +562,10 @@ R3-1's normative-scope question is settled at
 
 - the front page now separates **For**, **Today**, **Planned** and **Non-goals** — the review's
   own step 1, and its "separate current capability from roadmap language" recommendation;
-- process termination bounds the whole process tree, and output capture is bounded and
-  byte-faithful with truncation reported rather than silent (R1-1, R2-3);
+- process termination bounds the whole process tree, and output capture is bounded, with
+  truncation reported rather than silent and a raw-byte digest beside each decoded stream, so two
+  streams the UTF-8 decode renders identically are no longer identical evidence (R1-1, R2-3,
+  R6-1);
 - the observation records the terminating signal, and a target that dies of one the kit did not
   send is no longer indistinguishable from one the kit killed — the record half of
   [R4-5](#7-r4-5--the-lifecycle-rule-family), which took the `kill -SEGV $$` fixture from nine

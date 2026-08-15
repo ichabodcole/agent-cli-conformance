@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { record } from "../../record.ts";
+import { digestOfText } from "../../runner.ts";
 import type { History, Observation, TargetInfo } from "../../types.ts";
 import { firstBytePromptChecker } from "./first-byte-prompt.ts";
 
@@ -64,6 +65,10 @@ describe("F2 — first byte arrives promptly", () => {
       stderr: "",
       stdoutBytes: timedOut ? 0 : "1.0.0\n".length,
       stderrBytes: 0,
+      stdoutDigest: digestOfText(timedOut ? "" : "1.0.0\n"),
+      stderrDigest: digestOfText(""),
+      stdoutLossy: false,
+      stderrLossy: false,
       truncated: false,
       exitCode: timedOut ? null : 0,
       timedOut,

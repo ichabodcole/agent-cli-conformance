@@ -59,6 +59,39 @@ export const MAX_STREAM_BYTES = 4 * 1024 * 1024;
 export const MAX_OUTPUT_BYTES = 6 * 1024 * 1024;
 
 /**
+ * The evidence for one captured stream: what a reader sees, and what a checker compares.
+ *
+ * Both halves are computed from the SAME Buffer, in this order, because the order is the whole
+ * fix. The decode is lossy — `0x80`, `0x81` and `0xC8` are three different invalid bytes and all
+ * three become one `U+FFFD` — so a digest taken after it would hash the collapse rather than the
+ * capture and separate nothing (review R6-1). Digest the bytes, then render them.
+ *
+ * `lossy` is the round trip: re-encode the string and compare. It is true for invalid UTF-8 and
+ * for a `truncated` capture cut mid-code-point, and it is what stops `stdout` from being read as
+ * the evidence when it is only a rendering of it.
+ */
+export function streamEvidence(bytes: Buffer): { text: string; digest: string; lossy: boolean } {
+  const text = bytes.toString("utf8");
+  return {
+    text,
+    digest: createHash("sha256").update(bytes).digest("hex"),
+    lossy: !Buffer.from(text, "utf8").equals(bytes),
+  };
+}
+
+/**
+ * The digest a stream of exactly this text would have, for a hand-built observation.
+ *
+ * Test histories are written as string literals, and a digest that did not follow from the text
+ * beside it would be a lie in the fixture — the kind of unfalsifiable data this project exists to
+ * fail on. Only sound for a stream that IS valid UTF-8 (`lossy: false`); an observation standing
+ * in for invalid bytes must be built from a Buffer through `streamEvidence` instead.
+ */
+export function digestOfText(text: string): string {
+  return createHash("sha256").update(Buffer.from(text, "utf8")).digest("hex");
+}
+
+/**
  * Run one probe and record what happened.
  *
  * Deadline is enforced IN-PROCESS. Shelling out to `timeout(1)` is a trap: it is GNU coreutils
@@ -127,14 +160,22 @@ export async function runProbe(
       // `force` so a probe that already removed its own cwd doesn't turn cleanup into a crash;
       // the recording is the point, and a leftover temp directory is not worth losing it over.
       rmSync(sandbox, { recursive: true, force: true });
+      // Digested BEFORE the decode, from the same Buffers, because the decode is where two
+      // different byte streams become one string. See `streamEvidence`.
+      const out = streamEvidence(Buffer.concat(stdoutChunks));
+      const err = streamEvidence(Buffer.concat(stderrChunks));
       resolve({
         id: invocationId(inv),
         invocation: inv,
         purposes: [inv.purpose],
-        stdout: Buffer.concat(stdoutChunks).toString("utf8"),
-        stderr: Buffer.concat(stderrChunks).toString("utf8"),
+        stdout: out.text,
+        stderr: err.text,
         stdoutBytes,
         stderrBytes,
+        stdoutDigest: out.digest,
+        stderrDigest: err.digest,
+        stdoutLossy: out.lossy,
+        stderrLossy: err.lossy,
         truncated,
         // A process WE killed did not choose its status. Recording 128+n as the target's exit
         // code would fabricate evidence about a tool that never got to exit — and that is as

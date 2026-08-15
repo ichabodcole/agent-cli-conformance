@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { record } from "../../record.ts";
-import type { History, TargetInfo } from "../../types.ts";
+import { digestOfText, streamEvidence } from "../../runner.ts";
+import type { History, Observation, TargetInfo } from "../../types.ts";
 import { helpDeterministicChecker } from "./help-deterministic.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -27,6 +28,10 @@ function historyWithOneRun(): History {
     stderr: "",
     stdoutBytes: "usage: fixture\n".length,
     stderrBytes: 0,
+    stdoutDigest: digestOfText("usage: fixture\n"),
+    stderrDigest: digestOfText(""),
+    stdoutLossy: false,
+    stderrLossy: false,
     truncated: false,
     exitCode: 0,
     timedOut: false,
@@ -58,9 +63,10 @@ describe("D4 — help output is byte-identical between runs", () => {
     const h = await record(fixture("broken/nondeterministic-help.ts"), [helpDeterministicChecker]);
     const f = helpDeterministicChecker.check(h);
     expect(f.verdict).toBe("fail");
-    // "index", not "byte": the offset is a JS string index (UTF-16 code units), which is only
-    // a byte offset while the help text stays ASCII.
-    expect(f.detail).toMatch(/first at index \d+/);
+    // "decoded-string index", not "byte": the offset is a JS string index (UTF-16 code units),
+    // which is only a byte offset while the help text stays ASCII. The detail says so in the
+    // finding rather than leaving the reader to assume otherwise — review R6-1.
+    expect(f.detail).toMatch(/first at decoded-string index \d+ \(UTF-16 code units, not bytes\)/);
     expect(f.ruleId).toBe("D4");
   });
 
@@ -75,6 +81,78 @@ describe("D4 — help output is byte-identical between runs", () => {
     const f = helpDeterministicChecker.check(h);
     expect(f.evidence.length).toBeGreaterThan(0);
     for (const id of f.evidence) expect(h.byId.has(id)).toBe(true);
+  });
+});
+
+// R6-1, at the verdict rather than at the record. The runner's own test proves two different
+// invalid bytes now digest differently; this proves D4 READS that instead of the strings.
+//
+// The history is built from Buffers through `streamEvidence` — the runner's own function, so the
+// observation is exactly what a recording of `writes-invalid-byte-80.sh` and
+// `writes-invalid-byte-81.sh` produces — rather than recorded, because D4's probe is `--help`
+// and those fixtures answer every invocation the same way. What matters is the SHAPE of the two
+// observations, and it is the shape that used to be indistinguishable.
+describe("D4 compares digests, not the strings the decode produced", () => {
+  const run = (repeat: number, bytes: Buffer): Observation => {
+    const out = streamEvidence(bytes);
+    return {
+      id: `d4-invalid-${repeat}`,
+      invocation: {
+        args: ["--help"],
+        repeat,
+        inertness: "help-path",
+        purpose: `D4: help run ${repeat}`,
+      },
+      purposes: [`D4: help run ${repeat}`],
+      stdout: out.text,
+      stderr: "",
+      stdoutBytes: bytes.length,
+      stderrBytes: 0,
+      stdoutDigest: out.digest,
+      stderrDigest: digestOfText(""),
+      stdoutLossy: out.lossy,
+      stderrLossy: false,
+      truncated: false,
+      exitCode: 0,
+      timedOut: false,
+      signal: null,
+      crashed: false,
+      spawnFailed: false,
+      durationMs: 1,
+      timeToFirstByteMs: 1,
+    };
+  };
+
+  const historyOf = (observations: Observation[]): History => ({
+    target: { path: "/invalid-byte-target", argv0: ["/invalid-byte-target"] },
+    discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: true },
+    observations,
+    byId: new Map(observations.map((o) => [o.id, o])),
+  });
+
+  test("FAILS two runs whose bytes differ but whose decoded help is identical", () => {
+    const a = run(1, Buffer.from([0x80]));
+    const b = run(2, Buffer.from([0x81]));
+    // The premise. Everything D4 used to look at says these two runs are the same run.
+    expect(a.stdout).toBe(b.stdout);
+    expect(a.stdoutBytes).toBe(b.stdoutBytes);
+
+    const f = helpDeterministicChecker.check(historyOf([a, b]));
+    // Delete the digest comparison and this reads `pass — help identical across two runs`.
+    expect(f.verdict).toBe("fail");
+    // ...and the finding does NOT invent an offset it cannot have. There is no index into the
+    // decoded strings where they differ, because they do not differ there.
+    expect(f.detail).toContain("bytes the UTF-8 decode collapsed");
+    expect(f.detail).not.toMatch(/index \d+/);
+  });
+
+  test("still PASSES two runs whose bytes are equally invalid and equal", () => {
+    const f = helpDeterministicChecker.check(
+      historyOf([run(1, Buffer.from([0x80])), run(2, Buffer.from([0x80]))]),
+    );
+    // The other direction, so the digest cannot be satisfied by failing everything lossy: bytes
+    // the decode mangles are still bytes, and two runs of them are still identical.
+    expect(f.verdict).toBe("pass");
   });
 });
 

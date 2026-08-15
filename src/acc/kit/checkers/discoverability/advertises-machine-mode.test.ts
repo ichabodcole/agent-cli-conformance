@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { record } from "../../record.ts";
+import { digestOfText } from "../../runner.ts";
 import type { History, TargetInfo } from "../../types.ts";
 import { advertisesMachineModeChecker } from "./advertises-machine-mode.ts";
 
@@ -22,6 +23,13 @@ function observation(id: string, args: string[], purpose: string, text: string, 
     stderr: "",
     stdoutBytes: Buffer.byteLength(text),
     stderrBytes: 0,
+    // Derived from the text rather than pasted, so the digest cannot drift from the stream it
+    // claims to cover; `lossy` is false because `text` is a TypeScript string literal and
+    // therefore round-trips through UTF-8 by construction.
+    stdoutDigest: digestOfText(text),
+    stderrDigest: digestOfText(""),
+    stdoutLossy: false,
+    stderrLossy: false,
     truncated: false,
     exitCode,
     timedOut: false,

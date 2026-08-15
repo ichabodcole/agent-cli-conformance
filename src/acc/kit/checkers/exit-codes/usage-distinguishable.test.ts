@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { record } from "../../record.ts";
+import { digestOfText } from "../../runner.ts";
 import type { History, TargetInfo } from "../../types.ts";
 import { usageDistinguishableChecker } from "./usage-distinguishable.ts";
 
@@ -27,6 +28,10 @@ function historyWithOneTimedOutProbe(): History {
       stderr: "",
       stdoutBytes: 0,
       stderrBytes: 0,
+      stdoutDigest: digestOfText(""),
+      stderrDigest: digestOfText(""),
+      stdoutLossy: false,
+      stderrLossy: false,
       truncated: false,
       exitCode: null,
       timedOut: true,
@@ -48,6 +53,10 @@ function historyWithOneTimedOutProbe(): History {
       stderr: "",
       stdoutBytes: 0,
       stderrBytes: 0,
+      stdoutDigest: digestOfText(""),
+      stderrDigest: digestOfText(""),
+      stdoutLossy: false,
+      stderrLossy: false,
       truncated: false,
       exitCode: 2,
       timedOut: false,

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { digestOfText } from "./runner.ts";
 import type { History, Observation } from "./types.ts";
 import { findByArgs, findByPurpose } from "./types.ts";
 
@@ -11,6 +12,10 @@ function obs(args: string[], purposes: string[]): Observation {
     stderr: "",
     stdoutBytes: 0,
     stderrBytes: 0,
+    stdoutDigest: digestOfText(""),
+    stderrDigest: digestOfText(""),
+    stdoutLossy: false,
+    stderrLossy: false,
     truncated: false,
     exitCode: 0,
     timedOut: false,

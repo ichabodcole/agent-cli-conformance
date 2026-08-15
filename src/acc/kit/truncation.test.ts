@@ -16,7 +16,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
-import { invocationId } from "./runner.ts";
+import { digestOfText, invocationId } from "./runner.ts";
 import type { Discovery, History, Observation, TargetInfo } from "./types.ts";
 
 // Rich enough that every checker declares its probes — same shape as timeouts.test.ts, and for
@@ -63,6 +63,10 @@ function everyProbeTruncated(): History {
             stderr: "",
             stdoutBytes: 4 * 1024 * 1024,
             stderrBytes: 0,
+            stdoutDigest: digestOfText(""),
+            stderrDigest: digestOfText(""),
+            stdoutLossy: false,
+            stderrLossy: false,
             truncated: true,
             exitCode: null,
             signal: "SIGKILL",
@@ -126,6 +130,10 @@ describe("a violation already visible in the prefix still fails", () => {
       stderr: "",
       stdoutBytes: 0,
       stderrBytes: 0,
+      stdoutDigest: digestOfText(""),
+      stderrDigest: digestOfText(""),
+      stdoutLossy: false,
+      stderrLossy: false,
       truncated: true,
       exitCode: null,
       signal: "SIGKILL",

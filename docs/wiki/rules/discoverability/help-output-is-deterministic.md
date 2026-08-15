@@ -58,7 +58,19 @@ Inert (`L0`).
 <cli> --help     ×2      # the SAME invocation twice, captured and byte-compared
 ```
 
-Passes when the two captures are identical.
+Passes when the two captures have the same **SHA-256 digest**, taken over the raw bytes before
+they are decoded.
+
+**The digest is the comparison, and the decoded text is not.** This checker used to compare the
+two decoded strings while its rule, its page and its own pass detail all said "byte-identical",
+which is a weaker claim wearing the words of a stronger one. UTF-8 decoding is many-to-one on
+ill-formed input: every invalid byte becomes the single replacement character `U+FFFD`, so a tool
+emitting `0x80` on the first run and `0x81` on the second produced identical strings, identical
+byte counts, and a `pass` certifying byte identity for two different streams. The raw bytes
+themselves are deliberately **not** retained — a digest answers the equality question the rule
+asks and nothing else, which keeps the [observation
+artifact](../../../roadmap.md#4-r4-1--durable-observation-and-replay) free of an unbounded blob
+that would need its own encoding, redaction and retention story.
 
 **The two runs are the same invocation** — same argv, same environment, twice. That is worth
 stating because it was once not true. The runner deduplicates identical probes into a single
@@ -72,9 +84,16 @@ the identical defect in its own spelling).
 
 When the two differ, the checker reports the **index of the first differing character** — not a
 diff. That is enough to tell a one-character timestamp delta from wholesale reordering, and it
-is all the checker computes; a reader expecting a rendered delta will not find one. The index
-counts JS string offsets (UTF-16 code units), which diverge from byte offsets as soon as help
-contains a non-ASCII character.
+is all the checker computes; a reader expecting a rendered delta will not find one. The index is
+an offset into the **decoded string** — JS string offsets, i.e. UTF-16 code units — which diverges
+from a byte offset as soon as help contains a non-ASCII character, and the finding says so rather
+than leaving a reader to assume otherwise.
+
+When the digests differ but the decoded strings match, there **is no offset** and the checker does
+not invent one. The difference lives in bytes the decode collapsed, so the finding names the byte
+counts and the two digests and says where the answer is not. That is the honest shape of the
+verdict: a `fail`, because the rule was violated, with the location withheld because the evidence
+does not carry it.
 
 Deliberately not attempted: distinguishing "nondeterministic" from "changed because the
 environment changed". D4 no longer varies the environment at all, so it cannot see that
@@ -91,8 +110,9 @@ the rest of this page, unexamined.
 **Established**
 
 - two captures of the SAME root `--help` invocation taken moments apart — identical argv,
-  identical environment — are byte-identical, and a difference is reported with the index of the
-  first differing character.
+  identical environment — have the same SHA-256 digest over their raw stdout bytes, and a
+  difference is reported with the index of the first differing character where the decoded strings
+  carry one.
 
 **Gaps**
 

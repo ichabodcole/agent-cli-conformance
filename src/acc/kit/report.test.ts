@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildReport, primaryProblem } from "./report.ts";
+import { digestOfText } from "./runner.ts";
 import type { Checker, Coverage, Finding, History, Observation, ProbeLevel } from "./types.ts";
 
 const H: History = {
@@ -433,6 +434,10 @@ describe("primaryProblem", () => {
       stderr: "",
       stdoutBytes: 0,
       stderrBytes: 0,
+      stdoutDigest: digestOfText(""),
+      stderrDigest: digestOfText(""),
+      stdoutLossy: false,
+      stderrLossy: false,
       truncated: false,
       exitCode: null,
       timedOut: true,

@@ -27,7 +27,7 @@ import { loadExpectations } from "./expectations.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import { buildReport, primaryProblem, runCheckers } from "./report.ts";
-import { invocationId, runProbe } from "./runner.ts";
+import { digestOfText, invocationId, runProbe } from "./runner.ts";
 import type { Discovery, History, Observation, TargetInfo } from "./types.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -197,6 +197,10 @@ function everyProbeCrashed(): History {
             stderr: "",
             stdoutBytes: 0,
             stderrBytes: 0,
+            stdoutDigest: digestOfText(""),
+            stderrDigest: digestOfText(""),
+            stdoutLossy: false,
+            stderrLossy: false,
             truncated: false,
             exitCode: null,
             signal: null,

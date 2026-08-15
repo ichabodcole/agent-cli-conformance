@@ -3,7 +3,14 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SENTINEL } from "./inert.ts";
-import { invocationId, MAX_OUTPUT_BYTES, MAX_STREAM_BYTES, runProbe } from "./runner.ts";
+import {
+  digestOfText,
+  invocationId,
+  MAX_OUTPUT_BYTES,
+  MAX_STREAM_BYTES,
+  runProbe,
+  streamEvidence,
+} from "./runner.ts";
 import type { Invocation, TargetInfo } from "./types.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -147,6 +154,62 @@ describe("runProbe — the capture is byte-faithful", () => {
     expect(o.stdoutBytes).toBe(6);
     expect(o.stderrBytes).toBe(6);
   }, 15_000);
+});
+
+// R6-1: the decode is where two different byte streams become one string, and until the
+// observation carried a digest that collapse was the whole record. UTF-8 decoding maps EVERY
+// ill-formed byte to `U+FFFD`, so `0x80` and `0x81` — different bytes, both invalid alone —
+// produced identical `stdout` AND identical `stdoutBytes`. D4 compared those strings while
+// claiming byte identity, so it could certify different raw output as the same output.
+//
+// These assertions are the falsifier for the digest: delete `stdoutDigest` from the observation
+// and there is nothing left in the record that tells the pair apart.
+describe("runProbe — the digest separates streams the decode collapses", () => {
+  const invalidByte = (name: string): TargetInfo => {
+    const p = join(HERE, "fixtures/sh", name);
+    return { path: p, argv0: ["sh", p] };
+  };
+
+  test("two different invalid bytes render the same and digest differently", async () => {
+    const a = await runProbe(invalidByte("writes-invalid-byte-80.sh"), inv([], "bare"), 5_000);
+    const b = await runProbe(invalidByte("writes-invalid-byte-81.sh"), inv([], "bare"), 5_000);
+
+    // What the OLD record said, asserted rather than assumed — the point is that these three
+    // lines all still hold. If a future change made the display strings differ, the digest would
+    // no longer be the only thing separating the pair and this test would stop testing it.
+    expect(a.stdout).toBe(b.stdout);
+    expect(a.stdout).toBe("�");
+    expect(a.stdoutBytes).toBe(b.stdoutBytes);
+
+    // ...and the field that makes the observation honest about it.
+    expect(a.stdoutDigest).not.toBe(b.stdoutDigest);
+  }, 20_000);
+
+  test("flags the stream as lossy, so the display string is not read as the evidence", async () => {
+    const o = await runProbe(invalidByte("writes-invalid-byte-80.sh"), inv([], "bare"), 5_000);
+    expect(o.stdoutLossy).toBe(true);
+    // Only the stream that carried the invalid byte. A blanket flag would say nothing.
+    expect(o.stderrLossy).toBe(false);
+  }, 20_000);
+
+  // The same claim without a process in the way, and stated over three bytes rather than two so
+  // "many to one" is visible rather than inferred.
+  test("streamEvidence digests the bytes, not the rendering", () => {
+    const each = [0x80, 0x81, 0xc8].map((b) => streamEvidence(Buffer.from([b])));
+    expect([...new Set(each.map((e) => e.text))]).toEqual(["�"]);
+    expect(new Set(each.map((e) => e.digest)).size).toBe(3);
+    for (const e of each) expect(e.lossy).toBe(true);
+  });
+
+  test("leaves a valid-UTF-8 capture unflagged, and digests it", async () => {
+    const o = await runProbe(CONFORMING, inv(["--help"], "help-path"));
+    expect(o.stdoutLossy).toBe(false);
+    expect(o.stderrLossy).toBe(false);
+    // The digest is over the bytes, which for a valid capture is the same thing as over the
+    // re-encoded text — so this is checkable against the string the observation also carries.
+    expect(o.stdoutDigest).toBe(digestOfText(o.stdout));
+    expect(o.stdoutDigest).toHaveLength(64);
+  });
 });
 
 // R2-3, second half: capture was unbounded, so a noisy or hostile target could exhaust the
