@@ -28,12 +28,17 @@ const FORMAT_TOKENS = new Set(["--json", "--format=text", "--format=json"]);
 
 /**
  * Env keys a probe may set. Anything else could change what the target DOES, not just how it
- * reports — and the gate's job is to bound the blast radius, not just the argv. This is every
- * env the plan actually uses: D1's `HOME`/`XDG_CONFIG_HOME`, F2's `ACC_PROBE_TIMING`, and
- * machine-mode's `AI_AGENT`, plus the general escape hatches (`ACC_*`, `NO_COLOR`, `TERM`) a
- * probe might reasonably need. D4's `ACC_PROBE_NONCE` was here too until it stopped existing:
- * a probe identity does not belong in the environment at all, and `Invocation.repeat` carries
- * it in the recorder instead.
+ * reports — and the gate's job is to bound the blast radius, not just the argv. What remains in
+ * live use is D1's `HOME`/`XDG_CONFIG_HOME` and machine-mode's `AI_AGENT`, plus the general
+ * escape hatches (`ACC_*`, `NO_COLOR`, `TERM`) a probe might reasonably need.
+ *
+ * The `ACC_*` hatch used to carry two probe IDENTITIES — D4's `ACC_PROBE_NONCE` and F2's
+ * `ACC_PROBE_TIMING` — and neither exists now. A probe identity does not belong in the
+ * environment at all: it is visible to the target, so it can fabricate a difference for a rule
+ * that compares runs (D4) and skew the quantity being measured for a rule that times them (F2).
+ * `Invocation.repeat` carries it in the recorder instead. The pattern deliberately still ADMITS
+ * `ACC_*`, so a future probe that genuinely needs to set one is not blocked — the objection was
+ * never to the key space, it was to putting the recorder's bookkeeping inside it.
  */
 const ALLOWED_ENV = /^(ACC_[A-Z0-9_]+|AI_AGENT|HOME|XDG_CONFIG_HOME|NO_COLOR|TERM)$/;
 

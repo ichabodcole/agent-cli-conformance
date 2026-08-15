@@ -25,6 +25,11 @@ export const firstBytePromptChecker: Checker = {
   // the progress signal a long command owes stderr. Neither is inert, so neither is reachable
   // at L0 — and the timing table on the rule page is comparative on one machine, which is a
   // caveat about the THRESHOLD rather than about coverage and stays on the page.
+  //
+  // NOT among these, and deliberately not added: "the three runs do not share an environment".
+  // They now do (see the probes below), so there is nothing to declare. A validity risk that has
+  // been removed at the source is not a gap to publish — publishing it would be the same overclaim
+  // in the other direction, a checker taking credit for admitting to a problem it no longer has.
   coverage: "partial",
   coverageGaps: [
     "only --version is timed and never help or an argument-validation failure",
@@ -35,14 +40,20 @@ export const firstBytePromptChecker: Checker = {
   probes: (): Invocation[] =>
     RUNS.map((n) => ({
       args: ["--version"],
-      // Distinct env per run, purely so record()'s dedup (keyed on args + env + repeat) can't
-      // collapse three "repeated" invocations into one recording. The target never reads this;
-      // it exists only to make the id differ — but it IS visible to the target, which is the
-      // objection C3 and D4 both answered by moving to `Invocation.repeat`. F2 is the last
-      // checker perturbing the environment for this, and it is a smaller lie here than it was
-      // there: F2 measures TIME rather than comparing bytes, so an env-reading target skews the
-      // number rather than fabricating a difference. It should still move.
-      env: { ACC_PROBE_TIMING: String(n) },
+      // A RECORDER-ONLY index, and the last of the three checkers to get one. `record()` dedups
+      // on args + env + repeat, so three genuinely identical probes collapse into one recording
+      // without something to tell them apart — and this used to be `env: { ACC_PROBE_TIMING: n }`,
+      // which the target can read. F2 measures TIME, so the objection is not the one C3 and D4
+      // had (a rule about the SAME invocation comparing two that differed); it is that the
+      // instrument was perturbing the quantity it was measuring. An environment-sensitive target
+      // — one that re-reads config when an unfamiliar variable appears, or logs it — could make
+      // individual runs faster or slower in response to the recorder's own dedup workaround, and
+      // best-of-N would then report a number about the workaround.
+      //
+      // `repeat` reaches `invocationId` and nothing the child observes: not argv, not the
+      // environment. The three runs are byte-identical from the target's side, which is what
+      // `fixtures/echoes-argv.ts` witnesses in this checker's tests.
+      repeat: n,
       inertness: "help-path" as const,
       purpose: `F2: timing run ${n}`,
     })),
@@ -50,7 +61,8 @@ export const firstBytePromptChecker: Checker = {
   check: (h: History): Finding => {
     // findByPurpose, not findByArgs: all three runs share `args: ["--version"]` with each
     // other and with D1's own `--version` probes — findByArgs would return whichever of those
-    // recorded first, silently.
+    // recorded first, silently. That trap got sharper when the runs stopped differing by env:
+    // nothing in `args` distinguishes them now, which is the whole design of `repeat`.
     const runs = findByPurpose(h, "F2:");
     if (runs.length === 0) return finding("unverified", "probes were not recorded", []);
     // ALL the runs must complete, not just enough of them to compute a number.

@@ -549,8 +549,12 @@ ambiguous class — that is a reason to want step 3, not a hole in what a G1 pas
 D4's admission that its two runs "are not identical invocations because the second carries a
 probe nonce in its environment" was in this group and is now closed, by `Invocation.repeat`
 rather than by environment control — the probe identity moved out of the environment instead of
-the environment being controlled around it. The same fix C3 had already taken; F2's three timing
-runs are the last that still perturb `env`.
+the environment being controlled around it. The same fix C3 had already taken, and F2's three
+timing runs, the last holdout, have since taken it too: **no probe in the kit now puts a
+recorder-only identity where the target can read it.** F2's case was the third distinct objection
+to doing so — it does not compare its runs, it times them, so an environment-sensitive target
+would have been made faster or slower by the recorder's own dedup workaround, and the instrument
+would have been perturbing the quantity it measured (R6-6).
 
 **Blocked on nothing — simply unwritten.** B2's OSC and single-character escape sequences and
 carriage-return animation; F1's seven known credential shapes; C3 repeating only one invocation

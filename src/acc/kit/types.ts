@@ -27,8 +27,13 @@ export interface Invocation {
    * that hashed the token into its exit code would fail that deterministically, and one that is
    * genuinely nondeterministic on repeated identical input would pass it (review R3-5). D4 had
    * the same defect in the other spelling — a second `--help` carrying `ACC_PROBE_NONCE`, so a
-   * rule about the SAME invocation compared two that differed — and now uses this instead. F2 is
-   * the last holdout and still perturbs `env`, which is visible to the target.
+   * rule about the SAME invocation compared two that differed — and moved here too.
+   *
+   * F2 was the last holdout, on `ACC_PROBE_TIMING`, and its objection was a third one: F2 does not
+   * compare its three runs, it TIMES them, so a target that reacts to an unfamiliar environment
+   * variable would have been made faster or slower by the recorder's own dedup workaround. The
+   * instrument was perturbing the quantity it measured. Nothing in the kit now puts a probe
+   * identity where the target can see it (review R6-6).
    */
   repeat?: number;
 }
@@ -283,8 +288,8 @@ export interface Checker {
  *
  * Matches on `args` only — `env` AND `repeat` are ignored, and both are ways to produce the
  * collision. A checker that deliberately reuses identical args under different env (D1's
- * `--version` with a hostile `HOME`, F2's three timing runs) or under a different `repeat`
- * (C3's three identical runs, D4's two help runs) will have several observations collide on
+ * `--version` with a hostile `HOME`) or under a different `repeat` (C3's three identical runs,
+ * D4's two help runs, F2's three timing runs) will have several observations collide on
  * the same args, and this returns whichever was recorded first, silently. `repeat` is the
  * sharper trap of the two: its whole design is that nothing in `args` distinguishes the
  * repetitions, so a checker reaching for this function gets exactly one of the N runs it asked

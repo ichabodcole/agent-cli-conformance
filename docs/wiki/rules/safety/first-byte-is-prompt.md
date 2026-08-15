@@ -86,6 +86,18 @@ usually measures the machine, not the tool. The checker records all three so a w
 visible, since high variance is itself a finding and can indicate work happening before
 argument dispatch.
 
+**The three runs are the same invocation** — same argv, same environment, three times. That is
+worth stating because it was once not true. The runner deduplicates identical probes into a
+single recording, so an earlier version of this checker gave each run a different
+`ACC_PROBE_TIMING` environment variable purely to get three samples past the dedup. The
+objection is not [D4](../discoverability/help-output-is-deterministic.md)'s — F2 does not compare
+its runs, it times them — it is that a variable the target can read is part of the input to the
+measurement. A tool that re-reads configuration when it meets an unfamiliar variable, or logs it,
+would have been made faster or slower by the recorder's bookkeeping, and best-of-three would then
+report a number about the bookkeeping. The repetitions are now told apart by a **recorder-only
+index** the target never sees (`Invocation.repeat`, built for
+[C3](../exit-codes/exit-codes-are-deterministic.md)).
+
 Cold-start effects are not controlled for. The checker reports the numbers it observed and does
 not claim they are the tool's inherent cost.
 
@@ -107,7 +119,8 @@ the rest of this page, unexamined.
 
 **Established**
 
-- the fastest of three `--version` runs emits its first byte within 100 ms.
+- the fastest of three `--version` runs — identical argv, identical environment — emits its first
+  byte within 100 ms.
 
 **Gaps**
 
