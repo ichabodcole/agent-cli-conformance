@@ -7,7 +7,7 @@ description:
 tags: [exit-codes, errors, contract, agent-facing]
 related: [rule/unknown-flag-exits-nonzero, decision/exit-codes-below-125]
 status: current
-updated: 2026-08-14
+updated: 2026-08-15
 ---
 
 # Exit codes
@@ -180,8 +180,15 @@ In practice, rarely by looking it up:
    the others.
 
 Both the code and the envelope's `kind` are generated from the same declaration, so they
-cannot disagree — and the conformance kit verifies exactly that by provoking each declared
-error and confirming the code matches what the schema promised.
+cannot disagree — in a CLI built that way. That is a property of the implementation, and **the
+kit cannot see it**: no checker reads a target's schema, so nothing provokes each declared error
+kind and compares the result against what the schema promised. What is checked is narrower and
+purely black-box — [C2](../rules/exit-codes/usage-errors-are-distinguishable.md) compares the
+codes of two provoked usage errors against each other, and
+[C3](../rules/exit-codes/exit-codes-are-deterministic.md) repeats one invocation to see whether
+its code varies. Holding a tool to its own declared mapping is _planned_, and waits on that
+mapping being portable and machine-readable —
+[roadmap step 6](../../roadmap.md#6-r4-7--the-portable-declaration-ir).
 
 ## Related rules
 

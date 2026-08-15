@@ -14,7 +14,10 @@ updated: 2026-08-15
 
 ## What it is
 
-Every command declares how its stdout is shaped in [machine mode](./machine-mode.md):
+A conforming CLI **declares** how each command's stdout is shaped in
+[machine mode](./machine-mode.md). Nothing emits that declaration today, and the consequences of
+its absence are [below](#why-it-matters-for-agents) — so read this table as the contract the
+spec proposes, not as a field readable off a real tool:
 
 | `output_kind` | stdout is                                                | Also declares   |
 | ------------- | -------------------------------------------------------- | --------------- |
@@ -43,8 +46,23 @@ asked to make `docker ps` emit valid JSON, a maintainer replied that "for compat
 reason, this can't be fixed" — users depend on the current behaviour. The inconsistency is
 permanent because it was never declared, only observed.
 
-Declaring `output_kind` makes the mismatch a **testable claim** rather than a discovery. The
-conformance kit reads the declaration and checks the bytes against it.
+Declaring `output_kind` is what would turn that mismatch into a **testable claim** rather than a
+discovery — and the declaration is the part that does not exist yet.
+
+**What is true today.** No third-party CLI declares an `output_kind`, there is no portable format
+for one to declare it in, and the kit therefore has nothing to check the bytes against. What
+[B3](../rules/streams/machine-output-is-parseable.md) does is narrower, and shaped by exactly
+that absence: it asks a target's machine-mode help for output and requires the whole stdout
+stream to parse as one JSON document. Stdout that parses as NDJSON comes back `unverified`
+rather than `fail` — B3's own coverage gap records it — because failing a tool for a shape it
+was never asked to state would be punishing it for the missing declaration rather than for its
+output.
+
+**Planned.** Reading a declaration and checking bytes against it needs somewhere for the target
+to state one, which is the portable declaration IR at
+[roadmap step 6](../../roadmap.md#6-r4-7--the-portable-declaration-ir). Everything below
+describes the contract this spec proposes and what a conforming CLI would declare — not a
+measurement the kit performs today.
 
 ## The details
 

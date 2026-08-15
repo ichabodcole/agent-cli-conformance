@@ -7,7 +7,7 @@ description:
 tags: [exit-codes, delegation, contract, posix]
 related: [concept/exit-codes, rule/unknown-flag-exits-nonzero]
 status: current
-updated: 2026-08-14
+updated: 2026-08-15
 ---
 
 # Exit codes stay below 125
@@ -79,8 +79,12 @@ process supervisor", which is false.
 A delegating CLI **passes the child's exit code through verbatim** and uses `125` when the
 wrapper itself failed before or around the child.
 
-The mapping is additionally **declared in the schema**, so it is machine-discoverable and the
-conformance kit can verify each declared error kind produces its declared code.
+The mapping is additionally **declared in the schema**, so it is machine-discoverable. A kit
+that could read that declaration would be able to verify each declared error kind produces its
+declared code — _planned_, not built: no checker reads a target's schema today, and doing so
+waits on a portable declaration format
+([roadmap step 6](../../roadmap.md#6-r4-7--the-portable-declaration-ir)). See
+[how a caller learns what a code means](../concepts/exit-codes.md#how-a-caller-learns-what-a-code-means).
 
 The three models are not alternatives: "declare per tool" is a _delivery_ mechanism, while
 the other two are _allocation_ policies. We adopt a fixed taxonomy, a reserved band, and

@@ -13,7 +13,7 @@ related:
     rule/usage-errors-are-distinguishable,
   ]
 status: current
-updated: 2026-08-14
+updated: 2026-08-15
 ---
 
 # Conformance
@@ -118,9 +118,12 @@ So `unverified` is never folded into the pass count, is always reported by name,
 blocks `fullyVerified`. It just no longer masquerades as a violation.
 
 The practical shape: **`conformant` is the gate; `fullyVerified` is the goal.** A project
-adopts the kit by getting to conformant, then works the unverified list down — usually by
-declaring something the kit currently has to guess at, which is exactly the direction the spec
-wants a tool to move.
+adopts the kit by getting to conformant, then works the unverified list down — today by making
+discoverable in help what the kit otherwise has to guess at (advertising `--json` is what moves
+B3 off `unverified`), and eventually by declaring it outright, once there is a declaration
+format to write it in. That is the direction the spec wants a tool to move; the second half of
+it does not exist yet, and is
+[roadmap step 6](../../roadmap.md#6-r4-7--the-portable-declaration-ir).
 
 `fullyVerified` is a goal for the kit as much as for the target. Half of it is the target's
 work — nothing failing, nothing unverified. The other half is the kit's own, and no core
