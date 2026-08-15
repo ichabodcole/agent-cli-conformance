@@ -23,13 +23,17 @@ updated: 2026-08-15
 `acc check` reports two booleans, and they answer different questions.
 
 **Conformant** — **no applicable core rule FAILED.** Violations only. Every core rule the kit
-could apply at this probe level either passed, or was excused in the project's expectations
-file. This is the headline verdict, and it is what the exit code reflects: a non-conformant
-target exits `9`.
+could apply at this probe level either passed, was excused under `knownFailures`, or was waived
+in the project's `acc.config.json`. This is the headline verdict, and it is what the exit code
+reflects: a non-conformant target exits `9`.
 
-**Fully verified** — conformant, **and every applicable core rule passed, and every applicable
-core checker declares `coverage: complete`.** Every core rule was actually established, not
-merely left unfalsified.
+**Fully verified** — conformant, **and no applicable core rule was waived, and every applicable
+core rule passed, and every applicable core checker declares `coverage: complete`.** Every core
+rule was actually established, not merely left unfalsified.
+
+The difference between those two lists is the whole design. `conformant` is a claim **inside a
+declared frame**; `fullyVerified` is measured against the catalogue, whatever the frame says.
+[Below](#the-frame-a-verdict-was-reached-in) is why that asymmetry exists.
 
 Three verdicts feed those two claims, and the middle one is the whole point:
 
@@ -43,6 +47,10 @@ A fourth state, **not applicable**, is not a verdict at all: the rule's `probe_l
 the level the run was made at, so it was never attempted. "Out of scope here" and "tried and
 could not establish it" are different claims, and a report that collapses them cannot be acted
 on.
+
+A **waived** rule is not a fifth verdict either. Its checker still runs and still returns one of
+the three above; the waiver changes only what that verdict is allowed to bind. See
+[waivers](#waivers-a-rule-that-does-not-apply-to-this-tool).
 
 **Full verification is scoped to the run's probe level, always.** "Fully verified at `L0`" is a
 claim about the rules `L0` can reach, not about the catalogue — which is why the level is
@@ -130,7 +138,48 @@ work — nothing failing, nothing unverified. The other half is the kit's own, a
 checker has earned complete coverage yet. Reporting the target's half as if it were both is the
 failure mode this section exists to prevent.
 
+### The frame a verdict was reached in
+
+There is a second reason `conformant` and `fullyVerified` are separate booleans, and it only
+became visible once projects could tune the rules.
+
+**An unwaivable specification silently deforms what you are building.** Faced with a rule that
+does not fit your use case and no way to decline it, the path of least resistance is to reshape
+the CLI until it conforms — and the report then shows a clean bill of health for a tool that has
+been bent toward the specification instead of toward its users. That is worse than a red check,
+because it is invisible: nothing in the report distinguishes "designed well and passed" from
+"redesigned badly in order to pass." The
+[waiver mechanism](#waivers-a-rule-that-does-not-apply-to-this-tool) is not a concession to
+adoption. It is what keeps the spec from becoming the target.
+
+So the question a report answers stops being _did this tool pass_ and becomes **what frame did
+it pass in.** `conformant: true` is a claim relative to a declared frame: spec version, probe
+level, and the adopter's own waivers — the fourth coordinate, and the only one the adopter
+authors themselves. The kit's job is to make that frame legible, not to pretend there is only
+one. It is the same question [R4-2](../../roadmap.md#5-r4-2--r4-3--profiles-and-the-outcome-algebra)
+asks when it says a report should answer "conforms to which spec version, profile and probe
+level?"
+
+That **strengthens** the `fullyVerified` ruling rather than softening it. Precisely because
+`conformant` is frame-relative, the kit needs one claim that is not — measured against the full
+catalogue, whatever the config says. A waived core rule blocking `fullyVerified` is what stops
+the frame from swallowing the whole verdict.
+
+None of which makes a waiver safe. **A waiver is still a place a tool can be wrong**, and the
+`reason` string is the only thing standing between a considered design decision and "this rule
+was annoying". Nothing mechanical can tell those apart. The kit requires the reason, publishes
+it in both output modes, and leaves the judging to a reader — which is the most a conformance
+tool can honestly do.
+
 ## The details
+
+Two mechanisms live in `acc.config.json`, and they make **different statements**. Keeping them
+apart is load-bearing: fold one into the other and the ratchet stops meaning anything.
+
+| Key             | The statement                                                | Goes stale?         |
+| --------------- | ------------------------------------------------------------ | ------------------- |
+| `knownFailures` | **debt** — "this is broken, I know, I will fix it"           | yes, once it passes |
+| `rules`         | **declaration** — "this binds differently for me, by design" | **never**           |
 
 ### The excuse ratchet
 
@@ -161,6 +210,112 @@ itself a note about a rule nothing has established has changed who is accountabl
 it has not made the gap go away, and a boolean called "fully verified" must not be purchasable
 by writing a sentence in a JSON file.
 
+### Waivers: a rule that does not apply to this tool
+
+The other key, `rules`, sets a **severity** per rule and requires a reason:
+
+```json
+{
+  "rules": {
+    "D2": { "severity": "off", "reason": "human-first CLI; bare help is deliberate" },
+    "A6": { "severity": "core", "reason": "we delegate to ffmpeg; -- is load-bearing" }
+  },
+  "knownFailures": {
+    "B2": "colour leaks from the progress bar — tracked in #412"
+  }
+}
+```
+
+`severity` is `core`, `diagnostic` or `off`. The first two **move** a rule between the two tiers
+in either direction — a project may raise a rule as well as lower one, and a project declaring
+itself stricter than baseline is a signal worth having. `off` is the third thing and a different
+kind of statement: a **waiver**.
+
+[D2](../rules/discoverability/bare-invocation-is-a-usage-error.md) is the rule that forced this
+to exist. A bare invocation must be a usage error; dogfooding against four real CLIs found three
+of them printing help and exiting `0`, which many well-liked tools do deliberately. The
+project's position — nothing was requested, nothing ran, and exiting `0` is how an unset shell
+variable becomes a silent no-op reporting success — is a defensible **design position** rather
+than a bug diagnosis. It is also the rule most likely to make the kit feel like a straitjacket,
+and a conformance tool that cannot be tuned gets switched off entirely, after which none of its
+other rules help either. That is the shallow argument; [the frame](#the-frame-a-verdict-was-reached-in)
+is the real one.
+
+**A waived rule still RUNS.** Probes are shared across checkers, so running a waived rule costs
+no extra process, and the result is strictly more informative than skipping it: the report says
+what the verdict _would_ have been. A waiver sitting at `pass` is one the project can delete; a
+waiver sitting at `fail` is one still doing work. This is deliberately better than the ESLint
+model it borrows from, where a disabled rule produces no information at all.
+
+**A waiver never goes stale.** Passing was never the goal, so "this waiver would now pass" is
+offered as information and never as a line to remove. `staleExpectations` is for debt; a
+declaration has nothing to repay.
+
+**A `reason` is required, and must be non-empty** — exactly as a `knownFailures` reason is. A
+waiver without one is a silent opt-out; with one it is a declaration someone can review later.
+Rule ids are validated against the registry, so a mistyped id is an error rather than a waiver
+that quietly waives nothing.
+
+**One id may not be both waived and a known failure.** "This rule does not apply to my tool" and
+"this rule applies, I am failing it, I will fix it" cannot both be true, and picking a precedence
+would silently delete whichever line lost. A severity _move_ alongside a known failure is a
+different matter and is allowed: "I hold myself to core on A6, and I currently fail it" is the
+aspirational half of the same ratchet.
+
+### The asymmetry: a waiver buys the gate, never the evidence
+
+| Field                    | Effect of a waiver                                                    |
+| ------------------------ | --------------------------------------------------------------------- |
+| `conformant`             | the rule is excluded, so a waived `fail` no longer blocks it          |
+| `counts.*` (core, tiers) | the rule is excluded from all of them, and counted under `waived`     |
+| `fullyVerified`          | **BLOCKED** by any waived core rule — even one that would have passed |
+| `evidenceGaps`           | gains the rule, naming the waiver and the verdict the probe reached   |
+| `staleExpectations`      | **never** — a declaration does not go stale                           |
+| `waivers`                | the full list, with reason, would-be verdict, tier and applicability  |
+
+The third row is the ruling that matters, and it is the same precedent set for excuses one
+section above: **an excuse suppresses the conformance _gate_ but never the evidence _claim_**. A
+waiver is the stronger statement, so it can buy no more. A rule the project chose not to be
+measured against was not established — "does not apply to my tool" is a claim about the tool's
+design, not evidence about its behaviour. Config must never be able to buy the strong claim.
+
+Waiving a `diagnostic` rule changes neither boolean, because a diagnostic rule was never binding
+one. The asymmetry is about what the rule bound, not about the waiver.
+
+Both mechanisms are visible in both output modes. The human headline carries the waiver count,
+because it changes what every other number on that line means; a `WAIVED` block below the
+evidence gaps carries each rule with its reason and would-be verdict; and the machine report
+carries `waivers` and `severityOverrides` in full, so a consumer can apply its own policy rather
+than trusting the producer's.
+
+### A waiver, measured
+
+`acc check` against a real CLI whose bare invocation prints a team overview and exits `0`, with
+the twelve unaffected rules elided. Before any config:
+
+```
+NOT CONFORMANT (L0) — 4 core violated, 3 core unverified, 9 core partially covered
+
+  FAIL  D2  bare invocation exited 0; bare invocation wrote 13827 bytes to stdout
+```
+
+...and with `D2` waived, the same run, same binary:
+
+```
+NOT CONFORMANT (L0) — 3 core violated, 3 core unverified, 9 core partially covered · 1 waiver
+
+  WVD   D2  bare invocation exited 0; bare invocation wrote 13827 bytes to stdout (waived; would FAIL)
+
+  WAIVED (1) — declared not applicable to this tool, by config:
+    D2  human-first CLI; bare invocation prints the team overview on purpose  (would FAIL)
+```
+
+The violation count drops by one and the rest of the report is untouched — a waiver is targeted,
+not a global mute. The finding keeps its detail and gains the verdict it would have carried, so
+the reader can still see exactly what the probe found. `D2` also enters `evidenceGaps` as
+`waived by config: …` beside `the probe ran anyway and returned fail: …`, which is why
+`fullyVerified` stays `false` however many rules are waived away.
+
 ### What the counts mean
 
 The text verdict line states both claims at once, and names the scope of each number:
@@ -168,11 +323,17 @@ The text verdict line states both claims at once, and names the scope of each nu
 ```
 CONFORMANT (L0) — 0 core violated, 2 core unverified, 14 core partially covered
 NOT CONFORMANT (L0) — 3 core violated, 1 core unverified, 12 core partially covered
+CONFORMANT (L0) — 0 core violated, 2 core unverified, 13 core partially covered · 1 waiver
 ```
 
 `core violated` is core, applicable and **unexcused** — it gates conformance.
 `core unverified` and `core partially covered` are core and applicable but count excused rules
 too, because they describe the evidence rather than the gate.
+
+Every one of those numbers excludes **waived** rules, which is why the waiver count sits on the
+same line rather than in a footnote: `0 core violated` over a config that waived the rule which
+would have violated is true and unreadable on its own. The clause is omitted entirely when a run
+has no waivers.
 
 The summary line at the foot of the report counts `unverified` across **every** tier, so the
 two lines can legitimately disagree — a target with one diagnostic gap and no core one shows
@@ -198,7 +359,10 @@ There is no partial credit for rejecting most unknown flags.
 
 ## Related rules
 
-Every rule page declares its own `tier`, which is what decides whether its failure binds:
+Every rule page declares its own `tier`, which is what decides whether its failure binds — as
+the **baseline**. A project may move a rule between tiers, or waive it, in its own
+`acc.config.json`; the frontmatter is what the catalogue says, not the last word for any one
+adopter.
 
 - [A1 — Unknown flags must exit non-zero](../rules/parsing/unknown-flag-exits-nonzero.md) —
   core, and the catalogue's canonical violation.

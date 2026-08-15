@@ -86,7 +86,7 @@ frontmatter is machine-read, and `lint.ts` cross-checks it against `src/acc/kit/
 
 ```yaml
 rule_id: A1 # stable, unique; cited verbatim in conformance output
-tier: core # core (binary pass/fail) | diagnostic (reported, non-fatal)
+tier: core # core (binary pass/fail) | diagnostic (reported, non-fatal) — the BASELINE
 probe_level: L0 # L0 risk-reduced | L1 declared read-only | L2 contained mutating
 checker: src/acc/kit/checkers/parsing/unknown-flag.ts
 checker_status: planned # planned | implemented
@@ -96,6 +96,13 @@ coverage_gaps: # one phrase per normative clause the checker does not establish
 coverage_established: # one phrase per thing a PASS licenses, scoped to the paths sampled
   - one unknown long flag given at the root exits non-zero with stdout empty
 ```
+
+`tier` is what the **catalogue** says, not the last word for any one adopter. A project may move
+a rule between the two tiers — in either direction — or waive it outright, in its own
+`acc.config.json`; the report then speaks in the tier that actually gated the run and publishes
+the override beside it. Write this field for the catalogue and let adopters declare their own
+frame: see
+[conformance](./concepts/conformance.md#waivers-a-rule-that-does-not-apply-to-this-tool).
 
 ### Two fields, two questions
 

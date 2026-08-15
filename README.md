@@ -111,6 +111,43 @@ argument for building them — and the reason the rules that need them
 ([A4](docs/wiki/rules/parsing/unexpected-positionals-rejected.md)) report `not applicable`
 rather than passing today.
 
+### Per-project rules — `acc.config.json`
+
+Two keys, two different statements, kept apart on purpose:
+
+```json
+{
+  "rules": {
+    "D2": { "severity": "off", "reason": "human-first CLI; bare help is deliberate" },
+    "A6": { "severity": "core", "reason": "we delegate to ffmpeg; -- is load-bearing" }
+  },
+  "knownFailures": {
+    "B2": "colour leaks from the progress bar — tracked in #412"
+  }
+}
+```
+
+`knownFailures` is **debt**: "this is broken, I know, I will fix it." It only ever shrinks, and
+a rule that starts passing is reported as a **stale expectation** so the line gets deleted.
+
+`rules` is a **declaration**: "this rule binds differently for my tool, by design."
+`severity` is `core`, `diagnostic` or `off` — a project may raise a rule as well as lower one —
+and `off` is a **waiver**, which never goes stale, because passing was never the goal. A
+`reason` is required on both, and rule ids are validated, so a mistyped id is an error rather
+than a line that quietly does nothing.
+
+A waiver can buy `conformant: true`. It can never buy `fullyVerified` — a waived core rule
+blocks the evidence claim even when it would have passed, because a rule you chose not to be
+measured against was not established. Waived rules are still **probed**, so the report shows
+what the verdict would have been. The full argument, including why an unwaivable spec is worse
+than a waived one, is in [conformance](docs/wiki/concepts/conformance.md#the-frame-a-verdict-was-reached-in).
+
+```bash
+acc check ./mycli --config-dir .    # look for acc.config.json in this directory
+```
+
+The flag names a **directory**, not a file, which is why it is not called `--config`.
+
 ### `acc`, the reference implementation
 
 `acc` explores the spec — and is built to satisfy it. That second part is the reason it

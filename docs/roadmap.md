@@ -282,6 +282,21 @@ requirement is not exercised" — a profile-shaped concern recorded as a coverag
 there is currently nowhere else to put it. The wiki has one archetype page and four more marked
 planned.
 
+**Waiver reasons are evidence about the SPEC, and they are how this step should be triggered.**
+`acc.config.json` requires a non-empty `reason` on every waiver, and the report publishes it in
+both output modes — so a waiver is not only a per-project opt-out, it is a datum. **If many
+projects waive the same rule for the same stated reason, that rule needs an archetype rather
+than a waiver**, and the reason strings say which archetype and why. D2 is the live candidate:
+"human-first CLI; bare help is deliberate" is the shape of a profile claim, written by an
+adopter, in prose, because there is nowhere yet to declare it.
+
+That matters for sequencing more than for design. Written from theory, a profile catalogue is a
+guess about which archetypes exist; written from accumulated waiver reasons, each profile starts
+from projects that already stated the incompatibility in their own words. The kit therefore does
+not need to predict the archetypes — it needs to keep collecting reasons until they cluster.
+Until then a waiver is the correct answer and the honest one: a project declaring the rule does
+not apply, rather than a spec pretending the rule was never about anyone.
+
 **Why merged, against the review's split.** The review resolves the outcome model at its step 2
 and adds profiles at its step 4. But a streaming profile _is_ its completion semantics: strip
 those out and nothing distinguishes it from a verb tool at the level of the rules. Written first,
@@ -719,8 +734,12 @@ R3-1's normative-scope question is settled at
 - `checker_status` is defined as implementation presence, every rule page carries a
   `## Current checker coverage` section, and the coverage matrix is generated (R3-1's
   mechanical half);
-- expectations files are validated rather than cast, and a target's own shebang is honoured
-  (R2-4, R2-5);
+- the per-project config file is validated rather than cast, and a target's own shebang is
+  honoured (R2-4, R2-5);
+- `acc.config.json` carries per-rule severity beside the known-failure ratchet, so a project can
+  waive a rule that does not apply to it — and a waived core rule still blocks `fullyVerified`,
+  so the adopter's frame moves the gate and never the evidence claim
+  ([conformance](./wiki/concepts/conformance.md#the-asymmetry-a-waiver-buys-the-gate-never-the-evidence));
 - every published example is executed by the test suite, C3 repeats one invocation instead of
   comparing three flags, and the CLI's own dogfood suite runs in the gate (R3-5, R5-1);
 - the gate runs as a checked-in CI workflow on push and pull request, and duplicate wiki
