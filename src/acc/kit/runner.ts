@@ -119,7 +119,7 @@ export async function runProbe(
     // explicit rather than leaning on the promise swallowing the second call.
     let settled = false;
 
-    const finish = (code: number | null, spawnFailed = false) => {
+    const finish = (code: number | null, signal: string | null, spawnFailed = false) => {
       if (settled) return;
       settled = true;
       if (timer) clearTimeout(timer);
@@ -139,7 +139,30 @@ export async function runProbe(
         // A process WE killed did not choose its status. Recording 128+n as the target's exit
         // code would fabricate evidence about a tool that never got to exit — and that is as
         // true of the output-limit kill as it is of the deadline, so `truncated` nulls it too.
+        //
+        // A SIGNAL death is already null here, straight from Node, and stays that way for the
+        // same reason: 128+n is a SHELL convention, not the target's answer. POSIX guarantees
+        // only "greater than 128" for a signal death (see
+        // docs/wiki/decisions/exit-codes-below-125.md), so synthesising the exact number would
+        // put a code in the record that neither the target nor the standard ever chose. What
+        // the null needed was not a value but a companion — `signal` and `crashed` below.
         exitCode: timedOut || truncated ? null : code,
+        signal,
+        // Terminated by a signal THE KIT DID NOT SEND.
+        //
+        // `signal` alone cannot carry this: `killTree` sends SIGKILL, so a hung probe and an
+        // output-ceiling kill report a signal exactly as a segfaulting target does, and a
+        // checker reading the raw field would call all three the same thing. Both kit-sent
+        // kills are already flagged before the kill lands (`timedOut` in the deadline timer,
+        // `truncated` in `enforceLimits`), which is what makes this subtraction sound: whatever
+        // signal is left over came from outside. `spawnFailed` needs no term — a process that
+        // never started reports no signal at all.
+        //
+        // Without it, a target that dies on every probe is recorded exactly as one we killed:
+        // `exitCode: null` satisfies every "exited non-zero" test and empty streams satisfy
+        // every "stdout was empty" test, and a fixture whose whole body is `kill -SEGV $$`
+        // collected NINE passes it did nothing to earn. See `crashedUnverified` in finding.ts.
+        crashed: signal !== null && !timedOut && !truncated,
         timedOut,
         spawnFailed,
         durationMs: Math.round(performance.now() - startedAt),
@@ -170,7 +193,7 @@ export async function runProbe(
         detached: process.platform !== "win32",
       });
     } catch {
-      finish(127, true);
+      finish(127, null, true);
       return;
     }
 
@@ -211,7 +234,12 @@ export async function runProbe(
         child.stderr.destroy();
         child.stdin.destroy();
         child.unref();
-        finish(null);
+        // No signal recorded, because none was OBSERVED: `close` never arrived, so nothing told
+        // us how the process ended. Naming our own SIGKILL here would be a guess dressed as an
+        // observation. Nothing is lost — this path is reachable only from `killTree`, and both
+        // of its callers have already set `timedOut` or `truncated`, which is what a checker
+        // reads.
+        finish(null, null);
       }, FINALIZE_GRACE_MS);
     };
 
@@ -270,7 +298,10 @@ export async function runProbe(
       killTree();
     }, timeoutMs);
 
-    child.on("close", (code) => finish(code));
+    // BOTH arguments, always. Node calls this `(code, signal)` and exactly one of them is
+    // non-null; dropping the second meant a target that DIED was recorded identically to one we
+    // killed, because `exitCode` is null either way. See `Observation.crashed`.
+    child.on("close", (code, signal) => finish(code, signal));
     // A target that cannot be spawned at all (ENOENT, EACCES, a file with no exec bit) is an
     // observation too, not a crash — but it must be FLAGGED as one. 127 alone is a code a real
     // CLI can choose to return, so without `spawnFailed` a file that never executed is
@@ -279,6 +310,6 @@ export async function runProbe(
     // Both `error` and `close` fire for an async failure (ENOENT). `error` lands first, and the
     // promise is already settled by the time `close` arrives, so the `spawnFailed` recording is
     // the one that survives — resolve() is a no-op the second time and rmSync is `force`.
-    child.on("error", () => finish(127, true));
+    child.on("error", () => finish(127, null, true));
   });
 }

@@ -1,4 +1,9 @@
-import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
+import {
+  crashedUnverified,
+  findingFor,
+  hungUnverified,
+  truncatedUnverified,
+} from "../../finding.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -66,6 +71,11 @@ export const machineOutputParseableChecker: Checker = {
     // target for producing no output when in fact we killed it. Say which happened.
     const hung = hungUnverified(finding, [o]);
     if (hung) return hung;
+    // The crash equivalent of the wrong fail below: a target that dies mid-document leaves
+    // stdout unparseable, and blaming it for a closing brace it was killed before writing is the
+    // same error as blaming it for one we refused to read.
+    const crashed = crashedUnverified(finding, [o]);
+    if (crashed) return crashed;
     // The one place truncation would produce a confidently WRONG fail: a valid JSON document cut
     // at the ceiling does not parse, and "machine-mode stdout is neither one JSON document nor
     // NDJSON" would blame the target for a bracket we refused to read.

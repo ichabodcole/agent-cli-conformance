@@ -1,5 +1,10 @@
 import { parseHelp } from "../../discovery.ts";
-import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
+import {
+  crashedUnverified,
+  findingFor,
+  hungUnverified,
+  truncatedUnverified,
+} from "../../finding.ts";
 import type { Checker, Finding, History, Invocation, Observation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -22,9 +27,9 @@ const FORCED_TEXT = "D3: human help, with machine mode forced off";
  */
 const SCHEMA_COMMAND_ROW = /^[ \t]+schema\b[^\n]*?(?:\s{2,}\S|\s*$)/m;
 
-/** Usable output from a probe: it ran, it finished, and it said something. */
+/** Usable output from a probe: it ran, it finished under its own control, and it said something. */
 function textOf(o: Observation | undefined): string {
-  if (!o || o.timedOut || o.truncated || o.spawnFailed) return "";
+  if (!o || o.timedOut || o.truncated || o.spawnFailed || o.crashed) return "";
   return `${o.stdout}${o.stderr}`;
 }
 
@@ -98,6 +103,11 @@ export const advertisesMachineModeChecker: Checker = {
       // either direction: the machine-mode row may be in the bytes we refused to read.
       const cut = truncatedUnverified(finding, [plain]);
       if (cut) return cut;
+      // Same shape as the hang directly above: help that never got written advertises nothing,
+      // and reporting that as "help names no machine-mode flag" charges the target for a surface
+      // it was killed before presenting.
+      const crashed = crashedUnverified(finding, [plain]);
+      if (crashed) return crashed;
     }
 
     // The HUMAN surface is what this rule names, so plain help is preferred and the forced-text

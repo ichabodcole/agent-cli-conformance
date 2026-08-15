@@ -71,9 +71,47 @@ export interface Observation {
    * `hungUnverified`.
    */
   truncated: boolean;
-  /** null when the deadline or the output ceiling killed it — a process we killed did not
-   *  choose its status. */
+  /**
+   * The status the target CHOSE, or null when it never chose one.
+   *
+   * Null has two causes and they are not the same event: the deadline or the output ceiling
+   * killed it (see `timedOut`, `truncated`), or a signal did (see `crashed`). Reading this field
+   * alone cannot tell them apart, and for a long time nothing else could either — which is how a
+   * segfaulting target came to satisfy every "exited non-zero" test in the catalogue. Whichever
+   * cause it is, `null` is never "the target rejected something": no code is not a low code.
+   *
+   * A signal death is left null rather than synthesised as 128+n. That number is a shell
+   * convention; POSIX guarantees only "greater than 128", and the target never chose either —
+   * see docs/wiki/decisions/exit-codes-below-125.md.
+   */
   exitCode: number | null;
+  /**
+   * The terminating signal as the OS reported it (`"SIGSEGV"`, `"SIGKILL"`), null when the
+   * process exited under its own control.
+   *
+   * Recorded for EVERY signal termination, the kit's own `killTree` SIGKILL included, so it is
+   * a faithful record and NOT the flag to branch on — `crashed` is. Kept as the raw string
+   * because which signal it was is the whole content of the observation, and no rule judges it
+   * yet (see docs/roadmap.md, step 7).
+   */
+  signal: string | null;
+  /**
+   * True when a signal THE KIT DID NOT SEND ended the process — the target crashed, or something
+   * outside this runner killed it.
+   *
+   * The distinction `signal` cannot make on its own. A hang and an output-ceiling kill both end
+   * in SIGKILL from `killTree`, so "a signal arrived" is true of all three cases and means three
+   * different things; `timedOut` and `truncated` are set before the kill, so what remains is a
+   * death the kit did not cause.
+   *
+   * Same defect class as `spawnFailed`, one step later in the lifecycle. That flag exists
+   * because a target that cannot START collects passes from every checker satisfied by an empty
+   * stream and a non-zero exit; a target that starts and then dies walked back through the same
+   * hole, because `exitCode` is null and null is not 0. A fixture whose entire body is
+   * `kill -SEGV $$` scored nine passing rules. Checkers must run this through
+   * `crashedUnverified` (see finding.ts) exactly as they run a hang through `hungUnverified`.
+   */
+  crashed: boolean;
   timedOut: boolean;
   /**
    * True when the process could never be started (ENOENT, EACCES, a text file with no exec

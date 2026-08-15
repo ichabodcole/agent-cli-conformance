@@ -1,4 +1,9 @@
-import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
+import {
+  crashedUnverified,
+  findingFor,
+  hungUnverified,
+  truncatedUnverified,
+} from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
@@ -45,6 +50,12 @@ export const namesOffendingTokenChecker: Checker = {
     // establishes neither: the token may well have been named in the bytes we refused.
     const cut = truncatedUnverified(finding, [flag, verb]);
     if (cut) return cut;
+    // Same asymmetry as the hang, one line up: a crashed probe's stderr reads as "did not name
+    // the token", producing a FAIL against a target that never reached its diagnostic. A3 is one
+    // of the two rules where the crash bug pointed the wrong way — it under-reported instead of
+    // over-reporting — and both directions are the same fabrication.
+    const crashed = crashedUnverified(finding, [flag, verb]);
+    if (crashed) return crashed;
 
     const evidence = [flag.id, verb.id];
     const problems: string[] = [];

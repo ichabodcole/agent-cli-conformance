@@ -1,4 +1,9 @@
-import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
+import {
+  crashedUnverified,
+  findingFor,
+  hungUnverified,
+  truncatedUnverified,
+} from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -44,6 +49,12 @@ export const stdoutCarriesOnlyDataChecker: Checker = {
     // "failed" — so a target we cut off would be judged against a failure it never declared.
     const cut = truncatedUnverified(finding, relevant);
     if (cut) return cut;
+    // The `exitCode !== 0` filter below reads a crashed probe's null as "this invocation failed",
+    // and then finds its stdout clean — because the target died before writing anything at all.
+    // B1's subject is what a tool puts on stdout WHEN IT REPORTS A FAILURE; a target that never
+    // got as far as reporting one is not a data point, whichever way its stdout looks.
+    const crashed = crashedUnverified(finding, relevant);
+    if (crashed) return crashed;
 
     const failures = relevant.filter((o) => o.exitCode !== 0);
     if (failures.length === 0) {

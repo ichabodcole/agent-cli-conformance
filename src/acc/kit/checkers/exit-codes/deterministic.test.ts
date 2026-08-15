@@ -31,6 +31,8 @@ function historyWithRuns(n: 0 | 1 | 2): History {
     truncated: false,
     exitCode: 2,
     timedOut: false,
+    signal: null,
+    crashed: false,
     spawnFailed: false,
     durationMs: 1,
     timeToFirstByteMs: null,
@@ -62,6 +64,10 @@ function historyWithTimedOutRuns(): History {
     truncated: false,
     exitCode: null,
     timedOut: true,
+    // What runProbe records for a probe the deadline killed: `killTree` sends SIGKILL, so a
+    // signal IS present — and `crashed` is what says it was ours.
+    signal: "SIGKILL",
+    crashed: false,
     spawnFailed: false,
     durationMs: 10_000,
     timeToFirstByteMs: null,

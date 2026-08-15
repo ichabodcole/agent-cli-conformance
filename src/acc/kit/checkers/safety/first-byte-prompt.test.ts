@@ -67,6 +67,8 @@ describe("F2 — first byte arrives promptly", () => {
       truncated: false,
       exitCode: timedOut ? null : 0,
       timedOut,
+      signal: null,
+      crashed: false,
       spawnFailed: false,
       durationMs: timedOut ? 10_000 : 4,
       timeToFirstByteMs: timedOut ? null : 4,

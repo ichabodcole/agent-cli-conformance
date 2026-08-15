@@ -436,6 +436,10 @@ describe("primaryProblem", () => {
       truncated: false,
       exitCode: null,
       timedOut: true,
+      // A hang ends in the runner's own SIGKILL, so `signal` is set and `crashed` is not — the
+      // distinction that keeps a target we killed apart from one that fell over.
+      signal: "SIGKILL",
+      crashed: false,
       spawnFailed: false,
       durationMs: 10_000,
       timeToFirstByteMs: null,

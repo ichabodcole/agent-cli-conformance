@@ -238,11 +238,11 @@ turns every bug report into an indefinite copy of someone's environment.
 
 **What already exists.** More than the framing suggests. An `Observation` today carries argv and
 env overrides, byte-faithful streams decoded once over the whole capture, `truncated` with
-retained byte counts, `exitCode`, `timedOut`, `spawnFailed`, `durationMs` and
-`timeToFirstByteMs`. What it lacks is the target digest, every version coordinate, platform and
-environment metadata, the sandbox policy, the terminating signal (see step 7), and any
-filesystem or network observation. This is a schema-and-persistence job over a data model that is
-substantially there — not a rewrite.
+retained byte counts, `exitCode`, `signal` and `crashed`, `timedOut`, `spawnFailed`, `durationMs`
+and `timeToFirstByteMs`. What it lacks is the target digest, every version coordinate, platform
+and environment metadata, the sandbox policy, cancellation state, and any filesystem or network
+observation. This is a schema-and-persistence job over a data model that is substantially there —
+not a rewrite.
 
 **Blocked on.** Step 2, for coordinates worth stamping on it. Step 3, for an environment worth
 describing: an artifact that faithfully records an _uncontrolled_ environment cannot back the
@@ -322,13 +322,14 @@ interrupted work; and idempotency keys or request identifiers where a mutation m
 deadline constantly. The caller has to be able to decide whether the work completed, can be
 retried, or needs reconciliation — an agent-contract question, not process hygiene.
 
-**Why it is not merely a rules exercise, measured.** The evidence record cannot currently
-represent what these rules would check. `runner.ts` closes over `child.on("close", (code) => …)`
-and discards Node's second argument, the terminating signal; `Observation.exitCode` is then
-`null`, which its own doc comment defines as "the deadline or the output ceiling killed it". A
-target that dies of a signal nobody in this kit sent is recorded as one this kit killed. Running
-a fixture whose entire body is `kill -SEGV $$` through `record()` and `buildReport()` produces
-**nine passing rules** — A2, A6, B1, B2, C3, D2, D4, E1 and F1 — among them:
+**Why it was not merely a rules exercise, measured.** The evidence record could not represent
+what these rules would check, and that half is now fixed. `runner.ts` used to close over
+`child.on("close", (code) => …)`, discarding Node's second argument, the terminating signal;
+`Observation.exitCode` is then `null`, which its own doc comment defined as "the deadline or the
+output ceiling killed it". A target that died of a signal nobody in this kit sent was recorded as
+one this kit killed. Running a fixture whose entire body is `kill -SEGV $$` through `record()`
+and `buildReport()` produced **nine passing rules** — A2, A6, B1, B2, C3, D2, D4, E1 and F1 —
+among them:
 
 ```
 A2 pass  root verb rejected with exit null
@@ -337,17 +338,33 @@ D2 pass  bare invocation exited null with stdout empty; stderr not inspected
 E1 pass  all 4 inert invocation(s) terminated (bare, --help, unknown flag, unknown verb)
 ```
 
-Nine is not a coincidence. It is the same number, and the same defect class, the kit already
+Nine was not a coincidence. It is the same number, and the same defect class, the kit already
 closed once from the other end: `spawnFailed` exists because a target that could not be executed
 _at all_ once collected nine passes from checkers satisfied by an empty stream and a non-zero
-exit. A target that _starts_ and then dies on every probe walks straight back through the same
-hole, because `null` is not `0` and no checker asks a second question. So
-signal-distinguishability is not only a rule the spec lacks — it is a field the observation
-lacks, which is why this sits after step 4 rather than being a rules-only exercise.
+exit. A target that _starts_ and then dies on every probe walked straight back through the same
+hole, because `null` is not `0` and no checker asked a second question.
 
-**Blocked on.** Step 4, for a record that carries signal, timing and cancellation. Step 5, for
-scope: a REPL's SIGINT contract is not a filter's, and a lifecycle family written before profiles
-would be written universally and then immediately weakened.
+**What that fix did and did not buy.** `Observation` now carries `signal` — the terminating
+signal as the OS reported it — and `crashed`, meaning terminated by a signal the kit did not
+send, which is the distinction `signal` alone cannot make once you notice that `killTree` sends
+SIGKILL too. `crashedUnverified` is the catalogue's third invariant beside `hungUnverified` and
+`truncatedUnverified`, and the same fixture now scores zero passes.
+
+**The kit RECORDS the signal; no rule JUDGES it.** That is deliberate, and it is what remains for
+this step. No rule id was minted for "must not crash": ids are append-only and appear in reports
+that outlive any release, so one is minted when a checker design exists to give it — the same
+position taken at [design guidance](#design-guidance-that-is-not-yet-normative). The one rule
+that speaks to a crash today does so incidentally: C1 reports `fail` when help dies on a signal,
+because C1's subject is that a help request _succeeds_. Everything else reports `unverified`,
+which is honest and has a visible consequence — **a target that crashes on every non-help
+invocation, and violates nothing else, reports `conformant: true` with ten core rules
+unverified**, because `conformant` counts violations and a crash is not yet anyone's violation.
+`fullyVerified` is false and `evidenceGaps` names all ten, which is the report saying what it
+knows. A rule family that owns process lifecycle is what would let the headline say it too.
+
+**Blocked on.** Step 4, for cancellation and the durable record — signal and timing now exist.
+Step 5, for scope: a REPL's SIGINT contract is not a filter's, and a lifecycle family written
+before profiles would be written universally and then immediately weakened.
 
 **Ordering note.** The review does not place this in its suggested order at all.
 
@@ -500,6 +517,10 @@ R3-1's normative-scope question is settled at
   own step 1, and its "separate current capability from roadmap language" recommendation;
 - process termination bounds the whole process tree, and output capture is bounded and
   byte-faithful with truncation reported rather than silent (R1-1, R2-3);
+- the observation records the terminating signal, and a target that dies of one the kit did not
+  send is no longer indistinguishable from one the kit killed — the record half of
+  [R4-5](#7-r4-5--the-lifecycle-rule-family), which took the `kill -SEGV $$` fixture from nine
+  passing rules to none. The rules that would judge a crash remain at step 7;
 - the L0 safety **wording** is corrected — the capability is step 3 above (R2-1);
 - the envelope has one model, `confirmation_required` rather than a parallel status field, and
   the exit-code decision page states its residual collision instead of overclaiming portability

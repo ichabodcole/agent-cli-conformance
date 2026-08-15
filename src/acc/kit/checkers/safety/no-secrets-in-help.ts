@@ -1,4 +1,9 @@
-import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
+import {
+  crashedUnverified,
+  findingFor,
+  hungUnverified,
+  truncatedUnverified,
+} from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -78,6 +83,12 @@ export const noSecretsInHelpChecker: Checker = {
     }
     const cut = truncatedUnverified(finding, [o]);
     if (cut) return cut;
+    // Same side of the split, same reason: a credential in the bytes a dying target managed to
+    // write has already leaked, so the FAIL above is decided first. The clean scan is the half a
+    // crash cannot carry — this pass is already qualified twice ("no KNOWN pattern", "root
+    // help"), and "over help the target never printed" is not a third qualifier it can absorb.
+    const crashed = crashedUnverified(finding, [o]);
+    if (crashed) return crashed;
 
     return finding(
       "pass",

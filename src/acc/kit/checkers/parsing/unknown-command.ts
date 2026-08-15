@@ -1,4 +1,9 @@
-import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
+import {
+  crashedUnverified,
+  findingFor,
+  hungUnverified,
+  truncatedUnverified,
+} from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
@@ -63,6 +68,12 @@ export const unknownCommandChecker: Checker = {
           )
         : cut;
     }
+    // The headline case of the nine-passes reproduction: this checker reported `pass — root verb
+    // rejected with exit null` for a target that segfaulted the moment it was handed the verb.
+    // Both tests below were satisfied by absence (no status, no output), exactly as they were
+    // for the hang above.
+    const crashed = crashedUnverified(finding, [o]);
+    if (crashed) return crashed;
 
     const problems: string[] = [];
     if (o.exitCode === 0) problems.push("unknown root verb exited 0");

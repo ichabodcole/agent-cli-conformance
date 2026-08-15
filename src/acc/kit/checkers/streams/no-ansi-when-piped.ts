@@ -1,4 +1,9 @@
-import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
+import {
+  crashedUnverified,
+  findingFor,
+  hungUnverified,
+  truncatedUnverified,
+} from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -66,6 +71,12 @@ export const noAnsiWhenPipedChecker: Checker = {
     }
     const cut = truncatedUnverified(finding, relevant);
     if (cut) return cut;
+    // Same side of the split as truncation, for the same reason: an escape the target emitted
+    // before dying was emitted, so the FAIL above stands and is decided first. The pass cannot —
+    // "no escapes in the output of a process that produced none" is the purest form of the
+    // absence-as-evidence error, and it is what handed B2 to a segfaulting fixture.
+    const crashed = crashedUnverified(finding, relevant);
+    if (crashed) return crashed;
 
     return finding(
       "pass",

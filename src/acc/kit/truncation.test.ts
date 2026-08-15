@@ -35,6 +35,11 @@ const asTruncated = (o: Observation): Observation => ({
   ...o,
   truncated: true,
   exitCode: null,
+  // The ceiling kill goes through `killTree` too, so this observation carries a signal as well —
+  // and `crashed: false`, because the kit sent it. All three null-exit-code cases are now
+  // distinguishable from each other rather than only from a clean exit.
+  signal: "SIGKILL",
+  crashed: false,
   timedOut: false,
 });
 
@@ -60,6 +65,8 @@ function everyProbeTruncated(): History {
             stderrBytes: 0,
             truncated: true,
             exitCode: null,
+            signal: "SIGKILL",
+            crashed: false,
             timedOut: false,
             spawnFailed: false,
             durationMs: 900,
@@ -121,6 +128,8 @@ describe("a violation already visible in the prefix still fails", () => {
       stderrBytes: 0,
       truncated: true,
       exitCode: null,
+      signal: "SIGKILL",
+      crashed: false,
       timedOut: false,
       spawnFailed: false,
       durationMs: 900,

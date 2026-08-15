@@ -1,4 +1,9 @@
-import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
+import {
+  crashedUnverified,
+  findingFor,
+  hungUnverified,
+  truncatedUnverified,
+} from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -59,6 +64,13 @@ export const firstBytePromptChecker: Checker = {
     // not averaged over its survivors.
     const cut = truncatedUnverified(finding, runs);
     if (cut) return cut;
+    // The third way a run fails to complete, and the one that would score BEST: a target that
+    // segfaults instantly writes its crash output — or nothing — in a millisecond or two, and
+    // best-of-N is a floor, so one fast death sets the number for all three. F2's claim is about
+    // how quickly a completed `--version` reaches its first byte; a run that ended in a signal
+    // did not complete, exactly as the partial-hang case above did not.
+    const crashed = crashedUnverified(finding, runs);
+    if (crashed) return crashed;
 
     const times = runs.map((o) => o.timeToFirstByteMs).filter((t): t is number => t !== null);
     if (times.length === 0) {

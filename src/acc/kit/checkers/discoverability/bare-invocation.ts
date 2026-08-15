@@ -1,4 +1,4 @@
-import { findingFor, truncatedUnverified } from "../../finding.ts";
+import { crashedUnverified, findingFor, truncatedUnverified } from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
 
@@ -55,6 +55,14 @@ export const bareInvocationChecker: Checker = {
           )
         : cut;
     }
+    // D2 owns hangs (a bare invocation that blocks is the wizard this rule exists to catch) and
+    // does NOT own crashes. `bare invocation exited null with stdout empty` was one of the nine
+    // false passes, and it is worth naming why the near-argument fails: a crash IS non-zero-ish,
+    // and a bare invocation SHOULD be a usage error, so the two look like they line up. They do
+    // not. This rule says the tool must TELL the caller it was invoked wrong; a target that dies
+    // told them nothing, and `exitCode` is null rather than any code at all.
+    const crashed = crashedUnverified(finding, [o]);
+    if (crashed) return crashed;
 
     const problems: string[] = [];
     // The failure this catches: `mycli $UNSET_VAR` reports success for an operation that never

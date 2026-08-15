@@ -1,4 +1,4 @@
-import { findingFor, truncatedUnverified } from "../../finding.ts";
+import { crashedUnverified, findingFor, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
@@ -53,6 +53,13 @@ export const unknownFlagChecker: Checker = {
           )
         : cut;
     }
+    // A1 owns hangs; it does NOT own crashes. "Blocking is not rejecting" is a claim about a
+    // tool that is still running and could still answer — a segfault is not a slower rejection,
+    // it is the absence of one. The tempting reading is that a crash "is non-zero" and so
+    // satisfies this rule; it is not, because `exitCode` is null, and null is what the target
+    // gets when it never chose a status at all.
+    const crashed = crashedUnverified(finding, [o]);
+    if (crashed) return crashed;
 
     const problems: string[] = [];
     if (o.exitCode === 0) problems.push("exit code was 0");

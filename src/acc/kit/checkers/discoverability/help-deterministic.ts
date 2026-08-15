@@ -1,4 +1,9 @@
-import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
+import {
+  crashedUnverified,
+  findingFor,
+  hungUnverified,
+  truncatedUnverified,
+} from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -92,6 +97,12 @@ export const helpDeterministicChecker: Checker = {
     // Two prefixes that agree as far as they go are not two identical help outputs.
     const cut = truncatedUnverified(finding, [a, b]);
     if (cut) return cut;
+    // And two crashes that wrote nothing are not two identical help outputs either — `"" === ""`
+    // is the same trap the hang guard above closed, reached by a target that dies reliably
+    // rather than one that blocks reliably. Placed after the diff check for the same reason
+    // truncation is: bytes that DID differ before the target fell over really did differ.
+    const crashed = crashedUnverified(finding, [a, b]);
+    if (crashed) return crashed;
 
     return a.stdout === b.stdout
       ? finding(

@@ -1,4 +1,4 @@
-import { findingFor, truncatedUnverified } from "../../finding.ts";
+import { crashedUnverified, findingFor, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -63,6 +63,12 @@ export const deterministicChecker: Checker = {
     // nothing about determinism.
     const cut = truncatedUnverified(finding, runs);
     if (cut) return cut;
+    // And the third way to get three agreeing nulls: three runs that each died on a signal. This
+    // one is the most persuasive-looking of the three, because a target that crashes reliably IS
+    // deterministic — just not in the exit code, which is the only thing C3 is entitled to talk
+    // about. `three identical invocations all exited null` was one of the nine false passes.
+    const crashed = crashedUnverified(finding, runs);
+    if (crashed) return crashed;
 
     // A timed-out run has no exit code to compare — `exitCode` is null because we killed it, not
     // because the target chose that status. Comparing nulls would let three timeouts read as

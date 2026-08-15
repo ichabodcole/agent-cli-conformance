@@ -1,4 +1,4 @@
-import { findingFor, truncatedUnverified } from "../../finding.ts";
+import { crashedUnverified, findingFor, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -71,6 +71,14 @@ export const neverBlockChecker: Checker = {
     // is exactly what E1's pass claims. The honest answer is that we ended it before it answered.
     const cut = truncatedUnverified(finding, runs);
     if (cut) return cut;
+    // E1 owns hangs; a crash is the one thing that is emphatically NOT a hang, which is exactly
+    // why it slipped through. `all 4 inert invocation(s) terminated` was among the nine false
+    // passes, and it is true in the narrowest possible sense — a segfault does terminate. E1's
+    // claim is that the tool ran to a conclusion with stdin closed instead of waiting for input
+    // that never comes; a target that died on all four never demonstrated either behaviour, and
+    // the process that would have blocked is not the process that was measured.
+    const crashed = crashedUnverified(finding, runs);
+    if (crashed) return crashed;
 
     return finding(
       "pass",

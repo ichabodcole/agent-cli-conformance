@@ -25,6 +25,8 @@ function historyWithOneRun(): History {
     truncated: false,
     exitCode: 0,
     timedOut: false,
+    signal: null,
+    crashed: false,
     spawnFailed: false,
     durationMs: 1,
     timeToFirstByteMs: 1,

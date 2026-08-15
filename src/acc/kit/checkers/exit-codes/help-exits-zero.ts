@@ -59,6 +59,20 @@ export const helpExitsZeroChecker: Checker = {
         problems.push(`${label} hung instead of exiting`);
         continue;
       }
+      // THE ONE EXCEPTION to `crashedUnverified` in the catalogue, and it is the same sentence
+      // as the hang above wearing a different ending: help that dies on a signal has not
+      // succeeded. That is a violation of the thing C1 asserts, not a gap in the evidence for
+      // it, so this reports `fail` where the other eighteen report `unverified`. It stays an
+      // exception about SUCCESS — A1 and D2 assert that the tool REJECTED something, and a
+      // crash is not a rejection, so the same reasoning does not carry to them.
+      //
+      // Reported before the `exitCode !== 0` line rather than through it, because that line
+      // would render as "exited null" — a status the target never chose, describing the wrong
+      // event.
+      if (o.crashed) {
+        problems.push(`${label} died on ${o.signal} instead of exiting`);
+        continue;
+      }
       if (o.exitCode !== 0) problems.push(`${label} exited ${o.exitCode}`);
       if (o.stdout.trim() === "") problems.push(`${label} wrote nothing to stdout`);
     }

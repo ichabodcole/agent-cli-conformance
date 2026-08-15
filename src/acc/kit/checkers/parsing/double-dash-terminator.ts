@@ -1,4 +1,9 @@
-import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
+import {
+  crashedUnverified,
+  findingFor,
+  hungUnverified,
+  truncatedUnverified,
+} from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
@@ -87,6 +92,12 @@ export const doubleDashTerminatorChecker: Checker = {
     }
     const cut = truncatedUnverified(finding, [o]);
     if (cut) return cut;
+    // Placed after the violation test for the same reason truncation is: an unknown-option error
+    // the target managed to print before dying was still printed. The PASS is the absence, and
+    // an absence over the stderr of a process that fell over before parsing anything is the
+    // emptiest kind of evidence there is.
+    const crashed = crashedUnverified(finding, [o]);
+    if (crashed) return crashed;
 
     return finding(
       "pass",

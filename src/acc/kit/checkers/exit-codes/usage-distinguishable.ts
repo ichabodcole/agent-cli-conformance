@@ -1,4 +1,4 @@
-import { findingFor, truncatedUnverified } from "../../finding.ts";
+import { crashedUnverified, findingFor, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
@@ -42,6 +42,12 @@ export const usageDistinguishableChecker: Checker = {
     // — `null` would collapse into "the same code twice" exactly as two hangs used to.
     const cut = truncatedUnverified(finding, recorded);
     if (cut) return cut;
+    // ...and a crashed probe has none either, for the other reason. Two nulls collapse into "the
+    // same code twice" and fall through to the `codes[0] === 2` test, which is how a segfaulting
+    // target came back `usage errors are consistent at exit null` — a sentence describing a
+    // consistency the target had no part in.
+    const crashed = crashedUnverified(finding, recorded);
+    if (crashed) return crashed;
 
     // A hung probe WAS recorded — it just never returned a code to compare. Reporting that as
     // "not recorded" would conflate two different outcomes A1 and C1 both take care to keep

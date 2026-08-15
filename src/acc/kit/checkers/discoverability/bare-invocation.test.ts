@@ -30,6 +30,8 @@ function historyWithHang(): History {
     truncated: false,
     exitCode: null,
     timedOut: true,
+    signal: null,
+    crashed: false,
     spawnFailed: false,
     durationMs: 10_000,
     timeToFirstByteMs: null,

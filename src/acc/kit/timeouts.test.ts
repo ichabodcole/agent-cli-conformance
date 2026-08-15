@@ -56,6 +56,11 @@ function everyProbeTimedOut(): History {
           // chose a status, and it never got to write anything.
           exitCode: null,
           timedOut: true,
+          // `killTree` sends SIGKILL, so a hung probe reports a signal exactly as a crashing
+          // target does — which is why `crashed` exists and is false here. If the two were
+          // conflated, this suite and crash.test.ts would each be asserting the other's case.
+          signal: "SIGKILL",
+          crashed: false,
           spawnFailed: false,
           durationMs: 10_000,
           timeToFirstByteMs: null,
@@ -142,6 +147,8 @@ const asHung = (o: Observation): Observation => ({
   stderr: "",
   exitCode: null,
   timedOut: true,
+  signal: "SIGKILL",
+  crashed: false,
   durationMs: 10_000,
   timeToFirstByteMs: null,
 });

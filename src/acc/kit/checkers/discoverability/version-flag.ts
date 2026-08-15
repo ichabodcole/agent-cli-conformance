@@ -1,4 +1,9 @@
-import { findingFor, hungUnverified, truncatedUnverified } from "../../finding.ts";
+import {
+  crashedUnverified,
+  findingFor,
+  hungUnverified,
+  truncatedUnverified,
+} from "../../finding.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -57,6 +62,15 @@ export const versionFlagChecker: Checker = {
     // clause here reads the exit code, which a probe we killed never chose.
     const cut = truncatedUnverified(finding, runs);
     if (cut) return cut;
+    // The near miss in this file. A crashed `--version` currently reads as three separate
+    // problems — "exited null", "wrote nothing to stdout", "requires configuration" — a FAIL
+    // that is three restatements of "it died", and the third of which is an outright false
+    // accusation: the hostile-HOME probe did not fail because of HOME. C1's exception does not
+    // reach here. C1 owns a rule about SUCCEEDING, so a crash falsifies it directly; D1's
+    // clauses are about what `--version` reports and under what conditions, and a target that
+    // fell over reported nothing under any conditions.
+    const crashed = crashedUnverified(finding, runs);
+    if (crashed) return crashed;
 
     const evidence = runs.map((o) => o.id);
     const problems: string[] = [];
