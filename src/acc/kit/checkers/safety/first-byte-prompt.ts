@@ -35,9 +35,13 @@ export const firstBytePromptChecker: Checker = {
   probes: (): Invocation[] =>
     RUNS.map((n) => ({
       args: ["--version"],
-      // Distinct env per run, purely so record()'s dedup (keyed on args + env) can't collapse
-      // three "repeated" invocations into one recording — same trick D4 uses with
-      // ACC_PROBE_NONCE. The target never reads this; it exists only to make the id differ.
+      // Distinct env per run, purely so record()'s dedup (keyed on args + env + repeat) can't
+      // collapse three "repeated" invocations into one recording. The target never reads this;
+      // it exists only to make the id differ — but it IS visible to the target, which is the
+      // objection C3 and D4 both answered by moving to `Invocation.repeat`. F2 is the last
+      // checker perturbing the environment for this, and it is a smaller lie here than it was
+      // there: F2 measures TIME rather than comparing bytes, so an env-reading target skews the
+      // number rather than fabricating a difference. It should still move.
       env: { ACC_PROBE_TIMING: String(n) },
       inertness: "help-path" as const,
       purpose: `F2: timing run ${n}`,

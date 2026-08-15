@@ -7,7 +7,7 @@ description:
 tags: [discoverability, determinism, testing, core]
 related: [rule/exit-codes-are-deterministic, rule/help-exits-zero]
 status: current
-updated: 2026-08-14
+updated: 2026-08-15
 rule_id: D4
 tier: core
 probe_level: L0
@@ -15,7 +15,6 @@ checker: src/acc/kit/checkers/discoverability/help-deterministic.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - the two runs are not identical invocations because the second carries a probe nonce in its environment
   - only root help is compared and never nested help
   - forbidden content such as a timestamp or a varying absolute path is only caught when it differs between two adjacent runs
 ---
@@ -56,25 +55,32 @@ reports safety it is not providing. This rule is what keeps that from happening.
 Inert (`L0`).
 
 ```
-<cli> --help     ×2      # captured, byte-compared
+<cli> --help     ×2      # the SAME invocation twice, captured and byte-compared
 ```
 
-Passes when the two captures are identical. The second run carries a distinct, allow-listed env
-var (rather than repeating the first invocation verbatim) purely so the runner's dedup — which
-merges identical probes into one recording — doesn't collapse the pair into a single sample.
+Passes when the two captures are identical.
 
-When they differ, the checker reports the **index of the first differing character** — not a
+**The two runs are the same invocation** — same argv, same environment, twice. That is worth
+stating because it was once not true. The runner deduplicates identical probes into a single
+recording, so an earlier version of this checker perturbed the second run with an
+`ACC_PROBE_NONCE` environment variable purely to get a second sample past the dedup — and then
+compared two invocations that differed, while claiming to measure determinism. A CLI that echoed
+its environment into help would have failed D4 for a legitimate reason, indistinguishable from a
+timestamp. The repetitions are now told apart by a **recorder-only index** the target never sees
+(`Invocation.repeat`, built for [C3](../exit-codes/exit-codes-are-deterministic.md), which had
+the identical defect in its own spelling).
+
+When the two differ, the checker reports the **index of the first differing character** — not a
 diff. That is enough to tell a one-character timestamp delta from wholesale reordering, and it
 is all the checker computes; a reader expecting a rendered delta will not find one. The index
 counts JS string offsets (UTF-16 code units), which diverge from byte offsets as soon as help
 contains a non-ASCII character.
 
 Deliberately not attempted: distinguishing "nondeterministic" from "changed because the
-environment changed". Note that the two runs are therefore **not** identical invocations — the
-second carries `ACC_PROBE_NONCE`, so a CLI that echoes its environment into help would differ
-here for a legitimate reason. That is the price of getting two samples past dedup, and it is
-declared as a gap rather than described away. `--version` is covered separately, by
-[D1](./version-flag-exists.md)'s own hostile-environment probe, rather than duplicated here.
+environment changed". D4 no longer varies the environment at all, so it cannot see that
+difference either way — help that reacts to a hostile environment is
+[D1](./version-flag-exists.md)'s subject, where `--version` is run with an unusable `HOME` and
+`XDG_CONFIG_HOME` on purpose, rather than a claim duplicated here.
 
 ## Current checker coverage
 
@@ -84,13 +90,12 @@ the rest of this page, unexamined.
 
 **Established**
 
-- two root `--help` captures taken moments apart are byte-identical, and a difference is reported
-  with the index of the first differing character.
+- two captures of the SAME root `--help` invocation taken moments apart — identical argv,
+  identical environment — are byte-identical, and a difference is reported with the index of the
+  first differing character.
 
 **Gaps**
 
-- the two runs are not identical invocations because the second carries a probe nonce in its
-  environment
 - only root help is compared and never nested help
 - forbidden content such as a timestamp or a varying absolute path is only caught when it differs
   between two adjacent runs

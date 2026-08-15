@@ -62,7 +62,7 @@ through a lint designed to prevent spec drift would either weaken the lint or li
    (R4-8) — after the corpus stops changing shape, and not a day later.
 9. [**Adoption surfaces**](#9-adoption-surfaces) — last, deliberately.
 
-The [coverage debt](#the-coverage-debt) is not a step. Those 53 gaps close as their blockers
+The [coverage debt](#the-coverage-debt) is not a step. Those 52 gaps close as their blockers
 land, which is why they are grouped below by what blocks them rather than sequenced.
 
 ### Where this departs from the review
@@ -466,7 +466,7 @@ binding.
 
 ## The coverage debt
 
-All 20 checkers declare `coverage: partial`, over **53 named gaps** — see
+All 20 checkers declare `coverage: partial`, over **52 named gaps** — see
 [the matrix](./wiki/index.md#coverage-at-a-glance), which is generated from rule frontmatter and
 fails the lint when it drifts. Closing them is roadmap work, and most of it is blocked rather
 than merely unwritten. The groups below are not disjoint: several gaps need two things, and a gap
@@ -502,10 +502,15 @@ across commands; F2's stream first-record and per-record flush requirement; B1's
 successful command. Step 5.
 
 **Blocked on environment control.** B2's `NO_COLOR`, `--no-color` and `TERM=dumb` overrides,
-which "need a TTY and are never exercised"; D4's admission that its two runs "are not identical
-invocations because the second carries a probe nonce in its environment"; G1's attribution of
-any signal the kit did not send to the target, which an OOM killer or a passing operator can
-falsify today and a controlled environment is what would rule out. Step 3.
+which "need a TTY and are never exercised"; G1's attribution of any signal the kit did not send
+to the target, which an OOM killer or a passing operator can falsify today and a controlled
+environment is what would rule out. Step 3.
+
+D4's admission that its two runs "are not identical invocations because the second carries a
+probe nonce in its environment" was in this group and is now closed, by `Invocation.repeat`
+rather than by environment control — the probe identity moved out of the environment instead of
+the environment being controlled around it. The same fix C3 had already taken; F2's three timing
+runs are the last that still perturb `env`.
 
 **Blocked on nothing — simply unwritten.** B2's OSC and single-character escape sequences and
 carriage-return animation; F1's seven known credential shapes; C3 repeating only one invocation

@@ -16,8 +16,13 @@ const fixture = (rel: string): TargetInfo => {
 function historyWithOneRun(): History {
   const o = {
     id: "fake-a",
-    invocation: { args: ["--help"], inertness: "help-path" as const, purpose: "D4: help run A" },
-    purposes: ["D4: help run A"],
+    invocation: {
+      args: ["--help"],
+      repeat: 1,
+      inertness: "help-path" as const,
+      purpose: "D4: help run 1",
+    },
+    purposes: ["D4: help run 1"],
     stdout: "usage: fixture\n",
     stderr: "",
     stdoutBytes: "usage: fixture\n".length,
@@ -71,4 +76,69 @@ describe("D4 — help output is byte-identical between runs", () => {
     expect(f.evidence.length).toBeGreaterThan(0);
     for (const id of f.evidence) expect(h.byId.has(id)).toBe(true);
   });
+});
+
+// The probe tests the rule its title names — falsified, not asserted. Same construction as C3's
+// (see checkers/exit-codes/deterministic.test.ts), because D4 had the same defect: run B used to
+// carry `ACC_PROBE_NONCE=1` purely to survive record()'s dedup, so a rule about two runs of the
+// SAME invocation was comparing two invocations that differed, and said so in its own coverage
+// gap. A CLI echoing its environment into help would have failed D4 for a legitimate reason.
+//
+// `Invocation.repeat` removes the difference, and the danger is that it could be undone
+// invisibly — a repeat that leaked into argv or the environment would restore the old defect
+// while every test above still passed. So the assertions below run against a fixture that
+// reports what the CHILD actually received: the Observation stores the Invocation the KIT built,
+// which would record a leak just as faithfully as anything else and prove nothing.
+describe("D4's two probes are the SAME invocation, twice", () => {
+  const ECHO = fixture("echoes-argv.ts");
+
+  test("identical args, identical env, distinct ids", async () => {
+    const h = await record(ECHO, [helpDeterministicChecker]);
+    const runs = h.observations.filter((o) => o.purposes.some((p) => p.startsWith("D4:")));
+    expect(runs).toHaveLength(2);
+
+    // One args vector, byte for byte...
+    expect([...new Set(runs.map((o) => JSON.stringify(o.invocation.args)))]).toHaveLength(1);
+    // ...and NO environment override on either, which is the line the nonce used to occupy.
+    for (const o of runs)
+      expect({ id: o.id, env: o.invocation.env }).toEqual({ id: o.id, env: undefined });
+
+    // Two recordings nonetheless, which is what `repeat` buys: dedup keys on args + env + repeat,
+    // so without the index these two collapse into one sample and D4 has nothing to compare.
+    expect(new Set(runs.map((o) => o.id)).size).toBe(2);
+    expect(runs.map((o) => o.invocation.repeat).sort()).toEqual([1, 2]);
+  }, 30_000);
+
+  test("the target observed identical argv, and no probe identity in its environment", async () => {
+    const h = await record(ECHO, [helpDeterministicChecker]);
+    const runs = h.observations.filter((o) => o.purposes.some((p) => p.startsWith("D4:")));
+    const seen = runs.map((o) => JSON.parse(o.stderr) as { argv: string[]; injected: object });
+
+    expect(seen).toHaveLength(2);
+    // The witness that matters. `echoes-argv.ts` reports every `ACC_*` variable it can see —
+    // including `ACC_PROBE_NONCE` by name — so an empty `injected` is an assertion with a way to
+    // fail, not a vacuous one.
+    expect([...new Set(seen.map((s) => JSON.stringify(s.argv)))]).toHaveLength(1);
+    expect(seen[0]?.argv).toEqual(["--help"]);
+    for (const s of seen) expect(s.injected).toEqual({});
+  }, 30_000);
+
+  // ...and the consequence, stated as the fixture can actually witness it. Measured against the
+  // old probe pair, the two recordings were:
+  //
+  //   A  {"argv":["--help"],"injected":{}}
+  //   B  {"argv":["--help"],"injected":{"ACC_PROBE_NONCE":"1"}}
+  //
+  // This fixture writes to stderr and D4 compares stdout, so that difference did not by itself
+  // flip a verdict — what it shows is the INPUT D4 handed any target that reads its environment.
+  // A CLI echoing an environment summary into its help text (a `doctor`-style banner is the
+  // realistic shape) would have differed on stdout for that reason and been reported as
+  // nondeterministic. Both recordings are now byte-identical, which is the difference disappearing
+  // at the source rather than being excused in a coverage gap.
+  test("a target that reports its environment now sees the same environment twice", async () => {
+    const h = await record(ECHO, [helpDeterministicChecker]);
+    const runs = h.observations.filter((o) => o.purposes.some((p) => p.startsWith("D4:")));
+    expect(runs[0]?.stderr).toBe(runs[1]?.stderr as string);
+    expect(runs[0]?.stderr).toContain('"injected":{}');
+  }, 30_000);
 });

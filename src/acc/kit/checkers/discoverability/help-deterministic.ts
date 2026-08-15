@@ -11,46 +11,56 @@ const RULE_ID = "D4";
 
 const finding = findingFor(RULE_ID);
 
+// ONE arg vector, run twice. The rule is "two runs of the SAME help invocation produce
+// byte-identical output", so the probe has to actually repeat an invocation.
+//
+// Run B used to carry `ACC_PROBE_NONCE=1`, purely to survive record()'s dedup — which meant D4
+// compared two invocations that were not the same one, and said so in its own coverage gap. That
+// is the defect C3 had, in the other spelling: a checker asserting determinism while comparing
+// two things that differ. A CLI echoing its environment into help would FAIL D4 for a legitimate
+// reason, and the checker had no way to tell that apart from a timestamp.
+//
+// `Invocation.repeat` is the fix already built for C3: a recorder-only index that reaches the
+// invocation id and nothing the child observes — not argv, not the environment. Nothing is lost
+// with the nonce, because it never established anything. It was never an env-sensitivity probe;
+// the rule page called it a liability, and hostile-environment behaviour is D1's subject, where
+// `--version` runs with an unusable HOME and XDG_CONFIG_HOME on purpose.
+const ARGS = ["--help"];
+const REPEATS = [1, 2];
+
 /** D4 — docs/wiki/rules/discoverability/help-output-is-deterministic.md */
 export const helpDeterministicChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/discoverability/help-output-is-deterministic.md",
   tier: "core",
   probeLevel: "L0",
-  // The first gap is a property of the workaround directly below: the two runs are NOT the same
-  // invocation, because run B carries `ACC_PROBE_NONCE` to survive record()'s dedup. A CLI that
-  // echoes its environment into help would differ here for a legitimate reason. (C3 now takes
-  // the other route — a recorder-only `repeat` that never reaches the target; D4 predates it
-  // and changing the probe is not this field's job.) The second is the same nesting boundary
-  // C1 hits, and the third is the rule's list of forbidden CONTENT, which byte comparison can
-  // only catch when it happens to vary between two runs a few milliseconds apart.
+  // "The two runs are not identical invocations" is no longer among these: they are now the same
+  // argv and the same environment, twice. What remains is the same nesting boundary C1 hits, and
+  // the rule's list of forbidden CONTENT, which byte comparison can only catch when it happens
+  // to vary between two runs a few milliseconds apart — a build timestamp with second resolution
+  // is stable across a pair of runs and rots a cached reference all the same.
   coverage: "partial",
   coverageGaps: [
-    "the two runs are not identical invocations because the second carries a probe nonce in its environment",
     "only root help is compared and never nested help",
     "forbidden content such as a timestamp or a varying absolute path is only caught when it differs between two adjacent runs",
   ],
 
-  // Two runs of the SAME invocation would be deduplicated by the runner (see record.ts), so
-  // determinism is probed through a distinct env that must not affect help output.
-  probes: (): Invocation[] => [
-    { args: ["--help"], inertness: "help-path", purpose: "D4: help run A" },
-    {
-      args: ["--help"],
-      env: { ACC_PROBE_NONCE: "1" },
-      inertness: "help-path",
-      purpose: "D4: help run B",
-    },
-  ],
+  probes: (): Invocation[] =>
+    REPEATS.map((n) => ({
+      args: ARGS,
+      repeat: n,
+      inertness: "help-path" as const,
+      purpose: `D4: help run ${n}`,
+    })),
 
   check: (h: History): Finding => {
-    // findByPurpose, not array position: plain `--help` is also requested by C1, B2, D3, and
-    // F1, so where this checker's own two runs land in `h.observations` isn't ours to predict.
-    // Select each explicitly by whether it carries the nonce env, and guard for either being
-    // absent rather than destructuring blind.
+    // findByPurpose, not array position or findByArgs: plain `--help` is also requested by C1,
+    // B2, D3 and F1, and findByArgs matches on args while ignoring `repeat` — it would hand back
+    // one recording where two are needed, silently. Ordered by the repeat index rather than by
+    // position so "run 1" and "run 2" mean what they say whatever order record() emitted them in.
     const runs = findByPurpose(h, "D4:");
-    const a = runs.find((o) => !o.invocation.env);
-    const b = runs.find((o) => o.invocation.env);
+    const a = runs.find((o) => o.invocation.repeat === REPEATS[0]);
+    const b = runs.find((o) => o.invocation.repeat === REPEATS[1]);
     if (!a || !b) {
       return finding(
         "unverified",
@@ -107,7 +117,9 @@ export const helpDeterministicChecker: Checker = {
     return a.stdout === b.stdout
       ? finding(
           "pass",
-          "help identical across two runs differing only by a probe nonce in the environment",
+          // IDENTICAL, and say so: "differing only by a probe nonce in the environment" is what
+          // this line used to have to admit, and the admission was the finding's whole caveat.
+          "help identical across two runs of the same invocation",
           evidence,
         )
       : finding("fail", `help output differed between runs, first at index ${firstDiff}`, evidence);

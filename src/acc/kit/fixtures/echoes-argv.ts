@@ -12,8 +12,9 @@
 // ordinary usage error rather than as data.
 const argv = process.argv.slice(2);
 // Every environment variable the kit could plausibly be smuggling a probe identity through,
-// including the two real ones (`ACC_PROBE_NONCE` from D4, `ACC_PROBE_TIMING` from F2) so a test
-// asserting an EMPTY object here is asserting something that has a way to be non-empty.
+// including `ACC_PROBE_TIMING` (F2's, still live) and `ACC_PROBE_NONCE` (D4's, retired when D4
+// moved to `repeat` — kept in reach of this pattern precisely so its return would be caught), so
+// a test asserting an EMPTY object here is asserting something that has a way to be non-empty.
 const injected = Object.fromEntries(
   Object.entries(process.env).filter(([k]) => /^ACC_/.test(k) || /REPEAT/i.test(k)),
 );

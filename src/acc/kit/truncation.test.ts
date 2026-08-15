@@ -143,6 +143,19 @@ describe("a violation already visible in the prefix still fails", () => {
     byId: new Map(observations.map((o) => [o.id, o])),
   });
 
+  /** One of D4's two probes: identical argv and no env, told apart by the recorder-only `repeat`
+   *  index the checker selects on. The pair used to differ by an `ACC_PROBE_NONCE` the child
+   *  could see, which is the defect `repeat` removed. */
+  const d4Run = (id: string, repeat: number): Observation => ({
+    ...base(id, ["--help"], `D4: help run ${repeat}`),
+    invocation: {
+      args: ["--help"],
+      repeat,
+      inertness: "help-path" as const,
+      purpose: `D4: help run ${repeat}`,
+    },
+  });
+
   test("B2 still fails on an escape that was emitted before the limit", () => {
     const o = base("b2", ["--help"], "B2: help must be escape-free");
     // The literal ESC bytes are the fixture: B2's whole assertion is that they were emitted.
@@ -159,16 +172,8 @@ describe("a violation already visible in the prefix still fails", () => {
   });
 
   test("D4 still fails on help that already differed inside both prefixes", () => {
-    const a = base("d4a", ["--help"], "D4: help run A");
-    const b = {
-      ...base("d4b", ["--help"], "D4: help run B"),
-      invocation: {
-        args: ["--help"],
-        env: { ACC_PROBE_NONCE: "1" },
-        inertness: "help-path" as const,
-        purpose: "D4: help run B",
-      },
-    };
+    const a = d4Run("d4a", 1);
+    const b = d4Run("d4b", 2);
     const h = historyOf([
       { ...a, stdout: "usage: t\nbuilt 11:04:02\n" },
       { ...b, stdout: "usage: t\nbuilt 11:04:09\n" },
@@ -181,16 +186,8 @@ describe("a violation already visible in the prefix still fails", () => {
     // The mirror image, and the reason the check is `firstDiff < minLen` rather than string
     // inequality: at the ceiling a length mismatch is OUR cut showing through, not the target's
     // nondeterminism, and reporting it as a diff would fabricate the finding D4 exists to make.
-    const a = base("d4a", ["--help"], "D4: help run A");
-    const b = {
-      ...base("d4b", ["--help"], "D4: help run B"),
-      invocation: {
-        args: ["--help"],
-        env: { ACC_PROBE_NONCE: "1" },
-        inertness: "help-path" as const,
-        purpose: "D4: help run B",
-      },
-    };
+    const a = d4Run("d4a", 1);
+    const b = d4Run("d4b", 2);
     const h = historyOf([
       { ...a, stdout: "usage: tool" },
       { ...b, stdout: "usage: too" },
