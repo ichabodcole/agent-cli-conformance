@@ -14,11 +14,11 @@ agent-harness authors second. It is a conformance suite for _ordinary CLIs consu
 not for agent applications that happen to have a CLI. If a person types your tool and a script
 also runs it, it is in scope.
 
-**Today** — the [wiki](docs/wiki/index.md) (19 rules, each with a checker), the `acc` reference
+**Today** — the [wiki](docs/wiki/index.md) (20 rules, each with a checker), the `acc` reference
 CLI, the documentation graph and linter, and an `L0` black-box checker that records argv,
-stdout, stderr, exit status and timing per probe. Every one of the 19 checkers declares
-`coverage: partial` — see [the matrix](docs/wiki/index.md#coverage-at-a-glance) for what each
-one leaves unestablished.
+stdout, stderr, exit status, the terminating signal and timing per probe. Every one of the 20
+checkers declares `coverage: partial` — see
+[the matrix](docs/wiki/index.md#coverage-at-a-glance) for what each one leaves unestablished.
 
 **Planned** — filesystem hashing and snapshot diffing, the `L1` and `L2` levels that falsify a
 CLI's own effect declarations, durable and replayable observation histories, and the
@@ -68,8 +68,9 @@ be mechanically checked does not get to be a rule.
 
 ### The conformance kit
 
-Records a structured _observation_ per probe — argv, stdout, stderr, exit code, timing, and
-whether the capture was cut short — then runs rule-checkers over the recorded observations.
+Records a structured _observation_ per probe — argv, stdout, stderr, exit code, the terminating
+signal, timing, and whether the capture was cut short — then runs rule-checkers over the
+recorded observations.
 (Filesystem hashes belong in that list and are _planned_; nothing hashes anything today.) Two
 consequences:
 

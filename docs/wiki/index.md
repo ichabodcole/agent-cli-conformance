@@ -14,8 +14,11 @@ falling into silent failures. The contract for maintaining these pages is
 [SCHEMA.md](./SCHEMA.md); the evidence that produced them lives in `research/`, outside this
 wiki.
 
-> **Status: early.** The `L0` rule catalogue is complete; `L1` and `L2` rules arrive with the
-> conformance kit. Sections marked _planned_ are scaffolded, not forgotten.
+> **Status: early.** Every rule below is checked at `L0` today, except
+> [A4](./rules/parsing/unexpected-positionals-rejected.md), which declares `L1` and is reported
+> not-applicable until that level exists. The catalogue is not closed —
+> [the roadmap](../roadmap.md) names the families still missing. Sections marked _planned_ are
+> scaffolded, not forgotten.
 
 ## Concepts
 
@@ -78,8 +81,9 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [E1](./rules/interactivity/never-block-without-a-tty.md)          | core       | L0    | implemented | partial  | 3    |
 | [F1](./rules/safety/no-secrets-in-help-or-schema.md)              | core       | L0    | implemented | partial  | 3    |
 | [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | L0    | implemented | partial  | 3    |
+| [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | L0    | implemented | partial  | 4    |
 
-19 rules · 0 `complete` · 19 `partial` · 49 named gaps.
+20 rules · 0 `complete` · 20 `partial` · 53 named gaps.
 
 ### Parsing
 
@@ -152,6 +156,16 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 - [F2 — First byte arrives promptly](./rules/safety/first-byte-is-prompt.md) _(diagnostic)_ —
   Agents invoke CLIs in loops, so startup cost is paid per iteration — and a tool that looks hung
   gets killed and retried.
+
+### Lifecycle
+
+The process itself: how it ends, and what a caller can conclude from that. `G1` is the family's
+first member and the rest is [planned](../roadmap.md#7-r4-5--the-lifecycle-rule-family) —
+cancellation, bounded shutdown, `SIGPIPE`, resumability.
+
+- [G1 — Inert invocations must not crash the tool](./rules/lifecycle/inert-invocations-do-not-crash.md)
+  — Dying on a signal is not an answer — the caller gets no exit code to read, and every other
+  rule reports a gap in the evidence rather than the defect.
 
 ## Decisions
 

@@ -676,7 +676,7 @@ describe("schema", () => {
 // This is the POSITIVE CONTROL, and it is now self-referential: the checker checks itself. If
 // acc ever stops conforming, or a checker breaks in a way that stops detecting, this goes red.
 // This suite is ADDED alongside the hand-written probes above, not a replacement for them: the
-// kit only re-implements what the 19 rule pages cover, and does not check the `choices` field's
+// kit only re-implements what the 20 rule pages cover, and does not check the `choices` field's
 // contents, `next` command templates, machine-mode precedence, or schema completeness — those
 // stay covered by the tests above.
 const ACC: TargetInfo = { path: CLI, argv0: ["bun", CLI] };
@@ -711,7 +711,7 @@ describe("acc checks itself, through the kit", () => {
 
   // ...and `fullyVerified` is nonetheless FALSE, deliberately (review R1-4). Every applicable
   // core rule passes and none is unverified — the assertion above — but every core checker in
-  // the registry currently declares `coverage: "partial"`, because every one of the nineteen
+  // the registry currently declares `coverage: "partial"`, because every one of the twenty
   // rule pages states normative clauses its L0 probe does not reach. The old `true` here was
   // the review's headline example: the positive control certifying itself over gaps its own
   // pass details already admitted to.
@@ -767,6 +767,23 @@ describe("acc check — the outcome exit code", () => {
     expect(r.code).toBe(0);
     expect(r.stdout).toContain("CONFORMANT");
   }, 30_000);
+
+  // G1's regression, through the real entry point. This target answers `--help`, `-h` and
+  // `--version` correctly and segfaults on every other path, and before G1 it printed
+  // `CONFORMANT (L0) — 0 core violated, 11 core unverified` and exited 0: every crashed rule
+  // reported `unverified`, and `conformant` counts violations. The kit-level assertions live in
+  // kit/crash.test.ts; this is the half that proves the EXIT CODE moved with the verdict, which
+  // is the only signal a CI harness that never parses stdout will ever see.
+  test("exits 9 against a target that crashes on everything but help", async () => {
+    const crasher = join(dirname(CLI), "kit/fixtures/sh/crashes-except-help.sh");
+    const r = await run(["check", crasher, "--format", "text"]);
+    expect(r.code).toBe(9);
+    expect(r.stdout).toContain("NOT CONFORMANT");
+    expect(r.stdout).toContain("FAIL  G1");
+    // The rule offered to the caller is the one that explains the report, not registry order.
+    expect(r.stdout).toContain("SIGSEGV");
+    expect(r.stderr).toBe("");
+  }, 60_000);
 
   // The ruling in docs/wiki/concepts/conformance.md, end to end. This fixture documents itself
   // as conforming at every L0 rule and has ZERO violations — it simply advertises no

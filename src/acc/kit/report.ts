@@ -120,11 +120,26 @@ export interface Report {
  * the caller at a rule that isn't why the check is red. A `fail` outranks an `unverified`
  * regardless of position, because only a fail is a violation.
  *
- * Beyond that it is registry order — EXCEPT for a hang, which is the one failure mode with an
- * identifiable owner. A target that blocks on stdin fails A1, C1, D2 and E1 at once, and
- * registry order offers A1: a page about rejecting unknown flags, which explains none of the
- * four failures the caller is looking at. E1 is the rule that owns hangs (see finding.ts), and
- * its page is the one that explains all of them. Ownership beats position.
+ * Beyond that it is registry order — EXCEPT for the two failure modes with an identifiable
+ * owner. A target that blocks on stdin fails A1, C1, D2 and E1 at once, and registry order
+ * offers A1: a page about rejecting unknown flags, which explains none of the four failures the
+ * caller is looking at. E1 is the rule that owns hangs (see finding.ts), and its page is the one
+ * that explains all of them. Ownership beats position.
+ *
+ * A CRASH has the identical shape and now has an owner too. The partial crasher — help and
+ * version answered correctly, every other path a segfault — fails C1 and G1 while every other
+ * rule reports `unverified`, and registry order sent that caller to A1 as well: a rule the
+ * target never got far enough to break. G1 is the page that explains why eleven other rules
+ * came back with nothing.
+ *
+ * WHEN A RUN CONTAINS BOTH, the hang wins, and the argument is reach rather than severity. A
+ * hang makes four rules FAIL, so E1's page explains four of the lines on screen; a crash makes
+ * exactly one other rule fail (C1) and turns the rest into gaps, so G1's page explains one
+ * failure and a column of `unverified`. Offering G1 first would leave the four hang-driven
+ * failures pointing at nothing, while offering E1 first leaves G1 one line further down a report
+ * that already names it. Neither is hypothetical enough to have been measured; the tie is broken
+ * on which page accounts for more of what the caller is looking at, which is the same principle
+ * that put ownership ahead of position in the first place.
  */
 export function primaryProblem(h: History, report: Report): ReportedFinding | undefined {
   const pick = (verdict: "fail" | "unverified", ruleId?: string) =>
@@ -137,7 +152,13 @@ export function primaryProblem(h: History, report: Report): ReportedFinding | un
         (ruleId === undefined || f.ruleId === ruleId),
     );
   const hung = h.observations.some((o) => o.timedOut);
-  return (hung ? pick("fail", "E1") : undefined) ?? pick("fail") ?? pick("unverified");
+  const crashed = h.observations.some((o) => o.crashed);
+  return (
+    (hung ? pick("fail", "E1") : undefined) ??
+    (crashed ? pick("fail", "G1") : undefined) ??
+    pick("fail") ??
+    pick("unverified")
+  );
 }
 
 /** Phase two: pure functions over recorded history. Nothing here spawns a process. */

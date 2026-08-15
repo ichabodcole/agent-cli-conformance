@@ -108,7 +108,7 @@ export function ruleChecks(pages: LintPage[]): string[] {
 
     // Same argument for `tier`, and it is the more consequential of the two: `Checker.tier`
     // decides whether a failure BLOCKS conformance at all, so a page saying `core` while its
-    // checker says `diagnostic` describes a gate that does not exist. All 19 pairs agree
+    // checker says `diagnostic` describes a gate that does not exist. All 20 pairs agree
     // today; this is about the gate, not about a live defect. Same guards as above — an
     // already-reported BAD tier or a `planned` rule makes the comparison meaningless.
     if (status === "implemented" && id && tier && TIERS.has(tier)) {
@@ -261,8 +261,8 @@ export function statedGaps(body: string): string[] | null {
  *
  * Derived from the same frontmatter the cross-checks above bind to the registry, so the table
  * cannot claim a coverage the checker does not declare — it would have to drift past two gates
- * to do it. Hand-maintaining nineteen rows beside nineteen pages is the exact shape of drift
- * this wiki exists to fail on.
+ * to do it. Hand-maintaining one row per rule page beside the page itself is the exact shape of
+ * drift this wiki exists to fail on, and a catalogue that grows a family makes it worse.
  */
 export function coverageMatrix(pages: LintPage[]): string {
   const rules = pages

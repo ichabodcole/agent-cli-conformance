@@ -518,8 +518,8 @@ test("prose gaps in a different order are reported — the list is compared in o
 
 // --- the generated coverage matrix ------------------------------------------------------
 //
-// The matrix answers "which rules are enforced, and how far" in one place. Hand-maintaining
-// nineteen rows beside nineteen pages is the drift this wiki exists to fail on, so it is
+// The matrix answers "which rules are enforced, and how far" in one place. Hand-maintaining one
+// row per rule page beside the page itself is the drift this wiki exists to fail on, so it is
 // derived from the same frontmatter the cross-checks above bind to the registry, and the lint
 // compares what is on the page against what the pages generate.
 

@@ -55,13 +55,14 @@ through a lint designed to prevent spec drift would either weaken the lint or li
    (R4-2 with R4-3) — one step, not two.
 6. [**The portable declaration IR**](#6-r4-7--the-portable-declaration-ir) (R4-7) — the largest
    single unblocker of the coverage debt.
-7. [**The lifecycle rule family**](#7-r4-5--the-lifecycle-rule-family) (R4-5) — new rules, once
-   the evidence record can carry what they measure.
+7. [**The lifecycle rule family**](#7-r4-5--the-lifecycle-rule-family) (R4-5) — begun, not
+   pending: `G1` is in the registry, and the rest waits on an evidence record that can carry
+   what it measures.
 8. [**Checker assurance at scale**](#8-r4-8--test-the-checker-as-a-measurement-instrument)
    (R4-8) — after the corpus stops changing shape, and not a day later.
 9. [**Adoption surfaces**](#9-adoption-surfaces) — last, deliberately.
 
-The [coverage debt](#the-coverage-debt) is not a step. Those 49 gaps close as their blockers
+The [coverage debt](#the-coverage-debt) is not a step. Those 53 gaps close as their blockers
 land, which is why they are grouped below by what blocks them rather than sequenced.
 
 ### Where this departs from the review
@@ -72,8 +73,10 @@ it belongs to and collected here so none of them is silent:
 - **R4-4 is promoted to first.** The review rates it P1 and then leaves it out of its own
   ordering entirely. Ranked by consequence rather than by label it goes first: it is a small
   schema change today and an unaffordable one once agent clients auto-follow remediation.
-- **R4-5 is placed at step 7.** The review also omits it from the order. It cannot go earlier —
-  the evidence record cannot currently represent what it measures.
+- **R4-5 is placed at step 7.** The review also omits it from the order. Most of it cannot go
+  earlier — the evidence record cannot represent what it measures. Its first member has since
+  landed anyway, because the one lifecycle question the record CAN already answer (did the target
+  fall over?) turned out to be the difference between a green headline and a red one.
 - **Versioning is split from the artifact and put strictly before it.** The review bundles both
   into its step 3. The artifact's own field list begins with version coordinates, so they have
   to exist first.
@@ -312,6 +315,13 @@ this is the most pinned-to artifact of the lot.
 
 ## 7. R4-5 — the lifecycle rule family
 
+**Started, not unstarted.** The family exists: `G` is `lifecycle`, and
+[G1](./wiki/rules/lifecycle/inert-invocations-do-not-crash.md) — an inert invocation must not
+terminate the target by signal — is core, `L0`, and in the registry. It is a down-payment on this
+step rather than a new axis, and the rest of the list below is what remains. Later members take
+G2, G3 and so on, under the discipline that minted G1: a rule id is issued when a checker design
+exists to carry it.
+
 **What it is.** Rules and fixtures for the part of the process lifecycle the spec does not yet
 cover: SIGINT and SIGTERM and their platform equivalents; bounded shutdown with descendant
 cleanup; signal-distinguishable outcomes; broken pipes and SIGPIPE without stack traces or
@@ -350,21 +360,29 @@ send, which is the distinction `signal` alone cannot make once you notice that `
 SIGKILL too. `crashedUnverified` is the catalogue's third invariant beside `hungUnverified` and
 `truncatedUnverified`, and the same fixture now scores zero passes.
 
-**The kit RECORDS the signal; no rule JUDGES it.** That is deliberate, and it is what remains for
-this step. No rule id was minted for "must not crash": ids are append-only and appear in reports
-that outlive any release, so one is minted when a checker design exists to give it — the same
-position taken at [design guidance](#design-guidance-that-is-not-yet-normative). The one rule
-that speaks to a crash today does so incidentally: C1 reports `fail` when help dies on a signal,
-because C1's subject is that a help request _succeeds_. Everything else reports `unverified`,
-which is honest and has a visible consequence — **a target that crashes on every non-help
-invocation, and violates nothing else, reports `conformant: true` with ten core rules
-unverified**, because `conformant` counts violations and a crash is not yet anyone's violation.
-`fullyVerified` is false and `evidenceGaps` names all ten, which is the report saying what it
-knows. A rule family that owns process lifecycle is what would let the headline say it too.
+**Recording the signal was half the job, and the other half was measured.** With every checker
+reporting `unverified` on a crashed probe, a fixture that answers `--help`, `-h` and `--version`
+correctly and segfaults on every other path reported **`conformant: true` at exit `0`, with
+eleven core rules unverified** — `conformant` counts violations, and a crash was nobody's
+violation. `fullyVerified` was false and `evidenceGaps` named all eleven, which is the report
+saying what it knows; the headline was the part that could not.
+
+That is what G1 closes, and it is why the id was minted now rather than with the rest of the
+family: ids are append-only and appear in reports that outlive any release, so one is issued when
+a checker design exists to give it — the same position taken at
+[design guidance](#design-guidance-that-is-not-yet-normative) — and this one had a checker design
+that needs no probes of its own. The fixture is permanent
+(`src/acc/kit/fixtures/sh/crashes-except-help.sh`), asserted at `conformant: false` and exit `9`,
+with the pre-G1 headline asserted alongside it so the rule cannot silently stop biting. C1 still
+reports `fail` for help that dies on a signal, incidentally rather than by ownership, because
+C1's subject is that a help request _succeeds_.
 
 **Blocked on.** Step 4, for cancellation and the durable record — signal and timing now exist.
 Step 5, for scope: a REPL's SIGINT contract is not a filter's, and a lifecycle family written
-before profiles would be written universally and then immediately weakened.
+before profiles would be written universally and then immediately weakened. **G1 is exempt from
+both** and that is why it could land early: it judges a target that fell over on an invocation
+the kit already sends, which needs neither a cancellation signal to deliver nor a profile to say
+whose contract it is.
 
 **Ordering note.** The review does not place this in its suggested order at all.
 
@@ -448,7 +466,7 @@ binding.
 
 ## The coverage debt
 
-All 19 checkers declare `coverage: partial`, over **49 named gaps** — see
+All 20 checkers declare `coverage: partial`, over **53 named gaps** — see
 [the matrix](./wiki/index.md#coverage-at-a-glance), which is generated from rule frontmatter and
 fails the lint when it drifts. Closing them is roadmap work, and most of it is blocked rather
 than merely unwritten. The groups below are not disjoint: several gaps need two things, and a gap
@@ -456,7 +474,8 @@ blocked on two blockers closes with the later one.
 
 **Blocked on discovery** — the largest group by some distance. Every gap of the form "only the
 root is probed", "nested subcommands are not probed at L0", "nested help is not probed", "a help
-subcommand is not probed", "only root help is scanned". None of these is an L0 safety limit: a
+subcommand is not probed", "only root help is scanned", and G1's "only the inert invocations
+other checkers already request are observed". None of these is an L0 safety limit: a
 subcommand's help path is exactly as inert as the root's. They are blocked on knowing that the
 subcommand exists, which today means parsing English help text. Step 6, with step 3's
 schema-based discovery as the interim improvement.
@@ -472,7 +491,8 @@ declared so nothing about arity is established"); A5's "performing no work is in
 non-zero exit rather than observed"; C3's "unchanged state is assumed rather than established";
 D1's "no network and no credentials and no side effects cannot be observed at L0"; B1's runtime
 failure path; E1's real confirmation path and the structured `confirmation_required` response
-behind it. These share one shape: **a checker cannot establish "no side effects" without a
+behind it; G1's "no invocation that does real work is sent at L0", which is the same boundary
+seen from the lifecycle side. These share one shape: **a checker cannot establish "no side effects" without a
 sandbox to falsify the claim in.** The negative is unobservable from argv and streams alone,
 which is the entire argument for L1 and L2 — and why A4 is reported not-applicable today rather
 than passing. Steps 3 and 4.
@@ -483,12 +503,15 @@ successful command. Step 5.
 
 **Blocked on environment control.** B2's `NO_COLOR`, `--no-color` and `TERM=dumb` overrides,
 which "need a TTY and are never exercised"; D4's admission that its two runs "are not identical
-invocations because the second carries a probe nonce in its environment". Step 3.
+invocations because the second carries a probe nonce in its environment"; G1's attribution of
+any signal the kit did not send to the target, which an OOM killer or a passing operator can
+falsify today and a controlled environment is what would rule out. Step 3.
 
 **Blocked on nothing — simply unwritten.** B2's OSC and single-character escape sequences and
 carriage-return animation; F1's seven known credential shapes; C3 repeating only one invocation
 shape and only three times; D3 requiring either the machine-mode flag or a schema command rather
-than both. These are the gaps a contributor can close this week, and they are listed last
+than both; G1's inability to tell a crash caused by the probe's own sentinel token from one the
+target would suffer on any input, which a second token would narrow. These are the gaps a contributor can close this week, and they are listed last
 precisely because "blocked" is a claim that should be checked rather than assumed.
 
 ## Non-goals are not deferred goals
@@ -520,7 +543,10 @@ R3-1's normative-scope question is settled at
 - the observation records the terminating signal, and a target that dies of one the kit did not
   send is no longer indistinguishable from one the kit killed — the record half of
   [R4-5](#7-r4-5--the-lifecycle-rule-family), which took the `kill -SEGV $$` fixture from nine
-  passing rules to none. The rules that would judge a crash remain at step 7;
+  passing rules to none;
+- ...and `G1` judges it, so a target that crashes on every path but help is `NOT CONFORMANT` at
+  exit `9` instead of green at exit `0`. That opens the lifecycle family rather than closing it:
+  the rules for cancellation, bounded shutdown, SIGPIPE and resumability remain at step 7;
 - the L0 safety **wording** is corrected — the capability is step 3 above (R2-1);
 - the envelope has one model, `confirmation_required` rather than a parallel status field, and
   the exit-code decision page states its residual collision instead of overclaiming portability

@@ -84,17 +84,18 @@ Splitting the two claims is a correctness fix, not a softening.
 
 Conflating them — treating an unverified core rule as disqualifying — makes the verdict say
 something false. `git` is the illustration, and it is a good one precisely because it is not a
-clean sheet. `acc check $(which git)`, against git 2.55.0, with the twelve passing rules elided:
+clean sheet. `acc check $(which git)`, against git 2.55.0, with the thirteen passing rules
+elided:
 
 ```
-NOT CONFORMANT (L0) — 2 core violated, 1 core unverified, 12 core partially covered
+NOT CONFORMANT (L0) — 2 core violated, 1 core unverified, 13 core partially covered
 
   UNVR  B3  no machine-mode flag was advertised in help, so there is nothing to parse
   FAIL  C2  the same error class produced different codes (129,1)
   FAIL  D2  bare invocation wrote 2290 bytes to stdout
   FAIL  D3  help names no machine-mode flag or schema command; B3 will be unverified as a result
 
-  core 12/15 · violations 2 · unverified 1 (all tiers; 1 core) · partial coverage 12 core · diagnostics 1
+  core 13/16 · violations 2 · unverified 1 (all tiers; 1 core) · partial coverage 13 core · diagnostics 1
 ```
 
 D3 is `diagnostic`, so it is reported and binds nothing. Of the two that do bind, both are real
@@ -162,8 +163,8 @@ by writing a sentence in a JSON file.
 The text verdict line states both claims at once, and names the scope of each number:
 
 ```
-CONFORMANT (L0) — 0 core violated, 2 core unverified, 13 core partially covered
-NOT CONFORMANT (L0) — 3 core violated, 1 core unverified, 11 core partially covered
+CONFORMANT (L0) — 0 core violated, 2 core unverified, 14 core partially covered
+NOT CONFORMANT (L0) — 3 core violated, 1 core unverified, 12 core partially covered
 ```
 
 `core violated` is core, applicable and **unexcused** — it gates conformance.
@@ -175,11 +176,11 @@ two lines can legitimately disagree — a target with one diagnostic gap and no 
 `0` above and `1` below. Both scopes are named rather than left to the reader to reconcile:
 
 ```
-  core 12/15 · violations 2 · unverified 1 (all tiers; 1 core) · partial coverage 11 core · diagnostics 1
+  core 13/16 · violations 2 · unverified 1 (all tiers; 1 core) · partial coverage 13 core · diagnostics 1
 ```
 
 A rule counted under `partial coverage` is also a rule that **passed**, so it appears in
-`core 12/15` as well. The two are not alternatives: the probe ran and found no violation, and
+`core 13/16` as well. The two are not alternatives: the probe ran and found no violation, and
 the scope of that probe was narrower than the page.
 
 The level is named because it bounds the claim: at `L0`,

@@ -22,10 +22,11 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { doesNotCrashChecker } from "./checkers/lifecycle/does-not-crash.ts";
 import { loadExpectations } from "./expectations.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
-import { buildReport, runCheckers } from "./report.ts";
+import { buildReport, primaryProblem, runCheckers } from "./report.ts";
 import { invocationId, runProbe } from "./runner.ts";
 import type { Discovery, History, Observation, TargetInfo } from "./types.ts";
 
@@ -35,6 +36,15 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // crash report on stderr, which is a different observation entirely. See the fixture's header.
 const SEGV: TargetInfo = (() => {
   const p = join(HERE, "fixtures/sh/dies-by-signal.sh");
+  return { path: p, argv0: ["sh", p] };
+})();
+
+// The same trick, half applied: `--help`, `-h` and `--version` answered properly, `kill -SEGV $$`
+// on every other path. POSIX shell for the same reason as above — under bun the signal would
+// become a chosen exit status and a crash report on stderr, which is not the observation this
+// fixture exists to produce.
+const PARTIAL_CRASHER: TargetInfo = (() => {
+  const p = join(HERE, "fixtures/sh/crashes-except-help.sh");
   return { path: p, argv0: ["sh", p] };
 })();
 
@@ -209,11 +219,12 @@ function everyProbeCrashed(): History {
   };
 }
 
-// C1 alone. Unlike hangs — which A1, D2 and E1 also own, because blocking IS the violation those
-// rules describe — a crash is nobody's subject matter except C1's, and deliberately so: no rule
-// says "must not crash", because rule ids are append-only and outlive any release. The kit
-// records the signal; docs/roadmap.md step 7 is where judging it belongs.
-const OWNS_CRASHES = new Set(["C1"]);
+// Two rules, for two different reasons. C1 owns it incidentally — its subject is that a help
+// request SUCCEEDS, and help that dies on a signal has not. G1 owns it outright: a crash is its
+// entire subject matter, the way a hang is E1's. G1 was minted after this file was written,
+// because recording the signal was only half the job — every other rule reporting `unverified`
+// left `conformant` counting zero violations for a target that fell over on eleven core rules.
+const OWNS_CRASHES = new Set(["C1", "G1"]);
 
 describe("a crashed probe is never evidence of compliance", () => {
   const h = everyProbeCrashed();
@@ -290,4 +301,116 @@ describe("one crashed probe among completed ones is not compliance either", () =
     },
     60_000,
   );
+
+  // G1 declares no probes, so the loop above skips it entirely — its case has to be written by
+  // hand, and it is the one that matters most: G1 judges the invocations OTHER checkers asked
+  // for, so a crash on any single one of them is its violation even though it requested none of
+  // them. Without this, the sweep above would report G1 as covered while never running it once.
+  test.each([0, 1, 2] as const)(
+    "G1 fails on crashed observation #%i, which no G1 probe ever requested",
+    (index) => {
+      const target = real.observations[index];
+      expect(target).toBeDefined();
+      expect(doesNotCrashChecker.probes(real.discovery)).toEqual([]);
+      const f = doesNotCrashChecker.check(withOneCrashedProbe(real, target?.id ?? ""));
+      expect(f.verdict).toBe("fail");
+      // The signal, not the absent exit code — "exited null" is the wording that let a crash
+      // read as a rejection in the first place.
+      expect(f.detail).toContain("SIGSEGV");
+      expect(f.evidence).toEqual([target?.id ?? ""]);
+    },
+  );
+});
+
+// THE FIXTURE G1 WAS MINTED FOR, run end to end through the real registry.
+//
+// `dies-by-signal.sh` above is the easy half: nothing survives, so nothing can be mistaken for
+// compliance. This is the half that survived the third invariant. A target that answers `--help`,
+// `-h` and `--version` correctly and segfaults on every other path collected FOUR honest passes
+// and eleven `unverified` core rules, and `conformant` — which counts violations — came back
+// `true` at exit 0. Every line of that report was individually correct; the headline was not.
+describe("the partial crasher — a green headline over eleven fallen-over rules", () => {
+  let h: History;
+  beforeAll(async () => {
+    h = await record(PARTIAL_CRASHER, CHECKERS);
+  }, 120_000);
+
+  test("the fixture really is partial: help and version answer, everything else dies", () => {
+    // Guards the test itself in both directions. If it stopped crashing, G1 would pass and the
+    // conformance assertions below would hold for the wrong reason; if it stopped answering
+    // help, this would be `dies-by-signal.sh` again and prove nothing new.
+    const crashed = h.observations.filter((o) => o.crashed);
+    const survived = h.observations.filter((o) => !o.crashed);
+    expect(crashed.length).toBeGreaterThan(4);
+    expect(survived.length).toBeGreaterThan(2);
+    expect(crashed.every((o) => o.signal === "SIGSEGV")).toBe(true);
+    expect(survived.every((o) => o.exitCode === 0)).toBe(true);
+  });
+
+  test("G1 reports the violation, naming the signal and the invocations that died", () => {
+    const g1 = runCheckers(h, CHECKERS).find((f) => f.ruleId === "G1");
+    expect(g1?.verdict).toBe("fail");
+    expect(g1?.detail).toContain("SIGSEGV");
+    expect(g1?.detail).toContain("(bare)");
+  });
+
+  test("C1 still passes, which is what makes this the PARTIAL case", () => {
+    // The rules the target genuinely satisfies must keep saying so. A rule that owns crashes is
+    // not a licence to fail everything once one probe dies.
+    const findings = runCheckers(h, CHECKERS);
+    expect(findings.find((f) => f.ruleId === "C1")?.verdict).toBe("pass");
+    expect(findings.find((f) => f.ruleId === "D1")?.verdict).toBe("pass");
+  });
+
+  test("the headline is NOT conformant, and G1 is the only core rule violated", () => {
+    const report = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      loadExpectations(undefined),
+      "L0",
+    );
+    expect(report.conformant).toBe(false);
+    const violated = report.findings.filter(
+      (f) => f.applicable && f.tier === "core" && f.verdict === "fail",
+    );
+    expect(violated.map((f) => f.ruleId)).toEqual(["G1"]);
+  });
+
+  // THE FALSIFICATION, and the reason this fixture is permanent. Everything above would still
+  // hold if some OTHER core rule had quietly started failing this target — so run the same
+  // history through the registry with G1 removed and confirm the old, wrong headline comes back
+  // exactly as it was measured: conformant, zero violations, eleven core rules unverified. If
+  // G1 ever stops biting, the assertions above go red rather than passing on a neighbour's work.
+  test("without G1 the same recording certifies as conformant — the pre-G1 report", () => {
+    const withoutG1 = CHECKERS.filter((c) => c.ruleId !== "G1");
+    const report = buildReport(
+      h,
+      runCheckers(h, withoutG1),
+      withoutG1,
+      loadExpectations(undefined),
+      "L0",
+    );
+    expect(report.conformant).toBe(true);
+    expect(report.counts.coreFailures).toBe(0);
+    expect(report.counts.coreUnverified).toBe(11);
+    // ...and the report was never silent about it: `fullyVerified` was false and every gap was
+    // named. The defect was the HEADLINE speaking over them, which is what G1 changes.
+    expect(report.fullyVerified).toBe(false);
+  });
+
+  // The caller-facing half. `primaryProblem` used to send this target to A1 — a rule about
+  // rejecting unknown flags, which it never got far enough to break — because registry order
+  // offered the first unverified core rule and nothing owned the crash. Same shape as the hang
+  // case that put E1 ahead of position; now there is a page that explains the other eleven lines.
+  test("the rule offered to the caller is G1, not registry order", () => {
+    const report = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      loadExpectations(undefined),
+      "L0",
+    );
+    expect(primaryProblem(h, report)?.ruleId).toBe("G1");
+  });
 });

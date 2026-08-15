@@ -6,6 +6,7 @@ import { deterministicChecker } from "./checkers/exit-codes/deterministic.ts";
 import { helpExitsZeroChecker } from "./checkers/exit-codes/help-exits-zero.ts";
 import { usageDistinguishableChecker } from "./checkers/exit-codes/usage-distinguishable.ts";
 import { neverBlockChecker } from "./checkers/interactivity/never-block.ts";
+import { doesNotCrashChecker } from "./checkers/lifecycle/does-not-crash.ts";
 import { doubleDashTerminatorChecker } from "./checkers/parsing/double-dash-terminator.ts";
 import { namesOffendingTokenChecker } from "./checkers/parsing/names-offending-token.ts";
 import { noFuzzyCorrectionChecker } from "./checkers/parsing/no-fuzzy-correction.ts";
@@ -46,4 +47,5 @@ export const CHECKERS: Checker[] = [
   neverBlockChecker,
   noSecretsInHelpChecker,
   firstBytePromptChecker,
+  doesNotCrashChecker,
 ];

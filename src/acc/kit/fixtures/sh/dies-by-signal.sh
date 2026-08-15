@@ -24,4 +24,8 @@
 # SIGSEGV rather than SIGTERM or SIGINT deliberately. Those two are what an outer deadline or a
 # Ctrl-C sends, and the lifecycle rules that will one day judge them (docs/roadmap.md, step 7)
 # want a target that handles them gracefully. SIGSEGV is unambiguously the target falling over.
+#
+# G1 now judges this fixture rather than merely surviving it, and the partial case it was minted
+# for is next door in `crashes-except-help.sh` — the same crash with `--help` and `--version`
+# answered correctly, which is what turned a green headline into a failing one.
 kill -SEGV $$

@@ -104,15 +104,20 @@ export function truncatedUnverified(finding: Finder, runs: Observation[]): Findi
  * reject the flag; it did not do anything. Call it before reading any status field and return
  * its result when non-null.
  *
- * ONE exception in the catalogue: C1, whose rule is that a help request SUCCEEDS. Help that
- * dies on a signal has definitively not succeeded, so that is a violation of what C1 asserts
- * rather than a gap in the evidence for it, and C1 reports `fail` exactly as it does for a hang.
- * The exception does NOT extend to A1 or D2 on the reasoning that a crash "is non-zero": those
- * rules assert the tool REJECTED something, and a crash is not a rejection.
+ * TWO exceptions in the catalogue, and they are different kinds of exception:
  *
- * No rule judges a crash as its own subject matter — there is deliberately no "must not crash"
- * rule, since rule ids are append-only and outlive any release. The kit records the signal
- * (`Observation.signal`); the lifecycle family that would judge it is docs/roadmap.md step 7.
+ * - C1, whose rule is that a help request SUCCEEDS. Help that dies on a signal has definitively
+ *   not succeeded, so that is a violation of what C1 asserts rather than a gap in the evidence
+ *   for it, and C1 reports `fail` exactly as it does for a hang. The exception does NOT extend
+ *   to A1 or D2 on the reasoning that a crash "is non-zero": those rules assert the tool
+ *   REJECTED something, and a crash is not a rejection.
+ * - G1, which OWNS crashes outright and never calls this function at all — the crash is its
+ *   entire finding, the way a hang is E1's. It was minted because `unverified` everywhere else
+ *   is honest and insufficient: a target answering only `--help` and `--version` and segfaulting
+ *   on every other path reported `conformant: true` at exit 0 with eleven core rules unverified,
+ *   since `conformant` counts violations and nothing called this one. Rule ids are append-only,
+ *   so G1 waited for a checker design rather than for a release; the rest of the lifecycle
+ *   family it opens is still docs/roadmap.md step 7.
  */
 export function crashedUnverified(finding: Finder, runs: Observation[]): Finding | null {
   const dead = runs.filter((o) => o.crashed);

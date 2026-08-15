@@ -91,8 +91,10 @@ export interface Observation {
    *
    * Recorded for EVERY signal termination, the kit's own `killTree` SIGKILL included, so it is
    * a faithful record and NOT the flag to branch on — `crashed` is. Kept as the raw string
-   * because which signal it was is the whole content of the observation, and no rule judges it
-   * yet (see docs/roadmap.md, step 7).
+   * because which signal it was is the whole content of the observation: G1 quotes it in the
+   * finding, since a target that died has no exit code to quote instead. Which signals a target
+   * must HANDLE (SIGINT, SIGTERM, SIGPIPE) is the rest of the lifecycle family, at
+   * docs/roadmap.md step 7.
    */
   signal: string | null;
   /**
@@ -109,7 +111,8 @@ export interface Observation {
    * stream and a non-zero exit; a target that starts and then dies walked back through the same
    * hole, because `exitCode` is null and null is not 0. A fixture whose entire body is
    * `kill -SEGV $$` scored nine passing rules. Checkers must run this through
-   * `crashedUnverified` (see finding.ts) exactly as they run a hang through `hungUnverified`.
+   * `crashedUnverified` (see finding.ts) exactly as they run a hang through `hungUnverified` —
+   * except G1, which reads this field as its whole subject matter and reports the violation.
    */
   crashed: boolean;
   timedOut: boolean;
