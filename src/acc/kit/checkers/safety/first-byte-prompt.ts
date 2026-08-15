@@ -30,11 +30,18 @@ export const firstBytePromptChecker: Checker = {
   // They now do (see the probes below), so there is nothing to declare. A validity risk that has
   // been removed at the source is not a gap to publish — publishing it would be the same overclaim
   // in the other direction, a checker taking credit for admitting to a problem it no longer has.
+  //
+  // The fourth is the STATISTIC (review R6-5). The verdict is best-of-three, which is the right
+  // reduction for the question "can this tool answer quickly" and the wrong one for "does it" —
+  // a target that answers in 8ms once and 400ms twice passes on the 8. That is a deliberate
+  // choice (a slow run usually measures the machine) and it narrows what the pass means, so it
+  // is declared rather than defended in a comment alone.
   coverage: "partial",
   coverageGaps: [
     "only --version is timed and never help or an argument-validation failure",
     "the stream first-record and per-record flush requirement is not exercised",
     "the progress signal a long-running command owes stderr is not exercised",
+    "the verdict is the fastest of three runs so a target that is usually slower still passes",
   ],
 
   probes: (): Invocation[] =>

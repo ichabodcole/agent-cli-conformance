@@ -18,6 +18,7 @@ coverage_gaps:
   - the structured machine-mode version payload is never inspected
   - no network and no credentials and no side effects cannot be observed at L0
   - the SHOULD to support -V is not probed
+  - stdout is only required to be non-empty and is never checked to carry a version string
 ---
 
 # A version is reportable without side effects
@@ -102,6 +103,7 @@ the rest of this page, unexamined.
 - the structured machine-mode version payload is never inspected
 - no network and no credentials and no side effects cannot be observed at L0
 - the SHOULD to support -V is not probed
+- stdout is only required to be non-empty and is never checked to carry a version string
 
 ## How to comply
 

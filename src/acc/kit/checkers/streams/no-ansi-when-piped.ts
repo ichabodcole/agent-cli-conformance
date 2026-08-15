@@ -26,11 +26,23 @@ export const noAnsiWhenPipedChecker: Checker = {
   // `ESC 7`), and animation built from bare carriage returns, which needs no escape byte at
   // all. The three override clauses are worse than unimplemented: they only bind when a TTY IS
   // present, and every probe the runner makes captures to a pipe, so no probe can reach them.
+  //
+  // THE LARGER BOUNDARY, and the one this list omitted while looking thorough (review R6-5).
+  // Those three are all limits of the DETECTOR, and a reader who checks them off has been told
+  // nothing about WHERE it ran. B2 binds on stdout and stderr whenever output is non-TTY or
+  // machine mode is active — which is every byte the target ever writes under this kit — and two
+  // invocations are sampled. Nested help, `--version`, the output of a command that succeeds,
+  // machine-mode output and every diagnostic other than one usage error are unexamined, so a
+  // tool that colours its results and not its help passes B2 outright. A page can scope a
+  // universal clause down to whatever the probe happened to run without ever saying so; the last
+  // two entries are that sentence said out loud.
   coverage: "partial",
   coverageGaps: [
     "only CSI escapes are detected and not OSC or single-character escape sequences",
     "carriage-return animation is not detected",
     "the NO_COLOR and --no-color and TERM=dumb overrides need a TTY and are never exercised",
+    "only root help and one usage error are sampled so nested help and version output and successful command output and other diagnostics are never inspected",
+    "machine mode is never selected although the rule binds whenever machine mode is active",
   ],
 
   probes: (): Invocation[] => [

@@ -17,6 +17,8 @@ coverage: partial
 coverage_gaps:
   - the value after the terminator is only shown not to be rejected as a flag and never shown to arrive as a positional
   - the delegator passthrough requirement is not exercised
+  - a rejection is recognised only from an English unknown-option or unknown-flag phrase so a differently worded rejection reads as a pass
+  - only a bare terminator at the root followed by a single value is probed
 ---
 
 # Honour the `--` end-of-options terminator
@@ -133,6 +135,9 @@ the rest of this page, unexamined.
 - the value after the terminator is only shown not to be rejected as a flag and never shown to
   arrive as a positional
 - the delegator passthrough requirement is not exercised
+- a rejection is recognised only from an English unknown-option or unknown-flag phrase so a
+  differently worded rejection reads as a pass
+- only a bare terminator at the root followed by a single value is probed
 
 ## How to comply
 

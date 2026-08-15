@@ -17,6 +17,8 @@ coverage_gaps:
   - only CSI escapes are detected and not OSC or single-character escape sequences
   - carriage-return animation is not detected
   - the NO_COLOR and --no-color and TERM=dumb overrides need a TTY and are never exercised
+  - only root help and one usage error are sampled so nested help and version output and successful command output and other diagnostics are never inspected
+  - machine mode is never selected although the rule binds whenever machine mode is active
 ---
 
 # No ANSI escapes when output is not a terminal
@@ -84,6 +86,9 @@ the rest of this page, unexamined.
 - only CSI escapes are detected and not OSC or single-character escape sequences
 - carriage-return animation is not detected
 - the NO_COLOR and --no-color and TERM=dumb overrides need a TTY and are never exercised
+- only root help and one usage error are sampled so nested help and version output and successful
+  command output and other diagnostics are never inspected
+- machine mode is never selected although the rule binds whenever machine mode is active
 
 ## How to comply
 

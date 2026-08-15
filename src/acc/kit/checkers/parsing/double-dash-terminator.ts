@@ -35,10 +35,19 @@ export const doubleDashTerminatorChecker: Checker = {
   // "parsed as a flag" without ruling in "received as a positional": a CLI that silently drops
   // everything after `--` passes exactly as one that honours it. The delegator half of the rule
   // is the stronger MUST and needs a child process to observe, which L0 has no way to reach.
+  //
+  // The third is the DETECTOR (review R6-5), and it is the sharpest limit in this file: the
+  // absence being tested is the absence of `/unknown (option|flag)/i` in English. A parser that
+  // says "unrecognized argument", "invalid switch", or anything at all in another language
+  // rejected the value exactly as loudly and is scored as a pass. The fourth is the single
+  // POSITION probed — one terminator at the root with one token behind it, so a `--` after a
+  // verb, or several values after it, is a shape this rule never sees.
   coverage: "partial",
   coverageGaps: [
     "the value after the terminator is only shown not to be rejected as a flag and never shown to arrive as a positional",
     "the delegator passthrough requirement is not exercised",
+    "a rejection is recognised only from an English unknown-option or unknown-flag phrase so a differently worded rejection reads as a pass",
+    "only a bare terminator at the root followed by a single value is probed",
   ],
 
   probes: (): Invocation[] => [

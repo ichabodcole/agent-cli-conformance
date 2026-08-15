@@ -18,6 +18,7 @@ coverage_gaps:
   - only root help is scanned and never schema output or error messages
   - only seven known credential shapes are matched so a bespoke token is invisible
   - a secret carried as a flag default is only seen if help prints defaults
+  - nested subcommand help is never scanned even though a flag default usually belongs to a leaf command
 ---
 
 # Help and schema never contain secrets
@@ -96,6 +97,8 @@ the rest of this page, unexamined.
 - only root help is scanned and never schema output or error messages
 - only seven known credential shapes are matched so a bespoke token is invisible
 - a secret carried as a flag default is only seen if help prints defaults
+- nested subcommand help is never scanned even though a flag default usually belongs to a leaf
+  command
 
 ## How to comply
 

@@ -62,7 +62,7 @@ through a lint designed to prevent spec drift would either weaken the lint or li
    (R4-8) — after the corpus stops changing shape, and not a day later.
 9. [**Adoption surfaces**](#9-adoption-surfaces) — last, deliberately.
 
-The [coverage debt](#the-coverage-debt) is not a step. Those 51 gaps close as their blockers
+The [coverage debt](#the-coverage-debt) is not a step. Those 78 gaps close as their blockers
 land, which is why they are grouped below by what blocks them rather than sequenced.
 
 ### Where this departs from the review
@@ -502,11 +502,24 @@ binding.
 
 ## The coverage debt
 
-All 20 checkers declare `coverage: partial`, over **51 named gaps** — see
+All 20 checkers declare `coverage: partial`, over **78 named gaps** — see
 [the matrix](./wiki/index.md#coverage-at-a-glance), which is generated from rule frontmatter and
 fails the lint when it drifts. Closing them is roadmap work, and most of it is blocked rather
 than merely unwritten. The groups below are not disjoint: several gaps need two things, and a gap
 blocked on two blockers closes with the later one.
+
+**The count went from 51 to 78 without a single checker getting weaker** (review R6-5), and the
+number was never the achievement. B2 was the review's example and the clearest: it declared three
+gaps, all of them real, all of them limits of the DETECTOR — CSI-only matching, no carriage-return
+animation, unreachable TTY overrides — while its rule binds on stdout and stderr for **every**
+output the target produces and its checker samples root help and one usage error. Nested help,
+`--version`, the output of a command that succeeds and machine-mode output were not named as
+missing because the list was answering "what can the matcher see?" and never "where did it look?".
+The audit that followed asked three questions of each partial checker instead of one: which
+normative clauses are untested outright, which are tested by a detector that recognises only part
+of what they say, and — the category that was systematically absent — **which execution paths a
+universal clause reaches that no probe visits.** A page can look thorough while silently scoping a
+universal rule down to whatever the probe happened to run.
 
 **Blocked on discovery** — the largest group by some distance. Every gap of the form "only the
 root is probed", "nested subcommands are not probed at L0", "nested help is not probed", "a help
@@ -516,11 +529,28 @@ subcommand's help path is exactly as inert as the root's. They are blocked on kn
 subcommand exists, which today means parsing English help text. Step 6, with step 3's
 schema-based discovery as the interim improvement.
 
+The audit added four more to this group, three of them the same sentence about a different
+surface: F1's nested help (where the flag whose default is a token actually lives), A5's near-miss
+of a subcommand's flag, and A1's short-flag shape — which needs discovery for a subtler reason
+than the others, since choosing a short flag the target does **not** recognise means knowing which
+ones it does. D3's "the flag scan falls back to the whole help text when no options block is
+recognised" is the heuristic itself confessing: schema-based discovery removes the fallback rather
+than tuning it.
+
 **Blocked on a declaration from the target.** "The exit code is only required to be non-zero here
 and not the declared 2" (A2, D2); "the undeclared-output default of data is not enforced at L0"
-(B3); the machine-mode envelope field A3 never inspects; D1's structured version payload; C2's
-taxonomy codes. The kit cannot hold a target to a contract the target never stated — that is not
-strictness the kit is missing, it is information. Step 6.
+(B3, and now A1 as well); the machine-mode envelope field A3 never inspects; D1's structured
+version payload; C2's taxonomy codes. The kit cannot hold a target to a contract the target never
+stated — that is not strictness the kit is missing, it is information. Step 6.
+
+Three more arrived with the audit, and they are the same problem wearing a different word.
+**A non-empty stream is standing in for a typed payload** in two places: C1 asserts "help text on
+stdout" as `stdout.trim() !== ""`, and D1 asserts "the version on stdout" the same way, so a
+single character satisfies both clauses. Neither can be tightened by guessing a syntax the rule
+does not state. B3's `stream` and `opaque` output kinds are the third: two of the three rows of
+its own normative table have no probe because nothing selects them, and a declaration is what
+would. A6's English-only `unknown option` matcher belongs here too — a declared error envelope
+carries a code, and matching a code is not matching a language.
 
 **Blocked on effect observation, and therefore on a sandbox.** A4 in its entirety ("no probe is
 declared so nothing about arity is established"); A5's "performing no work is inferred from a
@@ -533,12 +563,26 @@ sandbox to falsify the claim in.** The negative is unobservable from argv and st
 which is the entire argument for L1 and L2 — and why A4 is reported not-applicable today rather
 than passing. Steps 3 and 4.
 
+The audit put six more here, and every one of them is a path a probe cannot safely visit rather
+than an assertion nobody wrote. A1's "the command did not otherwise proceed" is A5's sentence
+about a different token. A2's near-miss verb is refused for the reason A5 refuses it — a corrected
+verb executes. C2 can only contrast two of the five usage errors its page enumerates, because an
+unexpected positional and a malformed value both need a real verb to attach to. B2's unsampled
+paths close with the last of them, which is the output of a command that succeeds. E1's
+short-timeout prompt is the same boundary read from the instrument's side: distinguishing "waited
+for input and gave up" from "never waited" means watching the read, not the exit. And G1 sees only
+the process it spawned, so a delegator whose child faults while the parent reports it cleanly is a
+fault on an inert invocation that no observation records.
+
 **Blocked on profiles and the outcome algebra.** A6's delegator passthrough; B3's shape stability
 across commands; F2's stream first-record and per-record flush requirement; B1's stdout on a
 successful command. Step 5.
 
 **Blocked on environment control.** B2's `NO_COLOR`, `--no-color` and `TERM=dumb` overrides,
-which "need a TTY and are never exercised". Step 3.
+which "need a TTY and are never exercised" — and, from the audit, D2's bare invocation, which the
+runner can only send down a pipe. Both are the same missing capability seen from opposite sides:
+B2 cannot reach the clauses that bind only **with** a terminal, and D2 cannot see the wizard that
+starts only **with** one. Step 3.
 
 G1's "a signal the kit did not send is attributed to the target" was in this group and has been
 removed rather than closed — it was never a coverage gap. It described a way G1 could produce a
@@ -561,7 +605,14 @@ would have been perturbing the quantity it measured (R6-6).
 carriage-return animation; F1's seven known credential shapes; C3 repeating only one invocation
 shape and only three times; D3 requiring either the machine-mode flag or a schema command rather
 than both; G1's inability to tell a crash caused by the probe's own sentinel token from one the
-target would suffer on any input, which a second token would narrow. These are the gaps a contributor can close this week, and they are listed last
+target would suffer on any input, which a second token would narrow. The audit roughly doubled
+this group, which is the most useful thing it did: A3 matching the sentinel **substring** rather
+than the whole offending token; A5's single deletion edit, where a transposition is as inert as a
+deletion; A6's single value after the terminator; B1's silence about whether the diagnostic
+reached stderr at all, and both B1's and B2's never selecting machine mode when B3 already knows
+the flag; C3 comparing only a usage-error path when `--help` and `--version` are repeatable today,
+and comparing three runs milliseconds apart; D3 never invoking the flag its pass says help
+advertises; D4 comparing stdout and never stderr; F2's best-of-three floor. These are the gaps a contributor can close this week, and they are listed last
 precisely because "blocked" is a claim that should be checked rather than assumed.
 
 ## Non-goals are not deferred goals

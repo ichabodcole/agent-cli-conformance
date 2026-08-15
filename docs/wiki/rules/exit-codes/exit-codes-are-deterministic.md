@@ -18,6 +18,8 @@ coverage_gaps:
   - only one usage-error invocation shape is repeated and only three times
   - unchanged state is assumed rather than established
   - the retryable declaration for genuinely intermittent failures is not exercised
+  - only a usage-error path is repeated so a success path or a real command is never compared
+  - the three runs land within milliseconds of each other so variation that appears only over a longer interval is invisible
 ---
 
 # Identical invocations produce identical exit codes
@@ -97,6 +99,9 @@ the rest of this page, unexamined.
 - only one usage-error invocation shape is repeated and only three times
 - unchanged state is assumed rather than established
 - the retryable declaration for genuinely intermittent failures is not exercised
+- only a usage-error path is repeated so a success path or a real command is never compared
+- the three runs land within milliseconds of each other so variation that appears only over a longer
+  interval is invisible
 
 ## How to comply
 

@@ -23,10 +23,19 @@ export const stdoutCarriesOnlyDataChecker: Checker = {
   // the defect this rule names, and reaching it means running a real verb (L1). The rule's
   // first sentence — stdout carries the RESULT and nothing else — is about the success path,
   // which this checker never inspects at all.
+  //
+  // The third and fourth are what an empty stdout does NOT establish (review R6-5). The rule has
+  // two halves and only one of them is an absence: "stdout MUST be empty on failure" is tested,
+  // "diagnostics MUST go to stderr" is not, so a target that fails in total silence — nothing on
+  // either stream — is scored identically to one that reported properly. And the sampled streams
+  // are the target's TEXT streams: a tool that writes its error envelope to stdout only when
+  // machine mode is active commits this violation on a path no probe here selects.
   coverage: "partial",
   coverageGaps: [
     "only usage-error failures are probed and never a runtime failure",
     "stdout on a SUCCESSFUL command is never inspected for diagnostics",
+    "stderr is never required to carry the diagnostic so a failure that reports nothing at all passes",
+    "machine mode is never selected so an error envelope written to stdout only in machine mode is not seen",
   ],
 
   probes: (): Invocation[] => [

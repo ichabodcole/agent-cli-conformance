@@ -18,6 +18,7 @@ coverage_gaps:
   - only the inert invocations other checkers already request are observed so an unprobed path such as nested help is never judged
   - no invocation that does real work is sent at L0 so a crash on the paths a caller actually uses is out of reach
   - a crash provoked by the probe's own sentinel token is not distinguished from one the target would suffer on any input
+  - only the target's own termination is recorded so a fault in a child process it spawned is never observed
 ---
 
 # Inert invocations must not crash the tool
@@ -186,12 +187,14 @@ the rest of this page, unexamined.
 
 **Gaps**
 
-- only the inert invocations other checkers already request are observed so an unprobed path such
-  as nested help is never judged
-- no invocation that does real work is sent at L0 so a crash on the paths a caller actually uses
-  is out of reach
-- a crash provoked by the probe's own sentinel token is not distinguished from one the target
-  would suffer on any input
+- only the inert invocations other checkers already request are observed so an unprobed path such as
+  nested help is never judged
+- no invocation that does real work is sent at L0 so a crash on the paths a caller actually uses is
+  out of reach
+- a crash provoked by the probe's own sentinel token is not distinguished from one the target would
+  suffer on any input
+- only the target's own termination is recorded so a fault in a child process it spawned is never
+  observed
 
 ## How to comply
 

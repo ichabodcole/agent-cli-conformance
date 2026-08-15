@@ -37,11 +37,19 @@ export const machineOutputParseableChecker: Checker = {
   // That is a deliberate softening of the rule, so it belongs here rather than only in a
   // comment. The other two: the only probe is machine-mode HELP, and the two MUST NOTs about
   // shape stability need at least two invocations to compare, which this checker never makes.
+  //
+  // The fourth is the rest of the page's own table (review R6-5). Three output kinds are
+  // normative and exactly one of them is ever tested: a `pass` here says "the whole stream is
+  // one JSON document", which is the `data` row. `stream` (every line one object, first record
+  // prompt) and `opaque` (no JSON expected, `media_type` declared) have no probe at all, and
+  // cannot get one until a declaration exists to select them — the same L1 boundary the first
+  // entry names, reached from the other side.
   coverage: "partial",
   coverageGaps: [
     "the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed",
     "only machine-mode help is parsed and never a data command",
     "shape stability across invocations and across commands is not compared",
+    "the stream and opaque output kinds are never exercised because no declaration exists at L0 to select them",
   ],
 
   probes: (d: Discovery): Invocation[] =>

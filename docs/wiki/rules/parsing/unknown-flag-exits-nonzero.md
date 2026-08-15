@@ -18,6 +18,9 @@ coverage_gaps:
   - a flag carrying a value is never probed so absorbing that value as a positional is not established
   - only the root is probed so a flag unknown to a subcommand is not
   - the MUST NOT act on a suggested correction clause is not exercised here
+  - the exit code is only required to be non-zero here and not the declared 2
+  - only a long valueless flag is probed so a short flag or a cluster of short flags is not
+  - that the command did not otherwise proceed is inferred from a non-zero exit rather than observed
 ---
 
 # Unknown flags must exit non-zero
@@ -92,10 +95,12 @@ the rest of this page, unexamined.
 
 **Gaps**
 
-- a flag carrying a value is never probed so absorbing that value as a positional is not
-  established
+- a flag carrying a value is never probed so absorbing that value as a positional is not established
 - only the root is probed so a flag unknown to a subcommand is not
 - the MUST NOT act on a suggested correction clause is not exercised here
+- the exit code is only required to be non-zero here and not the declared 2
+- only a long valueless flag is probed so a short flag or a cluster of short flags is not
+- that the command did not otherwise proceed is inferred from a non-zero exit rather than observed
 
 ## How to comply
 

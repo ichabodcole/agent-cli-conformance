@@ -39,10 +39,17 @@ export const helpDeterministicChecker: Checker = {
   // the rule's list of forbidden CONTENT, which byte comparison can only catch when it happens
   // to vary between two runs a few milliseconds apart — a build timestamp with second resolution
   // is stable across a pair of runs and rots a cached reference all the same.
+  //
+  // The third is the STREAM the comparison covers (review R6-5). The rule says two runs of the
+  // same help invocation must produce byte-identical output, and every comparison in `check` —
+  // the difference scan and the digest test alike — reads `stdout` only. A target that writes a
+  // deprecation notice or a resolved config path to stderr alongside its help varies its output
+  // between runs and is certified identical.
   coverage: "partial",
   coverageGaps: [
     "only root help is compared and never nested help",
     "forbidden content such as a timestamp or a varying absolute path is only caught when it differs between two adjacent runs",
+    "only stdout is compared and never stderr",
   ],
 
   probes: (): Invocation[] =>

@@ -18,6 +18,7 @@ coverage_gaps:
   - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed
   - only machine-mode help is parsed and never a data command
   - shape stability across invocations and across commands is not compared
+  - the stream and opaque output kinds are never exercised because no declaration exists at L0 to select them
 ---
 
 # Machine output parses as its declared kind
@@ -111,6 +112,8 @@ the rest of this page, unexamined.
   rather than failed
 - only machine-mode help is parsed and never a data command
 - shape stability across invocations and across commands is not compared
+- the stream and opaque output kinds are never exercised because no declaration exists at L0 to
+  select them
 
 ## How to comply
 

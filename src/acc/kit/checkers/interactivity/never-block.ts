@@ -27,11 +27,18 @@ export const neverBlockChecker: Checker = {
   // itself to "inert invocations" for that reason. The exit-8 clause needs one of those paths
   // to reach at all, and the EOF clause is invisible to a runner that only sees termination: a
   // CLI reading closed stdin as "yes" terminates just as promptly as one that refuses.
+  //
+  // The fourth is what "terminated" is measured AGAINST (review R6-5). Blocking is inferred from
+  // the runner's deadline expiring, so the only prompts this rule can see are the ones that wait
+  // longer than the kit is willing to. A confirmation with a read timeout of its own — five
+  // seconds, then a default — waited for input on a non-TTY stdin, which is the violation, and
+  // terminated well inside the deadline, which is the pass.
   coverage: "partial",
   coverageGaps: [
     "only inert paths are probed so a real confirmation path is never reached",
     "the structured confirmation_required response and its exit 8 are not established",
     "treating EOF or closed stdin as an answer is not detectable from termination alone",
+    "blocking is only detected when it outlasts the kit's deadline so a prompt that gives up sooner reads as terminating",
   ],
 
   // The unknown-VERB probe is not decoration. E1 is the catalogue's backstop for hangs, and

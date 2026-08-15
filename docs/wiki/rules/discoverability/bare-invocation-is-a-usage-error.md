@@ -17,6 +17,7 @@ coverage: partial
 coverage_gaps:
   - the exit code is only required to be non-zero here and not the declared 2
   - stderr is never checked to carry the usage summary
+  - the bare invocation is only run against pipes so a wizard that starts only with a terminal attached is out of reach
 ---
 
 # Bare invocation is a usage error
@@ -90,6 +91,8 @@ the rest of this page, unexamined.
 
 - the exit code is only required to be non-zero here and not the declared 2
 - stderr is never checked to carry the usage summary
+- the bare invocation is only run against pipes so a wizard that starts only with a terminal
+  attached is out of reach
 
 ## How to comply
 

@@ -32,16 +32,23 @@ export const unknownCommandChecker: Checker = {
   rulePath: "docs/wiki/rules/parsing/unknown-command-exits-nonzero.md",
   tier: "core",
   probeLevel: "L0",
-  // The nested gap is the one the class comment above spends its length on; the other two are
+  // The nested gap is the one the class comment above spends its length on; the next two are
   // clauses the page states flatly and this checker never reads. It asserts `exitCode !== 0`,
   // not the declared `2`, and it never looks at stderr at all — A3 happens to assert the
   // verb-naming clause over the byte-identical recording, but that is A3's evidence, not this
   // rule's, and a report that borrowed it would be citing a finding it did not make.
+  //
+  // The fourth is a PATH rather than a clause (review R6-5), and it is the one a reader would
+  // otherwise assume covered: "any command it does not recognise" includes a token one edit away
+  // from a real verb, which is precisely the token a fuzzy matcher resolves and runs. A5 refuses
+  // to send one because a corrected verb executes; A2 never sends one either, so nothing in the
+  // catalogue observes an unrecognised verb that a parser is tempted to recognise.
   coverage: "partial",
   coverageGaps: [
     "nested subcommands are not probed at L0",
     "the exit code is only required to be non-zero here and not the declared 2",
     "naming the offending verb on stderr is not asserted",
+    "only a sentinel-shaped token is probed so a verb that near-misses a real command is never offered",
   ],
 
   probes: (): Invocation[] => [

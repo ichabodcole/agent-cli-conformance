@@ -75,6 +75,9 @@ const A1_GAPS = [
   "a flag carrying a value is never probed so absorbing that value as a positional is not established",
   "only the root is probed so a flag unknown to a subcommand is not",
   "the MUST NOT act on a suggested correction clause is not exercised here",
+  "the exit code is only required to be non-zero here and not the declared 2",
+  "only a long valueless flag is probed so a short flag or a cluster of short flags is not",
+  "that the command did not otherwise proceed is inferred from a non-zero exit rather than observed",
 ];
 
 /** Frontmatter of a rule page that satisfies every check. */
@@ -568,15 +571,21 @@ test("the matrix carries one row per rule page, sorted by rule id", () => {
   const rows = coverageMatrix(pages)
     .split("\n")
     .filter((l) => l.startsWith("| ["));
+  // The count comes from `A1_GAPS.length`, not a literal: the baseline mirrors the LIVE A1
+  // checker (see above), so a literal here asserts the size of a real gap list rather than the
+  // property under test, and every honest addition to that list breaks a test about table
+  // rendering. The equality is unchanged — this is still the exact rendered row.
   expect(rows).toEqual([
-    "| [A1](./rules/parsing/a1.md) | core | L0 | planned | partial | 3 |",
-    "| [B1](./rules/streams/b1.md) | core | L0 | planned | partial | 3 |",
+    `| [A1](./rules/parsing/a1.md) | core | L0 | planned | partial | ${A1_GAPS.length} |`,
+    `| [B1](./rules/streams/b1.md) | core | L0 | planned | partial | ${A1_GAPS.length} |`,
   ]);
 });
 
 test("the matrix totals the gaps it lists", () => {
   const matrix = coverageMatrix([rule("rules/parsing/a1.md")]);
-  expect(matrix).toContain("1 rules · 0 `complete` · 1 `partial` · 3 named gaps.");
+  expect(matrix).toContain(
+    `1 rules · 0 \`complete\` · 1 \`partial\` · ${A1_GAPS.length} named gaps.`,
+  );
 });
 
 test("an index whose matrix matches the rule pages produces no problem", () => {

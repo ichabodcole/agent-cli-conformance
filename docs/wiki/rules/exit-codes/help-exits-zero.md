@@ -18,6 +18,7 @@ coverage_gaps:
   - nested help is not probed at L0
   - a help subcommand is not probed
   - appending --help to an otherwise complete invocation is not probed
+  - stdout is only required to be non-empty and is never checked to contain help text
 ---
 
 # Help is a request, and it succeeds
@@ -132,6 +133,7 @@ itself.
 - nested help is not probed at L0
 - a help subcommand is not probed
 - appending --help to an otherwise complete invocation is not probed
+- stdout is only required to be non-empty and is never checked to contain help text
 
 ## How to comply
 

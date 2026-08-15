@@ -31,11 +31,21 @@ export const deterministicChecker: Checker = {
   // test rather than proof — and the rule's second sentence, about declaring an intermittent
   // failure as its own `retryable` code, needs a declaration the target has no way to make at
   // L0.
+  //
+  // The last two are where the repetition HAPPENS (review R6-5). "The same invocation" is
+  // universal over invocations, and the one repeated here is a usage error — so a target whose
+  // SUCCESS path returns 0 or 1 depending on a cache, a clock or a resolved config is
+  // deterministic as far as C3 can see. And the three runs land within milliseconds of each
+  // other in one process's lifetime, which is the interval least likely to expose the drift the
+  // rule is about: a code that changes at a date boundary or after a first-run initialisation is
+  // stable across three adjacent runs by construction.
   coverage: "partial",
   coverageGaps: [
     "only one usage-error invocation shape is repeated and only three times",
     "unchanged state is assumed rather than established",
     "the retryable declaration for genuinely intermittent failures is not exercised",
+    "only a usage-error path is repeated so a success path or a real command is never compared",
+    "the three runs land within milliseconds of each other so variation that appears only over a longer interval is invisible",
   ],
 
   probes: (): Invocation[] =>

@@ -62,28 +62,28 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 
 | Rule                                                              | Tier       | Level | Checker     | Coverage | Gaps |
 | ----------------------------------------------------------------- | ---------- | ----- | ----------- | -------- | ---- |
-| [A1](./rules/parsing/unknown-flag-exits-nonzero.md)               | core       | L0    | implemented | partial  | 3    |
-| [A2](./rules/parsing/unknown-command-exits-nonzero.md)            | core       | L0    | implemented | partial  | 3    |
-| [A3](./rules/parsing/errors-name-the-offending-token.md)          | core       | L0    | implemented | partial  | 3    |
+| [A1](./rules/parsing/unknown-flag-exits-nonzero.md)               | core       | L0    | implemented | partial  | 6    |
+| [A2](./rules/parsing/unknown-command-exits-nonzero.md)            | core       | L0    | implemented | partial  | 4    |
+| [A3](./rules/parsing/errors-name-the-offending-token.md)          | core       | L0    | implemented | partial  | 4    |
 | [A4](./rules/parsing/unexpected-positionals-rejected.md)          | core       | L1    | implemented | partial  | 1    |
-| [A5](./rules/parsing/no-fuzzy-auto-correction.md)                 | core       | L0    | implemented | partial  | 3    |
-| [A6](./rules/parsing/double-dash-terminator.md)                   | diagnostic | L0    | implemented | partial  | 2    |
-| [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | L0    | implemented | partial  | 2    |
-| [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | L0    | implemented | partial  | 3    |
-| [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L0    | implemented | partial  | 3    |
-| [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | L0    | implemented | partial  | 3    |
-| [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | L0    | implemented | partial  | 2    |
-| [C3](./rules/exit-codes/exit-codes-are-deterministic.md)          | core       | L0    | implemented | partial  | 3    |
-| [D1](./rules/discoverability/version-flag-exists.md)              | core       | L0    | implemented | partial  | 3    |
-| [D2](./rules/discoverability/bare-invocation-is-a-usage-error.md) | core       | L0    | implemented | partial  | 2    |
-| [D3](./rules/discoverability/help-advertises-machine-mode.md)     | diagnostic | L0    | implemented | partial  | 1    |
-| [D4](./rules/discoverability/help-output-is-deterministic.md)     | core       | L0    | implemented | partial  | 2    |
-| [E1](./rules/interactivity/never-block-without-a-tty.md)          | core       | L0    | implemented | partial  | 3    |
-| [F1](./rules/safety/no-secrets-in-help-or-schema.md)              | core       | L0    | implemented | partial  | 3    |
-| [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | L0    | implemented | partial  | 3    |
-| [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | L0    | implemented | partial  | 3    |
+| [A5](./rules/parsing/no-fuzzy-auto-correction.md)                 | core       | L0    | implemented | partial  | 5    |
+| [A6](./rules/parsing/double-dash-terminator.md)                   | diagnostic | L0    | implemented | partial  | 4    |
+| [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | L0    | implemented | partial  | 4    |
+| [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | L0    | implemented | partial  | 5    |
+| [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L0    | implemented | partial  | 4    |
+| [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | L0    | implemented | partial  | 4    |
+| [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | L0    | implemented | partial  | 3    |
+| [C3](./rules/exit-codes/exit-codes-are-deterministic.md)          | core       | L0    | implemented | partial  | 5    |
+| [D1](./rules/discoverability/version-flag-exists.md)              | core       | L0    | implemented | partial  | 4    |
+| [D2](./rules/discoverability/bare-invocation-is-a-usage-error.md) | core       | L0    | implemented | partial  | 3    |
+| [D3](./rules/discoverability/help-advertises-machine-mode.md)     | diagnostic | L0    | implemented | partial  | 3    |
+| [D4](./rules/discoverability/help-output-is-deterministic.md)     | core       | L0    | implemented | partial  | 3    |
+| [E1](./rules/interactivity/never-block-without-a-tty.md)          | core       | L0    | implemented | partial  | 4    |
+| [F1](./rules/safety/no-secrets-in-help-or-schema.md)              | core       | L0    | implemented | partial  | 4    |
+| [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | L0    | implemented | partial  | 4    |
+| [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | L0    | implemented | partial  | 4    |
 
-20 rules · 0 `complete` · 20 `partial` · 51 named gaps.
+20 rules · 0 `complete` · 20 `partial` · 78 named gaps.
 
 ### Parsing
 

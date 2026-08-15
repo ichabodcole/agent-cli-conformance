@@ -46,11 +46,18 @@ export const noSecretsInHelpChecker: Checker = {
   // seven known shapes, which is already scoped in the pass detail ("absence of a known
   // pattern, not proof"); a flag default is invisible for a different reason — help prints the
   // default only if the CLI chooses to.
+  //
+  // The fourth separates two things the first entry runs together (review R6-5). "Never schema
+  // output or error messages" names two other SURFACES; nested help is the same surface at a
+  // level no probe reaches, and it is where the defaults clause actually bites — root help lists
+  // groups, and the flag whose default is a token belongs to a leaf command whose help this
+  // checker never asks for.
   coverage: "partial",
   coverageGaps: [
     "only root help is scanned and never schema output or error messages",
     "only seven known credential shapes are matched so a bespoke token is invisible",
     "a secret carried as a flag default is only seen if help prints defaults",
+    "nested subcommand help is never scanned even though a flag default usually belongs to a leaf command",
   ],
 
   probes: (): Invocation[] => [

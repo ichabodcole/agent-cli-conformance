@@ -16,6 +16,8 @@ checker_status: implemented
 coverage: partial
 coverage_gaps:
   - help is only required to advertise either the machine-mode flag or a schema command and never both
+  - the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it
+  - a pass establishes only that help names the flag and never that the flag is accepted
 ---
 
 # Help advertises the machine-readable path
@@ -93,8 +95,10 @@ the rest of this page, unexamined.
 
 **Gaps**
 
-- help is only required to advertise either the machine-mode flag or a schema command and never
-  both
+- help is only required to advertise either the machine-mode flag or a schema command and never both
+- the flag scan falls back to the whole help text when no options block is recognised so a flag
+  named only in an example can satisfy it
+- a pass establishes only that help names the flag and never that the flag is accepted
 
 ## How to comply
 

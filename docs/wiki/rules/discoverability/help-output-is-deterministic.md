@@ -17,6 +17,7 @@ coverage: partial
 coverage_gaps:
   - only root help is compared and never nested help
   - forbidden content such as a timestamp or a varying absolute path is only caught when it differs between two adjacent runs
+  - only stdout is compared and never stderr
 ---
 
 # Help output is byte-identical between runs
@@ -119,6 +120,7 @@ the rest of this page, unexamined.
 - only root help is compared and never nested help
 - forbidden content such as a timestamp or a varying absolute path is only caught when it differs
   between two adjacent runs
+- only stdout is compared and never stderr
 
 ## How to comply
 

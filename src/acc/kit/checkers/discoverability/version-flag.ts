@@ -23,11 +23,17 @@ export const versionFlagChecker: Checker = {
   // and filesystem observation L1/L2 are for. The machine-mode clause is the one the reference
   // CLI itself violated for months: `--version --json` emitted the bare string `0.0.0`, and no
   // probe here ever asks for machine mode.
+  //
+  // The fourth is the DETECTOR inside the path that is sampled (review R6-5). "Exiting `0` with
+  // the version on stdout" is read as `stdout.trim() !== ""`, so any byte at all satisfies the
+  // clause about the version — a `--version` that prints its own help, or a single newline and a
+  // dot, passes. Recognising a version string means picking a syntax the rule does not state.
   coverage: "partial",
   coverageGaps: [
     "the structured machine-mode version payload is never inspected",
     "no network and no credentials and no side effects cannot be observed at L0",
     "the SHOULD to support -V is not probed",
+    "stdout is only required to be non-empty and is never checked to carry a version string",
   ],
 
   probes: (): Invocation[] => [

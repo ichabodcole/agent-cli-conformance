@@ -17,10 +17,18 @@ export const bareInvocationChecker: Checker = {
   // than `!== 2`, so a bare invocation exiting 1 passes, and nothing ever looks at stderr — a
   // CLI that exits 2 in total silence satisfies this checker while failing the sentence that
   // says where the usage summary goes.
+  //
+  // The third is the one CONDITION under which the single probe runs (review R6-5). D2's rule is
+  // unconditional — no arguments at all is a usage error, full stop — but the runner always
+  // hands the child pipes, so what is observed is the bare invocation of a tool that can see it
+  // is not attached to a terminal. A CLI that prints usage when piped and opens an interactive
+  // wizard on a TTY violates this rule on the path a human uses and passes here; the hang clause
+  // this checker owns outright only covers the piped case for the same reason.
   coverage: "partial",
   coverageGaps: [
     "the exit code is only required to be non-zero here and not the declared 2",
     "stderr is never checked to carry the usage summary",
+    "the bare invocation is only run against pipes so a wizard that starts only with a terminal attached is out of reach",
   ],
 
   probes: (): Invocation[] => [

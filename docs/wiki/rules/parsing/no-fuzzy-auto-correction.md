@@ -18,6 +18,8 @@ coverage_gaps:
   - only a near-miss FLAG is probed and never a near-miss verb
   - performing no work is inferred from a non-zero exit rather than observed
   - the MUST NOT prompt to confirm a guess clause is not exercised here
+  - only a single deletion near-miss of one discovered flag is probed so a transposition or an insertion or a case change is not
+  - the near-miss is sent at the root so a near-miss of a flag belonging to a subcommand is never built
 ---
 
 # Never act on a guessed correction
@@ -101,6 +103,10 @@ the rest of this page, unexamined.
 - only a near-miss FLAG is probed and never a near-miss verb
 - performing no work is inferred from a non-zero exit rather than observed
 - the MUST NOT prompt to confirm a guess clause is not exercised here
+- only a single deletion near-miss of one discovered flag is probed so a transposition or an
+  insertion or a case change is not
+- the near-miss is sent at the root so a near-miss of a flag belonging to a subcommand is never
+  built
 
 ## How to comply
 

@@ -18,6 +18,7 @@ coverage_gaps:
   - the machine-mode error envelope field is never inspected
   - only an unknown flag and an unknown verb are probed
   - the SHOULD to enumerate a closed set as choices is not exercised
+  - the assertion is that the sentinel substring reached stderr and not that the whole offending token appears verbatim
 ---
 
 # Errors name the offending token
@@ -83,6 +84,8 @@ the rest of this page, unexamined.
 - the machine-mode error envelope field is never inspected
 - only an unknown flag and an unknown verb are probed
 - the SHOULD to enumerate a closed set as choices is not exercised
+- the assertion is that the sentinel substring reached stderr and not that the whole offending token
+  appears verbatim
 
 ## How to comply
 

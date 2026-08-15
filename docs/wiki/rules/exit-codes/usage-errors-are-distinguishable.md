@@ -17,6 +17,7 @@ coverage: partial
 coverage_gaps:
   - the internal-fault contrast is not established at L0 because no internal fault can be provoked inertly
   - the taxonomy codes for more specific failures are not exercised
+  - only an unknown flag and an unknown verb are contrasted so an unexpected positional and a malformed value and the bare invocation are never compared
 ---
 
 # "You invoked me wrong" is distinguishable from "I broke"
@@ -95,6 +96,8 @@ the rest of this page, unexamined.
 - the internal-fault contrast is not established at L0 because no internal fault can be provoked
   inertly
 - the taxonomy codes for more specific failures are not exercised
+- only an unknown flag and an unknown verb are contrasted so an unexpected positional and a
+  malformed value and the bare invocation are never compared
 
 ## How to comply
 

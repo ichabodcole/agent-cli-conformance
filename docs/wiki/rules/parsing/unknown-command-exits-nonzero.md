@@ -18,6 +18,7 @@ coverage_gaps:
   - nested subcommands are not probed at L0
   - the exit code is only required to be non-zero here and not the declared 2
   - naming the offending verb on stderr is not asserted
+  - only a sentinel-shaped token is probed so a verb that near-misses a real command is never offered
 ---
 
 # Unknown commands must exit non-zero
@@ -99,6 +100,7 @@ the rest of this page, unexamined.
 - nested subcommands are not probed at L0
 - the exit code is only required to be non-zero here and not the declared 2
 - naming the offending verb on stderr is not asserted
+- only a sentinel-shaped token is probed so a verb that near-misses a real command is never offered
 
 ## How to comply
 

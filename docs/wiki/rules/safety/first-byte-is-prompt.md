@@ -18,6 +18,7 @@ coverage_gaps:
   - only --version is timed and never help or an argument-validation failure
   - the stream first-record and per-record flush requirement is not exercised
   - the progress signal a long-running command owes stderr is not exercised
+  - the verdict is the fastest of three runs so a target that is usually slower still passes
 ---
 
 # First byte arrives promptly
@@ -127,6 +128,7 @@ the rest of this page, unexamined.
 - only --version is timed and never help or an argument-validation failure
 - the stream first-record and per-record flush requirement is not exercised
 - the progress signal a long-running command owes stderr is not exercised
+- the verdict is the fastest of three runs so a target that is usually slower still passes
 
 ## How to comply
 

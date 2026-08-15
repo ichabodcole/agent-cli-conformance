@@ -17,6 +17,8 @@ coverage: partial
 coverage_gaps:
   - only usage-error failures are probed and never a runtime failure
   - stdout on a SUCCESSFUL command is never inspected for diagnostics
+  - stderr is never required to carry the diagnostic so a failure that reports nothing at all passes
+  - machine mode is never selected so an error envelope written to stdout only in machine mode is not seen
 ---
 
 # stdout carries only data
@@ -91,6 +93,9 @@ the rest of this page, unexamined.
 
 - only usage-error failures are probed and never a runtime failure
 - stdout on a SUCCESSFUL command is never inspected for diagnostics
+- stderr is never required to carry the diagnostic so a failure that reports nothing at all passes
+- machine mode is never selected so an error envelope written to stdout only in machine mode is not
+  seen
 
 ## How to comply
 

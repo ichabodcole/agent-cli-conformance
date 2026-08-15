@@ -79,10 +79,17 @@ export const doesNotCrashChecker: Checker = {
   // only ever qualifies a pass. It is fixed in the verdict above instead, where an unattributable
   // signal now reports `unverified`.
   coverage: "partial",
+  //
+  // The fourth is what the RECORD can see (review R6-5). `Observation.signal` is the status the
+  // runner collected for the process it spawned, so the subject of every verdict here is the
+  // target's own termination. A delegator whose child segfaults, and which then reports that
+  // cleanly and exits 1, reached an exit of its own choosing — which is what a G1 pass says, and
+  // it is true, and a fault signal was raised on an inert invocation all the same.
   coverageGaps: [
     "only the inert invocations other checkers already request are observed so an unprobed path such as nested help is never judged",
     "no invocation that does real work is sent at L0 so a crash on the paths a caller actually uses is out of reach",
     "a crash provoked by the probe's own sentinel token is not distinguished from one the target would suffer on any input",
+    "only the target's own termination is recorded so a fault in a child process it spawned is never observed",
   ],
 
   probes: (): Invocation[] => [],

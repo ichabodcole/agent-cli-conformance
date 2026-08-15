@@ -18,6 +18,7 @@ coverage_gaps:
   - only inert paths are probed so a real confirmation path is never reached
   - the structured confirmation_required response and its exit 8 are not established
   - treating EOF or closed stdin as an answer is not detectable from termination alone
+  - blocking is only detected when it outlasts the kit's deadline so a prompt that gives up sooner reads as terminating
 ---
 
 # Never block on input without a terminal
@@ -132,6 +133,8 @@ the rest of this page, unexamined.
 - only inert paths are probed so a real confirmation path is never reached
 - the structured confirmation_required response and its exit 8 are not established
 - treating EOF or closed stdin as an answer is not detectable from termination alone
+- blocking is only detected when it outlasts the kit's deadline so a prompt that gives up sooner
+  reads as terminating
 
 ## How to comply
 

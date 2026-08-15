@@ -14,15 +14,29 @@ export const unknownFlagChecker: Checker = {
   rulePath: "docs/wiki/rules/parsing/unknown-flag-exits-nonzero.md",
   tier: "core",
   probeLevel: "L0",
-  // The probe carries a valueless flag at the root, so two of the page's MUST NOTs are outside
-  // what it can see. "Absorb its value as a positional" needs a flag WITH a value, and a
+  // The probe carries ONE valueless long flag at the root, and the page's clauses divide three
+  // ways against it (review R6-5).
+  //
+  // CLAUSES NEVER TESTED: "absorb its value as a positional" needs a flag WITH a value, and a
   // free-form-positional CLI would then receive that value as data — the shape inert.ts refuses
   // to guess at. Acting on a suggested correction is A5's probe, not this one's.
+  //
+  // DETECTOR LIMITS INSIDE THE SAMPLED PATH: the exit code is only read as non-zero, while the
+  // page names `2`; and "proceed with the command" is read off that same status, so a target
+  // that does its work and THEN reports the bad flag is indistinguishable from one that refused.
+  //
+  // PATHS NEVER SAMPLED: the rule governs any unrecognised flag anywhere, and one long root flag
+  // is one shape of one. A short flag and a clustered short flag go through a different branch of
+  // every parser worth the name, and a flag unknown only to a subcommand through a different
+  // parser entirely.
   coverage: "partial",
   coverageGaps: [
     "a flag carrying a value is never probed so absorbing that value as a positional is not established",
     "only the root is probed so a flag unknown to a subcommand is not",
     "the MUST NOT act on a suggested correction clause is not exercised here",
+    "the exit code is only required to be non-zero here and not the declared 2",
+    "only a long valueless flag is probed so a short flag or a cluster of short flags is not",
+    "that the command did not otherwise proceed is inferred from a non-zero exit rather than observed",
   ],
 
   probes: (): Invocation[] => [

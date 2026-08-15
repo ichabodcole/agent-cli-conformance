@@ -64,9 +64,19 @@ export const advertisesMachineModeChecker: Checker = {
   // Black-box, there is no way to know a schema command exists without finding it in the help
   // this rule is testing, so the conjunction is not checkable at L0 — which is the reason for
   // the disjunction, not an excuse for leaving it undeclared.
+  //
+  // The other two are what a `pass` from a TEXT SCAN can be worth (review R6-5). The first is
+  // `extractFlags` in discovery.ts: it scopes its scan to a recognised Options/Flags block and
+  // falls back to the WHOLE help text when it recognises none, so for a help layout the
+  // heuristic does not parse, a `--json` appearing only inside a piped example satisfies this
+  // rule. The second is the boundary of the rule as written — it is satisfied by the word, and
+  // nothing here invokes the flag, so help that advertises a machine mode the tool does not
+  // implement passes D3 and takes B3 down with it.
   coverage: "partial",
   coverageGaps: [
     "help is only required to advertise either the machine-mode flag or a schema command and never both",
+    "the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it",
+    "a pass establishes only that help names the flag and never that the flag is accepted",
   ],
 
   probes: (d): Invocation[] => [

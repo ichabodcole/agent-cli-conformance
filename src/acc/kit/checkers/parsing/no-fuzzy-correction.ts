@@ -29,11 +29,19 @@ export const noFuzzyCorrectionChecker: Checker = {
   // and a tool that acts THEN reports failure is indistinguishable from one that refused. The
   // verb half of the rule is refused deliberately (see `probes` — a corrected verb runs), and
   // the prompt-to-confirm clause is E1's probe.
+  //
+  // The last two are the SHAPE of the one near-miss this checker does send (review R6-5).
+  // `nearMiss` deletes the third character of ONE discovered flag, so the probe is a single
+  // token built by a single edit: a matcher tuned to transpositions, insertions or case is never
+  // offered the input it corrects. And the probe is root-only for the same safety reason the
+  // verb half is refused, so a flag belonging to a subcommand is out of reach as well.
   coverage: "partial",
   coverageGaps: [
     "only a near-miss FLAG is probed and never a near-miss verb",
     "performing no work is inferred from a non-zero exit rather than observed",
     "the MUST NOT prompt to confirm a guess clause is not exercised here",
+    "only a single deletion near-miss of one discovered flag is probed so a transposition or an insertion or a case change is not",
+    "the near-miss is sent at the root so a near-miss of a flag belonging to a subcommand is never built",
   ],
 
   probes: (d: Discovery): Invocation[] => {

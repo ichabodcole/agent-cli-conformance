@@ -25,11 +25,18 @@ export const namesOffendingTokenChecker: Checker = {
   // ever runs the target in machine mode, let alone parses its error envelope for the field —
   // and the two token classes probed are the two that are inert, so the malformed-identifier
   // and out-of-range-value cases the page also names go unexercised.
+  //
+  // The fourth is a DETECTOR limit inside the path that IS sampled (review R6-5), and it is the
+  // gap between what the check does and the word the rule turns on. `stderr.includes(SENTINEL)`
+  // asks for the sentinel SUBSTRING, while the page says the diagnostic must contain the
+  // offending token VERBATIM: a target that prints `acc-probe-xyzzy` where the argv said
+  // `--acc-probe-xyzzy-flag` satisfies this check and not the rule.
   coverage: "partial",
   coverageGaps: [
     "the machine-mode error envelope field is never inspected",
     "only an unknown flag and an unknown verb are probed",
     "the SHOULD to enumerate a closed set as choices is not exercised",
+    "the assertion is that the sentinel substring reached stderr and not that the whole offending token appears verbatim",
   ],
 
   probes: (): Invocation[] => [

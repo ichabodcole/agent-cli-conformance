@@ -18,10 +18,17 @@ export const usageDistinguishableChecker: Checker = {
   // at L0"); this is that sentence in a field the report can count, which is the whole of
   // R1-4. The taxonomy clause is the same problem one step out: provoking a rate limit or a
   // permission fault in an arbitrary binary is not an inert act.
+  //
+  // The third is the population being contrasted (review R6-5). The page enumerates five things
+  // that are usage errors — bad flag, unknown command, unexpected positional, bare invocation,
+  // malformed value — and agreement is measured across two of them. A CLI that answers `2` for
+  // an unknown flag and `1` for a stray positional violates the rule on the axis this checker
+  // is named for and passes it, because the pair it compares happens to agree.
   coverage: "partial",
   coverageGaps: [
     "the internal-fault contrast is not established at L0 because no internal fault can be provoked inertly",
     "the taxonomy codes for more specific failures are not exercised",
+    "only an unknown flag and an unknown verb are contrasted so an unexpected positional and a malformed value and the bare invocation are never compared",
   ],
 
   probes: (): Invocation[] => [
