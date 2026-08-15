@@ -47,7 +47,7 @@ describe("buildReport", () => {
       H,
       [finding("A1", "pass"), finding("A2", "fail")],
       [checker("A1", "core"), checker("A2", "core")],
-      { knownFailures: {} },
+      { rules: {}, knownFailures: {} },
       "L0",
     );
     expect(r.conformant).toBe(false);
@@ -58,7 +58,7 @@ describe("buildReport", () => {
       H,
       [finding("A1", "pass"), finding("F2", "fail")],
       [checker("A1", "core"), checker("F2", "diagnostic")],
-      { knownFailures: {} },
+      { rules: {}, knownFailures: {} },
       "L0",
     );
     expect(r.conformant).toBe(true);
@@ -78,9 +78,7 @@ describe("buildReport", () => {
         H,
         [finding("A1", "unverified")],
         [checker("A1", "core")],
-        {
-          knownFailures: {},
-        },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.counts.unverified).toBe(1);
@@ -92,9 +90,7 @@ describe("buildReport", () => {
         H,
         [finding("A1", "unverified")],
         [checker("A1", "core")],
-        {
-          knownFailures: {},
-        },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.conformant).toBe(true);
@@ -107,7 +103,7 @@ describe("buildReport", () => {
         H,
         [finding("A1", "fail")],
         [checker("A1", "core")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.conformant).toBe(false);
@@ -119,7 +115,7 @@ describe("buildReport", () => {
         H,
         [finding("A1", "pass"), finding("A2", "pass")],
         [checker("A1", "core"), checker("A2", "core")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.conformant).toBe(true);
@@ -132,7 +128,7 @@ describe("buildReport", () => {
         H,
         [finding("A1", "pass"), finding("A6", "unverified")],
         [checker("A1", "core"), checker("A6", "diagnostic")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.fullyVerified).toBe(true);
@@ -147,7 +143,7 @@ describe("buildReport", () => {
       H,
       [finding("A1", "fail")],
       [checker("A1", "core")],
-      { knownFailures: { A1: "legacy parser" } },
+      { rules: {}, knownFailures: { A1: "legacy parser" } },
       "L0",
     );
     expect(r.conformant).toBe(true);
@@ -159,7 +155,7 @@ describe("buildReport", () => {
       H,
       [finding("A1", "pass")],
       [checker("A1", "core")],
-      { knownFailures: { A1: "legacy parser" } },
+      { rules: {}, knownFailures: { A1: "legacy parser" } },
       "L0",
     );
     expect(r.staleExpectations).toEqual(["A1"]);
@@ -178,7 +174,7 @@ describe("buildReport", () => {
         H,
         [finding("B3", "unverified")],
         [checker("B3", "core")],
-        { knownFailures: { B3: "no machine-mode path yet" } },
+        { rules: {}, knownFailures: { B3: "no machine-mode path yet" } },
         "L0",
       );
       expect(r.findings[0]?.excused).toBe(true);
@@ -196,7 +192,7 @@ describe("buildReport", () => {
         H,
         [finding("A1", "fail")],
         [checker("A1", "core")],
-        { knownFailures: { A1: "legacy parser" } },
+        { rules: {}, knownFailures: { A1: "legacy parser" } },
         "L0",
       );
       expect(r.conformant).toBe(true);
@@ -209,7 +205,7 @@ describe("buildReport", () => {
         H,
         [finding("B3", "unverified")],
         [checker("B3", "core")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.fullyVerified).toBe(false);
@@ -220,7 +216,7 @@ describe("buildReport", () => {
         H,
         [finding("B3", "pass")],
         [checker("B3", "core")],
-        { knownFailures: { B3: "no machine-mode path yet" } },
+        { rules: {}, knownFailures: { B3: "no machine-mode path yet" } },
         "L0",
       );
       expect(r.staleExpectations).toEqual(["B3"]);
@@ -231,7 +227,7 @@ describe("buildReport", () => {
         H,
         [finding("B3", "pass")],
         [checker("B3", "core")],
-        { knownFailures: { B3: "no machine-mode path yet" } },
+        { rules: {}, knownFailures: { B3: "no machine-mode path yet" } },
         "L0",
       );
       expect(r.findings[0]?.excused).toBe(false);
@@ -248,7 +244,7 @@ describe("buildReport", () => {
         H,
         [finding("C2", "pass")],
         [checker("C2", "core", "L0", "partial")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.conformant).toBe(true);
@@ -265,7 +261,7 @@ describe("buildReport", () => {
         H,
         [finding("C2", "pass")],
         [checker("C2", "core", "L0", "partial")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.evidenceGaps).toEqual([
@@ -278,7 +274,7 @@ describe("buildReport", () => {
         H,
         [finding("C2", "unverified")],
         [checker("C2", "core", "L0", "partial")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.evidenceGaps).toEqual([
@@ -291,7 +287,7 @@ describe("buildReport", () => {
         H,
         [finding("A1", "pass"), finding("F2", "pass")],
         [checker("A1", "core"), checker("F2", "diagnostic", "L0", "partial")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.fullyVerified).toBe(true);
@@ -304,7 +300,7 @@ describe("buildReport", () => {
         H,
         [finding("A1", "pass"), finding("A4", "pass")],
         [checker("A1", "core"), checker("A4", "core", "L1", "partial")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.fullyVerified).toBe(true);
@@ -315,7 +311,7 @@ describe("buildReport", () => {
     // now `partial`, so a wiring bug shows up as a withheld claim rather than silently
     // upgrading a rule to "fully established".
     test("a finding with no matching checker is assumed partial, never complete", () => {
-      const r = buildReport(H, [finding("A1", "pass")], [], { knownFailures: {} }, "L0");
+      const r = buildReport(H, [finding("A1", "pass")], [], { rules: {}, knownFailures: {} }, "L0");
       expect(r.findings[0]?.coverage).toBe("partial");
       expect(r.fullyVerified).toBe(false);
       expect(r.evidenceGaps[0]?.ruleId).toBe("A1");
@@ -326,7 +322,7 @@ describe("buildReport", () => {
         H,
         [finding("A1", "pass")],
         [checker("A1", "core")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(complete.fullyVerified).toBe(true);
@@ -339,7 +335,7 @@ describe("buildReport", () => {
       H,
       [finding("A1", "fail")],
       [checker("A1", "core")],
-      { knownFailures: {} },
+      { rules: {}, knownFailures: {} },
       "L0",
     );
     expect(r.findings[0]?.rulePath).toBe("docs/wiki/rules/x/A1.md");
@@ -354,7 +350,7 @@ describe("buildReport", () => {
         H,
         [finding("A4", "unverified")],
         [checker("A4", "core", "L1")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.conformant).toBe(true);
@@ -373,7 +369,7 @@ describe("buildReport", () => {
         H,
         [finding("A1", "unverified")],
         [checker("A1", "core", "L0")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.conformant).toBe(true);
@@ -388,7 +384,7 @@ describe("buildReport", () => {
         H,
         [finding("A4", "unverified")],
         [checker("A4", "core", "L1")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.conformant).toBe(true);
@@ -401,7 +397,7 @@ describe("buildReport", () => {
         H,
         [finding("A4", "fail")],
         [checker("A4", "core", "L1")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L0",
       );
       expect(r.conformant).toBe(true);
@@ -415,7 +411,7 @@ describe("buildReport", () => {
         H,
         [finding("A4", "fail")],
         [checker("A4", "core", "L1")],
-        { knownFailures: {} },
+        { rules: {}, knownFailures: {} },
         "L1",
       );
       expect(r.conformant).toBe(false);
@@ -456,7 +452,7 @@ describe("primaryProblem", () => {
   };
 
   const reportOf = (h: History, findings: Finding[], checkers: Checker[]) =>
-    buildReport(h, findings, checkers, { knownFailures: {} }, "L0");
+    buildReport(h, findings, checkers, { rules: {}, knownFailures: {} }, "L0");
 
   test("prefers a violation over a gap, wherever each falls in registry order", () => {
     const r = reportOf(
@@ -496,7 +492,7 @@ describe("primaryProblem", () => {
       h,
       [finding("A1", "fail"), finding("E1", "fail")],
       [checker("A1", "core"), checker("E1", "core")],
-      { knownFailures: { E1: "known to block on this platform" } },
+      { rules: {}, knownFailures: { E1: "known to block on this platform" } },
       "L0",
     );
     expect(primaryProblem(h, r)?.ruleId).toBe("A1");

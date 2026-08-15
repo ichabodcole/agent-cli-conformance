@@ -744,7 +744,13 @@ describe("acc checks itself, through the kit", () => {
     const broken = join(dirname(CLI), "kit/fixtures/broken/exits-zero-on-unknown-flag.ts");
     const target: TargetInfo = { path: broken, argv0: ["bun", broken] };
     const h = await record(target, CHECKERS);
-    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, { knownFailures: {} }, "L0");
+    const r = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      { rules: {}, knownFailures: {} },
+      "L0",
+    );
     expect(r.conformant).toBe(false);
     expect(r.findings.find((f) => f.ruleId === "A1")?.verdict).toBe("fail");
   }, 60_000);
