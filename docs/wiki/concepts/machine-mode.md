@@ -7,7 +7,7 @@ description:
 tags: [machine-mode, output, agent-facing, detection]
 related: [concept/output-kind, rule/no-ansi-when-piped, rule/help-advertises-machine-mode]
 status: current
-updated: 2026-08-13
+updated: 2026-08-15
 ---
 
 # Machine mode
@@ -46,6 +46,14 @@ In precedence order:
 
 Inference is a convenience for the common case. It is never the only path.
 
+**Design guidance, not a rule.** Nothing in this section binds a conformance verdict. No rule
+page requires a CLI to have a machine mode at all, or fixes that precedence order:
+[B3](../rules/streams/machine-output-is-parseable.md) constrains only what a CLI that advertises
+one actually emits, and [D3](../rules/discoverability/help-advertises-machine-mode.md) is
+diagnostic. Giving these clauses rule ids is
+[roadmap work](../../roadmap.md#design-guidance-that-is-not-yet-normative), not a relabelling —
+rule ids are append-only, so one is minted when a checker design exists to carry it.
+
 ### The detection hazard
 
 Auto-detection is genuinely useful — `gh` identifies its caller and stamps it into the
@@ -58,9 +66,9 @@ _through a bug report_ caused by its own agent detection, which users worked aro
 a PTY. When behaviour depends solely on inference about the caller, a caller that guesses
 wrong has no recourse.
 
-Hence the rule: **an explicit flag must always be able to override detection in both
+Hence the position: **an explicit flag should always be able to override detection in both
 directions.** A caller must be able to demand machine mode, and to demand human mode
-(`gh` spells the latter `GH_FORCE_TTY=1`).
+(`gh` spells the latter `GH_FORCE_TTY=1`). Still guidance — no checker measures it.
 
 ### What changes in machine mode
 
@@ -75,6 +83,13 @@ directions.** A caller must be able to demand machine mode, and to demand human 
 
 The one thing that does _not_ change is which stream carries what: data on stdout,
 diagnostics on stderr, in both modes.
+
+Two lines here are enforced: [B2](../rules/streams/no-ansi-when-piped.md) covers the ANSI row and
+[B1](../rules/streams/stdout-carries-only-data.md) covers that stream split. The rest of the
+table is design guidance — **completeness and the absence of truncation in particular**, since
+nothing establishes that a machine payload carried the whole value, and establishing it needs a
+declaration of what the whole value was. See the
+[roadmap](../../roadmap.md#design-guidance-that-is-not-yet-normative).
 
 ### Carry the human rendering inside the payload
 

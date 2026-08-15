@@ -23,7 +23,9 @@ one leaves unestablished.
 **Planned** — filesystem hashing and snapshot diffing, the `L1` and `L2` levels that falsify a
 CLI's own effect declarations, durable and replayable observation histories, and the
 retroactive re-checking those make possible. None of it exists yet; every mention below is
-labelled.
+labelled. [The roadmap](docs/roadmap.md) is the full list — what is missing, why each item is
+blocked on the ones before it, and the evidence that each gap is real. Nothing on it is
+scheduled or promised.
 
 **Non-goals** — a passing report is **not a security certification**, does **not** prove
 domain-level correctness, and at `L0` does **not** prove a target is harmless to execute. It

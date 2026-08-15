@@ -7,7 +7,7 @@ description:
 tags: [output, streaming, schema, contract]
 related: [concept/machine-mode, rule/machine-output-is-parseable]
 status: current
-updated: 2026-08-13
+updated: 2026-08-15
 ---
 
 # Output kind
@@ -71,10 +71,16 @@ A `data` command additionally declares whether it returns:
 - `bounded` — a caller-controlled or small closed set
 - `unbounded` — an open-ended collection
 
-`unbounded` obliges the command to provide pagination arguments and a field-selection
-argument, and to signal truncation in-band. This is a context-window concern, not an
-aesthetic one: a command that dumps ten thousand records into an agent's context has failed
-even though every byte was valid.
+`unbounded` therefore calls for pagination arguments, a field-selection argument, and an
+in-band truncation signal. This is a context-window concern, not an aesthetic one: a command
+that dumps ten thousand records into an agent's context has failed even though every byte was
+valid.
+
+**Design guidance, not a rule.** No rule page states that obligation and no checker measures it,
+so a CLI that ignores this paragraph entirely is still conformant. It is also the clause with
+the most work in front of it — pagination is meaningful only for the profiles that have
+unbounded output, which the spec does not yet declare. See the
+[roadmap](../../roadmap.md#design-guidance-that-is-not-yet-normative).
 
 ### Narrowing is not exemption
 

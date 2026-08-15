@@ -7,7 +7,7 @@ description:
 tags: [errors, contract, agent-facing, remediation]
 related: [concept/exit-codes, concept/machine-mode, rule/stdout-carries-only-data]
 status: current
-updated: 2026-08-14
+updated: 2026-08-15
 ---
 
 # Error envelope
@@ -65,6 +65,17 @@ a Core rule, and why the envelope belongs on stderr.
 There are exactly **two** top-level shapes: `{ ok: true, data }` and `{ ok: false, error }`.
 There is no third status and no `status` field. A discriminated union over `ok` is the whole
 algebra a consumer has to handle.
+
+**Design guidance, not a rule** — for this whole page. The envelope is what `acc` implements and
+what the spec recommends, and no rule page requires it of anyone else. The rules nearby bind
+adjacent things and stop short of the shape: [B3](../rules/streams/machine-output-is-parseable.md)
+requires machine output to parse, [A3](../rules/parsing/errors-name-the-offending-token.md)
+requires an error to name the offending token — and its own coverage gap records that "the
+machine-mode error envelope field is never inspected" — and
+[C2](../rules/exit-codes/usage-errors-are-distinguishable.md) requires usage and internal faults
+to be distinguishable by code. None of them reaches `kind`, `retryable`, or the two-shape
+discipline. Promoting those is
+[roadmap work](../../roadmap.md#design-guidance-that-is-not-yet-normative).
 
 "I need a decision from you" is therefore an ordinary error, with the kind
 `confirmation_required` and [exit `8`](./exit-codes.md#the-taxonomy):
@@ -149,8 +160,11 @@ A typed `next` — an executable plus an argv array, declared placeholders, an e
 classification, and provenance — is the intended direction and is not implemented. Until it is,
 this page describes what is actually emitted.
 
-`next` is advisory, never required. A caller that ignores it must still be able to reach the
-same state by other means.
+`next` is advisory, never required: a caller that ignores it should still be able to reach the
+same state by other means. That is guidance too, and it is the clause most likely to change —
+the typed replacement is the first item on the
+[roadmap](../../roadmap.md#1-r4-4--remediation-becomes-structured-data), so anything given a
+rule id here would be minted against a shape that is about to move.
 
 ### The prose still matters — but it is labelled
 
