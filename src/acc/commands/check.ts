@@ -168,7 +168,14 @@ export async function checkCommand(
   // on a run where every applicable core rule PASSED and some of those passes were partial.
   // `primaryProblem` ranks verdicts and has nothing to say about that case; offering a hardcoded
   // "acc show A1" for it would send the caller to a rule that passed cleanly.
-  const nextRule = firstCoreProblem?.ruleId ?? report.evidenceGaps[0]?.ruleId;
+  //
+  // WAIVED rules are skipped here as they are in `primaryProblem`, and for the same reason: a
+  // waived core rule blocks `fullyVerified` and therefore appears in `evidenceGaps`, but this
+  // field answers "what should I read next", and a project that declared a rule inapplicable is
+  // not asking for its page. The waiver is still printed in full, with its reason.
+  const waived = new Set(report.waivers.map((w) => w.ruleId));
+  const nextRule =
+    firstCoreProblem?.ruleId ?? report.evidenceGaps.find((g) => !waived.has(g.ruleId))?.ruleId;
 
   emit({
     mode,
@@ -202,7 +209,13 @@ export async function checkCommand(
       // ReportedFinding.applicable — and collapsing them to the same glyph in text mode would
       // lose a distinction the JSON output (and report.ts's own doc comment) treats as
       // load-bearing: "out of scope here" vs "tried and could not establish it".
+      //
+      // A WAIVED rule takes its own glyph rather than its verdict's. The verdict is still real —
+      // the checker ran — but it binds nothing, and printing a bare FAIL beside a rule the
+      // project declared inapplicable is the report contradicting the config. The would-be
+      // verdict follows on the same line, in the waiver block below.
       const mark = (f: ReportedFinding) => {
+        if (f.waived) return "WVD ";
         if (f.verdict === "pass") return "PASS";
         if (f.verdict === "fail") return "FAIL";
         return f.applicable ? "UNVR" : "N/A ";
@@ -212,7 +225,23 @@ export async function checkCommand(
       // to cross-reference the gap block below to find out which passes were narrow ones.
       const lines = r.findings.map(
         (f) =>
-          `  ${mark(f)}${f.verdict === "pass" && f.coverage === "partial" ? "+" : " "} ${f.ruleId.padEnd(3)} ${f.detail}${f.excused ? " (excused)" : ""}`,
+          `  ${mark(f)}${!f.waived && f.verdict === "pass" && f.coverage === "partial" ? "+" : " "} ${f.ruleId.padEnd(3)} ${f.detail}${f.excused ? " (excused)" : ""}${f.waived ? ` (waived; would ${f.verdict.toUpperCase()})` : ""}`,
+      );
+      // Every waiver, with the REASON, because the reason is the only thing standing between a
+      // considered design decision and "this rule was annoying". A human reading a report is the
+      // reviewer that string was written for; a count alone would put the frame off-screen.
+      //
+      // Not a nag, and worded so it cannot be read as one: `would PASS` is offered as information
+      // — a waiver you could now delete — never as a stale entry to go and remove. Debt goes
+      // stale; a declaration does not.
+      const waivers = r.waivers.map(
+        (w) =>
+          `    ${w.ruleId.padEnd(3)} ${w.reason}  (would ${w.verdict.toUpperCase()}${w.applicable ? "" : "; not applicable at this level"})`,
+      );
+      // Severity moves, in both directions, for the same reason: `conformant` is a claim inside a
+      // frame, and a raise is as much a part of that frame as a lowering.
+      const overrides = r.severityOverrides.map(
+        (o) => `    ${o.ruleId.padEnd(3)} ${o.from} -> ${o.to}  ${o.reason}`,
       );
       // Named, not counted. `fullyVerified: false` with nothing beside it is the same
       // information-free verdict this project criticises a CLI for emitting — the caller learns
@@ -229,9 +258,18 @@ export async function checkCommand(
       // across every tier, so the two lines legitimately disagree — a target with one
       // diagnostic gap and no core one printed "0 unverified" above "unverified 1", with
       // nothing on either line naming the scope that made them differ.
+      //
+      // The waiver count rides on the HEADLINE, not in a footnote, because it is the one thing
+      // that changes what every other number on that line means. `0 core violated` over a config
+      // that waived the rule which would have violated is true and misleading on its own; beside
+      // `1 waiver` it is a claim a reader can size. Omitted entirely when there are none, so an
+      // unconfigured run reads exactly as it did before.
       const verdict = r.conformant ? "CONFORMANT" : "NOT CONFORMANT";
+      const waiverNote = r.counts.waived
+        ? ` · ${r.counts.waived} waiver${r.counts.waived === 1 ? "" : "s"}`
+        : "";
       return [
-        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered  ${r.target}`,
+        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}  ${r.target}`,
         "",
         ...lines,
         "",
@@ -248,9 +286,26 @@ export async function checkCommand(
         ...(gaps.length
           ? ["", `  NOT FULLY VERIFIED (${r.level}) — what the evidence does not cover:`, ...gaps]
           : []),
+        ...(waivers.length
+          ? [
+              "",
+              `  WAIVED (${waivers.length}) — declared not applicable to this tool, by config:`,
+              ...waivers,
+            ]
+          : []),
+        ...(overrides.length
+          ? [
+              "",
+              `  SEVERITY MOVED (${overrides.length}) — this project binds differently:`,
+              ...overrides,
+            ]
+          : []),
         "",
         "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable at this level",
         "  PASS+ passed, but the checker establishes only part of its rule — see the gaps above",
+        // The glyph is explained even when nothing carries it, exactly as the four above are: a
+        // legend that changes shape between runs is one a reader has to re-read.
+        "  WVD  waived by config — the probe still ran, and the verdict it reached binds nothing",
         ...(r.staleExpectations.length
           ? [`  stale expectations (now passing, remove them): ${r.staleExpectations.join(", ")}`]
           : []),

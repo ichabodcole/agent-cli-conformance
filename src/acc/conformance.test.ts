@@ -10,7 +10,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
-import { chmodSync, copyFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -850,6 +850,159 @@ describe("acc check — the outcome exit code", () => {
     expect(env.error.kind).toBe("usage");
     expect(env.error.details.path).toContain("/no/such/dir-xyz");
   }, 30_000);
+
+  // Waivers, end to end, against the fixture that motivated them. `exits-zero-on-unknown-flag.ts`
+  // violates seven core rules including D2 — the rule dogfooding found three of four real CLIs
+  // breaking deliberately, by printing help and exiting 0 on a bare invocation.
+  describe("acc.config.json waivers", () => {
+    const BROKEN = join(dirname(CLI), "kit/fixtures/broken/exits-zero-on-unknown-flag.ts");
+    /** Every core rule this fixture violates. Waiving all of them is what clears the gate. */
+    const VIOLATED = ["A1", "A2", "A3", "A5", "B3", "C2", "D2"];
+
+    /** A throwaway directory holding one acc.config.json. Nothing outside it is touched. */
+    function configDir(config: unknown): string {
+      const dir = mkdtempSync(join(tmpdir(), "acc-config-e2e-"));
+      writeFileSync(join(dir, "acc.config.json"), JSON.stringify(config));
+      return dir;
+    }
+
+    test("a waiver is targeted — waiving D2 alone leaves the other six violations", async () => {
+      const dir = configDir({
+        rules: { D2: { severity: "off", reason: "human-first CLI; bare help is deliberate" } },
+      });
+      try {
+        const r = await run(["check", BROKEN, "--config-dir", dir, "--json"]);
+        expect(r.code).toBe(9);
+        const { data } = JSON.parse(r.stdout);
+        expect(data.conformant).toBe(false);
+        expect(data.counts.coreFailures).toBe(6);
+        expect(data.counts.waived).toBe(1);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    test("waiving every violated rule flips the gate and the exit code", async () => {
+      const dir = configDir({
+        rules: Object.fromEntries(
+          VIOLATED.map((id) => [id, { severity: "off", reason: "does not apply to this tool" }]),
+        ),
+      });
+      try {
+        const r = await run(["check", BROKEN, "--config-dir", dir, "--json"]);
+        expect(r.code).toBe(0);
+        const { data } = JSON.parse(r.stdout);
+        expect(data.conformant).toBe(true);
+        expect(data.counts.coreFailures).toBe(0);
+        // THE RULING. Waivers buy the gate and never the evidence claim: every one of these was
+        // a core rule the project chose not to be measured against.
+        expect(data.fullyVerified).toBe(false);
+        expect(data.waivers.map((w: { ruleId: string }) => w.ruleId).sort()).toEqual(VIOLATED);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    // Both output modes carry the waiver. Machine output gets the full list with reasons so a
+    // consumer can apply its own policy; the human headline gets the count, because it is what
+    // changes the meaning of every other number on that line.
+    test("the machine report publishes each waiver with its reason and would-be verdict", async () => {
+      const dir = configDir({
+        rules: { D2: { severity: "off", reason: "human-first CLI; bare help is deliberate" } },
+      });
+      try {
+        const r = await run(["check", BROKEN, "--config-dir", dir, "--json"]);
+        const { data } = JSON.parse(r.stdout);
+        expect(data.waivers).toEqual([
+          {
+            ruleId: "D2",
+            reason: "human-first CLI; bare help is deliberate",
+            verdict: "fail",
+            tier: "core",
+            applicable: true,
+          },
+        ]);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    test("the text report names the waiver count, the rule, the reason and the would-be verdict", async () => {
+      const dir = configDir({
+        rules: { D2: { severity: "off", reason: "human-first CLI; bare help is deliberate" } },
+      });
+      try {
+        const r = await run(["check", BROKEN, "--config-dir", dir, "--format", "text"]);
+        expect(r.stdout).toContain("1 waiver  ");
+        // Padded to the same four columns as PASS/FAIL/UNVR/N/A, so the verdict column stays one
+        // column. The would-be verdict rides on the line rather than replacing the glyph.
+        expect(r.stdout).toContain("WVD   D2");
+        expect(r.stdout).toContain("(waived; would FAIL)");
+        expect(r.stdout).toContain("WAIVED (1) — declared not applicable to this tool, by config:");
+        expect(r.stdout).toContain("human-first CLI; bare help is deliberate  (would FAIL)");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    // Same discipline as a mistyped knownFailures id: a waiver that names nothing waives nothing,
+    // silently, and leaves the project believing it declared something it did not.
+    test("exits 2 (usage) when rules names an id the kit does not check", async () => {
+      const dir = configDir({ rules: { Z9: { severity: "off", reason: "no such rule" } } });
+      try {
+        const r = await run(["check", BROKEN, "--config-dir", dir, "--json"]);
+        expect(r.code).toBe(2);
+        const env = JSON.parse(r.stderr);
+        expect(env.error.kind).toBe("usage");
+        expect(env.error.message).toContain("not a rule this kit checks");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    test("exits 2 (usage) when one id is both waived and a known failure", async () => {
+      const dir = configDir({
+        rules: { D2: { severity: "off", reason: "does not apply" } },
+        knownFailures: { D2: "tracked in #412" },
+      });
+      try {
+        const r = await run(["check", BROKEN, "--config-dir", dir, "--json"]);
+        expect(r.code).toBe(2);
+        const env = JSON.parse(r.stderr);
+        expect(env.error.kind).toBe("usage");
+        expect(env.error.message).toContain("waived in rules AND listed in knownFailures");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    // Raising a severity is the other direction, and it has to bite or the field is decoration.
+    // A6 is diagnostic in the catalogue and this fixture is launched through bun, so its verdict
+    // is `unverified` — which gates `fullyVerified` once the rule is core, and nothing before.
+    test("raising a rule to core pulls it into the evidence claim", async () => {
+      const conforming = join(dirname(CLI), "kit/fixtures/conforming.ts");
+      const dir = configDir({
+        rules: { A6: { severity: "core", reason: "we delegate; -- is load-bearing" } },
+      });
+      try {
+        const r = await run(["check", conforming, "--config-dir", dir, "--json"]);
+        const { data } = JSON.parse(r.stdout);
+        expect(data.severityOverrides).toEqual([
+          {
+            ruleId: "A6",
+            from: "diagnostic",
+            to: "core",
+            reason: "we delegate; -- is load-bearing",
+          },
+        ]);
+        const a6 = data.findings.find((f: { ruleId: string }) => f.ruleId === "A6");
+        expect(a6.tier).toBe("core");
+        expect(data.counts.coreUnverified).toBeGreaterThan(0);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+  });
 
   // A6, through the product's own target-resolution path rather than a hand-built TargetInfo.
   //
