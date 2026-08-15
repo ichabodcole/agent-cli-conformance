@@ -1,15 +1,37 @@
 import type { AccConfig } from "./config.ts";
-import type { Checker, Coverage, Finding, History, ProbeLevel } from "./types.ts";
+import type { Checker, Coverage, Finding, History, ProbeLevel, Verdict } from "./types.ts";
 
 /** Numeric order for comparing probe levels — L0 < L1 < L2. */
 const LEVEL_RANK: Record<ProbeLevel, number> = { L0: 0, L1: 1, L2: 2 };
 
 export interface ReportedFinding extends Finding {
+  /**
+   * The tier this rule binds at FOR THIS TARGET: the catalogue's, unless `acc.config.json` moved
+   * it. A project may lower a rule to `diagnostic` or RAISE one to `core`, and the report has to
+   * speak in the tier that actually gates, or the counts and the verdict disagree with the file
+   * the project wrote. `Report.severityOverrides` names every rule this is not the baseline for.
+   *
+   * A WAIVED rule keeps the tier it would have bound at, because `off` is not a tier — see
+   * `waived`, which is what excludes it.
+   */
   tier: "core" | "diagnostic";
   /** Where to read about the rule. A failure that does not point at its explanation is a chore. */
   rulePath: string;
   /** True when this failure is listed under `knownFailures` in the project's config. */
   excused: boolean;
+  /**
+   * True when the project declared `severity: "off"` for this rule — "does not apply to my tool,
+   * by design". A DECLARATION, not a debt, and the two are kept apart everywhere: `excused` is a
+   * project saying it will fix something, `waived` is a project saying there is nothing here to
+   * fix. A waiver is excluded from the counts and from `conformant`, and never goes stale.
+   *
+   * The checker still RAN. Probes are shared across checkers, so running a waived rule costs
+   * nothing extra, and the result is strictly more informative than skipping it: the verdict
+   * beside the waiver says what would have happened. A waiver that would now pass is one you can
+   * delete; a waiver still doing work is one worth keeping. That is deliberately better than the
+   * ESLint model this borrows from, where a disabled rule produces no information at all.
+   */
+  waived: boolean;
   /** The rule's minimum probe level, carried through so a mislabelled level is visible on the
    *  finding itself rather than only inferable from `applicable`. */
   probeLevel: ProbeLevel;
@@ -48,12 +70,26 @@ export interface Report {
    * did wrong — in the same report as two things it did (C2: an unknown flag exits 129 while
    * an unknown verb exits 1; D2: bare `git` writes its usage to stdout). Conflating the two
    * claims made all three lines look alike. `fullyVerified` carries that second claim.
+   *
+   * FRAME-RELATIVE, and increasingly so. This boolean is a claim within a declared frame — spec
+   * version, probe level, and now the adopter's own waivers, the one coordinate the adopter
+   * authors themselves. `waivers` and `severityOverrides` below are how that frame is published
+   * rather than assumed, so a consumer can apply its own policy instead of trusting the
+   * producer's.
    */
   conformant: boolean;
   /**
-   * EVERY APPLICABLE CORE RULE WAS ACTUALLY ESTABLISHED, at this run's probe level. Three
+   * EVERY APPLICABLE CORE RULE WAS ACTUALLY ESTABLISHED, at this run's probe level. Four
    * conditions, all required:
    *
+   * 0. NO APPLICABLE CORE RULE WAS WAIVED. This is the one claim the config frame must not be
+   *    able to move, and it is the mirror of condition 2 below: an excuse suppresses the
+   *    conformance GATE but never the evidence CLAIM (review R3-4), and a waiver is a stronger
+   *    statement than an excuse, so it can buy no more. A rule the project chose not to be
+   *    measured against was not established — "does not apply to my tool" is a claim about the
+   *    tool's design, not evidence about its behaviour. Precisely BECAUSE `conformant` is
+   *    frame-relative, one boolean has to be measured against the whole catalogue, or the frame
+   *    swallows the verdict entirely;
    * 1. `conformant` — nothing core was violated;
    * 2. every applicable core finding has verdict `pass` — INCLUDING excused ones. An excuse is
    *    an organisation deciding it can live with a defect; it is not evidence. Filtering
@@ -91,11 +127,23 @@ export interface Report {
     corePartial: number;
     /** Findings whose rule is out of scope at this run's level — see `ReportedFinding.applicable`. */
     notApplicable: number;
+    /**
+     * Applicable findings the project WAIVED, and therefore the size of the hole every other
+     * count in this block is computed around. Every one of these rules was still probed; none of
+     * them is in `core`, `corePassed`, `coreFailures`, `coreUnverified`, `corePartial` or
+     * `diagnosticFailures`. A headline that omitted this number would read as a clean sheet over
+     * a frame the reader could not see.
+     */
+    waived: number;
   };
   /**
    * Why `fullyVerified` is false, per rule, in terms a reader can act on. One entry for every
    * applicable core rule that blocks the claim, carrying the checker's declared `coverageGaps`
    * and — for a rule that did not pass — the verdict and detail that stopped it.
+   *
+   * A waived core rule appears here too, because it blocks the claim: the gap it names is the
+   * waiver itself, beside the verdict the probe reached anyway. That is a statement of what the
+   * evidence does not cover, not a request to go and fix the rule.
    *
    * Empty exactly when `fullyVerified` is true. A bare `false` would be the same
    * information-free verdict this project criticises a CLI for emitting: the caller learns that
@@ -110,12 +158,49 @@ export interface Report {
   knownFailures: Array<{ ruleId: string; reason: string }>;
   /** Excused rules that now pass. The ratchet: remove these from `knownFailures`. */
   staleExpectations: string[];
+  /**
+   * Every rule the project declared `severity: "off"` for — the frame `conformant` was reached
+   * inside, published in full so a consumer can apply its own policy rather than trusting the
+   * producer's. Four fields, and each is load-bearing:
+   *
+   * - `reason` is the only thing standing between a considered design decision and "this rule
+   *   was annoying". It is required by the loader for exactly that reason, and a consumer that
+   *   disagrees with a reason can reject the report on it;
+   * - `verdict` is what the checker returned ANYWAY, because a waived rule still runs. A waiver
+   *   sitting at `pass` is one the project can delete; one sitting at `fail` is still doing work;
+   * - `tier` is the tier the rule would have bound at, which is what says whether this waiver
+   *   blocked `fullyVerified`;
+   * - `applicable` distinguishes a waiver of a rule that was in scope from one of a rule this
+   *   level never reaches — the same distinction the findings keep, for the same reason.
+   *
+   * NOT a stale-expectation mechanism, and deliberately not folded into one. A waiver never goes
+   * stale, because passing was never its goal; `verdict` is offered as information and nothing
+   * in the report asks for it back.
+   */
+  waivers: Array<{
+    ruleId: string;
+    reason: string;
+    verdict: Verdict;
+    tier: "core" | "diagnostic";
+    applicable: boolean;
+  }>;
+  /**
+   * Rules the project MOVED between tiers, in either direction. The other half of the frame:
+   * `from` is what the catalogue declares and `to` is what actually gated this run, so a raise —
+   * a project holding itself to a rule the catalogue only reports — is as visible as a lowering.
+   */
+  severityOverrides: Array<{
+    ruleId: string;
+    from: "core" | "diagnostic";
+    to: "core" | "diagnostic";
+    reason: string;
+  }>;
 }
 
 /**
  * The one rule to point a caller at when a report is not fully verified.
  *
- * Filtered to `applicable`, unexcused CORE findings: with no filter, an early DIAGNOSTIC fail
+ * Filtered to `applicable`, unexcused, UNWAIVED core findings: with no filter, an early DIAGNOSTIC fail
  * (which never blocks conformance) could shadow the real, later CORE fail that does, pointing
  * the caller at a rule that isn't why the check is red. A `fail` outranks an `unverified`
  * regardless of position, because only a fail is a violation.
@@ -148,12 +233,18 @@ export interface Report {
  * from. G1 still owns the event; it is now reporting a gap rather than a violation, and its page
  * is still the only one that explains why every other line came back with nothing. A real
  * violation elsewhere is offered ahead of it, because a violation outranks a gap.
+ *
+ * A WAIVED rule is never offered, for the same reason an excused one is not: this field answers
+ * "what should I read next", and a project that declared a rule inapplicable is not looking for
+ * its page. The waiver is still printed, with its reason and the verdict it reached — the
+ * difference is that nothing points the reader at it as work.
  */
 export function primaryProblem(h: History, report: Report): ReportedFinding | undefined {
   const pick = (verdict: "fail" | "unverified", ruleId?: string) =>
     report.findings.find(
       (f) =>
         f.applicable &&
+        !f.waived &&
         f.tier === "core" &&
         !f.excused &&
         f.verdict === verdict &&
@@ -192,9 +283,20 @@ export function buildReport(
     // unknown checker is assumed `partial`, because the alternative is a missing registration
     // silently upgrading a rule to "fully established".
     const probeLevel = c?.probeLevel ?? "L0";
+    const declaredTier = c?.tier ?? "core";
+    // NOTE that nothing here decides whether to RUN a checker: every checker in the registry has
+    // already run by the time `findings` reaches this function, waived rules included. That is
+    // deliberate and it is free — probes are shared across checkers, so a waived rule costs no
+    // extra process — and the result is strictly more informative than the ESLint model it
+    // borrows from: the report can say what the verdict WOULD have been. What a waiver changes
+    // is the accounting below, never the measurement.
+    const declaration = config.rules[f.ruleId];
+    const waived = declaration?.severity === "off";
     return {
       ...f,
-      tier: c?.tier ?? "core",
+      // `off` is not a tier, so a waived rule keeps the one it would have bound at — which is
+      // exactly what `fullyVerified` needs to know about it below.
+      tier: declaration && declaration.severity !== "off" ? declaration.severity : declaredTier,
       rulePath: c?.rulePath ?? "",
       probeLevel,
       coverage: c?.coverage ?? "partial",
@@ -203,21 +305,35 @@ export function buildReport(
       // `unverified` is excusable too, not just `fail`. Excusing only failures left a project
       // blocked by an unverified core rule with no path to green: nothing it could change
       // would clear the rule, and the ratchet had no way to acknowledge that.
+      //
+      // Never both `waived` and `excused`. `loadConfig` rejects that combination outright, so
+      // this guard only matters to a caller assembling an `AccConfig` by hand — but the two
+      // flags mean opposite things, and a finding carrying both would make the report say a
+      // project has debt on a rule it declared it does not have.
       excused:
-        (f.verdict === "fail" || f.verdict === "unverified") && f.ruleId in config.knownFailures,
+        !waived &&
+        (f.verdict === "fail" || f.verdict === "unverified") &&
+        f.ruleId in config.knownFailures,
+      waived,
     };
   });
 
   const applicable = reported.filter((f) => f.applicable);
   const notApplicable = reported.filter((f) => !f.applicable);
 
-  const core = applicable.filter((f) => f.tier === "core");
+  // BINDING = applicable and not waived. Every count and both booleans are computed over this,
+  // and the waived rules are reported separately rather than folded in: a waiver excludes a rule
+  // from the gate, so counting it would make the numbers describe a frame nobody declared.
+  const binding = applicable.filter((f) => !f.waived);
+  const waived = applicable.filter((f) => f.waived);
+
+  const core = binding.filter((f) => f.tier === "core");
   const coreFailures = core.filter((f) => f.verdict === "fail" && !f.excused);
   // An unverified core rule is NOT a pass — counting it as one is exactly the overclaim this
   // project exists to prevent. It is not a VIOLATION either, which is what the split below is
   // for. Only applicable findings count: a rule out of scope at this level is a different
   // claim again from "tried and could not establish it".
-  const unverified = applicable.filter((f) => f.verdict === "unverified");
+  const unverified = binding.filter((f) => f.verdict === "unverified");
   // NOT filtered on `!excused` — see counts.coreUnverified. An excuse suppresses the
   // conformance gate above; it must not also delete the gap from the evidence count, or a
   // project can make an unestablished core rule disappear by writing itself a note about it.
@@ -225,41 +341,62 @@ export function buildReport(
 
   const conformant = coreFailures.length === 0;
 
-  // The two things that block full verification, kept as predicates rather than as a count of
+  // The three things that block full verification, kept as predicates rather than as a count of
   // `evidenceGaps` rows: the boolean must not be able to come out true because a `partial`
   // checker happened to list no gaps.
   const coreNotPassed = core.filter((f) => f.verdict !== "pass");
   const coreIncomplete = core.filter((f) => f.coverage === "partial");
+  // A waived rule that WOULD have been core. Excluded from `core` above, and so from every
+  // predicate built on it — which is why the evidence claim has to name it separately or the
+  // config could buy `fullyVerified` outright. See the `fullyVerified` doc comment.
+  const waivedCore = waived.filter((f) => f.tier === "core");
 
-  // ...and the same two predicates, rendered as the reason. A rule can appear for either or
-  // both: a non-pass verdict contributes what the checker said it could not establish, partial
-  // coverage contributes the clauses it never looks at. Built here, from the same filters, so
-  // the boolean and its explanation cannot drift apart.
-  const evidenceGaps = core
-    .filter((f) => f.verdict !== "pass" || f.coverage === "partial")
+  // ...and the same predicates, rendered as the reason. A rule can appear for more than one: a
+  // non-pass verdict contributes what the checker said it could not establish, partial coverage
+  // contributes the clauses it never looks at, a waiver contributes itself. Built here, from the
+  // same filters, so the boolean and its explanation cannot drift apart — and iterated over
+  // `applicable` so the rows stay in registry order whichever reason put them there.
+  const evidenceGaps = applicable
+    .filter((f) =>
+      f.waived
+        ? f.tier === "core"
+        : f.tier === "core" && (f.verdict !== "pass" || f.coverage === "partial"),
+    )
     .map((f) => ({
       ruleId: f.ruleId,
-      gaps: [
-        ...(f.verdict === "pass" ? [] : [`${f.verdict}: ${f.detail}`]),
-        ...(f.coverage === "partial" ? f.coverageGaps : []),
-      ],
+      gaps: f.waived
+        ? [
+            `waived by config: ${config.rules[f.ruleId]?.reason ?? ""}`,
+            // The probe ran regardless, so the report can say what it found. Stated as an
+            // observation, never as work: a waiver is not a debt and nothing here asks for it back.
+            `the probe ran anyway and returned ${f.verdict}: ${f.detail}`,
+          ]
+        : [
+            ...(f.verdict === "pass" ? [] : [`${f.verdict}: ${f.detail}`]),
+            ...(f.coverage === "partial" ? f.coverageGaps : []),
+          ],
     }));
 
   return {
     target: h.target.path,
     level,
     conformant,
-    fullyVerified: conformant && coreNotPassed.length === 0 && coreIncomplete.length === 0,
+    fullyVerified:
+      conformant &&
+      coreNotPassed.length === 0 &&
+      coreIncomplete.length === 0 &&
+      waivedCore.length === 0,
     counts: {
       core: core.length,
       corePassed: core.filter((f) => f.verdict === "pass").length,
       coreFailures: coreFailures.length,
-      diagnosticFailures: applicable.filter((f) => f.tier === "diagnostic" && f.verdict === "fail")
+      diagnosticFailures: binding.filter((f) => f.tier === "diagnostic" && f.verdict === "fail")
         .length,
       unverified: unverified.length,
       coreUnverified: unverifiedCore.length,
       corePartial: core.filter((f) => f.verdict === "pass" && f.coverage === "partial").length,
       notApplicable: notApplicable.length,
+      waived: waived.length,
     },
     evidenceGaps,
     findings: reported,
@@ -271,5 +408,29 @@ export function buildReport(
     staleExpectations: Object.keys(config.knownFailures).filter(
       (id) => applicable.find((f) => f.ruleId === id)?.verdict === "pass",
     ),
+    // Both halves of the declared frame, echoed from the config and joined to what actually
+    // happened. Built from `reported` rather than from `config.rules` alone so `verdict` and
+    // `applicable` are the run's, not the file's — a waiver whose rule the run never reached
+    // says so, instead of appearing to have suppressed something.
+    waivers: reported
+      .filter((f) => f.waived)
+      .map((f) => ({
+        ruleId: f.ruleId,
+        reason: config.rules[f.ruleId]?.reason ?? "",
+        verdict: f.verdict,
+        tier: f.tier,
+        applicable: f.applicable,
+      })),
+    severityOverrides: reported
+      .filter((f) => {
+        const declared = byId.get(f.ruleId)?.tier ?? "core";
+        return !f.waived && config.rules[f.ruleId] !== undefined && f.tier !== declared;
+      })
+      .map((f) => ({
+        ruleId: f.ruleId,
+        from: byId.get(f.ruleId)?.tier ?? "core",
+        to: f.tier,
+        reason: config.rules[f.ruleId]?.reason ?? "",
+      })),
   };
 }

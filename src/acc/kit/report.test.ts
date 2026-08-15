@@ -341,6 +341,278 @@ describe("buildReport", () => {
     expect(r.findings[0]?.rulePath).toBe("docs/wiki/rules/x/A1.md");
   });
 
+  // The OTHER thing acc.config.json can say, and the one that must not collapse into the ratchet
+  // above. `knownFailures` is DEBT — "broken, I know, I will fix it" — and goes stale when the
+  // rule starts passing. `severity: "off"` is a DECLARATION — "does not apply to my tool, by
+  // design" — and never goes stale, because passing was never the goal.
+  //
+  // D2 is the rule that forced it: a bare invocation must be a usage error, and three of four
+  // real CLIs print help and exit 0 deliberately. The deeper reason is not adoption. An
+  // unwaivable spec silently deforms the tool: with no way to decline a rule that does not fit,
+  // the path of least resistance is to bend the CLI until it conforms, and the report then shows
+  // a clean sheet for a tool bent toward the spec instead of toward its users.
+  describe("waivers: a rule the project declared does not apply", () => {
+    const waive = (ruleId: string, reason = "human-first CLI; bare help is deliberate") => ({
+      rules: { [ruleId]: { severity: "off" as const, reason } },
+      knownFailures: {},
+    });
+
+    test("a waived core FAILURE does not block conformance", () => {
+      const r = buildReport(H, [finding("D2", "fail")], [checker("D2", "core")], waive("D2"), "L0");
+      expect(r.conformant).toBe(true);
+      expect(r.findings[0]?.waived).toBe(true);
+    });
+
+    // THE RULING THAT MATTERS. Waivers may buy `conformant: true`; they must never buy the
+    // evidence claim. Same precedent as review R3-4 for excuses, and a waiver is the stronger
+    // statement, so it can buy no more: a rule the project chose not to be measured against was
+    // not established. Precisely because `conformant` is frame-relative, one boolean has to be
+    // measured against the whole catalogue.
+    test("a waived core rule ALWAYS blocks fullyVerified — even when it would have passed", () => {
+      const r = buildReport(H, [finding("D2", "pass")], [checker("D2", "core")], waive("D2"), "L0");
+      expect(r.conformant).toBe(true);
+      expect(r.fullyVerified).toBe(false);
+    });
+
+    test("...and the report says why, rather than leaving `false` on its own", () => {
+      const r = buildReport(H, [finding("D2", "fail")], [checker("D2", "core")], waive("D2"), "L0");
+      expect(r.evidenceGaps).toEqual([
+        {
+          ruleId: "D2",
+          gaps: [
+            "waived by config: human-first CLI; bare help is deliberate",
+            "the probe ran anyway and returned fail: d",
+          ],
+        },
+      ]);
+    });
+
+    test("evidenceGaps stays empty exactly when fullyVerified is true, waivers included", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "pass"), finding("D2", "pass")],
+        [checker("A1", "core"), checker("D2", "core")],
+        waive("D2"),
+        "L0",
+      );
+      expect(r.fullyVerified).toBe(false);
+      expect(r.evidenceGaps.map((g) => g.ruleId)).toEqual(["D2"]);
+    });
+
+    // A DIAGNOSTIC rule never gated `fullyVerified` in the first place, so waiving one cannot
+    // change it. The asymmetry is about what the rule was binding, not about the waiver.
+    test("a waived DIAGNOSTIC rule blocks neither claim", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "pass"), finding("A6", "fail")],
+        [checker("A1", "core"), checker("A6", "diagnostic")],
+        waive("A6"),
+        "L0",
+      );
+      expect(r.conformant).toBe(true);
+      expect(r.fullyVerified).toBe(true);
+      expect(r.evidenceGaps).toEqual([]);
+    });
+
+    test("a waived rule is excluded from every count, and counted as a waiver instead", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "pass"), finding("D2", "fail"), finding("A6", "fail")],
+        [checker("A1", "core"), checker("D2", "core"), checker("A6", "diagnostic")],
+        {
+          rules: {
+            D2: { severity: "off", reason: "human-first" },
+            A6: { severity: "off", reason: "not a delegator" },
+          },
+          knownFailures: {},
+        },
+        "L0",
+      );
+      expect(r.counts.core).toBe(1);
+      expect(r.counts.corePassed).toBe(1);
+      expect(r.counts.coreFailures).toBe(0);
+      expect(r.counts.diagnosticFailures).toBe(0);
+      expect(r.counts.waived).toBe(2);
+    });
+
+    test("a waived unverified rule is excluded from the unverified counts too", () => {
+      const r = buildReport(
+        H,
+        [finding("B3", "unverified")],
+        [checker("B3", "core")],
+        waive("B3", "no machine mode by design"),
+        "L0",
+      );
+      expect(r.counts.unverified).toBe(0);
+      expect(r.counts.coreUnverified).toBe(0);
+      expect(r.counts.waived).toBe(1);
+    });
+
+    // The checker STILL RUNS. Probes are shared, so a waived rule costs no extra process, and
+    // the verdict beside the waiver is what makes it reviewable: one sitting at `pass` can be
+    // deleted, one sitting at `fail` is still doing work. Skipping the checker would have thrown
+    // that away for nothing.
+    test("the machine output carries every waiver with its reason and the verdict it reached", () => {
+      const r = buildReport(H, [finding("D2", "fail")], [checker("D2", "core")], waive("D2"), "L0");
+      expect(r.waivers).toEqual([
+        {
+          ruleId: "D2",
+          reason: "human-first CLI; bare help is deliberate",
+          verdict: "fail",
+          tier: "core",
+          applicable: true,
+        },
+      ]);
+    });
+
+    test("a waiver whose rule now passes reports the pass, and is NOT called stale", () => {
+      const r = buildReport(H, [finding("D2", "pass")], [checker("D2", "core")], waive("D2"), "L0");
+      expect(r.waivers[0]?.verdict).toBe("pass");
+      // The ratchet mechanism is for debt. A waiver is a declaration; there is nothing to repay.
+      expect(r.staleExpectations).toEqual([]);
+    });
+
+    test("a waiver of a rule this level never reaches says so", () => {
+      const r = buildReport(
+        H,
+        [finding("A4", "unverified")],
+        [checker("A4", "core", "L1")],
+        waive("A4", "we take no positionals"),
+        "L0",
+      );
+      expect(r.waivers[0]?.applicable).toBe(false);
+      // Out of scope already, so the waiver suppressed nothing and withholds nothing.
+      expect(r.fullyVerified).toBe(true);
+      expect(r.counts.waived).toBe(0);
+    });
+
+    test("a waived rule is never ALSO marked excused, whatever a hand-built config says", () => {
+      const r = buildReport(
+        H,
+        [finding("D2", "fail")],
+        [checker("D2", "core")],
+        {
+          rules: { D2: { severity: "off", reason: "human-first" } },
+          knownFailures: { D2: "tracked in #412" },
+        },
+        "L0",
+      );
+      expect(r.findings[0]?.waived).toBe(true);
+      expect(r.findings[0]?.excused).toBe(false);
+    });
+
+    test("a waived rule is never offered as the next thing to read", () => {
+      const r = buildReport(H, [finding("D2", "fail")], [checker("D2", "core")], waive("D2"), "L0");
+      expect(primaryProblem(H, r)).toBeUndefined();
+    });
+  });
+
+  // Severity moves in BOTH directions. A config that could only subtract would read as an
+  // opt-out list; a project declaring itself stricter than baseline is a signal worth having.
+  describe("severity overrides: a rule moved between tiers", () => {
+    test("a core rule LOWERED to diagnostic stops blocking conformance", () => {
+      const r = buildReport(
+        H,
+        [finding("C2", "fail")],
+        [checker("C2", "core")],
+        {
+          rules: { C2: { severity: "diagnostic", reason: "we ship one error class" } },
+          knownFailures: {},
+        },
+        "L0",
+      );
+      expect(r.conformant).toBe(true);
+      expect(r.counts.diagnosticFailures).toBe(1);
+      expect(r.counts.core).toBe(0);
+    });
+
+    test("a diagnostic rule RAISED to core starts blocking conformance", () => {
+      const r = buildReport(
+        H,
+        [finding("A6", "fail")],
+        [checker("A6", "diagnostic")],
+        {
+          rules: { A6: { severity: "core", reason: "we delegate to ffmpeg; -- is load-bearing" } },
+          knownFailures: {},
+        },
+        "L0",
+      );
+      expect(r.conformant).toBe(false);
+      expect(r.counts.coreFailures).toBe(1);
+      expect(r.findings[0]?.tier).toBe("core");
+    });
+
+    // A raise pulls the rule into `fullyVerified`'s scope as well, which is the honest reading of
+    // "this binds for me": the project asked to be held to it, evidence included.
+    test("a raised rule enters the evidence claim as well as the gate", () => {
+      const r = buildReport(
+        H,
+        [finding("A6", "unverified")],
+        [checker("A6", "diagnostic")],
+        {
+          rules: { A6: { severity: "core", reason: "we delegate; -- is load-bearing" } },
+          knownFailures: {},
+        },
+        "L0",
+      );
+      expect(r.fullyVerified).toBe(false);
+      expect(r.counts.coreUnverified).toBe(1);
+    });
+
+    test("both directions are published, so the frame is legible rather than assumed", () => {
+      const r = buildReport(
+        H,
+        [finding("C2", "pass"), finding("A6", "pass")],
+        [checker("C2", "core"), checker("A6", "diagnostic")],
+        {
+          rules: {
+            C2: { severity: "diagnostic", reason: "one error class" },
+            A6: { severity: "core", reason: "we delegate" },
+          },
+          knownFailures: {},
+        },
+        "L0",
+      );
+      expect(r.severityOverrides).toEqual([
+        { ruleId: "C2", from: "core", to: "diagnostic", reason: "one error class" },
+        { ruleId: "A6", from: "diagnostic", to: "core", reason: "we delegate" },
+      ]);
+    });
+
+    test("a severity restated at its baseline value is not reported as a move", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "pass")],
+        [checker("A1", "core")],
+        {
+          rules: { A1: { severity: "core", reason: "affirming the baseline" } },
+          knownFailures: {},
+        },
+        "L0",
+      );
+      expect(r.severityOverrides).toEqual([]);
+      expect(r.waivers).toEqual([]);
+    });
+
+    // A move is not a waiver, so the debt ratchet still applies to it — "I hold myself to core on
+    // this rule, and I currently fail it" is the aspirational half of the same ratchet.
+    test("a raised rule may still carry a known failure, and the excuse still works", () => {
+      const r = buildReport(
+        H,
+        [finding("A6", "fail")],
+        [checker("A6", "diagnostic")],
+        {
+          rules: { A6: { severity: "core", reason: "we delegate" } },
+          knownFailures: { A6: "tracked in #412" },
+        },
+        "L0",
+      );
+      expect(r.findings[0]?.excused).toBe(true);
+      expect(r.conformant).toBe(true);
+      expect(r.fullyVerified).toBe(false);
+    });
+  });
+
   // The brief, as written, makes A4 (core, but not probeable below L1) fail every run forever —
   // no target, including acc itself, could ever be conformant. `probeLevel` and its
   // applicable/not-applicable split exist to fix that without weakening what "core" means.
