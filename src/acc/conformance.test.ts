@@ -666,7 +666,10 @@ describe("schema", () => {
     const r = await run(["schema"]);
     const { data } = JSON.parse(r.stdout);
     for (const e of data.errors as Array<{ kind: string; exit_code: number }>) {
-      expect(e.exit_code).toBeLessThan(125); // the reserved passthrough band
+      // 124, not 125: `timeout` claimed 124 for "the time limit was reached", so it is spoken
+      // for by an external convention and is not ours to allocate — the same argument that
+      // reserves 125, 126, 127 and the signal band above them.
+      expect(e.exit_code).toBeLessThan(124); // the reserved passthrough band
     }
   });
 });

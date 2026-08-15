@@ -42,8 +42,16 @@ shared. Maximally flexible; gives an agent nothing transferable between tools.
 
 Our codes occupy **`0`–`9`**: `0`–`8` for [errors](../concepts/exit-codes.md#the-taxonomy) and
 `9` for the first [outcome](../concepts/exit-codes.md#outcomes-are-not-errors) (`acc check` ran
-and the target does not conform). Everything from **`125` upward is reserved and never
-allocated**.
+and the target does not conform). Everything from **`124` upward is reserved and never
+allocated**, which leaves `10`–`123` — **114 codes** — available to allocate later.
+
+**The page is named for `125` and the ceiling is `124`, which is not a contradiction but is worth
+saying once.** `125` is where the band POSIX and the wrapper conventions occupy _begins to matter
+for a delegator_, and the name has been in links since the decision was written. `124` sits above
+our ceiling for the same reason `125` does — it is spoken for by `timeout`, a convention this
+project has chosen to respect, and a code that is spoken for is not ours to allocate however
+unassigned it looks from inside our own table. Both pages previously listed `124` as an adopted
+timeout outcome _and_ counted it among the unallocated codes; it cannot be both.
 
 Two different kinds of authority sit in that reserved band, and conflating them is how the
 portability claim on this page came to be overstated. They are separated here deliberately.
@@ -53,14 +61,25 @@ portability claim on this page came to be overstated. They are separated here de
 ```
 126    the command was found but could not be executed
 127    the command was not found
->128   the command was terminated by a signal
+>128   where the shell REPORTS a command terminated by a signal
 ```
 
-POSIX says only "greater than 128" for a signal death. The exact `128+n` spelling — `143` for
-SIGTERM, `137` for SIGKILL — is a widespread convention implemented by bash, dash, zsh and
-their peers, not a standardised guarantee. It is safe to _read_ a status above `128` as "the
-process was signalled"; it is not portable to compute `n` from it and expect every shell to
-agree.
+**The signal rule is one-way.** POSIX obliges a shell to report a signal termination as a status
+greater than 128. It does not license the inference backwards, and an ordinary program may choose
+a status in that range for its own reasons — `git` returns `129` for an unrecognised flag, which
+is measured in [`research/01-case-studies.md`](../../../research/01-case-studies.md) and quoted on
+the [exit-codes concept page](../concepts/exit-codes.md#there-is-no-industry-standard) as evidence
+that `sysexits.h` never caught on. Both pages used to tell a reader to read `> 128` as a signal
+death a few lines from that number. It is not safe to read a status above `128` as "the process
+was signalled", and the exact `128+n` spelling — `143` for SIGTERM, `137` for SIGKILL — is a
+widespread convention implemented by bash, dash, zsh and their peers on top of the POSIX floor,
+so `n` is not portably recoverable either.
+
+Where attribution matters, take it from process metadata rather than from the status. The
+termination status and the terminating signal are two separate facts about a process, and `$?` is
+a lossy projection of both onto one integer; anything spawning a child directly (as this kit's
+runner does) can read the second without guessing at it — see
+[G1](../rules/lifecycle/inert-invocations-do-not-crash.md).
 
 **Adopted by particular delegators**, and by us:
 
@@ -135,9 +154,10 @@ guide.
 
 ## Consequences
 
-- We have **115 unallocated codes** (`10`–`124`) for future error kinds and outcomes. Ample.
-  (`9` was unallocated when this decision was written and now carries `NonConformant`, which is
-  why the count is one lower than it first read.)
+- We have **114 unallocated codes** (`10`–`123`) for future error kinds and outcomes. Ample.
+  (`9` was unallocated when this decision was written and now carries `NonConformant`; `124` was
+  counted here and should never have been, since `timeout` had already claimed it. Both
+  corrections lower the number this consequence first read.)
 - Delegating CLIs need no code-translation layer, and their conformance check is simply
   "child's code, verbatim".
 - **A wrapper cannot distinguish its own `125`, `126` or `127` from a child returning the

@@ -64,11 +64,25 @@ Exit codes have almost none of that. Standardised by POSIX, and therefore depend
 
 - `0` = success, non-zero = failure
 - `126` = found but not executable, `127` = command not found
-- **greater than** `128` = terminated by a signal
+- a process terminated by a signal = reported by the shell as a status **greater than** `128`
 
-The familiar `128+n` spelling (`143` for SIGTERM) is a widespread shell convention, not the
-POSIX guarantee — POSIX commits only to "greater than 128". Read a status above `128` as "it
-was signalled"; do not portably derive `n` from it. `124` and `125` are neither: they are
+**That last one is one-way, and this page used to read it backwards.** POSIX obliges a shell to
+_report_ a signal death as a status greater than 128. It says nothing about the converse, and
+nothing stops an ordinary program from choosing a status in that range — `git` answers an
+unrecognised flag with `129`, measured a few lines below, with no signal anywhere near it. So
+`> 128` is not evidence that a process was signalled, and the familiar `128+n` spelling (`143`
+for SIGTERM) is a widespread shell convention layered on the POSIX floor rather than a guarantee,
+which is why `n` is not portably derivable either.
+
+**Where the attribution matters, read it out of band rather than inferring it from the number.**
+A process's termination status and its terminating signal are two separate pieces of process
+metadata, and the shell's `$?` is a lossy projection of both onto one integer. The kit takes the
+second directly: `runProbe` reads the signal from the `close` event's second argument and records
+it as `Observation.signal`, so a target that fell over is distinguishable from one that chose a
+status — which is what [G1](../rules/lifecycle/inert-invocations-do-not-crash.md) judges and what
+every other rule reports as an evidence gap. No checker infers "it was signalled" from a number.
+
+`124` and `125` are neither POSIX nor signal statuses: they are
 [`timeout`'s and Docker's conventions](../decisions/exit-codes-below-125.md#decision), adopted
 by particular delegators rather than assigned by any shell.
 
@@ -99,7 +113,7 @@ machine-discoverable is tribal knowledge.
 125 the wrapper itself failed        (timeout's and Docker's convention)
 126 command found but not executable (POSIX)
 127 command not found                (POSIX)
->128 terminated by a signal          (POSIX; 128+n is a shell convention)
+>128 where a signal death is REPORTED (POSIX; not every status here is one — see above)
 ```
 
 Codes are grouped by **what the caller should do**, not by which HTTP status a server
@@ -139,10 +153,17 @@ The fix is a third category, distinct from both:
 ```
 0     success
 1-8   ERRORS      — why the INVOCATION failed. Structured envelope, `kind`, `retryable`.
-9-124 OUTCOMES    — what the SUBJECT turned out to be. Still `ok: true`; no envelope, no `kind`,
+9-123 OUTCOMES    — what the SUBJECT turned out to be. Still `ok: true`; no envelope, no `kind`,
                     no `retryable` — there is nothing to retry, because nothing failed.
-125+  reserved    — what a CHILD PROCESS did.
+124+  reserved    — what a CHILD PROCESS did, or what the SHELL did on our behalf.
 ```
+
+**The outcome band stops at `123`, not `124`.** `124` is `timeout`'s "the time limit was reached",
+a convention this project has chosen to respect — and a code that is spoken for is not a code
+we may allocate, however unassigned it looks from inside our own table. This page previously
+listed `124` as an adopted timeout outcome, placed it after the "reserved; never allocate"
+divider, put it inside the outcome band, and counted it among the unallocated codes, all at once.
+It cannot be both allocated and unallocated; it is allocated, and not by us.
 
 ```
 9   acc check ran successfully; the target does not conform
@@ -151,7 +172,7 @@ The fix is a third category, distinct from both:
 An outcome code is still governed by every rule an error code is: append-only, never renumbered,
 declared once and never duplicated across the codebase — see
 [exit codes stay below 125](../decisions/exit-codes-below-125.md) for why the whole
-non-reserved range, errors and outcomes alike, stays under 125. The only thing that changes is
+non-reserved range, errors and outcomes alike, stays under 124. The only thing that changes is
 what a non-zero value _means_ here — not "something broke," but "here is the answer, and it's a
 no."
 

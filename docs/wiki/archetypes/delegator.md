@@ -55,7 +55,7 @@ itself_ failed. `126` (found but not executable) and `127` (not found) are POSIX
 because any shell assigns it a meaning. See
 [the reserved band](../decisions/exit-codes-below-125.md#decision) for the split.
 
-Because this project's own codes stop below `125`, _its_ domain codes can never be mistaken for
+Because this project's own codes stop below `124`, _its_ domain codes can never be mistaken for
 the shell band — `not_found` is `5`, never `127` — and no remapping is needed. That is better
 than KEP-2551's `255`-means-"child returned ≥201", which discards which code it actually was.
 

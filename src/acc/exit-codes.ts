@@ -5,8 +5,11 @@
  * contract: changing one is a breaking change for every script and agent that branches on it.
  * ADD, NEVER RENUMBER.
  *
- * Everything from 125 up is RESERVED and never allocated here, so a delegating CLI can pass a
- * child's exit code through verbatim without collision. See:
+ * Everything from 124 up is RESERVED and never allocated here, so a delegating CLI can pass a
+ * child's exit code through verbatim without collision. 124 is `timeout`'s "time limit reached"
+ * and 125 is its (and Docker's) "the wrapper itself failed"; 126, 127 and "greater than 128" are
+ * POSIX. A code another convention has already claimed is not ours to allocate, however
+ * unassigned it looks from inside this table. See:
  *   docs/wiki/concepts/exit-codes.md
  *   docs/wiki/decisions/exit-codes-below-125.md
  */
@@ -43,8 +46,8 @@ export type ExitCodeValue = (typeof ExitCode)[keyof typeof ExitCode];
  * exit non-zero, because non-zero-ness is what makes a finding visible to a harness that does
  * not parse JSON — the argument this catalogue makes for every CLI it checks.
  *
- * The bands: 1-8 = why the INVOCATION failed. 9-124 = what the SUBJECT turned out to be.
- * 125+ = what a CHILD PROCESS did.
+ * The bands: 1-8 = why the INVOCATION failed. 9-123 = what the SUBJECT turned out to be.
+ * 124+ = what a CHILD PROCESS did, or what the shell did on our behalf.
  */
 export const Outcome = {
   /** The check ran successfully; the target does not conform. */
