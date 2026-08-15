@@ -1,15 +1,15 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-export const EXPECTATIONS_FILE = ".acc-expectations.json";
+export const CONFIG_FILE = "acc.config.json";
 
-export interface Expectations {
+export interface AccConfig {
   /** Rule ids whose failure is currently accepted, each with a reason. */
   knownFailures: Record<string, string>;
 }
 
 /**
- * A malformed or misdirected expectations file.
+ * A malformed or misdirected config file.
  *
  * Its own error type rather than an `AccError`, for the reason `record.ts`'s
  * `TargetNotExecutableError` is: the kit is meant to be usable without this CLI's error
@@ -17,11 +17,11 @@ export interface Expectations {
  * separately from the message so the translation can put it in structured `details` rather than
  * leaving the caller to parse prose.
  */
-export class ExpectationsError extends Error {
+export class ConfigError extends Error {
   readonly path: string;
   constructor(path: string, message: string) {
     super(message);
-    this.name = "ExpectationsError";
+    this.name = "ConfigError";
     this.path = path;
   }
 }
@@ -52,24 +52,24 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> =>
  * ## An explicitly requested path that is wrong is an ERROR
  *
  * `dir` undefined means "nobody asked" — the default lookup in the cwd, where a missing file is
- * the normal case and yields empty expectations. A `dir` the caller passed is a request, and a
+ * the normal case and yields an empty config. A `dir` the caller passed is a request, and a
  * request that cannot be honoured is reported instead of ignored: silently continuing with an
  * empty set would fail a rule the project believed it had excused, which is precisely the
  * silent-failure shape this catalogue exists to catch a CLI doing.
  */
-export function loadExpectations(
+export function loadConfig(
   dir: string | undefined,
   knownRuleIds: readonly string[] = [],
-): Expectations {
+): AccConfig {
   const explicit = dir !== undefined;
-  const path = join(dir ?? ".", EXPECTATIONS_FILE);
+  const path = join(dir ?? ".", CONFIG_FILE);
 
   if (!existsSync(path)) {
     if (!explicit) return { knownFailures: {} };
-    throw new ExpectationsError(
+    throw new ConfigError(
       path,
       existsSync(dir) && statSync(dir).isDirectory()
-        ? `no ${EXPECTATIONS_FILE} in the requested directory`
+        ? `no ${CONFIG_FILE} in the requested directory`
         : `no such directory: ${dir}`,
     );
   }
@@ -80,24 +80,24 @@ export function loadExpectations(
   } catch (err) {
     // The parser's own message names the offset, which is the one detail that makes a syntax
     // error fixable; it is quoted rather than replaced with "invalid JSON".
-    throw new ExpectationsError(path, `is not valid JSON: ${(err as Error).message}`);
+    throw new ConfigError(path, `is not valid JSON: ${(err as Error).message}`);
   }
 
   if (!isPlainObject(parsed)) {
-    throw new ExpectationsError(path, `must contain a JSON object, found ${describe(parsed)}`);
+    throw new ConfigError(path, `must contain a JSON object, found ${describe(parsed)}`);
   }
 
   const raw = parsed.knownFailures;
   if (raw === undefined) return { knownFailures: {} };
   if (!isPlainObject(raw)) {
-    throw new ExpectationsError(path, `knownFailures must be an object, found ${describe(raw)}`);
+    throw new ConfigError(path, `knownFailures must be an object, found ${describe(raw)}`);
   }
 
   const known = new Set(knownRuleIds);
   const knownFailures: Record<string, string> = {};
   for (const [ruleId, reason] of Object.entries(raw)) {
     if (typeof reason !== "string" || reason.trim() === "") {
-      throw new ExpectationsError(
+      throw new ConfigError(
         path,
         `knownFailures.${ruleId} must be a non-empty string reason, found ${describe(reason)}`,
       );
@@ -105,7 +105,7 @@ export function loadExpectations(
     // An id no checker answers to excuses nothing and never becomes a stale expectation either,
     // so the ratchet cannot tighten past it. `A1 ` and `a1` are the realistic typos.
     if (known.size > 0 && !known.has(ruleId)) {
-      throw new ExpectationsError(
+      throw new ConfigError(
         path,
         `knownFailures names "${ruleId}", which is not a rule this kit checks (known: ${[...known].sort().join(", ")})`,
       );

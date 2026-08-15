@@ -167,7 +167,7 @@ describe("buildReport", () => {
 
   // The ratchet used to excuse `fail` only, which left a project blocked by an UNVERIFIED core
   // rule with no path to green: nothing it could change would clear the rule, and the
-  // expectations file had no way to acknowledge that.
+  // config file had no way to acknowledge that.
   describe("the ratchet excuses unverified, not only failures", () => {
     // Review R3-4. The excuse used to be subtracted from `coreUnverified` as well, which let a
     // project write itself a note about a rule nothing had established and receive "fully
@@ -190,7 +190,7 @@ describe("buildReport", () => {
     });
 
     // The other half of the same ruling: an excused core FAILURE does clear conformance, which
-    // is the whole point of the expectations file, and it still cannot buy full verification.
+    // is the whole point of `knownFailures`, and it still cannot buy full verification.
     test("an excused core failure clears conformance and not the evidence claim", () => {
       const r = buildReport(
         H,

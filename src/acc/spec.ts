@@ -200,10 +200,14 @@ export const COMMANDS: CommandSpec[] = [
       { name: "target", description: "Path to the binary or script to check.", required: true },
     ],
     args: [
+      // `--config-dir`, not `--config`. The value is a DIRECTORY the kit looks for
+      // `acc.config.json` in, and `--config` names a file almost everywhere it appears — a flag
+      // whose name promises a file and rejects one is the small lie this project spends its
+      // whole catalogue objecting to. The name states what it takes.
       {
-        name: "--expectations",
+        name: "--config-dir",
         type: "string",
-        description: "Directory holding .acc-expectations.json.",
+        description: "Directory holding acc.config.json.",
         valueHint: "dir",
       },
     ],

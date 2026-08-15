@@ -23,7 +23,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { doesNotCrashChecker } from "./checkers/lifecycle/does-not-crash.ts";
-import { loadExpectations } from "./expectations.ts";
+import { loadConfig } from "./config.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import { buildReport, primaryProblem, runCheckers } from "./report.ts";
@@ -103,13 +103,7 @@ describe("the full-registry L0 report over a crashing target", () => {
   });
 
   test("NO rule passes on evidence that is a crashed observation", () => {
-    const report = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadExpectations(undefined),
-      "L0",
-    );
+    const report = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadConfig(undefined), "L0");
     // Phrased over the EVIDENCE rather than as "no findings pass", because that is the actual
     // claim: a verdict may legitimately rest on something other than a probe (A4 declares none;
     // B3 reads discovery). What must never happen is a `pass` citing an observation of a process
@@ -145,13 +139,7 @@ describe("the full-registry L0 report over a crashing target", () => {
   });
 
   test("the headline is not conformant, and not fully verified", () => {
-    const report = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadExpectations(undefined),
-      "L0",
-    );
+    const report = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadConfig(undefined), "L0");
     expect(report.conformant).toBe(false);
     expect(report.fullyVerified).toBe(false);
     expect(report.counts.corePassed).toBe(0);
@@ -375,13 +363,7 @@ describe("the partial crasher — a green headline over eleven fallen-over rules
   });
 
   test("the headline is NOT conformant, and G1 is the only core rule violated", () => {
-    const report = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadExpectations(undefined),
-      "L0",
-    );
+    const report = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadConfig(undefined), "L0");
     expect(report.conformant).toBe(false);
     const violated = report.findings.filter(
       (f) => f.applicable && f.tier === "core" && f.verdict === "fail",
@@ -400,7 +382,7 @@ describe("the partial crasher — a green headline over eleven fallen-over rules
       h,
       runCheckers(h, withoutG1),
       withoutG1,
-      loadExpectations(undefined),
+      loadConfig(undefined),
       "L0",
     );
     expect(report.conformant).toBe(true);
@@ -416,13 +398,7 @@ describe("the partial crasher — a green headline over eleven fallen-over rules
   // offered the first unverified core rule and nothing owned the crash. Same shape as the hang
   // case that put E1 ahead of position; now there is a page that explains the other eleven lines.
   test("the rule offered to the caller is G1, not registry order", () => {
-    const report = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadExpectations(undefined),
-      "L0",
-    );
+    const report = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadConfig(undefined), "L0");
     expect(primaryProblem(h, report)?.ruleId).toBe("G1");
   });
 });
@@ -502,13 +478,7 @@ describe("a signal the kit cannot attribute is nobody's violation", () => {
     // demonstrably fallen over on its own and collected four real passes; here nothing passed at
     // all, and `fullyVerified` is false with all sixteen core rules named as gaps. The difference
     // between the two is exactly the difference G1's split draws: attributable, or not.
-    const report = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadExpectations(undefined),
-      "L0",
-    );
+    const report = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadConfig(undefined), "L0");
     expect(report.conformant).toBe(true);
     expect(report.fullyVerified).toBe(false);
     expect(report.counts.corePassed).toBe(0);
@@ -527,13 +497,7 @@ describe("a signal the kit cannot attribute is nobody's violation", () => {
     // rule about rejecting unknown flags that this target never got far enough to break, and the
     // exact page the crash and hang clauses exist to get away from. G1 is the one line that
     // explains why the other eighteen came back with nothing.
-    const report = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadExpectations(undefined),
-      "L0",
-    );
+    const report = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadConfig(undefined), "L0");
     const offered = primaryProblem(h, report);
     expect(offered?.ruleId).toBe("G1");
     expect(offered?.verdict).toBe("unverified");

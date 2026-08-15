@@ -1,4 +1,4 @@
-import type { Expectations } from "./expectations.ts";
+import type { AccConfig } from "./config.ts";
 import type { Checker, Coverage, Finding, History, ProbeLevel } from "./types.ts";
 
 /** Numeric order for comparing probe levels — L0 < L1 < L2. */
@@ -8,7 +8,7 @@ export interface ReportedFinding extends Finding {
   tier: "core" | "diagnostic";
   /** Where to read about the rule. A failure that does not point at its explanation is a chore. */
   rulePath: string;
-  /** True when this failure is listed in the project's expectations file. */
+  /** True when this failure is listed under `knownFailures` in the project's config. */
   excused: boolean;
   /** The rule's minimum probe level, carried through so a mislabelled level is visible on the
    *  finding itself rather than only inferable from `applicable`. */
@@ -57,7 +57,7 @@ export interface Report {
    * 1. `conformant` — nothing core was violated;
    * 2. every applicable core finding has verdict `pass` — INCLUDING excused ones. An excuse is
    *    an organisation deciding it can live with a defect; it is not evidence. Filtering
-   *    `!excused` here let an expectations entry delete an unverified core rule from the
+   *    `!excused` here let a `knownFailures` entry delete an unverified core rule from the
    *    EVIDENCE claim as well as from the conformance gate, so a project could write itself a
    *    note and receive "fully verified" over a rule nothing had established (review R3-4);
    * 3. every applicable core checker declares `coverage: "complete"`. A checker whose own pass
@@ -79,7 +79,7 @@ export interface Report {
     /**
      * Applicable CORE findings that are `unverified`, EXCUSED ONES INCLUDED — the evidence
      * gap, as distinct from `unverified`, which counts every tier. Excuses are deliberately not
-     * subtracted: this number answers "what was left unestablished", and an expectations entry
+     * subtracted: this number answers "what was left unestablished", and a `knownFailures` entry
      * changes who is accountable for a gap, never whether the gap exists. `coreFailures` is the
      * count that excuses do reduce, because that one gates conformance.
      */
@@ -108,7 +108,7 @@ export interface Report {
    *  rather than silently missing from the conformance verdict. */
   notApplicable: string[];
   knownFailures: Array<{ ruleId: string; reason: string }>;
-  /** Excused rules that now pass. The ratchet: remove these from the expectations file. */
+  /** Excused rules that now pass. The ratchet: remove these from `knownFailures`. */
   staleExpectations: string[];
 }
 
@@ -179,7 +179,7 @@ export function buildReport(
   h: History,
   findings: Finding[],
   checkers: Checker[],
-  expectations: Expectations,
+  config: AccConfig,
   level: ProbeLevel,
 ): Report {
   const byId = new Map(checkers.map((c) => [c.ruleId, c]));
@@ -204,8 +204,7 @@ export function buildReport(
       // blocked by an unverified core rule with no path to green: nothing it could change
       // would clear the rule, and the ratchet had no way to acknowledge that.
       excused:
-        (f.verdict === "fail" || f.verdict === "unverified") &&
-        f.ruleId in expectations.knownFailures,
+        (f.verdict === "fail" || f.verdict === "unverified") && f.ruleId in config.knownFailures,
     };
   });
 
@@ -265,11 +264,11 @@ export function buildReport(
     evidenceGaps,
     findings: reported,
     notApplicable: notApplicable.map((f) => f.ruleId),
-    knownFailures: Object.entries(expectations.knownFailures).map(([ruleId, reason]) => ({
+    knownFailures: Object.entries(config.knownFailures).map(([ruleId, reason]) => ({
       ruleId,
       reason,
     })),
-    staleExpectations: Object.keys(expectations.knownFailures).filter(
+    staleExpectations: Object.keys(config.knownFailures).filter(
       (id) => applicable.find((f) => f.ruleId === id)?.verdict === "pass",
     ),
   };

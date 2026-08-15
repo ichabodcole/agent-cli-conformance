@@ -255,7 +255,7 @@ for (const spec of COMMANDS) {
       case "check":
         return checkCommand(
           positionals[0] as string,
-          { expectations: opts.expectations as string | undefined },
+          { configDir: opts.configDir as string | undefined },
           resolved,
           startedAt,
         );

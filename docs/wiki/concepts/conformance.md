@@ -134,10 +134,10 @@ failure mode this section exists to prevent.
 
 ### The excuse ratchet
 
-A project may name rules it currently cannot satisfy in `.acc-expectations.json`, borrowed from
-Web Platform Tests: the file lets a project adopt the kit today without a wall of red, while
-keeping every outstanding gap named and visible. It only ever shrinks, and nothing in the kit
-adds to it automatically.
+A project may name rules it currently cannot satisfy under `knownFailures` in
+`acc.config.json`, borrowed from Web Platform Tests: the list lets a project adopt the kit today
+without a wall of red, while keeping every outstanding gap named and visible. It only ever
+shrinks, and nothing in the kit adds to it automatically.
 
 An excuse covers both `fail` and `unverified`. Excusing only failures left a project blocked by
 an unverified rule with nothing it could change to clear it. When an excused rule starts
