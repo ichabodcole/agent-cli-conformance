@@ -62,7 +62,7 @@ through a lint designed to prevent spec drift would either weaken the lint or li
    (R4-8) — after the corpus stops changing shape, and not a day later.
 9. [**Adoption surfaces**](#9-adoption-surfaces) — last, deliberately.
 
-The [coverage debt](#the-coverage-debt) is not a step. Those 52 gaps close as their blockers
+The [coverage debt](#the-coverage-debt) is not a step. Those 51 gaps close as their blockers
 land, which is why they are grouped below by what blocks them rather than sequenced.
 
 ### Where this departs from the review
@@ -414,6 +414,22 @@ source) and fails on any divergence, and every report carries `evidenceGaps` nam
 verdict withheld itself over. What is missing is that the gaps are phrases a human wrote, not a
 mechanical enumeration of a page's **MUST** clauses. Nothing checks that the list is _complete_.
 
+**A distinction `coverage_gaps` currently cannot make, recorded here rather than acted on.** A
+false-positive risk and ordinary undercoverage push the headline in **opposite** directions, and
+they are filed in the same list. Undercoverage narrows a `pass`: "only root help is scanned" means
+a green line covers less ground than the page. A false-positive risk widens a `fail`: it means the
+checker may report a violation the target did not commit. `coverage: partial` is defined as a
+qualifier on a pass, so it cannot carry the second kind at all — which is not a theoretical
+objection. G1 carried "a signal the kit did not send is attributed to the target" as a coverage
+gap while failing on operator interrupts and OOM kills its own rule text excluded, so a wrong
+`conformant: false` and exit `9` were reachable with the mismatch fully documented and fully inert
+(review R6-2). That instance is fixed in the checker rather than in the schema: G1 now fails only
+the fault-like signals. **No new schema field is being added on one instance.** What is owed is an
+audit of every declared gap asking which direction it pushes — the shape of work this step exists
+for, and the same population its false-positive fixtures are written against. If enough instances
+turn up, the gap list needs splitting; if G1's was the only one, the honest conclusion is that a
+false-positive risk is a bug to fix rather than a caveat to publish.
+
 **A candidate rule this phase declined to mint: stdout must be valid UTF-8.** The review that
 found D4 certifying two different byte streams as identical offered two remedies — keep a
 representation the comparison can trust, or narrow the contract so ill-formed output is itself a
@@ -485,7 +501,7 @@ binding.
 
 ## The coverage debt
 
-All 20 checkers declare `coverage: partial`, over **52 named gaps** — see
+All 20 checkers declare `coverage: partial`, over **51 named gaps** — see
 [the matrix](./wiki/index.md#coverage-at-a-glance), which is generated from rule frontmatter and
 fails the lint when it drifts. Closing them is roadmap work, and most of it is blocked rather
 than merely unwritten. The groups below are not disjoint: several gaps need two things, and a gap
@@ -521,9 +537,14 @@ across commands; F2's stream first-record and per-record flush requirement; B1's
 successful command. Step 5.
 
 **Blocked on environment control.** B2's `NO_COLOR`, `--no-color` and `TERM=dumb` overrides,
-which "need a TTY and are never exercised"; G1's attribution of any signal the kit did not send
-to the target, which an OOM killer or a passing operator can falsify today and a controlled
-environment is what would rule out. Step 3.
+which "need a TTY and are never exercised". Step 3.
+
+G1's "a signal the kit did not send is attributed to the target" was in this group and has been
+removed rather than closed — it was never a coverage gap. It described a way G1 could produce a
+wrong FAIL, and `coverage: partial` only ever qualifies a pass. G1 now fails on the fault-like
+signals and reports `unverified` for the ones it cannot attribute, so the scope of its rule page
+and the scope of its checker are the same scope. A controlled environment would still narrow the
+ambiguous class — that is a reason to want step 3, not a hole in what a G1 pass claims.
 
 D4's admission that its two runs "are not identical invocations because the second carries a
 probe nonce in its environment" was in this group and is now closed, by `Invocation.repeat`
@@ -573,6 +594,10 @@ R3-1's normative-scope question is settled at
 - ...and `G1` judges it, so a target that crashes on every path but help is `NOT CONFORMANT` at
   exit `9` instead of green at exit `0`. That opens the lifecycle family rather than closing it:
   the rules for cancellation, bounded shutdown, SIGPIPE and resumability remain at step 7;
+- G1 fails the fault-like signals and reports `unverified` for the ones it cannot attribute, so
+  its normative scope and its checker's scope are one scope, quoted from one list and held there
+  by the lint (R6-2). `SIGPIPE` moves with the rest of the ambiguous class to step 7, where a
+  closed pipe is the normal end of a pipeline rather than a fault;
 - the L0 safety **wording** is corrected — the capability is step 3 above (R2-1);
 - the envelope has one model, `confirmation_required` rather than a parallel status field, and
   the exit-code decision page states its residual collision instead of overclaiming portability

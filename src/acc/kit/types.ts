@@ -151,7 +151,14 @@ export interface Observation {
    * hole, because `exitCode` is null and null is not 0. A fixture whose entire body is
    * `kill -SEGV $$` scored nine passing rules. Checkers must run this through
    * `crashedUnverified` (see finding.ts) exactly as they run a hang through `hungUnverified` —
-   * except G1, which reads this field as its whole subject matter and reports the violation.
+   * except G1, which reads this field as its whole subject matter.
+   *
+   * It says the kit did not send the signal. It does NOT say the target sent it: an operator's
+   * Ctrl-C, an outer deadline's SIGTERM and an OOM killer's SIGKILL all land here too, and
+   * nothing in the record separates them from a target killing itself. That is why G1 reads
+   * `signal` as well as this flag and fails only on the fault-like ones (FAULT_SIGNALS in
+   * checkers/lifecycle/does-not-crash.ts), while every OTHER checker treats both classes alike —
+   * the evidence is void whoever sent it, and only the blame differs.
    */
   crashed: boolean;
   timedOut: boolean;

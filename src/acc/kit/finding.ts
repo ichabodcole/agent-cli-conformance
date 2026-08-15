@@ -118,6 +118,21 @@ export function truncatedUnverified(finding: Finder, runs: Observation[]): Findi
  *   since `conformant` counts violations and nothing called this one. Rule ids are append-only,
  *   so G1 waited for a checker design rather than for a release; the rest of the lifecycle
  *   family it opens is still docs/roadmap.md step 7.
+ *
+ * THE ASYMMETRY WITH G1'S OWN SPLIT, and it is the whole reason this function does not classify.
+ * G1 divides crashes in two: a fault-like signal (SIGSEGV and its siblings) is the target's own
+ * doing and fails; an externally ambiguous one (SIGINT, SIGTERM, SIGKILL, SIGPIPE, anything
+ * unrecognised) could have come from an operator or an OOM killer and reports `unverified` there
+ * too — see FAULT_SIGNALS in checkers/lifecycle/does-not-crash.ts.
+ *
+ * THIS FUNCTION MUST KEEP FIRING FOR BOTH CLASSES, in all nineteen other checkers. The two
+ * questions are not the same question. G1 asks WHOSE FAULT the death was, and the answer differs
+ * by signal. Every other rule asks WHAT THE PROBE ESTABLISHED, and the answer is "nothing"
+ * whoever sent it: a target killed halfway through writing help did not produce help, and a
+ * target killed before rejecting a flag did not reject it. The EVIDENCE is void either way; only
+ * the BLAME differs, and blame is G1's job alone. Narrowing this to the fault signals would hand
+ * every checker a pass for a target an outer deadline happened to kill — the exact `""` === `""`
+ * trap the hang guard closed, arriving through a different door.
  */
 export function crashedUnverified(finding: Finder, runs: Observation[]): Finding | null {
   const dead = runs.filter((o) => o.crashed);

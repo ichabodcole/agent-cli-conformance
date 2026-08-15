@@ -81,9 +81,9 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [E1](./rules/interactivity/never-block-without-a-tty.md)          | core       | L0    | implemented | partial  | 3    |
 | [F1](./rules/safety/no-secrets-in-help-or-schema.md)              | core       | L0    | implemented | partial  | 3    |
 | [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | L0    | implemented | partial  | 3    |
-| [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | L0    | implemented | partial  | 4    |
+| [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | L0    | implemented | partial  | 3    |
 
-20 rules · 0 `complete` · 20 `partial` · 52 named gaps.
+20 rules · 0 `complete` · 20 `partial` · 51 named gaps.
 
 ### Parsing
 

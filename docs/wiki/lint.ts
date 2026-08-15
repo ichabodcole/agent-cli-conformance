@@ -19,6 +19,10 @@ import {
   walkMarkdown,
   yamlList,
 } from "../../scripts/docs-lint/index.ts";
+import {
+  AMBIGUOUS_SIGNALS,
+  FAULT_SIGNALS,
+} from "../../src/acc/kit/checkers/lifecycle/does-not-crash.ts";
 import { CHECKERS } from "../../src/acc/kit/registry.ts";
 
 const WIKI_ROOT = dirname(fileURLToPath(import.meta.url));
@@ -215,6 +219,82 @@ export function slugChecks(pages: LintPage[]): string[] {
     if (first) problems.push(`DUPLICATE slug ${page.rel}: "${slug}" already used by ${first}`);
     else seen.set(slug, page.rel);
   }
+  return problems;
+}
+
+/**
+ * The markers G1's page puts in front of each signal list, so the lint can find them.
+ *
+ * Bold-run markers rather than headings, for the same reason `GAPS_MARKER` is one: the lists sit
+ * inside `## The rule`, which is prose a reader works through in order, and promoting them to
+ * headings to make them machine-findable would reorganise the page around the lint.
+ */
+export const FAULT_SIGNALS_MARKER = "**Fault-like — G1 reports `fail`**";
+export const AMBIGUOUS_SIGNALS_MARKER = "**Externally ambiguous — G1 reports `unverified`**";
+
+/**
+ * The `SIG*` names in the paragraph following `marker`, or null when the marker is absent.
+ *
+ * Reads the paragraph rather than a list because these are inline code spans in running prose,
+ * and folds its lines together first: Prettier re-wraps at the print width, so where the break
+ * falls is not something a matcher should have to predict.
+ */
+export function statedSignals(body: string, marker: string): string[] | null {
+  const lines = body.split("\n");
+  const at = lines.findIndex((l) => l.trim().startsWith(marker));
+  if (at === -1) return null;
+  const para: string[] = [];
+  for (const raw of lines.slice(at + 1)) {
+    const line = raw.trim();
+    if (line === "") {
+      if (para.length) break; // a blank line after the paragraph ends it; before it, skip
+      continue;
+    }
+    para.push(line);
+  }
+  return [...para.join(" ").matchAll(/`(SIG[A-Z0-9]+)`/g)].map((m) => m[1] as string);
+}
+
+/**
+ * G1's two signal classes must be the same list on the page and in the checker.
+ *
+ * The narrowest possible instance of this wiki's whole thesis, and it exists because the general
+ * version of the check missed it. `tier`, `probe_level`, `coverage` and `coverage_gaps` are all
+ * bound in both directions already — but the SIGNALS G1 fails on were prose on one side and a
+ * `filter` on the other, and they disagreed: the page excluded an operator's Ctrl-C, an outer
+ * deadline's `SIGTERM` and an OOM kill, while the checker failed on any signal the kit did not
+ * send (review R6-2). Two hand-maintained copies of one list is the drift this project exists to
+ * fail the gate on, so the checker's arrays are the source and the page quotes them.
+ *
+ * Order matters, as it does for `coverage_gaps`: a reader meets these in the order they are
+ * written, and comparing them as sets would let the page reorder itself away from the code.
+ */
+export function signalScopeChecks(pages: LintPage[]): string[] {
+  const page = pages.find((p) => p.fields.get("rule_id") === "G1");
+  if (!page) return ["MISSING G1 PAGE  no rule page declares rule_id G1 (it names the signals)"];
+
+  const problems: string[] = [];
+  const cases: Array<[string, string, readonly string[]]> = [
+    ["fault", FAULT_SIGNALS_MARKER, FAULT_SIGNALS],
+    ["ambiguous", AMBIGUOUS_SIGNALS_MARKER, AMBIGUOUS_SIGNALS],
+  ];
+  for (const [label, marker, declared] of cases) {
+    const stated = statedSignals(page.body, marker);
+    if (stated === null) {
+      problems.push(`MISSING SIGNALS ${page.rel}: no "${marker}" paragraph`);
+    } else if (stated.join(" ") !== declared.join(" ")) {
+      problems.push(
+        `MISMATCH ${label} signals ${page.rel}:\n     page: ${JSON.stringify(stated)}\n  checker: ${JSON.stringify(declared)}`,
+      );
+    }
+  }
+
+  // A signal in both lists would make the page unreadable and the checker's classification
+  // arbitrary — `FAULT` is consulted first, so the fault reading would silently win.
+  const both = FAULT_SIGNALS.filter((s) => AMBIGUOUS_SIGNALS.includes(s));
+  if (both.length > 0)
+    problems.push(`OVERLAPPING SIGNALS does-not-crash.ts: ${both.join(", ")} in both classes`);
+
   return problems;
 }
 
@@ -418,8 +498,10 @@ export function hookChecks(pages: LintPage[]): string[] {
   return problems;
 }
 
-/** Read the wiki as `LintPage`s, for the generator running outside `runDocsLint`. */
-function readPages(): LintPage[] {
+/** Read the wiki as `LintPage`s, for the generator running outside `runDocsLint` — and for the
+ *  one check whose subject is the SHIPPED page rather than the comparison (see
+ *  `signalScopeChecks`). */
+export function readPages(): LintPage[] {
   return walkMarkdown(WIKI_ROOT).map((path) => {
     const body = readFileSync(path, "utf8");
     const fm = /^---\n([\s\S]*?)\n---/.exec(body);
@@ -481,6 +563,7 @@ if (import.meta.main) {
         ...slugChecks(pages),
         ...matrixChecks(pages),
         ...hookChecks(pages),
+        ...signalScopeChecks(pages),
       ],
       json: process.argv.includes("--json"),
     });

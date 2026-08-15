@@ -13,18 +13,27 @@ import { expect, test } from "bun:test";
 import { join } from "node:path";
 import { type LintPage, yamlList } from "../../scripts/docs-lint/index.ts";
 import {
+  AMBIGUOUS_SIGNALS,
+  FAULT_SIGNALS,
+} from "../../src/acc/kit/checkers/lifecycle/does-not-crash.ts";
+import {
+  AMBIGUOUS_SIGNALS_MARKER,
   COVERAGE_HEADING,
   catalogEntries,
   coverageMatrix,
+  FAULT_SIGNALS_MARKER,
   GAPS_MARKER,
   hookChecks,
   MATRIX_HEADING,
   matrixChecks,
   normalizeBlock,
+  readPages,
   ruleChecks,
   sectionBody,
+  signalScopeChecks,
   slugChecks,
   statedGaps,
+  statedSignals,
 } from "./lint.ts";
 
 /**
@@ -737,4 +746,79 @@ test("a real checker file IS documented once some page's checker field names it 
   expect(problems).not.toContain(
     `UNDOCUMENTED   ${REAL_CHECKER}  (no rule page declares this checker)`,
   );
+});
+
+// The narrowest instance of this wiki's whole thesis, and it exists because the general version
+// of the check missed it. G1's rule page excluded an operator's Ctrl-C, an outer deadline's
+// SIGTERM and an OOM kill; its checker failed on any signal the kit did not send. Prose on one
+// side, a `filter` on the other, and nothing compared them (review R6-2).
+
+/** A G1 page stating exactly these two lists, in this order, with the real markers. */
+function g1PageWith(fault: readonly string[], ambiguous: readonly string[]): LintPage {
+  const page = pageOf("rules/lifecycle/g1.md", { type: "rule", rule_id: "G1" });
+  page.body = [
+    "## The rule",
+    "",
+    FAULT_SIGNALS_MARKER,
+    "",
+    fault.map((s) => `\`${s}\``).join(", "),
+    "",
+    "Prose between the two lists, which the extractor must stop at.",
+    "",
+    AMBIGUOUS_SIGNALS_MARKER,
+    "",
+    `${ambiguous.map((s) => `\`${s}\``).join(", ")}, and anything unrecognised`,
+    "",
+  ].join("\n");
+  return page;
+}
+
+test("the live G1 page and the live checker name the same signals", () => {
+  // Against the REAL wiki, deliberately. Every other test in this file synthesises its pages, but
+  // the whole point here is that the shipped page and the shipped arrays agree — a synthetic page
+  // would only test the comparison, which is the half that was never in doubt.
+  expect(signalScopeChecks(readPages())).toEqual([]);
+});
+
+test("a page that reorders the fault list is reported", () => {
+  const page = g1PageWith([...FAULT_SIGNALS].reverse(), AMBIGUOUS_SIGNALS);
+  expect(signalScopeChecks([page])).toEqual([expect.stringContaining("MISMATCH fault signals")]);
+});
+
+test("a page that drops a signal from the ambiguous list is reported", () => {
+  const page = g1PageWith(FAULT_SIGNALS, AMBIGUOUS_SIGNALS.slice(1));
+  expect(signalScopeChecks([page])).toEqual([
+    expect.stringContaining("MISMATCH ambiguous signals"),
+  ]);
+});
+
+// The direction that matters most: a signal MOVING from one class to the other is the drift that
+// would silently change a verdict from `unverified` to `fail`, and it must be caught on both
+// lists rather than netting out to zero.
+test("a page that promotes SIGTERM to the fault list is reported twice", () => {
+  const page = g1PageWith(
+    [...FAULT_SIGNALS, "SIGTERM"],
+    AMBIGUOUS_SIGNALS.filter((s) => s !== "SIGTERM"),
+  );
+  expect(signalScopeChecks([page])).toHaveLength(2);
+});
+
+test("a page missing a marker entirely is reported, not silently passed", () => {
+  const page = g1PageWith(FAULT_SIGNALS, AMBIGUOUS_SIGNALS);
+  page.body = page.body.replace(AMBIGUOUS_SIGNALS_MARKER, "**Some other heading**");
+  expect(signalScopeChecks([page])).toEqual([expect.stringContaining("MISSING SIGNALS")]);
+});
+
+test("no G1 page at all is a problem, not an absence of problems", () => {
+  expect(signalScopeChecks([pageOf("concepts/x.md", { type: "concept" })])).toEqual([
+    expect.stringContaining("MISSING G1 PAGE"),
+  ]);
+});
+
+// Prettier owns the line breaks inside a paragraph, so the extractor must not.
+test("a signal list Prettier wrapped across lines is read as one paragraph", () => {
+  const body = [FAULT_SIGNALS_MARKER, "", "`SIGSEGV`, `SIGBUS`,", "`SIGILL`", "", "next para"].join(
+    "\n",
+  );
+  expect(statedSignals(body, FAULT_SIGNALS_MARKER)).toEqual(["SIGSEGV", "SIGBUS", "SIGILL"]);
 });

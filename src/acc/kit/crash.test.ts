@@ -22,7 +22,11 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { doesNotCrashChecker } from "./checkers/lifecycle/does-not-crash.ts";
+import {
+  AMBIGUOUS_SIGNALS,
+  doesNotCrashChecker,
+  FAULT_SIGNALS,
+} from "./checkers/lifecycle/does-not-crash.ts";
 import { loadExpectations } from "./expectations.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
@@ -416,5 +420,149 @@ describe("the partial crasher — a green headline over eleven fallen-over rules
       "L0",
     );
     expect(primaryProblem(h, report)?.ruleId).toBe("G1");
+  });
+});
+
+// R6-2: G1's normative scope and its checker's scope are now one scope, and this is the half of
+// it the rule page excluded all along. The checker failed on ANY signal the kit did not send,
+// while the page said it was silent about an operator's Ctrl-C, an outer deadline's SIGTERM and
+// an OOM kill. The mismatch was filed as a coverage gap — and `coverage: partial` weakens a PASS,
+// it cannot soften a FAIL, so G1 could still set `conformant: false` and select exit `9` for an
+// event its own rule text put out of scope.
+const SIGTERM_FIXTURE: TargetInfo = (() => {
+  const p = join(HERE, "fixtures/sh/dies-by-sigterm.sh");
+  return { path: p, argv0: ["sh", p] };
+})();
+
+describe("a signal the kit cannot attribute is G1's gap, not G1's violation", () => {
+  let h: History;
+  beforeAll(async () => {
+    h = await record(SIGTERM_FIXTURE, CHECKERS);
+  }, 120_000);
+
+  test("the fixture really does die of SIGTERM on every probe", () => {
+    // Guards the test itself, exactly as the SEGV suite does: if the fixture stopped dying, every
+    // assertion below would hold for the wrong reason.
+    expect(h.observations.length).toBeGreaterThan(8);
+    expect(h.observations.every((o) => o.crashed)).toBe(true);
+    expect(h.observations.every((o) => o.signal === "SIGTERM")).toBe(true);
+  });
+
+  test("G1 reports unverified, and says it cannot attribute the signal", () => {
+    const g1 = runCheckers(h, CHECKERS).find((f) => f.ruleId === "G1");
+    // The assertion the split exists for. Before it this was `fail`, on a recording that is
+    // byte-for-byte what an outer deadline killing a perfectly conformant tool produces.
+    expect(g1?.verdict).toBe("unverified");
+    expect(g1?.detail).toContain("SIGTERM");
+    expect(g1?.detail).toContain("cannot attribute");
+  });
+
+  test("and NO rule reports pass — the evidence is void whoever sent the signal", () => {
+    // The other direction, and the one that would break if `crashedUnverified` were narrowed to
+    // the fault signals on the reasoning that G1 no longer fails these. G1 asks whose fault the
+    // death was; every other rule asks what the probe established, and the answer is "nothing".
+    const findings = runCheckers(h, CHECKERS);
+    expect(findings.filter((f) => f.verdict === "pass").map((f) => f.ruleId)).toEqual([]);
+  });
+
+  test("C1 still fails, because a help request that died did not succeed", () => {
+    // Not an attribution claim and not a G1 false positive leaking in through a neighbour: C1
+    // asserts that `--help` SUCCEEDS, and help ended by a signal did not, whoever sent it.
+    const c1 = runCheckers(h, CHECKERS).find((f) => f.ruleId === "C1");
+    expect(c1?.verdict).toBe("fail");
+    expect(c1?.detail).toContain("SIGTERM");
+  });
+
+  test("the report is not conformant and not fully verified, on fifteen unverified core rules", () => {
+    const report = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      loadExpectations(undefined),
+      "L0",
+    );
+    expect(report.counts.corePassed).toBe(0);
+    expect(report.fullyVerified).toBe(false);
+    // The one violation is C1's, and G1 is not among them. Asserted as the whole list rather than
+    // as `not.toContain("G1")`, so a second rule quietly starting to fail this target is caught.
+    const violated = report.findings.filter(
+      (f) => f.applicable && f.tier === "core" && f.verdict === "fail",
+    );
+    expect(violated.map((f) => f.ruleId)).toEqual(["C1"]);
+  });
+});
+
+// The classification itself, signal by signal, without a process. The end-to-end suites above can
+// only exercise the two signals a shell fixture can produce cheaply; this covers every name on
+// both lists, and the unrecognised case that belongs to neither.
+describe("G1 classifies by signal, and unknown names fall to the safe side", () => {
+  const historyOfOneDeath = (signal: string): History => {
+    const o: Observation = {
+      ...asCrashed({
+        id: "only",
+        invocation: { args: ["--help"], inertness: "help-path", purpose: "G1 scope" },
+        purposes: ["G1 scope"],
+        stdout: "",
+        stderr: "",
+        stdoutBytes: 0,
+        stderrBytes: 0,
+        stdoutDigest: digestOfText(""),
+        stderrDigest: digestOfText(""),
+        stdoutLossy: false,
+        stderrLossy: false,
+        truncated: false,
+        exitCode: null,
+        signal: null,
+        crashed: false,
+        timedOut: false,
+        spawnFailed: false,
+        durationMs: 4,
+        timeToFirstByteMs: null,
+      }),
+      signal,
+    };
+    return {
+      target: { path: "/x", argv0: ["/x"] },
+      discovery: DISCOVERY,
+      observations: [o],
+      byId: new Map([[o.id, o]]),
+    };
+  };
+
+  test.each([...FAULT_SIGNALS])("%s is the target's own fault and fails", (signal) => {
+    expect(doesNotCrashChecker.check(historyOfOneDeath(signal)).verdict).toBe("fail");
+  });
+
+  test.each([...AMBIGUOUS_SIGNALS])(
+    "%s could have come from outside and is unverified",
+    (signal) => {
+      expect(doesNotCrashChecker.check(historyOfOneDeath(signal)).verdict).toBe("unverified");
+    },
+  );
+
+  // The classifier asks whether a signal is in FAULT_SIGNALS, never whether it is absent from
+  // AMBIGUOUS_SIGNALS. Written the other way round, every name this kit has not met — a real-time
+  // signal, a platform-specific one, a name from an unfamiliar libc — would become a violation.
+  test.each(["SIGUSR1", "SIGWINCH", "SIGRTMIN+3", "SIGWHATEVER"])(
+    "%s is unrecognised, so it is unverified rather than a violation",
+    (signal) => {
+      expect(doesNotCrashChecker.check(historyOfOneDeath(signal)).verdict).toBe("unverified");
+    },
+  );
+
+  // A fault among ambiguous deaths is still a fault: the target demonstrably fell over on one
+  // probe, and a second probe ending on an unattributable signal does not undo that.
+  test("one fault signal among ambiguous ones still fails, and cites only the fault", () => {
+    const fault = historyOfOneDeath("SIGSEGV").observations[0] as Observation;
+    const ambiguous = { ...(historyOfOneDeath("SIGTERM").observations[0] as Observation), id: "b" };
+    const observations = [ambiguous, fault];
+    const f = doesNotCrashChecker.check({
+      target: { path: "/x", argv0: ["/x"] },
+      discovery: DISCOVERY,
+      observations,
+      byId: new Map(observations.map((o) => [o.id, o])),
+    });
+    expect(f.verdict).toBe("fail");
+    expect(f.evidence).toEqual([fault.id]);
   });
 });
