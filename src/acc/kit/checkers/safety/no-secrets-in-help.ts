@@ -6,7 +6,20 @@ const RULE_ID = "F1";
 
 const finding = findingFor(RULE_ID);
 
-const PATTERNS: Array<[label: string, re: RegExp]> = [
+/**
+ * The seven known credential shapes F1 scans for.
+ *
+ * Exported because `src/acc/conformance.test.ts` builds its own dogfood canary on top of this
+ * list rather than beside it. A second hand-written copy of these patterns is what produced the
+ * `risk-reduced` false positive: the shadow list had `sk-` with neither a word boundary nor a
+ * length floor, so it fired on ordinary English while the shipped list — anchored, with floors —
+ * did not. One definition, extended where the canary is deliberately wider.
+ *
+ * Every alternative is anchored (`\b`, or a literal that cannot occur by accident) AND carries a
+ * length floor. Both, not either: `\bsk-` alone still matches "risk-" nowhere but matches
+ * "sk-tools" everywhere, and a floor alone matches inside a longer word.
+ */
+export const CREDENTIAL_PATTERNS: Array<[label: string, re: RegExp]> = [
   ["OpenAI-style key", /\bsk-[A-Za-z0-9]{16,}/],
   ["GitHub token", /\bghp_[A-Za-z0-9]{20,}/],
   ["Slack token", /\bxox[baprs]-[A-Za-z0-9-]{10,}/],
@@ -54,7 +67,7 @@ export const noSecretsInHelpChecker: Checker = {
     if (hung) return hung;
 
     const text = `${o.stdout}\n${o.stderr}`;
-    const hits = PATTERNS.filter(([, re]) => re.test(text)).map(([label]) => label);
+    const hits = CREDENTIAL_PATTERNS.filter(([, re]) => re.test(text)).map(([label]) => label);
 
     // Scanned BEFORE the truncation guard: a credential printed in the captured prefix has
     // already leaked, whatever the bytes we refused would have said. The clean result is the one

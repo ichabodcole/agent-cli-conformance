@@ -14,6 +14,7 @@ import { chmodSync, copyFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CREDENTIAL_PATTERNS } from "./kit/checkers/safety/no-secrets-in-help.ts";
 import { loadExpectations } from "./kit/expectations.ts";
 import { record } from "./kit/record.ts";
 import { CHECKERS } from "./kit/registry.ts";
@@ -27,7 +28,39 @@ const CLI = join(dirname(fileURLToPath(import.meta.url)), "cli.ts");
 // the byte they begin with, so the control character here is the check, not an accident.
 // biome-ignore lint/suspicious/noControlCharactersInRegex: matching ESC is the assertion
 const ANSI = /\x1b\[/;
-const SECRET = /(sk-|ghp_|xox[baprs]-|AKIA|opk_|-----BEGIN [A-Z ]*PRIVATE KEY)/;
+
+/**
+ * The F1 canary: deliberately BROADER than the shipped checker, and built on top of it.
+ *
+ * Broader in two ways, both of which earn their keep because the target here is acc's own
+ * output rather than an arbitrary third-party CLI. It scans `schema` as well as `--help` —
+ * the first of F1's declared coverage gaps, and a surface acc actually publishes — and it
+ * carries prefixes the shipped list does not.
+ *
+ * What it is NOT is a second, sloppier copy of the shipped patterns. It used to be exactly
+ * that: `/(sk-|ghp_|xox[baprs]-|AKIA|opk_|...)/`, with no word boundary and no length floor on
+ * any alternative, against a shipped list that has both on all of them. So it matched `sk-`
+ * inside ordinary English and fired on the word "risk-reduced" while acc's help was clean, and
+ * the prose was reworded to dodge the canary rather than the canary being fixed. `risk-`,
+ * `task-` and `disk-` are all one help string away from doing it again.
+ *
+ * Spreading the shipped list is what makes "broader" a superset rather than a divergence: a
+ * pattern added to the checker reaches this canary the same commit, and a pattern here that
+ * fires can never be one the product would not also flag.
+ */
+const SECRET_PATTERNS: Array<[label: string, re: RegExp]> = [
+  ...CREDENTIAL_PATTERNS,
+  // acc is developed alongside tooling that mints `opk_` keys, so a leaked one is a shape this
+  // repository can plausibly produce and the shipped seven-pattern list does not know about.
+  ["operator-style key", /\bopk_[A-Za-z0-9]{16,}/],
+  // The shipped pattern requires the closing `-----`. A key pasted into help text and truncated
+  // at the line width would carry the header and lose the terminator, and still be a leak.
+  ["private key header", /-----BEGIN [A-Z ]*PRIVATE KEY/],
+];
+
+/** Names of every canary pattern the text matches — the empty array is the clean result. */
+const secretsIn = (text: string): string[] =>
+  SECRET_PATTERNS.filter(([, re]) => re.test(text)).map(([label]) => label);
 
 interface Run {
   code: number | null;
@@ -287,8 +320,74 @@ describe("F — safety", () => {
   test("F1 no credential patterns in help or schema", async () => {
     const help = await run(["--help"]);
     const schema = await run(["schema"]);
-    expect(SECRET.test(help.stdout)).toBe(false);
-    expect(SECRET.test(schema.stdout)).toBe(false);
+    // The hits are named rather than collapsed to a boolean: `false` was not `true` tells
+    // whoever hits this nothing about which of nine shapes it thinks it found.
+    expect({ surface: "--help", hits: secretsIn(`${help.stdout}\n${help.stderr}`) }).toEqual({
+      surface: "--help",
+      hits: [],
+    });
+    expect({ surface: "schema", hits: secretsIn(`${schema.stdout}\n${schema.stderr}`) }).toEqual({
+      surface: "schema",
+      hits: [],
+    });
+  });
+});
+
+// The canary, measured — because an unmeasured detector is exactly the instrument problem this
+// project names in its own review, and F1's canary was an instance of it. It had never been
+// tested in either direction: not against prose it must ignore, and not against a credential it
+// must catch. So it silently did neither correctly.
+//
+// Both directions are needed. A pattern list that matched everything would satisfy the positive
+// cases; one that matched nothing would satisfy the negative case.
+describe("the F1 canary", () => {
+  // Documentation placeholders, not keys: every value is `EXAMPLE`-bearing and zero-padded to
+  // the length floor its pattern demands. The point is the SHAPE — prefix, character class,
+  // length — since that is the entire basis on which the canary decides.
+  const FAKE_CREDENTIALS: Record<string, string> = {
+    "OpenAI-style key": "sk-EXAMPLEEXAMPLEEXAMPLE00",
+    "GitHub token": "ghp_EXAMPLEEXAMPLEEXAMPLE0000",
+    "Slack token": "xoxb-EXAMPLE-0000000000",
+    "AWS access key": "AKIAEXAMPLE000000000",
+    "private key block": "-----BEGIN RSA PRIVATE KEY-----",
+    JWT: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJFWEFNUExFIn0.c2lnbmF0dXJl",
+    "password in a URL": "postgres://svc:EXAMPLE@db.internal:5432/app",
+    "operator-style key": "opk_EXAMPLEEXAMPLE000000",
+    // No closing `-----`, which is the whole reason this pattern exists beside the block above.
+    "private key header": "-----BEGIN OPENSSH PRIVATE KEY",
+  };
+
+  // Guards the degenerate pass: a pattern added without a sample would otherwise be asserted
+  // over by nothing at all, which is how the canary got into this state.
+  test("every canary pattern has a sample to prove it fires", () => {
+    expect(SECRET_PATTERNS.map(([label]) => label).sort()).toEqual(
+      Object.keys(FAKE_CREDENTIALS).sort(),
+    );
+  });
+
+  test.each(SECRET_PATTERNS)("%s matches a realistically-shaped credential", (label, re) => {
+    const sample = FAKE_CREDENTIALS[label] as string;
+    expect({ label, sample, matched: re.test(sample) }).toEqual({ label, sample, matched: true });
+    // ...and the canary as a whole reports it by that name, not merely somewhere in the list.
+    expect({ label, hits: secretsIn(sample) }).toEqual({
+      label,
+      hits: expect.arrayContaining([label]),
+    });
+  });
+
+  // The regression. `sk-` with no word boundary and no length floor matched inside
+  // "risk-reduced" in README prose during a previous pass, and the sentence was rewritten to
+  // dodge it. Every string below is ordinary English that a help text could legitimately
+  // contain, and each one lands on a different half of the fix: "risk-", "task-" and "disk-"
+  // need the word boundary, "sk-prefixed" and "AKIA-style" need the length floor.
+  test.each([
+    "L0 is risk-reduced, not inert — it executes the target.",
+    "A task-runner or disk-backed cache is probed exactly like anything else.",
+    "Provider keys are usually sk-prefixed; AKIA-style ids are AWS.",
+    "See https://example.com/keys for the ghp_ and xoxb- formats.",
+    "Ask-first tools and PRIVATE KEY handling are both out of scope here.",
+  ])("does not fire on benign prose: %s", (prose) => {
+    expect({ prose, hits: secretsIn(prose) }).toEqual({ prose, hits: [] });
   });
 });
 
