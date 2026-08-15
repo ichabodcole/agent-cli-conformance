@@ -56,9 +56,9 @@ well is a lifecycle obligation too, and it belongs to rules that do not exist ye
 [below](#the-first-of-a-family)) — `SIGPIPE` most explicitly of all, since a closed stdout is the
 normal end of a pipeline rather than a fault.
 
-**These two lists are quoted from the checker, not maintained beside it.** They are exported as
+**These two lists are quoted from the code, not maintained beside it.** They are exported as
 `FAULT_SIGNALS` and `AMBIGUOUS_SIGNALS` from
-[`does-not-crash.ts`](../../../../src/acc/kit/checkers/lifecycle/does-not-crash.ts), and
+[`signals.ts`](../../../../src/acc/kit/signals.ts), and
 [`docs/wiki/lint.ts`](../../lint.ts) fails the gate when this page and that file name different
 signals — the same bidirectional discipline already applied to `tier`, `probe_level`, `coverage`
 and `coverage_gaps`. A normative scope that quietly differs from its executable is the defect that
@@ -66,6 +66,12 @@ produced this split: the checker used to fail on **any** signal the kit did not 
 page already excluded the external ones, and the mismatch was filed as a coverage gap.
 `coverage: partial` weakens a _pass_; it cannot soften a _fail_, so G1 could set
 `conformant: false` and select exit `9` for an event its own rule text put out of scope.
+
+They live beside `types.ts` rather than in G1's checker file because
+[C1](../exit-codes/help-exits-zero.md) reads them too, for its own help paths — the second rule in
+the catalogue that judges how a process **ended** rather than what a probe established. One
+checker importing from another checker's file is a dependency the wiki's own
+undocumented-checker scan cannot express.
 
 ## Why
 
@@ -156,8 +162,15 @@ violation the prefix contains.
 G1 asks _whose fault the death was_, and the answer depends on the signal. Every other rule asks
 _what the probe established_, and the answer is "nothing" whoever sent it — a target killed
 halfway through writing help did not produce help. The evidence is void either way; only the blame
-differs, and blame is G1's job alone. See `crashedUnverified` in
-[`finding.ts`](../../../../src/acc/kit/finding.ts).
+differs. See `crashedUnverified` in [`finding.ts`](../../../../src/acc/kit/finding.ts).
+
+The one rule that asks G1's question rather than the other one is
+[C1](../exit-codes/help-exits-zero.md), on the two help paths it declares: help that faulted has
+not succeeded, so C1 fails it. C1 makes the **same split, from the same list** — an ambiguous
+signal there is `unverified` too, because C1 cannot attribute what this rule has just declined to
+attribute. A report that said "cannot attribute the signal" on G1's line and "died on `SIGTERM`"
+on C1's would state both halves of a contradiction, which is exactly what it did until the
+narrowing landed.
 
 ## Current checker coverage
 
@@ -224,20 +237,42 @@ The scope case, added when the checker was narrowed to match this page:
 Measured through the full registry at `L0`:
 
 ```
-G1 unverified  16 of 16 probe(s) ended on a signal the kit did not send and cannot attribute
-C1 fail        --help died on SIGTERM instead of exiting; -h died on SIGTERM instead of exiting
+CONFORMANT (L0) — 0 core violated, 16 core unverified, 0 core partially covered
+
+  UNVR  C1  2 of 2 probe(s) were killed by a signal the kit did not send (--help: SIGTERM,
+            -h: SIGTERM) — a target that fell over while being asked established nothing
+  UNVR  G1  16 of 16 probe(s) ended on a signal the kit did not send and cannot attribute
+            (…: SIGTERM) — an operator interrupt, an outer deadline and an OOM kill are
+            outside this rule's scope
+
+  core 0/16 · violations 0 · unverified 19 (all tiers; 16 core)
 ```
 
-`corePassed: 0`, `coreUnverified: 15`, and **no rule reports `pass`** — because the probes
-established nothing, whoever sent the signal. The one violation is
-[C1](../exit-codes/help-exits-zero.md)'s, and it is not an attribution claim: C1 asserts that a
-help request _succeeds_, and help that ended on a signal did not, whichever process sent it. G1
-says only what it can: something outside this kit ended these runs and it cannot say what.
+`corePassed: 0`, **no rule reports `pass`**, and **no rule reports `fail`** either. `acc check`
+exits `0`, and that is the right answer rather than a hole: `conformant` counts violations, and
+against this recording there is not one the kit can substantiate. Every core rule is reported as
+an unmet gap by name and `fullyVerified` is `false`, so nothing in the report claims this target
+was measured.
 
-The fixture is a control in both directions. Widen G1 back to every non-kit signal and its line
-above turns into a violation nobody can substantiate; narrow `crashedUnverified` to the fault
-signals — "G1 doesn't fail `SIGTERM`, so why should anyone else care" — and those fifteen
-`unverified` lines start coming back as passes.
+Contrast it with the partial crasher above, which is what makes the two fixtures a pair.
+`crashes-except-help.sh` earned four genuine passes and then fell over **on its own**, which is
+an attributable violation and `conformant: false` at exit `9`. This one earned nothing and its
+deaths belong to nobody the kit can name. Manufacturing a violation here would mean failing an
+arbitrary, blameless tool for its CI's timeout — and the first thing a maintainer does with a
+gate that reports failures it cannot substantiate is switch the gate off.
+
+C1's line is the correction that took two attempts. When G1 was first split, C1 was still the
+catalogue's one unqualified exception to `crashedUnverified` and went on failing every signal, so
+this fixture reported `C1 fail --help died on SIGTERM instead of exiting` directly beneath G1's
+"cannot attribute" and still exited `9`. The false positive had not been fixed, only moved. C1's
+exception is now scoped to the fault signals — see
+[its page](../exit-codes/help-exits-zero.md#a-help-path-that-died-on-a-signal).
+
+The fixture is a control in three directions, which is why it is permanent. Widen G1 back to every
+non-kit signal and its line turns into a violation nobody can substantiate; widen C1 back and the
+same false violation reappears one rule over, exactly where it was; narrow `crashedUnverified` to
+the fault signals — "G1 doesn't fail `SIGTERM`, so why should anyone else care" — and those
+sixteen `unverified` lines start coming back as passes.
 
 Both fixtures are POSIX shell rather than TypeScript on purpose: Bun installs its own `SIGSEGV`
 handler and converts the signal into an ordinary exit with a crash report on stderr, which is a

@@ -12,10 +12,7 @@
 import { expect, test } from "bun:test";
 import { join } from "node:path";
 import { type LintPage, yamlList } from "../../scripts/docs-lint/index.ts";
-import {
-  AMBIGUOUS_SIGNALS,
-  FAULT_SIGNALS,
-} from "../../src/acc/kit/checkers/lifecycle/does-not-crash.ts";
+import { AMBIGUOUS_SIGNALS, FAULT_SIGNALS } from "../../src/acc/kit/signals.ts";
 import {
   AMBIGUOUS_SIGNALS_MARKER,
   COVERAGE_HEADING,

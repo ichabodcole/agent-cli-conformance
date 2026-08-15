@@ -140,6 +140,14 @@ export interface Report {
  * that already names it. Neither is hypothetical enough to have been measured; the tie is broken
  * on which page accounts for more of what the caller is looking at, which is the same principle
  * that put ownership ahead of position in the first place.
+ *
+ * OWNERSHIP SURVIVES THE VERDICT, which is the last clause and the one the signal split forced.
+ * Once G1 and C1 stopped failing on signals they cannot attribute, a target an outer deadline
+ * killed produces a report with NO core failure at all — and `pick("unverified")` sent that
+ * caller back to A1 by registry order, the exact page the two clauses above exist to get away
+ * from. G1 still owns the event; it is now reporting a gap rather than a violation, and its page
+ * is still the only one that explains why every other line came back with nothing. A real
+ * violation elsewhere is offered ahead of it, because a violation outranks a gap.
  */
 export function primaryProblem(h: History, report: Report): ReportedFinding | undefined {
   const pick = (verdict: "fail" | "unverified", ruleId?: string) =>
@@ -157,6 +165,7 @@ export function primaryProblem(h: History, report: Report): ReportedFinding | un
     (hung ? pick("fail", "E1") : undefined) ??
     (crashed ? pick("fail", "G1") : undefined) ??
     pick("fail") ??
+    (crashed ? pick("unverified", "G1") : undefined) ??
     pick("unverified")
   );
 }

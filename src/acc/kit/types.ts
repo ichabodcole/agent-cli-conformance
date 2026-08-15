@@ -160,10 +160,11 @@ export interface Observation {
    *
    * It says the kit did not send the signal. It does NOT say the target sent it: an operator's
    * Ctrl-C, an outer deadline's SIGTERM and an OOM killer's SIGKILL all land here too, and
-   * nothing in the record separates them from a target killing itself. That is why G1 reads
-   * `signal` as well as this flag and fails only on the fault-like ones (FAULT_SIGNALS in
-   * checkers/lifecycle/does-not-crash.ts), while every OTHER checker treats both classes alike —
-   * the evidence is void whoever sent it, and only the blame differs.
+   * nothing in the record separates them from a target killing itself. That is why the two rules
+   * that judge how a process ENDED — G1, and C1 on its help paths — read `signal` as well as this
+   * flag and fail only on the fault-like ones (FAULT_SIGNALS in signals.ts), reporting the rest
+   * as a gap. The other eighteen treat both classes alike: the evidence is void whoever sent it,
+   * and only the blame differs.
    */
   crashed: boolean;
   timedOut: boolean;

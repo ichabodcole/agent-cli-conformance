@@ -22,16 +22,13 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  AMBIGUOUS_SIGNALS,
-  doesNotCrashChecker,
-  FAULT_SIGNALS,
-} from "./checkers/lifecycle/does-not-crash.ts";
+import { doesNotCrashChecker } from "./checkers/lifecycle/does-not-crash.ts";
 import { loadExpectations } from "./expectations.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import { buildReport, primaryProblem, runCheckers } from "./report.ts";
 import { digestOfText, invocationId, runProbe } from "./runner.ts";
+import { AMBIGUOUS_SIGNALS, FAULT_SIGNALS } from "./signals.ts";
 import type { Discovery, History, Observation, TargetInfo } from "./types.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -135,11 +132,13 @@ describe("the full-registry L0 report over a crashing target", () => {
     expect(details).not.toContain("invocations all exited null");
   });
 
-  test("C1 is the one rule that calls a crash a violation", () => {
-    // The single exception (see crashedUnverified in finding.ts): C1's rule is that a help
-    // request SUCCEEDS, and help that dies on a signal has not succeeded. Every other rule
-    // reports a gap in the evidence; this one reports the violation, and names the signal rather
-    // than the null status the target never chose.
+  test("C1 is the one rule besides G1 that calls a FAULT crash a violation", () => {
+    // The scoped exception (see crashedUnverified in finding.ts): C1's rule is that a help
+    // request SUCCEEDS, and help that segfaulted has not succeeded — the fault being the
+    // target's own is what makes the attribution safe, which is why the exception reaches
+    // SIGSEGV here and stops short of the SIGTERM suite at the bottom of this file. Every other
+    // rule reports a gap in the evidence; this one reports the violation, and names the signal
+    // rather than the null status the target never chose.
     const c1 = runCheckers(h, CHECKERS).find((f) => f.ruleId === "C1");
     expect(c1?.verdict).toBe("fail");
     expect(c1?.detail).toContain("SIGSEGV");
@@ -228,10 +227,15 @@ function everyProbeCrashed(): History {
 }
 
 // Two rules, for two different reasons. C1 owns it incidentally — its subject is that a help
-// request SUCCEEDS, and help that dies on a signal has not. G1 owns it outright: a crash is its
-// entire subject matter, the way a hang is E1's. G1 was minted after this file was written,
-// because recording the signal was only half the job — every other rule reporting `unverified`
-// left `conformant` counting zero violations for a target that fell over on eleven core rules.
+// request SUCCEEDS, and help that faulted has not. G1 owns it outright: a crash is its entire
+// subject matter, the way a hang is E1's. G1 was minted after this file was written, because
+// recording the signal was only half the job — every other rule reporting `unverified` left
+// `conformant` counting zero violations for a target that fell over on eleven core rules.
+//
+// BOTH are scoped to the fault signals, and every history in this file is built from SIGSEGV
+// (`asCrashed` below), so `fail` is the right expectation throughout. The ambiguous half of both
+// rules is the SIGTERM suite at the bottom, where the expectation is `unverified` for the two of
+// them and for everyone else alike.
 const OWNS_CRASHES = new Set(["C1", "G1"]);
 
 describe("a crashed probe is never evidence of compliance", () => {
@@ -429,12 +433,19 @@ describe("the partial crasher — a green headline over eleven fallen-over rules
 // an OOM kill. The mismatch was filed as a coverage gap — and `coverage: partial` weakens a PASS,
 // it cannot soften a FAIL, so G1 could still set `conformant: false` and select exit `9` for an
 // event its own rule text put out of scope.
+//
+// The first cut of that fix moved the false positive rather than removing it. G1 stopped failing
+// SIGTERM; C1 was left as "THE ONE EXCEPTION to crashedUnverified" and carried on failing on any
+// signal, so this fixture measured `G1 unverified … cannot attribute` on one line and
+// `C1 fail --help died on SIGTERM` on the next, and still exited 9. Those two lines cannot both
+// stand, and the practical case is worse than the segfault one it was derived from: an outer CI
+// timeout that kills the process group makes EVERY probe end this way, on an arbitrary target.
 const SIGTERM_FIXTURE: TargetInfo = (() => {
   const p = join(HERE, "fixtures/sh/dies-by-sigterm.sh");
   return { path: p, argv0: ["sh", p] };
 })();
 
-describe("a signal the kit cannot attribute is G1's gap, not G1's violation", () => {
+describe("a signal the kit cannot attribute is nobody's violation", () => {
   let h: History;
   beforeAll(async () => {
     h = await record(SIGTERM_FIXTURE, CHECKERS);
@@ -465,15 +476,32 @@ describe("a signal the kit cannot attribute is G1's gap, not G1's violation", ()
     expect(findings.filter((f) => f.verdict === "pass").map((f) => f.ruleId)).toEqual([]);
   });
 
-  test("C1 still fails, because a help request that died did not succeed", () => {
-    // Not an attribution claim and not a G1 false positive leaking in through a neighbour: C1
-    // asserts that `--help` SUCCEEDS, and help ended by a signal did not, whoever sent it.
+  test("C1 reports the gap too — it cannot attribute what G1 has just declined to", () => {
+    // THE ASSERTION THIS NARROWING EXISTS FOR, and the one that goes red if C1 is widened back
+    // to `o.crashed`. C1's crash exception is scoped to the FAULT signals: help that segfaulted
+    // has not succeeded and the fault is the target's own, but help an outer deadline killed is
+    // byte-for-byte help a perfectly conforming tool produces under that deadline. C1 has no
+    // better claim on this signal than G1 does, and this recording is exactly what a blameless
+    // target under an outer CI timeout looks like.
     const c1 = runCheckers(h, CHECKERS).find((f) => f.ruleId === "C1");
-    expect(c1?.verdict).toBe("fail");
+    expect(c1?.verdict).toBe("unverified");
     expect(c1?.detail).toContain("SIGTERM");
+    // The catalogue's own sentence, from `crashedUnverified` — not a C1-shaped one. On this class
+    // C1 holds exactly the position the other eighteen rules hold.
+    expect(c1?.detail).toContain("a signal the kit did not send");
   });
 
-  test("the report is not conformant and not fully verified, on fifteen unverified core rules", () => {
+  test("the verdict is CONFORMANT on zero substantiated violations, and establishes nothing", () => {
+    // What the headline actually says now, and why it is the right one. `conformant` counts
+    // VIOLATIONS (report.ts: `coreFailures.length === 0`), and against this recording the kit can
+    // substantiate none: something outside the kit ended all sixteen probes and the record does
+    // not say what. So the gate does not bite — and every other number in the report says the run
+    // established nothing, which is the honest reading of a target killed from outside.
+    //
+    // This is NOT the pre-G1 hole returning. There, `conformant: true` sat over a target that had
+    // demonstrably fallen over on its own and collected four real passes; here nothing passed at
+    // all, and `fullyVerified` is false with all sixteen core rules named as gaps. The difference
+    // between the two is exactly the difference G1's split draws: attributable, or not.
     const report = buildReport(
       h,
       runCheckers(h, CHECKERS),
@@ -481,14 +509,34 @@ describe("a signal the kit cannot attribute is G1's gap, not G1's violation", ()
       loadExpectations(undefined),
       "L0",
     );
-    expect(report.counts.corePassed).toBe(0);
+    expect(report.conformant).toBe(true);
     expect(report.fullyVerified).toBe(false);
-    // The one violation is C1's, and G1 is not among them. Asserted as the whole list rather than
-    // as `not.toContain("G1")`, so a second rule quietly starting to fail this target is caught.
+    expect(report.counts.corePassed).toBe(0);
+    expect(report.counts.coreUnverified).toBe(16);
+    // Asserted as the whole list rather than as `not.toContain("C1")`, so a rule quietly starting
+    // to fail this target — the false positive arriving through yet another door — is caught.
     const violated = report.findings.filter(
       (f) => f.applicable && f.tier === "core" && f.verdict === "fail",
     );
-    expect(violated.map((f) => f.ruleId)).toEqual(["C1"]);
+    expect(violated.map((f) => f.ruleId)).toEqual([]);
+  });
+
+  test("the rule offered to the caller is still G1, now on its unverified line", () => {
+    // Ownership has to survive the verdict. With no core failure left anywhere in the report,
+    // `primaryProblem` fell through to the first unverified core rule in REGISTRY ORDER — A1, a
+    // rule about rejecting unknown flags that this target never got far enough to break, and the
+    // exact page the crash and hang clauses exist to get away from. G1 is the one line that
+    // explains why the other eighteen came back with nothing.
+    const report = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      loadExpectations(undefined),
+      "L0",
+    );
+    const offered = primaryProblem(h, report);
+    expect(offered?.ruleId).toBe("G1");
+    expect(offered?.verdict).toBe("unverified");
   });
 });
 

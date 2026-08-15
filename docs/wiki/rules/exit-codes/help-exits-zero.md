@@ -7,7 +7,7 @@ description:
 tags: [exit-codes, discoverability, core]
 related: [concept/exit-codes, rule/bare-invocation-is-a-usage-error]
 status: current
-updated: 2026-08-14
+updated: 2026-08-15
 rule_id: C1
 tier: core
 probe_level: L0
@@ -79,6 +79,33 @@ A help path killed at the checker's **output limit** is the opposite case and re
 checker prevented it from choosing. The two ways a probe can be cut short are recorded
 separately for exactly this reason.
 
+### A help path that died on a signal
+
+Help that ends on a **signal the kit did not send** has no exit code to read either, and which
+of the two answers above it gets depends on **who sent the signal** — the same split
+[G1](../lifecycle/inert-invocations-do-not-crash.md) makes, read from the same list.
+
+- A **fault signal** (`SIGSEGV`, `SIGBUS`, `SIGILL`, `SIGFPE`, `SIGABRT`, `SIGSYS`, `SIGTRAP`) is
+  a **failure**. The process raised it on itself as a direct consequence of what it just
+  executed; help that segfaulted has definitively not succeeded, and the fault is the target's
+  own. This is the hang sentence with a different ending.
+- Any **other** signal — an operator's Ctrl-C, an outer deadline's `SIGTERM`, an OOM killer's
+  `SIGKILL`, or any name the kit does not recognise — is `unverified`. C1 cannot attribute what
+  G1 has just declined to attribute. The recording an outer CI timeout produces is byte-for-byte
+  the recording a perfectly conforming tool produces under that timeout, and a gate that reports
+  a violation it cannot substantiate is a gate someone eventually switches off.
+
+When one run contains both, the **fault wins**: an observed violation stays a violation when a
+different probe was killed by something unattributable. Same for an ordinary violation — help
+that exited `2` exited `2`, whatever ended the other probe.
+
+The two lists are `FAULT_SIGNALS` and `AMBIGUOUS_SIGNALS` in
+[`signals.ts`](../../../../src/acc/kit/signals.ts), which G1's page quotes in full and
+[`docs/wiki/lint.ts`](../../lint.ts) binds to the code in both directions. C1 reads the taxonomy
+rather than restating it, because a rule that failed on a signal G1 had just declined to
+attribute would put two contradictory lines in one report — which is what it did, until the
+narrowing.
+
 Not yet checked at `L0`: stderr emptiness on the help path, and the nested case (`<cli>
 <group> --help`). The nested case needs the discovered group to also be a leaf-or-group
 distinction `Discovery` does not currently carry — see `unknown-command.ts`'s checker for the
@@ -92,7 +119,13 @@ the rest of this page, unexamined.
 
 **Established**
 
-- root `--help` and root `-h` each exit `0` with non-empty stdout, and neither hangs.
+- root `--help` and root `-h` each exit `0` with non-empty stdout, and neither hangs nor ends on
+  a signal of any kind.
+
+The gaps below are unchanged by the signal split above, and deliberately so: `coverage: partial`
+qualifies a **pass**, and narrowing the crash exception moved nothing into the pass branch. Help
+that ended on a signal still never passes here — it fails, or it reports the gap in the finding
+itself.
 
 **Gaps**
 

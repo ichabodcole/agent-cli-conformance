@@ -19,11 +19,8 @@ import {
   walkMarkdown,
   yamlList,
 } from "../../scripts/docs-lint/index.ts";
-import {
-  AMBIGUOUS_SIGNALS,
-  FAULT_SIGNALS,
-} from "../../src/acc/kit/checkers/lifecycle/does-not-crash.ts";
 import { CHECKERS } from "../../src/acc/kit/registry.ts";
+import { AMBIGUOUS_SIGNALS, FAULT_SIGNALS } from "../../src/acc/kit/signals.ts";
 
 const WIKI_ROOT = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(WIKI_ROOT, "../..");
@@ -264,7 +261,13 @@ export function statedSignals(body: string, marker: string): string[] | null {
  * `filter` on the other, and they disagreed: the page excluded an operator's Ctrl-C, an outer
  * deadline's `SIGTERM` and an OOM kill, while the checker failed on any signal the kit did not
  * send (review R6-2). Two hand-maintained copies of one list is the drift this project exists to
- * fail the gate on, so the checker's arrays are the source and the page quotes them.
+ * fail the gate on, so the exported arrays are the source and the page quotes them.
+ *
+ * They are imported from `src/acc/kit/signals.ts` rather than from G1's checker file because C1
+ * reads the same taxonomy for its own help paths, and a checker importing from another checker's
+ * file is a dependency the `UNDOCUMENTED` scan above has no way to express. The subject of this
+ * check is unchanged by the move: the SHIPPED page against the REAL exported arrays, in both
+ * directions, with nothing in between.
  *
  * Order matters, as it does for `coverage_gaps`: a reader meets these in the order they are
  * written, and comparing them as sets would let the page reorder itself away from the code.

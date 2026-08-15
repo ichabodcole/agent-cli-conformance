@@ -378,8 +378,9 @@ a checker design exists to give it — the same position taken at
 that needs no probes of its own. The fixture is permanent
 (`src/acc/kit/fixtures/sh/crashes-except-help.sh`), asserted at `conformant: false` and exit `9`,
 with the pre-G1 headline asserted alongside it so the rule cannot silently stop biting. C1 still
-reports `fail` for help that dies on a signal, incidentally rather than by ownership, because
-C1's subject is that a help request _succeeds_.
+reports `fail` for help that dies on a **fault** signal, incidentally rather than by ownership,
+because C1's subject is that a help request _succeeds_ — and it reads G1's own taxonomy to draw
+that line, reporting `unverified` on a signal G1 has declined to attribute.
 
 **Blocked on.** Step 4, for cancellation and the durable record — signal and timing now exist.
 Step 5, for scope: a REPL's SIGINT contract is not a filter's, and a lifecycle family written

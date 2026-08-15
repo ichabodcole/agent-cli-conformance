@@ -106,11 +106,15 @@ export function truncatedUnverified(finding: Finder, runs: Observation[]): Findi
  *
  * TWO exceptions in the catalogue, and they are different kinds of exception:
  *
- * - C1, whose rule is that a help request SUCCEEDS. Help that dies on a signal has definitively
- *   not succeeded, so that is a violation of what C1 asserts rather than a gap in the evidence
- *   for it, and C1 reports `fail` exactly as it does for a hang. The exception does NOT extend
- *   to A1 or D2 on the reasoning that a crash "is non-zero": those rules assert the tool
- *   REJECTED something, and a crash is not a rejection.
+ * - C1, whose rule is that a help request SUCCEEDS — and the exception is SCOPED to the fault
+ *   signals, not to crashes at large. Help that segfaulted has definitively not succeeded and the
+ *   fault is the target's own, so that is a violation of what C1 asserts rather than a gap in the
+ *   evidence for it, and C1 reports `fail` exactly as it does for a hang. On an AMBIGUOUS signal
+ *   C1 calls THIS function like everyone else: it cannot attribute what G1 has just declined to
+ *   attribute, and an outer CI deadline that kills the process group would otherwise brand an
+ *   arbitrary, blameless target non-conformant on C1's line. Neither half extends to A1 or D2 on
+ *   the reasoning that a crash "is non-zero": those rules assert the tool REJECTED something, and
+ *   no signal is a rejection.
  * - G1, which OWNS crashes outright and never calls this function at all — the crash is its
  *   entire finding, the way a hang is E1's. It was minted because `unverified` everywhere else
  *   is honest and insufficient: a target answering only `--help` and `--version` and segfaulting
@@ -119,20 +123,20 @@ export function truncatedUnverified(finding: Finder, runs: Observation[]): Findi
  *   so G1 waited for a checker design rather than for a release; the rest of the lifecycle
  *   family it opens is still docs/roadmap.md step 7.
  *
- * THE ASYMMETRY WITH G1'S OWN SPLIT, and it is the whole reason this function does not classify.
- * G1 divides crashes in two: a fault-like signal (SIGSEGV and its siblings) is the target's own
- * doing and fails; an externally ambiguous one (SIGINT, SIGTERM, SIGKILL, SIGPIPE, anything
+ * THE ASYMMETRY WITH THE SIGNAL SPLIT, and it is the whole reason this function does not classify.
+ * G1 and C1 divide crashes in two: a fault-like signal (SIGSEGV and its siblings) is the target's
+ * own doing and fails; an externally ambiguous one (SIGINT, SIGTERM, SIGKILL, SIGPIPE, anything
  * unrecognised) could have come from an operator or an OOM killer and reports `unverified` there
- * too — see FAULT_SIGNALS in checkers/lifecycle/does-not-crash.ts.
+ * too — see FAULT_SIGNALS in signals.ts.
  *
- * THIS FUNCTION MUST KEEP FIRING FOR BOTH CLASSES, in all nineteen other checkers. The two
- * questions are not the same question. G1 asks WHOSE FAULT the death was, and the answer differs
- * by signal. Every other rule asks WHAT THE PROBE ESTABLISHED, and the answer is "nothing"
- * whoever sent it: a target killed halfway through writing help did not produce help, and a
- * target killed before rejecting a flag did not reject it. The EVIDENCE is void either way; only
- * the BLAME differs, and blame is G1's job alone. Narrowing this to the fault signals would hand
- * every checker a pass for a target an outer deadline happened to kill — the exact `""` === `""`
- * trap the hang guard closed, arriving through a different door.
+ * THIS FUNCTION MUST KEEP FIRING FOR BOTH CLASSES, in all eighteen checkers that make no such
+ * split, and for the ambiguous class in C1 as well. The two questions are not the same question.
+ * G1 and C1 ask WHOSE FAULT the death was, and the answer differs by signal. Every other rule
+ * asks WHAT THE PROBE ESTABLISHED, and the answer is "nothing" whoever sent it: a target killed
+ * halfway through writing help did not produce help, and a target killed before rejecting a flag
+ * did not reject it. The EVIDENCE is void either way; only the BLAME differs. Narrowing this to
+ * the fault signals would hand every checker a pass for a target an outer deadline happened to
+ * kill — the exact `""` === `""` trap the hang guard closed, arriving through a different door.
  */
 export function crashedUnverified(finding: Finder, runs: Observation[]): Finding | null {
   const dead = runs.filter((o) => o.crashed);

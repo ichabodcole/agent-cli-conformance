@@ -66,7 +66,7 @@ export const versionFlagChecker: Checker = {
     // problems — "exited null", "wrote nothing to stdout", "requires configuration" — a FAIL
     // that is three restatements of "it died", and the third of which is an outright false
     // accusation: the hostile-HOME probe did not fail because of HOME. C1's exception does not
-    // reach here. C1 owns a rule about SUCCEEDING, so a crash falsifies it directly; D1's
+    // reach here. C1 owns a rule about SUCCEEDING, so a fault crash falsifies it directly; D1's
     // clauses are about what `--version` reports and under what conditions, and a target that
     // fell over reported nothing under any conditions.
     const crashed = crashedUnverified(finding, runs);

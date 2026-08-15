@@ -1,4 +1,5 @@
-import { findingFor, truncatedUnverified } from "../../finding.ts";
+import { crashedUnverified, findingFor, truncatedUnverified } from "../../finding.ts";
+import { isFaultSignal } from "../../signals.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -18,6 +19,12 @@ export const helpExitsZeroChecker: Checker = {
   // ignores the flag then runs that invocation for real, which is the L1 boundary A2 and A4
   // ran into first. A bare `help` subcommand is the same problem: `Discovery` cannot tell a
   // help verb from any other verb before running it.
+  //
+  // UNCHANGED by the signal split below, and the reason is the one G1's own list records: a gap
+  // qualifies a PASS, and narrowing the crash exception did not move a single observation into
+  // the pass branch. Help that ended on any signal, attributable or not, still never passes here
+  // — it fails or it reports the gap. So there is no new hole in what a `pass` means, and none
+  // of the three below closed.
   coverage: "partial",
   coverageGaps: [
     "nested help is not probed at L0",
@@ -40,9 +47,13 @@ export const helpExitsZeroChecker: Checker = {
       return finding("unverified", "probes were not recorded", []);
     }
 
-    // C1 owns HANGS (a help path that never returns has not succeeded) but not truncation: a
-    // target killed at the output limit was writing, not failing to, and the exit code C1 turns
-    // on is one we prevented it from choosing.
+    // WHAT C1 OWNS, and what it does not, on the three ways a probe ends without an exit code.
+    // HANGS: owned — a help path that never returns has not succeeded, and the deadline was
+    // ours, imposed and observed. FAULT SIGNALS: owned, below — the fault is the target's own.
+    // TRUNCATION: not owned — a target killed at the output limit was writing, not failing to,
+    // and the exit code C1 turns on is one we prevented it from choosing. An AMBIGUOUS signal is
+    // not owned either, for the truncation reason rather than the hang one: the event that ended
+    // the probe is not the kit's to describe. See below.
     const cut = truncatedUnverified(finding, observed);
     if (cut) return cut;
 
@@ -59,26 +70,51 @@ export const helpExitsZeroChecker: Checker = {
         problems.push(`${label} hung instead of exiting`);
         continue;
       }
-      // THE ONE EXCEPTION to `crashedUnverified` in the catalogue, and it is the same sentence
-      // as the hang above wearing a different ending: help that dies on a signal has not
-      // succeeded. That is a violation of the thing C1 asserts, not a gap in the evidence for
-      // it, so this reports `fail` where the other eighteen report `unverified`. It stays an
-      // exception about SUCCESS — A1 and D2 assert that the tool REJECTED something, and a
-      // crash is not a rejection, so the same reasoning does not carry to them.
+      // THE EXCEPTION to `crashedUnverified` in the catalogue, and it is SCOPED to the signals
+      // G1 is willing to attribute. A FAULT signal is the same sentence as the hang above
+      // wearing a different ending: help that segfaulted has not succeeded, the fault is the
+      // target's own, and that is a violation of the thing C1 asserts rather than a gap in the
+      // evidence for it. An AMBIGUOUS one is not C1's to call — C1 cannot attribute what G1 has
+      // just declined to attribute, and a `--help` an outer CI deadline killed is byte-for-byte
+      // a `--help` a perfectly conforming tool would produce under that deadline.
+      //
+      // Failing on any signal is what this file used to do, and it is why the false positive
+      // R6-2 identified survived the fix that was supposed to remove it: G1 stopped failing
+      // SIGTERM and C1 carried on, so the report read "cannot attribute the signal" on one line
+      // and "died on SIGTERM instead of exiting" on the next. Those cannot both stand.
+      //
+      // The exception stays one about SUCCESS — A1 and D2 assert that the tool REJECTED
+      // something, and no signal is a rejection, so not even the fault half carries to them.
       //
       // Reported before the `exitCode !== 0` line rather than through it, because that line
       // would render as "exited null" — a status the target never chose, describing the wrong
       // event.
       if (o.crashed) {
-        problems.push(`${label} died on ${o.signal} instead of exiting`);
+        if (isFaultSignal(o.signal)) {
+          problems.push(`${label} died on ${o.signal} instead of exiting`);
+        }
         continue;
       }
       if (o.exitCode !== 0) problems.push(`${label} exited ${o.exitCode}`);
       if (o.stdout.trim() === "") problems.push(`${label} wrote nothing to stdout`);
     }
 
-    return problems.length
-      ? finding("fail", problems.join("; "), evidence)
-      : finding("pass", "root --help and -h both exit 0 with non-empty stdout", evidence);
+    // FAULT BEATS AMBIGUOUS, and the order carries the argument — the same precedence
+    // `does-not-crash.ts` decides on one line earlier. An observed violation is a COMPLETED
+    // observation of something the target did; a probe that ended on an unattributable signal is
+    // a completed observation of something, with no way to say whose. The second does not undo
+    // the first: help that exited 2 exited 2, whatever an outer deadline did to the other probe.
+    if (problems.length) return finding("fail", problems.join("; "), evidence);
+
+    // Reached only when nothing failed, so every crashed probe left here is an ambiguous one —
+    // and this is deliberately the catalogue's own helper rather than a C1-shaped sentence. On
+    // this class C1 has exactly the position the other eighteen rules have: the probe established
+    // nothing. Called AFTER the loop rather than before it for the reason `truncatedUnverified`
+    // is in the checkers that detect a violation first — an unverified probe cannot erase a
+    // violation another probe already demonstrated.
+    const crashed = crashedUnverified(finding, observed);
+    if (crashed) return crashed;
+
+    return finding("pass", "root --help and -h both exit 0 with non-empty stdout", evidence);
   },
 };
