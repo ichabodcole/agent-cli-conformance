@@ -8,9 +8,13 @@
  * it does NOT judge — several of the worst habits (abstraction stacking, undeclared compression)
  * are invisible to a regex, and the skill's reading pass exists to catch those.
  *
- * The aggregate matters more than any single flag. One long sentence is fine; a p90 of 34 is a
- * register. A reader working line by line cannot see a distribution, which is exactly why this
- * runs before the reading pass rather than instead of it.
+ * RUN THIS AFTER READING, NOT BEFORE. An earlier version of this comment claimed the opposite. A
+ * reading pass over a dense page, with no tooling, found twelve problems and nine were catchable
+ * from the sentence alone — so reading is the primary instrument, and numbers read first only
+ * anchor you to length, which is not what costs the reader.
+ *
+ * What the aggregate is good for is register: one long sentence is a sentence, a p90 of 34 is a
+ * habit.
  */
 import { readFileSync } from "node:fs";
 
@@ -81,13 +85,26 @@ const sentences = (t: string): string[] =>
     .map((s) => s.replace(/\s+/g, " ").trim())
     .filter((s) => s.split(" ").length > 3);
 
-/** Regex-visible habits. Each is a strong hint, not a verdict — read before you cut. */
+/**
+ * Regex-visible habits. Each is a strong hint, not a verdict — read before you cut.
+ *
+ * Ordered by how much evidence stands behind them. The trailing participial clause is first
+ * because it is the largest single deviation anyone has measured between instruction-tuned models
+ * and matched human text — 2-5x the human rate, across six models and 12,000 texts (Reinhart et
+ * al., PNAS 2025). Nominalisation is last and labelled, because the same paper measures it at
+ * 1.5-2x while the evidence that nominalised prose is HARDER TO READ is three studies from
+ * 1963-98, all confounded with word length and frequency. It identifies the register; it does not
+ * establish a cost. Do not rewrite a sentence on its say-so alone.
+ */
 const TICS: Array<[name: string, re: RegExp]> = [
+  // "…rejected the flag, naming the offending token." A comma, an -ing verb, and no further
+  // comma before the end. Bounded to avoid matching a mid-sentence aside that later resumes.
+  ["trailing participial clause", /,\s+\w+ing\b[^,;:.!?]{0,80}[.!?]/g],
   ["antithesis closer (not X, but/it's Y)", /\bnot\b[^.;]{2,60}?[,;]\s*(but|it'?s|it is)\b/gi],
   ["which is exactly / precisely", /\bwhich is (exactly|precisely)\b/gi],
   ["definitional inversion (X is not Y, it is Z)", /\bis not\b[^.;]{2,60}?[,;]\s*it is\b/gi],
   ["em-dash pivot carrying the point", /—[^—.]{15,}$/gm],
-  ["nominalisation", /\b\w{4,}(tion|ment|ance|ence|ity|ness)\b/gi],
+  ["nominalisation — a tell, not a defect", /\b\w{4,}(tion|ment|ance|ence|ity|ness)\b/gi],
 ];
 
 const LONG = 30; // a sentence past this should usually be two
@@ -98,13 +115,17 @@ const rows: Array<{ file: string; n: number; mean: number; p90: number; max: num
 /**
  * With more than one file, lead with a ranked table — this is a MINIMAP.
  *
- * The same reason an editor opens a minimap: to see shape and pick where to look, not to judge
- * the terrain. Run over the whole wiki it says "rule pages are the heaviest class here", which no
- * per-page read surfaces and which is a real finding about the corpus. Run over one file it says
- * almost nothing you would not learn faster by reading it.
+ * The same reason an editor opens a minimap: to see shape and pick where to look, not to judge the
+ * terrain. Over many files it says "start here"; over one file it says less than reading does.
  *
  * It does not rank by difficulty and cannot. The page a human reported struggling with sits
  * mid-table; the top entry reads cleanly. Length is shape, not cost.
+ *
+ * A previous version of this comment claimed the ranking had found that rule pages were the
+ * heaviest class in the wiki. That was three stacked parsing bugs inflating exactly the pages
+ * carrying the most bullet lists. Corrected, the corpus has no heaviest class. Left recorded
+ * because the failure is the instrument's most likely one: a ranking is a claim about the corpus
+ * only after you have checked it is not a claim about the parser.
  */
 for (const file of process.argv.slice(2)) {
   const prose = proseOf(readFileSync(file, "utf8"));
@@ -131,7 +152,7 @@ for (const file of process.argv.slice(2)) {
     const hits = [...prose.matchAll(re)];
     if (!hits.length) continue;
     const per100 = ((hits.length / words) * 100).toFixed(1);
-    const note = name === "nominalisation" ? ` (${per100}/100 words)` : "";
+    const note = name.startsWith("nominalisation") ? ` (${per100}/100 words)` : "";
     console.log(`  ${String(hits.length).padStart(3)}  ${name}${note}`);
   }
 

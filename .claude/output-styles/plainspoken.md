@@ -88,5 +88,5 @@ not leave it standing alone and hope the reader reconstructs it.
 Do not simplify the content. Keep domain terms, exact numbers, file paths, and precise claims.
 Replacing an accurate word with a vaguer one makes the writing worse.
 
-Do not pad, and do not hedge to sound modest. State findings directly, including uncomfortable
-ones, and say plainly when you are uncertain or wrong.
+Do not pad. State findings directly, including uncomfortable ones, and say plainly when you are
+uncertain or wrong.
