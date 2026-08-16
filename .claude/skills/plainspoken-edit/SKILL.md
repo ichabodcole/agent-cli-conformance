@@ -1,6 +1,6 @@
 ---
 name: plainspoken-edit
-description: Editorial pass over a draft for prose density. Use after a document is written, when the user asks to edit, review, tighten, or clarify prose, or says a page is hard to read, dense, or needs rereading. Finds compressed and periodic sentences, names the mechanism, and proposes rewrites that keep the claim exactly.
+description: Editorial pass over a draft for prose density. Use after a document is written, when the user asks to edit, review, tighten, or clarify prose, or says a page is hard to read, dense, or needs rereading. Finds compressed and hard-to-parse sentences, names the mechanism, and proposes rewrites that keep the claim exactly.
 ---
 
 # Plainspoken edit
@@ -8,72 +8,54 @@ description: Editorial pass over a draft for prose density. Use after a document
 An editorial pass over prose someone has already written. It finds sentences that cost the reader
 a second pass, names why, and proposes a rewrite.
 
-This is the review half of a pair. The `Plainspoken` output style shapes prose while it is being
-written; this skill catches what survives. Priming shifts a distribution and does not verify one,
-so both are needed.
-
 **Do not use this to write a first draft.** It edits existing text.
 
 ## Read first. Measure second.
 
-This order was tested, and it is the reverse of what the skill originally said.
+This order was tested and it is the reverse of what this skill first said. A reading pass over a
+dense page, with no tooling, found twelve problems; nine were catchable from the sentence alone.
+**Reading is the primary instrument.**
 
-A reading pass over a dense page, with no measurement and no tooling, found twelve problems. Nine
-were catchable from the sentence alone. **Reading is the primary instrument**; do not skip it and
-do not run anything before it.
+Read the document in order, judging each sentence on its own. Most of what you find is structural
+and obvious once seen: a verb arriving too late, a modifier attached to the wrong host, two finite
+verbs adjacent so the first parse takes the wrong one as the main clause.
 
-Read the whole document in order, judging each sentence on its own. Most of what you find will be
-structural and obvious once seen: a verb that arrives too late, a modifier attached to the wrong
-host, two finite verbs adjacent so the first parse takes the wrong one as the main clause.
-
-Then measure, for the things reading alone misses:
+Then measure:
 
 ```bash
 bun .claude/skills/plainspoken-edit/measure.ts <file.md> [...]
 ```
 
-It reports the sentence-length distribution, regex-visible habits, nominalisation density, and
-every sentence over 30 words. It rewrites nothing and judges nothing. It exits non-zero when p90
-is over 28.
+It reports sentence-length distribution, regex-visible habits and nominalisation density. It
+rewrites nothing and judges nothing.
 
-**Measure after reading, not before, so the numbers do not anchor you.** Length is a weak proxy:
-in the test, none of the twelve findings was flagged by length, and the clearest sentence in the
-document was also one of the longest.
+**Run it after reading, so the numbers do not anchor you — and treat it as a minimap.** It shows
+the shape of a corpus, not the cost of a sentence. Over many files it says "look here first"; over
+one file it says less than reading does. In the test, none of the twelve findings was a long
+sentence, and the clearest sentence in the document was among the longest.
 
-## What only accumulation reveals
+## The mechanisms
 
-A third pass, after reading and measuring. These are **habits** rather than defective sentences,
-and no single sentence shows them:
+Name a mechanism for each finding. If none fits, say so and describe what you see.
 
-- **A recurring gesture with a different referent each time.** One page divided things into
-  "halves" four times, each a different division, so "the second half of…" had become a general
-  wave at two-part structure rather than a pointer to one.
-- **A term used in two senses.** The same page made `target` a technical term meaning the CLI
-  under test, then reused it for the ordinary sense. Each sentence was fine; the collision was not.
-- **A coined word used before it is defined**, where the gap is wide enough that only repetition
-  makes the forward reference visible.
-- **Definite articles on antecedents not yet delivered** — "the ratchet" before the ratchet exists.
-- **A cadence.** Ending most subsections on a maxim trains the reader to hold every paragraph open
-  expecting the point last, which makes genuinely periodic sentences inside those paragraphs cost
-  more than they would alone.
+**1. Long dependencies** — material between a subject and its verb, or between a verb and its
+object. This is the best-evidenced cause of reading difficulty there is; in one measured study it
+inhibited recall more than any other feature tested, for experienced readers. Fix by moving the
+interruption to the end.
 
-Accumulation also changes **diagnosis**, not only detection: in the test, one finding moved from
-"mildly abstract" to "undeclared compression" once the reader had seen the pattern it belonged to.
+Two things you might list separately belong here. **Abstract nouns** ("rejection of the flag was
+performed by the parser") hurt mostly by pushing the verb away — the mechanism is locality, not
+nominality, and the direct evidence that nominalisation itself is harder to read is thin. **Long
+sentences** are not the problem either: length correlates with distance but does not cause the
+cost, and splitting a sentence to hit a word count drops the connective and makes the reader infer
+the logic.
 
-## The five mechanisms
+**2. The point arrives last** — the reader holds everything in suspension until the final clause.
+Fix by stating the point first. Weaker evidence than (1), and contested: in some constructions
+more preceding material makes the ending _easier_. Flag a run of these, not a single one.
 
-Each flagged sentence gets a named diagnosis. Guessing is not allowed; if none of these fits, say
-so and describe what you see instead.
-
-| Mechanism                  | What it is                                                                 | The fix                                   |
-| -------------------------- | -------------------------------------------------------------------------- | ----------------------------------------- |
-| **Periodic structure**     | the main clause arrives last, so the reader holds everything in suspension | state the point first, then the support   |
-| **Center-embedding**       | material sits between a subject and its verb                               | move the interruption to the end          |
-| **Nominal style**          | actions written as abstract nouns                                          | give the action back its verb             |
-| **Abstraction stacking**   | every noun is abstract, so nothing can be pictured                         | anchor one concrete thing early           |
-| **Undeclared compression** | a short phrase stands in for a long argument, without saying so            | expand it, or link it to a glossary entry |
-
-The first four are visible in the sentence. The fifth is not, and it is the one that matters most.
+**3. Undeclared compression** — a short phrase stands in for a long argument without saying so.
+No published evidence either way; this is our own category, and the one that matters most here.
 
 ## Undeclared compression, and how to spot it
 
@@ -81,55 +63,66 @@ An acronym announces itself. Read "TDD" and you know a definition exists to look
 phrase hides the same compression behind ordinary words, so a confused reader cannot tell whether
 they lack context or are reading badly. They reread, then assume the fault is theirs.
 
-The test: **would this sentence be improved by being an acronym?**
+The test: **would this sentence be improved by being an acronym?** If yes, it is carrying a
+definition — expand it where it appears, or point it at a glossary entry. A compressed line may
+stay if it earns its place; pay for it immediately with a concrete instance in the next sentence.
 
-If yes, it is carrying a definition. Expand it where it appears, or point it at a glossary entry.
-If no, it is ordinary prose and the other four mechanisms apply.
+## What only accumulation reveals
 
-A compressed line is allowed to stay when it earns its place. Keep it, then pay for it
-immediately with a concrete instance in the next sentence.
+A third pass, after reading and measuring. These are habits, not defective sentences, and no
+single sentence shows them:
+
+- **A recurring gesture with a different referent each time** — one page divided things into
+  "halves" four times, each a different division.
+- **A term used in two senses** — the same page made `target` mean the CLI under test, then reused
+  it for the ordinary sense.
+- **A coinage used before it is defined**, where only repetition makes the forward reference
+  visible.
+- **Definite articles on antecedents not yet delivered** — "the ratchet" before the ratchet exists.
+- **A cadence** — ending most subsections on a maxim trains the reader to hold every paragraph
+  open expecting the point last.
+
+Accumulation also changes diagnosis: one finding moved from "mildly abstract" to "undeclared
+compression" once the pattern it belonged to was visible.
 
 ## What not to change
 
-**Do not change the claim.** A rewrite that alters what a sentence asserts is a failed rewrite,
-not an improved one. Density is a separate axis from accuracy, and a page can be exactly right and
-still cost too much to read.
+**Do not change the claim.** A rewrite that alters what a sentence asserts has failed. Density is
+a separate axis from accuracy.
 
-**Keep domain terms, numbers, file paths and exact figures.** Technical vocabulary is not the
-problem. Replacing a precise word with a vaguer one makes the document worse.
+**Keep domain terms, numbers, file paths and exact figures.** Replacing a precise word with a
+vaguer one makes the document worse.
 
-**Do not flag everything.** A pass that rewrites every sentence is noise, and it buries the
-sentences that actually cost something. Aim for the worst ten in a long document.
+**Do not flag everything.** A pass that rewrites every sentence buries the sentences that cost
+something. Aim for the worst ten in a long document.
 
-**Leave quoted material alone.** Blockquotes carry other people's words, or specimens shown to be
-criticised. The measurement script already excludes them.
+**Leave quoted material alone.** The measurement script already excludes blockquotes.
 
 ## Density is appropriate in some places
 
-Judge against the page's Diátaxis type, which is in the frontmatter as `type` where the document
-has one.
+Judge against the page's Diátaxis `type` where it has one.
 
-| Type                  | Reader                       | Aphorism                                                                                        |
-| --------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------- |
-| explanation, decision | studying                     | appropriate — compression aids recall                                                           |
-| reference, rule       | consulting mid-task          | definitional lines only; the body describes and only describes                                  |
-| how-to                | working, attention elsewhere | remove it                                                                                       |
-| tutorial              | learning, low confidence     | remove it — a tutorial minimises explanation, and an aphorism is explanation at maximum density |
+| Type                  | Reader                       | Compression                                            |
+| --------------------- | ---------------------------- | ------------------------------------------------------ |
+| explanation, decision | studying                     | appropriate — it aids recall                           |
+| reference, rule       | consulting mid-task          | definitional lines only                                |
+| how-to                | working, attention elsewhere | remove it                                              |
+| tutorial              | learning, low confidence     | remove it — a tutorial minimises explanation by design |
 
-The rule of thumb: the further a page sits toward doing rather than studying, the looser and more
-concrete its prose should be.
+The further a page sits toward doing rather than studying, the looser and more concrete its prose
+should be. And note that dense _content_ is a reason to write more plainly, not less: a reader
+spending capacity on new facts has none left for a construction that must also be decoded.
 
 ## Output
 
-Report findings. **Do not edit files unless asked to.**
+Report findings. **Do not edit files unless asked to.** Lead with the register the document is in
+and how that compares to what its type wants, then the findings worst first: the sentence quoted,
+the mechanism named, the rewrite, and what the rewrite preserves if that is not obvious.
 
-Lead with the aggregate — what register is this document in, and how does it compare to what its
-type wants. Then the individual findings, worst first:
+End with what you deliberately left alone. A page that reads densely on purpose is a finding too.
 
-- the sentence, quoted
-- the mechanism, named
-- the rewrite
-- one line on what the rewrite preserves, if that is not obvious
+## What this skill has not shown
 
-End with what you deliberately left alone and why. A page that reads densely on purpose is a
-finding too, and saying so is more useful than silence.
+It has only ever been run on prose already believed to be dense. It has never passed a document
+unchanged, so its false-positive rate is unmeasured — treat a long list of findings on a document
+nobody complained about as a reason to check the skill, not the document.
