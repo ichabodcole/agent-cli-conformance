@@ -14,11 +14,12 @@ falling into silent failures. The contract for maintaining these pages is
 [SCHEMA.md](./SCHEMA.md); the evidence that produced them lives in `research/`, outside this
 wiki.
 
-> **Status: early.** Every rule below is checked at `L0` today, except
-> [A4](./rules/parsing/unexpected-positionals-rejected.md), which declares `L1` and is reported
-> not-applicable until that level exists. The catalogue is not closed —
-> [the roadmap](../roadmap.md) names the families still missing. Sections marked _planned_ are
-> scaffolded, not forgotten.
+> **Status: early.** Every rule below is checked at `L0` today, except two that declare `L1`:
+> [A4](./rules/parsing/unexpected-positionals-rejected.md), whose checker exists and returns a
+> fixed `unverified`, and [B4](./rules/streams/output-is-delivered-whole.md), which has no checker
+> at all — its blocker is the runner rather than the probe level, and its page says so. The
+> catalogue is not closed — [the roadmap](../roadmap.md) names the families still missing.
+> Sections marked _planned_ are scaffolded, not forgotten.
 
 ## Concepts
 
@@ -72,6 +73,7 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | L0    | implemented | partial  | 3    |
 | [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | L0    | implemented | partial  | 4    |
 | [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L0    | implemented | partial  | 4    |
+| [B4](./rules/streams/output-is-delivered-whole.md)                | core       | L1    | planned     | partial  | 2    |
 | [B5](./rules/streams/machine-mode-holds-on-parser-errors.md)      | core       | L0    | implemented | partial  | 6    |
 | [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | L0    | implemented | partial  | 4    |
 | [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | L0    | implemented | partial  | 3    |
@@ -85,7 +87,7 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | L0    | implemented | partial  | 4    |
 | [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | L0    | implemented | partial  | 4    |
 
-22 rules · 0 `complete` · 22 `partial` · 87 named gaps.
+23 rules · 0 `complete` · 23 `partial` · 89 named gaps.
 
 ### Parsing
 
@@ -119,6 +121,9 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 - [B3 — Machine output parses as its declared kind](./rules/streams/machine-output-is-parseable.md)
   — Requiring the whole stdout stream to parse turns any stray debug print into a hard failure
   instead of a code-review question.
+- [B4 — A command delivers every byte it wrote](./rules/streams/output-is-delivered-whole.md) — A
+  payload that stops at the pipe buffer still exits 0 — the caller receives two thirds of an answer
+  with nothing anywhere to say a third is missing.
 - [B5 — Machine mode holds on the parser-error path](./rules/streams/machine-mode-holds-on-parser-errors.md)
   — Machine mode that survives every failure except the parser's fails on the one an agent hits
   most — a wrong flag is the commonest way an agent gets a command wrong.
