@@ -14,9 +14,22 @@
  */
 import { readFileSync } from "node:fs";
 
-/** Prose only. Code, tables, headings, frontmatter and bare link lines are not sentences. */
+/**
+ * Prose only, and UNWRAPPED before anything else is done to it.
+ *
+ * Unwrapping is the step two earlier versions of this file got wrong, in the same way and with
+ * the same consequence. Prettier hard-wraps this corpus at 100 characters, so one list item spans
+ * two or three source lines. Any rule applied line-by-line therefore sees a fragment: a first
+ * attempt merged whole bullet lists into single 182-word pseudo-sentences, and the fix for that
+ * inserted a full stop mid-item ("exit with the same. non-zero code"). Both inflated the length
+ * statistics precisely on the pages carrying the most lists — which are the rule pages — so the
+ * ranking reported the instrument's parsing failure as a property of the corpus.
+ *
+ * So: rebuild blocks first, then measure. A list item is one unit because a reader takes it as
+ * one; a paragraph is one unit for the same reason.
+ */
 function proseOf(md: string): string {
-  return md
+  const stripped = md
     .replace(/^---\n[\s\S]*?\n---\n/, "") // frontmatter
     .replace(/```[\s\S]*?```/g, "") // fenced code
     .replace(/^\s*\|.*$/gm, "") // tables
@@ -25,13 +38,46 @@ function proseOf(md: string): string {
     // style guide — deliberately bad sentences, shown to be criticised — are scored as if the
     // author had written them, and the document is condemned by its own examples.
     .replace(/^\s*>.*$/gm, "")
-    .replace(/^\s*[-*+]\s+/gm, "") // list markers, keeping the text
     .replace(/`[^`\n]*`/g, "CODE"); // inline code is one token, not prose
+
+  const units: string[] = [];
+  let current = "";
+  const flush = () => {
+    const u = current.replace(/\s+/g, " ").trim();
+    // Give every unit a terminator so the sentence splitter cannot run one into the next.
+    if (u) units.push(/[.!?:;]$/.test(u) ? u : `${u}.`);
+    current = "";
+  };
+
+  for (const line of stripped.split("\n")) {
+    if (!line.trim()) {
+      flush();
+      continue;
+    }
+    const item = /^\s*(?:[-*+]|\d+\.)\s+(.*)$/.exec(line);
+    if (item) {
+      flush(); // a marker starts a new unit; the previous one is complete
+      current = item[1] as string;
+    } else {
+      current += ` ${line}`; // a continuation line belongs to the unit above it
+    }
+  }
+  flush();
+  return units.join("\n");
 }
 
+/**
+ * Split within each unit, never across them. `proseOf` has already made every line one unit, and
+ * a sentence cannot span two — a list item is not a continuation of the item above it.
+ *
+ * Splitting the whole blob at once re-merged them, because the lookahead below needs a capital
+ * after the full stop and list items in this corpus start lowercase. That silently undid the
+ * unwrapping and put the 60-word phantoms back.
+ */
 const sentences = (t: string): string[] =>
   t
-    .split(/(?<=[.!?])\s+(?=[A-Z“"'*_[(])/)
+    .split("\n")
+    .flatMap((unit) => unit.split(/(?<=[.!?])\s+(?=[A-Z“"'*_[(])/))
     .map((s) => s.replace(/\s+/g, " ").trim())
     .filter((s) => s.split(" ").length > 3);
 
@@ -47,7 +93,19 @@ const TICS: Array<[name: string, re: RegExp]> = [
 const LONG = 30; // a sentence past this should usually be two
 
 let worstP90 = 0;
+const rows: Array<{ file: string; n: number; mean: number; p90: number; max: number }> = [];
 
+/**
+ * With more than one file, lead with a ranked table — this is a MINIMAP.
+ *
+ * The same reason an editor opens a minimap: to see shape and pick where to look, not to judge
+ * the terrain. Run over the whole wiki it says "rule pages are the heaviest class here", which no
+ * per-page read surfaces and which is a real finding about the corpus. Run over one file it says
+ * almost nothing you would not learn faster by reading it.
+ *
+ * It does not rank by difficulty and cannot. The page a human reported struggling with sits
+ * mid-table; the top entry reads cleanly. Length is shape, not cost.
+ */
 for (const file of process.argv.slice(2)) {
   const prose = proseOf(readFileSync(file, "utf8"));
   const all = sentences(prose);
@@ -61,6 +119,8 @@ for (const file of process.argv.slice(2)) {
   const mean = lens.reduce((a, b) => a + b, 0) / lens.length;
   const words = prose.split(/\s+/).filter(Boolean).length;
   worstP90 = Math.max(worstP90, p(0.9));
+
+  rows.push({ file, n: all.length, mean, p90: p(0.9), max: p(1) });
 
   console.log(`\n${file}`);
   console.log(
@@ -82,6 +142,21 @@ for (const file of process.argv.slice(2)) {
       console.log(`    [${s.split(" ").length}w] ${s.slice(0, 150)}${s.length > 150 ? "…" : ""}`);
     }
   }
+}
+
+if (rows.length > 1) {
+  rows.sort((a, b) => b.p90 - a.p90);
+  const w = Math.max(...rows.map((r) => r.file.length));
+  console.log(`\n${"─".repeat(w + 26)}\nHEAVIEST FIRST — read the top of this list, not all of it\n`);
+  for (const r of rows) {
+    console.log(
+      `  p90 ${String(r.p90).padStart(3)}  mean ${r.mean.toFixed(1).padStart(4)}  max ${String(r.max).padStart(3)}   ${r.file}`,
+    );
+  }
+  const p90s = rows.map((r) => r.p90).sort((a, b) => a - b);
+  console.log(
+    `\n  ${rows.length} files · corpus median p90 ${p90s[Math.floor(p90s.length / 2)]} · heaviest ${p90s.at(-1)}`,
+  );
 }
 
 // Non-zero when the register is heavy overall, so this can gate a draft if someone wants it to.
