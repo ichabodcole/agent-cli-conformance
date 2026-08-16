@@ -16,6 +16,51 @@ const OPTIONS_HEADING = /^\s*(global\s+)?(options|flags)\s*:?\s*$/i;
 const NEXT_HEADING = /^[A-Za-z].*:$/;
 
 /**
+ * The content lines of every block `heading` opens, and whether any such heading was found.
+ *
+ * A BLANK LINE ENDS A BLOCK ONLY AFTER ITS CONTENT HAS STARTED, and that clause is not a
+ * refinement — it is a defect found by execution. A renderer that puts a rule of whitespace under
+ * its section titles, which `anthill` does and which is an ordinary layout, closed the block on
+ * the line after the heading and yielded **zero flags** for a screen that plainly lists them.
+ * Every rule that reads the flag surface — A5's near-miss, A7's value set, D3's advertisement —
+ * silently reported nothing for that target, and each said so in a way that read as a fact about
+ * the target rather than about the parse.
+ *
+ *     OPTIONS
+ *                                  ← layout, not the end of the block
+ *       --format=<text|json>    Output format
+ *                                  ← this one is the end of the block
+ *     COMMANDS
+ */
+function blockLines(lines: string[], heading: RegExp): { content: string[]; found: boolean } {
+  const content: string[] = [];
+  let inBlock = false;
+  let started = false;
+  let found = false;
+  for (const line of lines) {
+    if (heading.test(line)) {
+      inBlock = true;
+      started = false;
+      found = true;
+      continue;
+    }
+    if (!inBlock) continue;
+    const trimmed = line.trim();
+    if (trimmed === "") {
+      if (started) inBlock = false;
+      continue;
+    }
+    if (NEXT_HEADING.test(trimmed)) {
+      inBlock = false;
+      continue;
+    }
+    started = true;
+    content.push(line);
+  }
+  return { content, found };
+}
+
+/**
  * Scoped to a detected Options/Flags block so unrelated `--flags` elsewhere in the help text —
  * a piped example (`mycli list | jq --raw-output`), a docs URL, a flag some OTHER program takes
  * — aren't mistaken for the target's own surface.
@@ -25,23 +70,12 @@ const NEXT_HEADING = /^[A-Za-z].*:$/;
  * exists (just formatted in a way we don't recognize) would be worse than the old unscoped scan.
  */
 function extractFlags(text: string, lines: string[]): string[] {
-  const scoped: string[] = [];
-  let inOptions = false;
-  let foundBlock = false;
-  for (const line of lines) {
-    if (OPTIONS_HEADING.test(line)) {
-      inOptions = true;
-      foundBlock = true;
-      continue;
-    }
-    if (inOptions && (line.trim() === "" || NEXT_HEADING.test(line.trim()))) {
-      inOptions = false;
-      continue;
-    }
-    if (!inOptions) continue;
-    for (const m of line.matchAll(FLAG_RE)) scoped.push(m[1] as string);
+  const { content, found } = blockLines(lines, OPTIONS_HEADING);
+  if (found) {
+    const scoped: string[] = [];
+    for (const line of content) for (const m of line.matchAll(FLAG_RE)) scoped.push(m[1] as string);
+    return [...new Set(scoped)];
   }
-  if (foundBlock) return [...new Set(scoped)];
   return [...new Set([...text.matchAll(FLAG_RE)].map((m) => m[1] as string))];
 }
 
@@ -73,20 +107,10 @@ const FIRST_FLAG = /(?<![\w-])(--[a-z][a-z0-9-]*)/i;
  * piped example (`mycli list | jq -r '.a|.b'`) is full of alternations that belong to another
  * program entirely.
  */
-function extractValueSets(lines: string[], scoped: boolean): Record<string, string[]> {
+function extractValueSets(lines: string[]): Record<string, string[]> {
+  const scan = blockLines(lines, OPTIONS_HEADING);
   const out: Record<string, string[]> = {};
-  let inOptions = !scoped;
-  for (const line of lines) {
-    if (scoped && OPTIONS_HEADING.test(line)) {
-      inOptions = true;
-      continue;
-    }
-    if (scoped && inOptions && (line.trim() === "" || NEXT_HEADING.test(line.trim()))) {
-      inOptions = false;
-      continue;
-    }
-    if (!inOptions) continue;
-
+  for (const line of scan.found ? scan.content : lines) {
     const flag = FIRST_FLAG.exec(line);
     if (!flag?.[1]) continue;
     const after = line.slice((flag.index ?? 0) + (flag[1] as string).length);
@@ -167,18 +191,7 @@ export function parseHelp(text: string): Omit<Discovery, "helpReadable"> {
   const lines = text.split("\n");
 
   const subcommands: string[] = [];
-  let inCommands = false;
-  for (const line of lines) {
-    if (COMMANDS_HEADING.test(line)) {
-      inCommands = true;
-      continue;
-    }
-    // A blank line or a new heading ends the block.
-    if (inCommands && (line.trim() === "" || NEXT_HEADING.test(line.trim()))) {
-      inCommands = false;
-      continue;
-    }
-    if (!inCommands) continue;
+  for (const line of blockLines(lines, COMMANDS_HEADING).content) {
     // Two or more trailing spaces (a description column, "list   List things.") or end-of-line
     // is what separates a real entry from prose that merely starts with a lowercase word inside
     // the block ("list of available flags below") — without it, a stray sentence reads as a verb.
@@ -197,12 +210,7 @@ export function parseHelp(text: string): Omit<Discovery, "helpReadable"> {
   // Same precedence as `extractFlags`: scope to the Options block when there is one, fall back to
   // the whole text when there is not. The JSON branch wins outright, because a document that
   // parses whole is a declaration rather than a layout to guess at.
-  const valueSets =
-    valueSetsFromJson(text) ??
-    extractValueSets(
-      lines,
-      lines.some((l) => OPTIONS_HEADING.test(l)),
-    );
+  const valueSets = valueSetsFromJson(text) ?? extractValueSets(lines);
   return { subcommands, flags, machineModeFlag, valueSets };
 }
 

@@ -81,6 +81,49 @@ describe("parseHelp", () => {
     const d = parseHelp("Commands:\n  db:migrate    Run migrations.\n");
     expect(d.subcommands).toEqual(["db:migrate"]);
   });
+
+  // THE BLANK-LINE DEFECT, found by execution against a real target. A renderer that puts a rule
+  // of whitespace under its section titles closed the block on the line after the heading, so a
+  // screen that plainly lists its flags yielded NOTHING — and A5, A7 and D3 each reported that
+  // absence in words that read as a fact about the target rather than about the parse.
+  test("a blank line under a heading is layout and does not end the block", () => {
+    const help = [
+      "USAGE anthill [OPTIONS] info|convene",
+      "",
+      "OPTIONS",
+      "",
+      "  --format=<text|json>    Output format",
+      "",
+      "COMMANDS",
+      "",
+      "  info    Inspect CLI and project state",
+      "  convene    Report the team board state",
+      "",
+      "Use anthill <command> --help for more information.",
+    ].join("\n");
+    const d = parseHelp(help);
+    expect(d.flags).toEqual(["--format"]);
+    expect(d.valueSets).toEqual({ "--format": ["text", "json"] });
+    expect(d.subcommands).toEqual(["info", "convene"]);
+    expect(d.machineModeFlag).toBe("--format");
+  });
+
+  // ...and a blank line AFTER content still ends it, which is the half that keeps the scoping
+  // honest. Without it the options block would swallow every following section.
+  test("a blank line after content still ends the block", () => {
+    const d = parseHelp(
+      [
+        "Options:",
+        "",
+        "  --loglevel <a|b>   Log level.",
+        "",
+        "Examples:",
+        "  mycli | jq -r '.a|.b'",
+      ].join("\n"),
+    );
+    expect(d.flags).toEqual(["--loglevel"]);
+    expect(d.valueSets).toEqual({ "--loglevel": ["a", "b"] });
+  });
 });
 
 // A7 falsifies the target's OWN declaration, so everything it can assert rests on what is read
