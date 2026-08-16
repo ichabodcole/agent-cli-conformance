@@ -27,7 +27,8 @@ bun .claude/skills/plainspoken-edit/measure.ts <file.md> [...]
 ```
 
 It reports sentence-length distribution, regex-visible habits and nominalisation density. It
-rewrites nothing and judges nothing.
+rewrites nothing, judges nothing, and **always exits zero** — it deliberately produces no pass/fail
+signal, because a green one would read as "the prose is fine" and it cannot support that claim.
 
 **Run it after reading, so the numbers do not anchor you — and treat it as a minimap.** It shows
 the shape of a corpus, not the cost of a sentence. Over many files it says "look here first"; over
@@ -92,6 +93,25 @@ single sentence shows them:
 Accumulation also changes diagnosis: one finding moved from "mildly abstract" to "undeclared
 compression" once the pattern it belonged to was visible.
 
+## What no measurement can see, and you must
+
+Every mechanism above is sentence-level. These are not, no tool detects them, and on instructional
+prose they usually cost more:
+
+- **Context dragged in.** Material that belongs to another document, or to the history of how this
+  one came to be written. A rule page carrying the story of a bug already fixed; a roadmap
+  adjudicating against a review the reader cannot open. It reads as thoroughness and it is work
+  handed to the reader.
+- **Unnecessary explanation.** The reader is told why before they have any use for it, or told
+  twice — once plainly and once more elegantly.
+- **A promise the page does not keep.** The heading says what is missing; the section narrates what
+  was done.
+- **A scaffold taught and then abandoned.** Once a reader learns a section shape, every departure
+  costs a re-derivation.
+
+Ask of each section: **who is this for, and what do they do with it?** If the answer is "someone
+who already knows the history", it belongs somewhere else.
+
 ## What not to change
 
 **Do not change the claim.** A rewrite that alters what a sentence asserts has failed. Density is
@@ -130,6 +150,7 @@ End with what you deliberately left alone. A page that reads densely on purpose 
 
 ## What this skill has not shown
 
-It has only ever been run on prose already believed to be dense. It has never passed a document
-unchanged, so its false-positive rate is unmeasured — treat a long list of findings on a document
-nobody complained about as a reason to check the skill, not the document.
+It has mostly been run on prose already believed to be dense, so its false-positive rate is barely
+measured. It has now passed exactly one document unchanged — `bare-invocation-is-a-usage-error.md`,
+read closely and found to need nothing. One is not calibration. Treat a long list of findings on a
+document nobody complained about as a reason to check the skill, not the document.

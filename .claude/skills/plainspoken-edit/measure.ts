@@ -180,7 +180,20 @@ if (rows.length > 1) {
   );
 }
 
-// Non-zero when the register is heavy overall, so this can gate a draft if someone wants it to.
-// Deliberately keyed on p90 rather than max: one long sentence is a sentence, a high p90 is a
-// habit, and only the habit is worth failing over.
-process.exit(worstP90 > 28 ? 1 : 0);
+console.log("\n  Numbers only. Nothing here is a verdict — read the documents.\n");
+
+// EXITS ZERO ALWAYS, AND THAT IS THE POINT.
+//
+// An earlier version exited non-zero above a p90 threshold, "so this can gate a draft if someone
+// wants it to". That is the mechanism by which a tool becomes the answer: give a thing a pass/fail
+// status and it gets wired into a gate, and a green gate reads as "the prose is fine".
+//
+// It would not mean that. Reading a dense page with no tooling found twelve problems and none of
+// them was a long sentence; the clearest sentence in that document was among the longest. This
+// script cannot see a dragged-in context, an unnecessary explanation, a term that shifts meaning
+// between sections, or a conclusion with its reasoning removed — which is most of what actually
+// costs a reader.
+//
+// A green verdict that overstates what was checked is the exact defect this repository exists to
+// catch in other tools. It has no business being built into this one.
+process.exit(0);
