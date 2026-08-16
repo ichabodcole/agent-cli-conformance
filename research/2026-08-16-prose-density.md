@@ -34,6 +34,52 @@ This wiki is full of it, by design and often to good effect:
 Naming the register does not explain the cost, though. "Aphoristic" describes flavour. The reread
 has mechanical causes, and those are separable, teachable and measurable.
 
+### The real harm: compression that does not declare itself
+
+This is the sharpest framing available, and it reframes the whole problem.
+
+Both an acronym and an aphorism compress a long explanation into a short token. The difference is
+what each one tells the reader about itself.
+
+**An acronym announces its own compression.** Read `TDD` and you know instantly that something has
+been folded up, that you are not expected to derive it, and that there is a definition to look up.
+The reader's confusion is correctly attributed — to missing context, not to a failure of reading.
+
+**An aphorism hides its compression.** _"A probe that could not run is not a probe that
+succeeded"_ arrives dressed as ordinary English. Every word is common. The grammar is simple. So a
+reader who does not already hold the lineage behind it — the vacuous-pass defect, the nine rules
+that passed against a segfault, the distinction between an absent verdict and a negative one —
+has no signal that anything was compressed at all. They reread. Then they doubt themselves.
+
+**That misattribution is the harm.** Not the density itself: the fact that the reader cannot tell
+whether they are missing context or simply reading badly. A confused reader facing `TDD` looks it
+up. A confused reader facing an aphorism concludes they are slow.
+
+Three consequences follow:
+
+- **Memorable and comprehensible are different properties**, and optimising for the first can cost
+  the second. "Do you remember it" and "do you know what it means" have different answers, and the
+  writing that scores best on the first is often the writing that scores worst on the second.
+- **A poem earns its rereads; technical prose does not.** In a poem, multiple passes and multiple
+  simultaneous readings are the point — ambiguity is the medium. In a specification, exactly one
+  reading is wanted, and a sentence that supports several is defective no matter how well made.
+- **If a compressed line must be kept, it needs a definition, not just context.** Which is
+  precisely what a glossary term is — and it is why the glossary work matters beyond navigation.
+  A compressed phrase linked to a glossary entry becomes honest: it now declares itself the way an
+  acronym does.
+
+The practical test: **would this sentence be improved by being an acronym?** If yes, the phrase is
+carrying a definition and should either be expanded in place or given a glossary entry to point
+at. If no, it is genuinely just prose, and the ordinary density mechanisms below apply.
+
+### The cost this actually imposes
+
+Worth stating plainly, because it is the reason this document exists rather than an aesthetic
+preference. Prose generated quickly and then studied slowly is not a finished deliverable — it is
+a **deferred cost, disguised as a completed one.** The writing looks done. The understanding has
+been postponed and moved onto the reader, and the apparent throughput gain is repaid with
+interest the first time anyone has to act on the page.
+
 ## 2. The mechanisms
 
 | Mechanism                     | What it is                                                                           | Why it costs                                                                      |
@@ -170,6 +216,33 @@ therefore invisible at the moment of writing.
 can only be documented gets ignored, and that a rule which cannot be mechanically checked does
 not get to be a rule. A style guide read before writing is layer 3. A review pass against
 measurable properties is layer 2. This repository exists because layer 3 loses.
+
+### A third mechanism: output styles
+
+Claude Code supports **output styles** — markdown documents, built-in or custom, that shape how
+the agent writes. Nothing is configured in this repository today (no `output-styles/` directory
+at either user or project scope, and no `outputStyle` setting).
+
+This does not fit the three-layer model cleanly, and the misfit is the interesting part. It makes
+nothing unrepresentable, so it is not layer 1. It is not a check, so it is not layer 2. It is
+layer 3 **that applies itself** — documented guidance, injected rather than looked up.
+
+That is a real upgrade, because layer 3's characteristic failure is not that the advice is wrong.
+It is that nobody reads it at the moment of writing. An output style removes that failure without
+becoming a check, which makes it the cheapest intervention available and the weakest guarantee.
+
+It also targets the right thing. The behaviour under discussion is reflexive: absent instruction,
+a model writes documentation the way its training says documentation sounds, and that prior is
+aphoristic because good technical writing frequently is. A style read once loses to that prior. A
+style present in every turn competes with it continuously.
+
+The register to ask for is worth stating directly, because "be clearer" is not actionable:
+**plain, spoken, and finished in one pass** — a sentence a competent colleague would say out loud,
+not one built to be quoted. No line optimised for memorability at the cost of a second reading.
+
+**None of this removes the review step.** Priming shifts a distribution; it does not verify one,
+and the tic is only visible in aggregate. Expect an output style to reduce the rate and expect
+review to catch what survives.
 
 ## 8. What comes next
 
