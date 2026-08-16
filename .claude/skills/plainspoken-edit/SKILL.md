@@ -55,7 +55,14 @@ Fix by stating the point first. Weaker evidence than (1), and contested: in some
 more preceding material makes the ending _easier_. Flag a run of these, not a single one.
 
 **3. Undeclared compression** — a short phrase stands in for a long argument without saying so.
-No published evidence either way; this is our own category, and the one that matters most here.
+The one that matters most here, and it is not a new category. Aristotle's name for it is the
+**maxim** (_gnome_): "the premises or conclusions of enthymemes **without the syllogism**" —
+a conclusion with its reasoning removed.
+
+He also explains why it works, which is the whole problem. A maxim pleases because the speaker
+"hits upon the opinions which they specially hold" — it lands on a reader who **already holds the
+argument**. For a reader who does not, the satisfying form arrives and the content does not, and
+nothing in the sentence tells them which of the two happened to them.
 
 ## Undeclared compression, and how to spot it
 
