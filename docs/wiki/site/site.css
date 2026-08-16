@@ -1,0 +1,859 @@
+/* The wiki reading surface.
+ *
+ * TWO LAYERS OF TOKENS, and no component ever reaches past the second one:
+ *
+ *   primitives  --gray-100, --blue-600   what the colour IS
+ *   semantic    --color-text, --color-border   what the colour is FOR
+ *
+ * Every rule below the token block references the semantic layer only. Theming is then a
+ * remap of a dozen roles, not an edit of two hundred declarations — and `assertTokenDiscipline`
+ * in `tokens.ts` FAILS THE BUILD if a colour literal appears outside the block delimited by the
+ * `tokens:start` / `tokens:end` markers. The claim is checked, not asserted.
+ *
+ * Roles are named by function, never by hue: `--color-danger`, not `--color-red`. A dark theme
+ * is free to move a role off its light-mode hue, and a name describing the hue would become a
+ * lie the moment it did.
+ *
+ * Three theme states, because two is a bug: an explicit `light`, an explicit `dark`, and the
+ * absence of `data-theme` meaning "follow the system". The dark media query is guarded with
+ * `:root:not([data-theme="light"])` so an explicit light choice beats a dark OS — an unguarded
+ * media block is the classic way a theme selector appears to do nothing.
+ */
+
+/* == tokens:start == */
+
+:root {
+  /* --- primitives: the raw palette ---------------------------------------------------- */
+  --gray-0: #ffffff;
+  --gray-25: #fbfbfa;
+  --gray-50: #f5f5f4;
+  --gray-100: #ebeae8;
+  --gray-200: #dcdad6;
+  --gray-300: #c2bfb9;
+  --gray-400: #9a958d;
+  --gray-500: #736f68;
+  --gray-600: #55524c;
+  --gray-700: #3b3936;
+  --gray-800: #262523;
+  --gray-900: #171615;
+  --gray-950: #0e0d0d;
+
+  --blue-100: #dbeafe;
+  --blue-300: #93c5fd;
+  --blue-600: #1d4ed8;
+  --blue-700: #1e40af;
+
+  --amber-100: #fdf0d5;
+  --amber-300: #f2c66b;
+  --amber-600: #94620a;
+  --amber-700: #6f4906;
+
+  --green-100: #d9f0e0;
+  --green-300: #7fc99a;
+  --green-600: #17683c;
+  --green-700: #0f4f2d;
+
+  --red-100: #fbdedb;
+  --red-300: #f0a49c;
+  --red-600: #a32a1c;
+  --red-700: #7d2015;
+
+  --violet-100: #e8e2fb;
+  --violet-300: #b8a7f0;
+  --violet-600: #5b3fbe;
+  --violet-700: #452e96;
+
+  /* --- semantic roles: light (the complete set; every token defined here) -------------- */
+  --color-canvas: var(--gray-25);
+  --color-surface: var(--gray-0);
+  --color-surface-raised: var(--gray-50);
+  --color-surface-sunken: var(--gray-100);
+
+  --color-text: var(--gray-800);
+  --color-text-strong: var(--gray-900);
+  --color-text-muted: var(--gray-500);
+  --color-text-inverse: var(--gray-0);
+
+  --color-border: var(--gray-200);
+  --color-border-strong: var(--gray-300);
+
+  --color-link: var(--blue-600);
+  --color-link-visited: var(--violet-600);
+  --color-focus: var(--blue-600);
+
+  --color-code-bg: var(--gray-100);
+  --color-code-text: var(--gray-800);
+  --color-codeblock-bg: var(--gray-50);
+  --color-codeblock-border: var(--gray-200);
+
+  --color-nav-active-bg: var(--blue-100);
+  --color-nav-active-text: var(--blue-700);
+
+  --color-accent-bar: var(--blue-300);
+  --color-quote-bar: var(--gray-300);
+
+  /* Badge roles. Named for the claim they carry, so a theme can move the hue freely. */
+  --color-neutral-bg: var(--gray-100);
+  --color-neutral-text: var(--gray-600);
+  --color-neutral-border: var(--gray-200);
+
+  --color-critical-bg: var(--red-100);
+  --color-critical-text: var(--red-700);
+  --color-critical-border: var(--red-300);
+
+  --color-advisory-bg: var(--blue-100);
+  --color-advisory-text: var(--blue-700);
+  --color-advisory-border: var(--blue-300);
+
+  --color-affirm-bg: var(--green-100);
+  --color-affirm-text: var(--green-700);
+  --color-affirm-border: var(--green-300);
+
+  --color-caution-bg: var(--amber-100);
+  --color-caution-text: var(--amber-700);
+  --color-caution-border: var(--amber-300);
+
+  --color-notable-bg: var(--violet-100);
+  --color-notable-text: var(--violet-700);
+  --color-notable-border: var(--violet-300);
+
+  /* --- spacing, type, layout ----------------------------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 1.75rem;
+  --font-size-3xl: 2.125rem;
+
+  --line-height-tight: 1.25;
+  --line-height-base: 1.65;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+
+  --measure: 72ch;
+  --sidebar-width: 19rem;
+
+  --font-body:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* System dark. Guarded, so an explicit `light` choice still wins on a dark machine. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-canvas: var(--gray-950);
+    --color-surface: var(--gray-900);
+    --color-surface-raised: var(--gray-800);
+    --color-surface-sunken: var(--gray-800);
+
+    --color-text: var(--gray-200);
+    --color-text-strong: var(--gray-0);
+    --color-text-muted: var(--gray-400);
+    --color-text-inverse: var(--gray-900);
+
+    --color-border: var(--gray-700);
+    --color-border-strong: var(--gray-600);
+
+    --color-link: var(--blue-300);
+    --color-link-visited: var(--violet-300);
+    --color-focus: var(--blue-300);
+
+    --color-code-bg: var(--gray-800);
+    --color-code-text: var(--gray-100);
+    --color-codeblock-bg: var(--gray-800);
+    --color-codeblock-border: var(--gray-700);
+
+    --color-nav-active-bg: var(--blue-700);
+    --color-nav-active-text: var(--gray-0);
+
+    --color-accent-bar: var(--blue-600);
+    --color-quote-bar: var(--gray-600);
+
+    --color-neutral-bg: var(--gray-800);
+    --color-neutral-text: var(--gray-300);
+    --color-neutral-border: var(--gray-600);
+
+    --color-critical-bg: var(--red-700);
+    --color-critical-text: var(--red-100);
+    --color-critical-border: var(--red-600);
+
+    --color-advisory-bg: var(--blue-700);
+    --color-advisory-text: var(--blue-100);
+    --color-advisory-border: var(--blue-600);
+
+    --color-affirm-bg: var(--green-700);
+    --color-affirm-text: var(--green-100);
+    --color-affirm-border: var(--green-600);
+
+    --color-caution-bg: var(--amber-700);
+    --color-caution-text: var(--amber-100);
+    --color-caution-border: var(--amber-600);
+
+    --color-notable-bg: var(--violet-700);
+    --color-notable-text: var(--violet-100);
+    --color-notable-border: var(--violet-600);
+  }
+}
+
+/* Explicit dark, so the choice wins on a light machine too. */
+:root[data-theme="dark"] {
+  --color-canvas: var(--gray-950);
+  --color-surface: var(--gray-900);
+  --color-surface-raised: var(--gray-800);
+  --color-surface-sunken: var(--gray-800);
+
+  --color-text: var(--gray-200);
+  --color-text-strong: var(--gray-0);
+  --color-text-muted: var(--gray-400);
+  --color-text-inverse: var(--gray-900);
+
+  --color-border: var(--gray-700);
+  --color-border-strong: var(--gray-600);
+
+  --color-link: var(--blue-300);
+  --color-link-visited: var(--violet-300);
+  --color-focus: var(--blue-300);
+
+  --color-code-bg: var(--gray-800);
+  --color-code-text: var(--gray-100);
+  --color-codeblock-bg: var(--gray-800);
+  --color-codeblock-border: var(--gray-700);
+
+  --color-nav-active-bg: var(--blue-700);
+  --color-nav-active-text: var(--gray-0);
+
+  --color-accent-bar: var(--blue-600);
+  --color-quote-bar: var(--gray-600);
+
+  --color-neutral-bg: var(--gray-800);
+  --color-neutral-text: var(--gray-300);
+  --color-neutral-border: var(--gray-600);
+
+  --color-critical-bg: var(--red-700);
+  --color-critical-text: var(--red-100);
+  --color-critical-border: var(--red-600);
+
+  --color-advisory-bg: var(--blue-700);
+  --color-advisory-text: var(--blue-100);
+  --color-advisory-border: var(--blue-600);
+
+  --color-affirm-bg: var(--green-700);
+  --color-affirm-text: var(--green-100);
+  --color-affirm-border: var(--green-600);
+
+  --color-caution-bg: var(--amber-700);
+  --color-caution-text: var(--amber-100);
+  --color-caution-border: var(--amber-600);
+
+  --color-notable-bg: var(--violet-700);
+  --color-notable-text: var(--violet-100);
+  --color-notable-border: var(--violet-600);
+}
+
+/* == tokens:end == */
+
+/* --- reset ------------------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  -webkit-text-size-adjust: 100%;
+}
+
+a {
+  color: var(--color-link);
+}
+
+a:visited {
+  color: var(--color-link-visited);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* --- chrome ----------------------------------------------------------------------------- */
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  z-index: 10;
+}
+
+.skip-link:focus {
+  left: var(--space-3);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.topbar-title {
+  font-weight: 600;
+  color: var(--color-text-strong);
+  text-decoration: none;
+  font-size: var(--font-size-base);
+}
+
+.topbar-title:visited {
+  color: var(--color-text-strong);
+}
+
+.topbar-sub {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.theme-picker {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.theme-picker select {
+  font: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  align-items: start;
+}
+
+/* --- sidebar ---------------------------------------------------------------------------- */
+
+.sidebar {
+  position: sticky;
+  top: 3.25rem;
+  max-height: calc(100vh - 3.25rem);
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-4) var(--space-7);
+  border-right: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.sidebar h2 {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.sidebar h2:first-child {
+  margin-top: 0;
+}
+
+.sidebar h3 {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar li {
+  margin: 0;
+}
+
+.sidebar a {
+  display: block;
+  padding: 0.2rem var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  text-decoration: none;
+  line-height: var(--line-height-tight);
+  margin-bottom: 1px;
+}
+
+.sidebar a:visited {
+  color: var(--color-text);
+}
+
+.sidebar a:hover {
+  background: var(--color-surface-raised);
+}
+
+.sidebar a[aria-current="page"] {
+  background: var(--color-nav-active-bg);
+  color: var(--color-nav-active-text);
+  font-weight: 600;
+}
+
+.sidebar .nav-id {
+  display: inline-block;
+  min-width: 1.9em;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.sidebar a[aria-current="page"] .nav-id {
+  color: inherit;
+}
+
+.sidebar .nav-warning {
+  color: var(--color-caution-text);
+  background: var(--color-caution-bg);
+  border: 1px solid var(--color-caution-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-xs);
+}
+
+/* --- main --------------------------------------------------------------------------------*/
+
+.main {
+  padding: var(--space-6) var(--space-6) var(--space-7);
+  min-width: 0;
+}
+
+.page {
+  max-width: var(--measure);
+}
+
+.breadcrumb {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
+}
+
+.lede {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-5);
+}
+
+/* --- frontmatter panel ------------------------------------------------------------------ */
+
+.facts {
+  margin: 0 0 var(--space-6);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent-bar);
+  border-radius: var(--radius-md);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 0.15rem var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-neutral-border);
+  background: var(--color-neutral-bg);
+  color: var(--color-neutral-text);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.badge .badge-key {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+}
+
+.badge .badge-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.badge-rule-id {
+  background: var(--color-notable-bg);
+  color: var(--color-notable-text);
+  border-color: var(--color-notable-border);
+  font-size: var(--font-size-sm);
+}
+
+.badge-critical {
+  background: var(--color-critical-bg);
+  color: var(--color-critical-text);
+  border-color: var(--color-critical-border);
+}
+
+.badge-advisory {
+  background: var(--color-advisory-bg);
+  color: var(--color-advisory-text);
+  border-color: var(--color-advisory-border);
+}
+
+.badge-affirm {
+  background: var(--color-affirm-bg);
+  color: var(--color-affirm-text);
+  border-color: var(--color-affirm-border);
+}
+
+.badge-caution {
+  background: var(--color-caution-bg);
+  color: var(--color-caution-text);
+  border-color: var(--color-caution-border);
+}
+
+.facts dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-3) 0 0;
+  font-size: var(--font-size-sm);
+}
+
+.facts dt {
+  color: var(--color-text-muted);
+}
+
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.1rem var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+}
+
+.tag:visited {
+  color: var(--color-text-muted);
+}
+
+.tag:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.tag-count {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- prose ------------------------------------------------------------------------------ */
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  color: var(--color-text-strong);
+  line-height: var(--line-height-tight);
+  margin: var(--space-6) 0 var(--space-3);
+  scroll-margin-top: 4rem;
+}
+
+.prose h1 {
+  font-size: var(--font-size-3xl);
+  margin-top: 0;
+}
+
+.prose h2 {
+  font-size: var(--font-size-2xl);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.prose h3 {
+  font-size: var(--font-size-xl);
+}
+
+.prose h4 {
+  font-size: var(--font-size-lg);
+}
+
+.prose p,
+.prose ul,
+.prose ol,
+.prose blockquote,
+.prose .table-scroll,
+.prose pre {
+  margin: 0 0 var(--space-4);
+}
+
+.prose li {
+  margin-bottom: var(--space-1);
+}
+
+.prose li > ul,
+.prose li > ol {
+  margin: var(--space-1) 0 var(--space-2);
+}
+
+.prose ul.loose > li,
+.prose ol.loose > li {
+  margin-bottom: var(--space-3);
+}
+
+.prose blockquote {
+  padding: var(--space-1) 0 var(--space-1) var(--space-4);
+  border-left: 3px solid var(--color-quote-bar);
+  color: var(--color-text-muted);
+}
+
+.prose blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  margin: var(--space-6) 0;
+}
+
+.heading-anchor {
+  margin-left: var(--space-2);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  opacity: 0;
+  font-weight: 400;
+}
+
+.heading-anchor:visited {
+  color: var(--color-text-muted);
+}
+
+.prose h1:hover .heading-anchor,
+.prose h2:hover .heading-anchor,
+.prose h3:hover .heading-anchor,
+.prose h4:hover .heading-anchor,
+.prose h5:hover .heading-anchor,
+.prose h6:hover .heading-anchor,
+.heading-anchor:focus {
+  opacity: 1;
+}
+
+/* --- code ------------------------------------------------------------------------------- */
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--color-code-bg);
+  color: var(--color-code-text);
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+  overflow-wrap: break-word;
+}
+
+pre {
+  background: var(--color-codeblock-bg);
+  border: 1px solid var(--color-codeblock-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  /* The whole point: a wide block scrolls itself instead of widening the page. */
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  white-space: pre;
+}
+
+/* --- tables ----------------------------------------------------------------------------- */
+
+.table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.table-scroll table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--font-size-sm);
+}
+
+.table-scroll th,
+.table-scroll td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.table-scroll thead th {
+  background: var(--color-surface-raised);
+  color: var(--color-text-strong);
+  white-space: nowrap;
+}
+
+.table-scroll tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* --- graph sections --------------------------------------------------------------------- */
+
+.graph {
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.graph h2 {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-strong);
+  margin: 0 0 var(--space-2);
+}
+
+.graph section + section {
+  margin-top: var(--space-5);
+}
+
+.graph .empty {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.linklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.linklist li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.linklist li:last-child {
+  border-bottom: 0;
+}
+
+.linklist .why {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.page-footer {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* --- links that leave the built site ------------------------------------------------------*/
+
+a.offsite::after {
+  content: " ↗";
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* --- narrow viewports --------------------------------------------------------------------*/
+
+@media (max-width: 60rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: static;
+    max-height: none;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .main {
+    padding: var(--space-5) var(--space-4) var(--space-7);
+  }
+}
