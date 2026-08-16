@@ -9,45 +9,120 @@ sources fetched and read where reachable; paywalled and blocked sources are mark
 `.claude/output-styles/plainspoken.md` and `.claude/skills/plainspoken-edit/` (what we built).
 **Caveat on coverage:** the session's web-search budget was exhausted partway through. Several
 sub-questions were answered by direct fetch of known URLs rather than by search, so absence of a
-result here is weaker evidence of absence than usual. Every such gap is named in §7.
+result here is weaker evidence of absence than usual. Every such gap is named in §8.
 
 ---
 
-## 1. Executive summary: the four findings that should change what we build
+## 1. Executive summary
 
-**1. Our sharpest observation is measured, and it points at instruction tuning.** Reinhart et al.,
-PNAS 2025, compared six LLMs against 12,000 matched human texts and found instruction-tuned models
-use **nominalisations at 1.5–2× the human rate** and **present participial clauses at 2–5×**, and
-describe the result as "a distinct noun-heavy, informationally dense writing style." Two of our
-five mechanisms — nominal style and abstraction stacking — are therefore not a hunch. They are the
-measured signature of the register. The same paper compares base against instruction-tuned Llama
-and concludes the difference comes from instruction tuning, not from the pretraining corpus.
+### 1.1 The three findings most likely to change what we build
 
-> **Correction added after a separate psycholinguistics survey — see §9.** This finding
-> establishes that LLMs nominalise **more than humans**. It does **not** establish that
-> nominalisation is **harder to read**, which is a different claim with far weaker support.
-> Nominalisation is a well-measured _tell_ and a poorly-evidenced _defect_. Read §9 before
-> using it as a reason to rewrite anything.
+**1. A tell is not a defect, and we had merged them.** Two separate literatures answer two separate
+questions, and our documents run them together:
 
-**2. "Not X, but Y" is a documented tell, and we should adopt its name.** The established term is
-**negative parallelism**. Wikipedia's `WP:AIPARALLEL` gives it a section with two named
-sub-patterns, one of which is titled exactly "Not X, but Y", with cited specimens going back to 2024. We rediscovered a known thing. Adopt the vocabulary.
+| Question                                  | Verdict                                                                                                                                              |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Do LLMs nominalise more than humans?      | 🟢 **Measured.** 1.5–2× (Reinhart et al., _PNAS_ 2025)                                                                                               |
+| Is nominalised prose harder for a reader? | 🔴 **Largely unmeasured.** Two studies from 1963–65 using cloze and rote learning, plus one 1998 study whose effect reversed for non-native speakers |
 
-**3. Our review-beats-priming claim has direct support, from the same PNAS paper.** Reinhart et al.
-prompted models to imitate a supplied style and the grammatical features did not move: the tells
-"persisted across all contexts and genres tested." Style instruction failed to fix the exact
-properties we are trying to fix. This is the strongest single piece of evidence in the report and
-it argues for weighting the review skill over the output style.
+"Avoid nominalisations" is defensible as _stop sounding like an LLM_. It is not defensible as _make
+this easier to read_ — and the two motivations produce different edits. The same split applies to
+most of our mechanism table. §7 is the reconciliation and it is the single most useful section here.
 
-**4. Two of our rules are contradicted by the source we are closest to.** Gopen & Swan explicitly
-reject word-count sentence limits, and Aristotle — the origin of "periodic" — treats periodic
-structure as a _virtue_ and objects only to unbounded periods. Our 30-word rule and our framing of
-periodic structure as inherently costly both need rewording. Details in §4.5.
+**2. The instrument is aimed at the wrong mechanism.** The one mechanism with robust evidence for
+_reading cost_ in ordinary prose is **centre-embedding** — Martínez, Mollica & Gibson (_Cognition_ 2022) found it depressed recall more than jargon, passive voice or capitalisation, in real legal
+prose, for experienced readers. `measure.ts` reports nominalisation density on every run and has **no
+centre-embedding detector at all**. It measures the folklore column and is blind to the robust one.
+The fix is a locality measure — subject–verb distance, or words before the main verb. §6.5 lists the
+changes in order of value.
 
-One thing we could not find, which is itself a result: **no established method for writing
-corrective style instruction.** There is no literature comparing a pre-writing style guide against
-a post-hoc editorial pass for prose register. Our pairing of an output style with a review skill is
-not behind the state of the art, because there is no state of the art. It is worth documenting.
+**3. Our review-beats-priming claim has direct support, and it comes with a sharpening.** Reinhart et
+al. prompted instruction-tuned models to imitate a supplied style. The grammatical features did not
+move; the tells "persisted across all contexts and genres tested." Their blunt version: "instruction
+tuning appears to make the model output less human, not more."
+
+But Boggia measured a **70–72% reduction** in "not X, but Y" from a one-line instruction. So the rule
+is not "priming is weak". It is that **named, specific tics respond to instruction and diffuse
+distributional properties do not.** That is exactly the division of labour between `plainspoken.md`'s
+"Habits to drop" and `plainspoken-edit`'s aggregate measurement, and it is now evidenced rather than
+assumed. §5.2.
+
+### 1.2 Answers to the five questions, in one line each
+
+|                                   | Answer                                                                                                                                                                                                    |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Named and documented?**      | Partly. The _constructions_ are catalogued and some are measured. The _aphoristic register_ is not documented anywhere, and Wikipedia lists "fancy/academic prose" as an **ineffective** AI indicator. §2 |
+| **2. Where from?**                | Post-training, measured by base-versus-instruction-tuned comparison. The vocabulary link to human preference is demonstrated; the syntactic one is inferred. §3                                           |
+| **3. Prior art for the content?** | Yes, for all five mechanisms. None needs coining. Three of our names should change. §4                                                                                                                    |
+| **4. Corrective instruction?**    | Almost nothing directly on point. This is the real gap. §5, §8.1                                                                                                                                          |
+| **5. Measurement?**               | Yes, and better than we chose. Dependency locality, Biber Dimension 1, surprisal — with a warning against LLM-surprisal meters. §6                                                                        |
+
+### 1.3 Where our characterisation is wrong
+
+**Five independent primary sources reject word-count sentence limits.** Aristotle ("not too big to be
+taken in at a glance"), Gopen & Swan ("we disagree… we have seen 10-word sentences that are virtually
+impenetrable"), Williams (his term is **sprawl**, and he shows a 36-word sentence that does not
+sprawl), the US Federal Plain Language Guidelines (structural rule, no number at all), and the
+readability-formula critical literature. The causal variable is **dependency structure, not word
+count**. `plainspoken.md`'s "anything past roughly 30 words should be two sentences" states as a rule
+what all five deny. §4.5
+
+**Periodic structure is not a defect; unbounded suspension is.** Aristotle _prefers_ it. Williams
+endorses it sparingly and notes that a nominalisation which damages a sentence in subject position
+gives a satisfying thump at the end. Anti-locality results say more preverbal material can make a head
+_faster_. Mechanisms 1 and 3 are position-dependent, and we state them as uniform. §4.5, §6.2
+
+**Two naming problems.** "Abstraction stacking" collides with the established "noun stack" (adjacent
+nouns; Google caps it at two) — Pinker's **metaconcepts** is the safe adoption. And "one topic per
+sentence", which we attributed to Simplified Technical English, is a misreading: STE Rule 5.2 is one
+_instruction_ per sentence, Rule 6.5 is one _topic_ per **paragraph**. §4.1, §4.7
+
+**Our account of why the register reads as authoritative is close, but the mechanism is inverted.**
+We wrote that the prose "sounds authoritative". Zhou et al. (ACL 2024) measured it: models emit an
+epistemic marker in only about 5–6% of responses; reward models score **plain statements 4.03,
+strengtheners 0.82, weakeners −1.86**; and readers rely on unmarked statements as heavily as on
+marked ones. Their phrasing: "the lack of epistemic markers is perceived as confident language."
+
+So models are not trained to sound assertive. **Hedges are penalised, unmarked declaratives win, and
+the confidence is the reader's inference rather than the sentence's claim.** That is our
+misattribution argument arriving from the other side. It also makes `plainspoken.md`'s "do not hedge
+to sound modest" rule redundant at best — the model already under-hedges relative to humans. §3.2c
+
+### 1.4 What we could not find, which is itself the result
+
+**There is no established academic method for writing corrective style instruction.** No study
+compares a pre-writing style guide against a post-hoc editorial pass for prose register. No validated
+rubric for prose register exists. **We are not behind the state of the art, because there is no state
+of the art.** §8.1
+
+**But there is practitioner prior art, and it vindicates the format we chose.** The labs publish
+their own corrective style instruction, and it looks like `plainspoken.md`: positive specification for
+the register plus a short enumerated list of named tics to suppress. Anthropic's production system
+prompts ban specific opener phrases and, in the current models, exactly three words — "genuinely",
+"honestly", "straightforward". OpenAI's Model Spec bans "purple prose, hyperbole, self-aggrandizing,
+and clichéd phrases" and "excessive hedging". **We reinvented something, and the something is good.**
+§5.7
+
+**A negative finding from the same place:** no em-dash instruction and no "not X, but Y" prohibition
+appears in any published system prompt, model spec or constitution from any lab. The two tics that
+dominate the folklore are absent from every vendor's own corrective instruction.
+
+Two external corroborations of this project's own thesis, both from outside software:
+
+- **Caterpillar Fundamental English was discontinued in 1982** because its guidelines "were not
+  enforceable". Its successor inverted the design — a large precise vocabulary plus an enforcing tool,
+  instead of a short vague one plus goodwill. That is layer 3 losing to layer 2, measured in industry
+  over a decade. §4.7
+- **Partial adoption of a controlled language was worse than no adoption.** Chervak & Drury measured
+  task error rates on real aircraft maintenance: Simplified English reduced errors, the _hybrid_
+  version increased them. Our current state is a hybrid — a new register applied only to new text over
+  a corpus written in the old one. §4.7
+
+One structural finding that should shape how we think about all of this: **the assistant register
+lives in roughly 5–8% of token positions and is made mostly of discourse markers** (Lin et al., ICLR
+2024). 77.7% of token positions are identical between a base and an aligned model. That explains why
+named tics respond to instruction and diffuse properties do not, and it predicts the register is
+strongest at the opening of a passage — which is checkable against our own corpus. §3.2a
 
 ---
 
@@ -157,11 +232,13 @@ Findings that bear directly on our mechanism table:
 A random-forest classifier on grammatical features alone reached 66% accuracy, with only 4.2% of
 LLM texts misclassified as human.
 
-**This supersedes part of our §2 mechanism table.** Our five mechanisms were derived by reading our
-own wiki. Two of them (nominal style, abstraction stacking) turn out to be the measured signature
-of instruction-tuned output, which is a much stronger footing than we had. One mechanism the paper
-identifies that we missed entirely is the **present participial clause** — the trailing "-ing"
-phrase, as in "…, reflecting its continued relevance." Wikipedia catalogues the same thing under
+**This supersedes part of our §2 mechanism table.** We derived our five mechanisms by reading our own
+wiki. Two of them — nominal style and abstraction stacking — turn out to be the measured signature of
+instruction-tuned output. That is a much stronger footing than we had.
+
+The paper also identifies one mechanism we missed entirely: the **present participial clause**, the
+trailing "-ing" phrase, as in "…, reflecting its continued relevance." Wikipedia catalogues the same
+thing under
 [`WP:SUPERFICIAL`](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing) ("superficial
 analyses"), noting it is "often done by attaching a present participle ('-ing') phrase at the end
 of sentences." At 2–5× the human rate it is the largest single grammatical deviation the PNAS
@@ -343,6 +420,106 @@ _vocabulary_. Nobody has run the equivalent experiment for a syntactic property.
 demonstrated.** It is plausible and it is consistent with the base/instruct comparisons above, and
 it is an inference.
 
+### 3.2a Where the register actually lives: 5–8% of token positions
+
+🟢 **MEASURED, and this is the most useful single result for building anything.** Lin, Ravichander,
+Lu, Dziri, Sclar, Chandu, Bhagavatula & Choi, "The Unlocking Spell on Base LLMs", ICLR 2024,
+[arXiv:2312.01552](https://arxiv.org/abs/2312.01552). Token-distribution-shift analysis between base
+and aligned pairs (Llama-2-7b against -chat and Vicuna; Mistral-7B against -Instruct):
+
+- **77.7% of token positions are unshifted** — the base model's top-1 choice is identical.
+- **92.2% fall within the base model's top 3.**
+- Only **5–8% of positions are genuinely shifted**, and the shifted tokens are **discourse markers
+  and framing devices**: "However", "cannot", "Here", "To", "Instead", "Remember". Not content
+  tokens.
+- The shift is **front-loaded**. KL divergence between base and aligned distributions decreases over
+  decoding steps, and the mean base-rank of aligned tokens drops below 5 after position 5.
+
+**Read plainly: the assistant register is a thin veneer, it is made of connective tissue, and it is
+concentrated in the opening tokens.** Two things follow for us. First, it explains why a diffuse
+style instruction fails while a named-tic instruction works (§5.2) — the tics _are_ the discourse
+markers, and they are the only part that moved. Second, it predicts the register is strongest at the
+start of a passage. That is a testable claim about our own corpus, and `measure.ts` could check it by
+position.
+
+### 3.2b What reward models and judges prefer
+
+A large, solid, quantitative literature, all 🟢 MEASURED. It is real, and it sits one inferential
+step away from our question.
+
+**Length is the dominant style variable, and on one dataset it is almost the whole reward.** Singhal,
+Goyal, Xu & Durrett, "A Long Way to Go: Investigating Length Correlations in RLHF", COLM 2024,
+[arXiv:2310.03716](https://arxiv.org/abs/2310.03716). Reward-model score correlates with response
+length at Pearson **0.72 (WebGPT), 0.55 (Stack Exchange), 0.67 (RLCD)**. The fraction of PPO's reward
+gain attributable to _non-length_ features is **2.0% on WebGPT**. A purely length-based reward
+reproduces nearly all of standard PPO's win rate.
+
+Corroborated on real human votes rather than reward-model proxies:
+[LMSYS/LMArena's style-control analysis](https://www.lmsys.org/blog/2024-08-28-style-control/) fits a
+Bradley–Terry model with style covariates and finds **length 0.249**, markdown list 0.031, header
+0.024, bold 0.019. Their conclusion: "length was the dominant style factor. All other markdown
+effects are second order." **The style effect is present in human votes, upstream of LLM-as-judge.**
+
+**Format bias is measurable and cheap to inject.** Zhang et al., "From Lists to Emojis: How Format
+Bias Affects Model Alignment", ACL 2025, [arXiv:2409.11704](https://arxiv.org/abs/2409.11704). Their
+method is clean: take a response containing a format pattern, remove the pattern, compare the
+otherwise-identical pair. GPT-4-Turbo as judge prefers the formatted version — **lists 86.75%,
+exclamation marks 87.25%, emoji 80.5%, bold 75.75%**, where 50% would be unbiased. Adding **0.70%
+biased data** to a clean reward model moves bold preference from 57.5% to 88.0%.
+
+**Style outweighs substance in judges, by large margins.** Feuer et al., "Style Outweighs Substance",
+ICLR 2025, [arXiv:2409.15268](https://arxiv.org/abs/2409.15268). Given five equally weighted explicit
+criteria, each criterion's correlation with the overall verdict is **style r = 0.999** and
+**conciseness r = 0.114**. In their perturbation ablation, introducing a factual error costs 13% of
+the score; rewriting in an obnoxious tone costs **96%**. Wu & Aji
+([arXiv:2307.03025](https://arxiv.org/abs/2307.03025)) find GPT-4 rates an answer carrying three
+minor factual errors at full length (1206 Elo) **above** a fully correct short answer (1096 Elo), and
+rates a factually perfect answer with grammatical errors at 771 Elo.
+
+**The bridge is unbuilt, and we should say so rather than imply it.** These papers establish what
+reward models and judges _prefer_. None establishes what a generator subsequently _writes at the
+sentence level_. Length bias is not nominalisation, and "judges prefer confident-sounding answers" is
+not "generators produce periodic sentences". The obvious experiment — train matched models with and
+without a debiased reward, then run stylometrics on free-form output — **has not been run**, even
+though ODIN, R-DPO and DivPO all have debiased reward models available. Treat §3.2b as _consistent
+with_ the register story and _not evidence for_ it.
+
+### 3.2c Hedging: the finding is subtler than "RLHF rewards swagger"
+
+🟢 **MEASURED, and it corrects one of our own rules.** Zhou, Hwang, Ren & Sap, "Relying on the
+Unreliable: The Impact of Language Models' Reluctance to Express Uncertainty", ACL 2024,
+[arXiv:2401.06730](https://arxiv.org/abs/2401.06730). Nine models, 125,244 queries, regex detection
+over 76 strengtheners and 105 weakeners.
+
+- Only about **5–6% of responses contain any epistemic marker at all.**
+- Among generations expressing certainty, **only 53% are correct.**
+- Users rely on strengthener-marked answers about **90%** of the time — **and on plain unmarked
+  statements about 90% of the time too.** The paper's phrasing: "the lack of epistemic markers is
+  perceived as confident language."
+- Reward-model probe, mean reward: **plain statements 4.03, strengtheners 0.82, weakeners −1.86.**
+- In the human preference datasets, plain text is preferred over strengthened text **9% more often**,
+  and weakeners are preferred 8–9% _less_ often. The authors: annotators "don't have a bias _for_
+  certainty, rather there is a bias _against_ weakeners."
+
+**So the mechanism is not that models are trained to sound assertive. Hedges are penalised, unmarked
+declaratives win, and readers read an unmarked declarative as confident.**
+
+That is a better account of our own observation than the one in the density note. An aphorism is an
+unmarked declarative carrying no epistemic marker, which is exactly why it reads as authoritative —
+and the reader's inference of confidence is _their_ inference, not a claim the sentence made. It is
+also close to our misattribution argument arriving from the other side: the sentence supplies no
+signal about its own epistemic status, so the reader supplies one.
+
+Related, and both 🟢 MEASURED. Sharma et al. (Anthropic), "Towards Understanding Sycophancy in
+Language Models", ICLR 2024, [arXiv:2310.13548](https://arxiv.org/abs/2310.13548), §4.1: a Bayesian
+logistic regression over 23 features of 15K preference pairs ranks **"Authoritative" second of 23**
+in predicting human preference and **"Concise" twenty-first**. The maximum single-feature effect is
+about 6 percentage points, and the paper plots rather than tabulates the coefficients, so do not cite
+a number from it. Leng et al., ICLR 2025
+([arXiv:2410.09724](https://arxiv.org/abs/2410.09724)), give the controlled comparison: RLHF models,
+whether PPO or DPO, are more overconfident than their SFT counterparts, and reward models prefer high
+stated confidence regardless of answer quality.
+
 ### 3.3 The pretraining contribution
 
 **MEASURED, partial.** Shaib et al., EMNLP 2024 (§2.2a): **76% of the syntactic templates found in
@@ -355,19 +532,81 @@ properties have different origins.
 into prose" — the residue of markdown-saturated training corpora. He lists his own falsifiability
 problem: the claim is hard to test without models trained on markdown-minimal corpora.
 
+**SPECULATION, and worth naming as such because it is our own instinct too.** The idea that the
+register comes from over-representation of SEO, listicle or self-help prose in pretraining has **no
+published study behind it at all.** The instruments now exist — Myntti et al.
+([arXiv:2504.01542](https://arxiv.org/abs/2504.01542)) classified HPLT v2 English by CORE register
+and trained matched 100B-token models per register — but no register census of Common Crawl has been
+published. Mild counter-evidence from that same paper: _Informational Persuasion_, the
+marketing-and-promotional register, was the second-worst-performing pretraining data they tested.
+
+(A note on a paper often cited as if it settled this: Elazar et al., "What's In My Big Data?", ICLR
+2024, is a **data-quality audit, not a register analysis**. It reports duplication, PII and
+contamination. It does not give genre proportions.)
+
 ### 3.4 The "delve comes from Nigerian English annotators" claim
 
-**FOLKLORE. Widely asserted, no evidence located.** Juzek & Ward's COLING 2025 paper is the study
-that actually looked for the causes of lexical overrepresentation, and it reports no evidence for a
-training-data explanation. We found no measurement supporting the annotator-dialect story in either
-direction. Do not repeat it.
+**FOLKLORE, traced to a single uncited sentence, and contradicted by the only public data.** This is
+worth documenting properly because it is the cleanest example in this whole area of a claim that
+became consensus without ever having a source.
+
+The _measured_ half is solid. Kobak, González-Márquez, Horvát & Lause, "Delving into LLM-assisted
+writing in biomedical publications through excess vocabulary", _Science Advances_ 11(27), 2025
+([arXiv:2406.07016](https://arxiv.org/abs/2406.07016)), applied an excess-vocabulary method borrowed
+from excess-mortality epidemiology to 15M+ PubMed abstracts. "Delves" has an excess ratio of **28.0**;
+at least **13.5% of 2024 abstracts** show LLM processing. Their most interesting finding for us is
+not about delve at all:
+
+> The excess vocabulary during the Covid pandemic consisted almost entirely of **content words**
+> (such as respiratory, remdesivir, etc.), whereas the excess vocabulary in 2024 consisted almost
+> entirely of **style words**.
+
+454 excess words in 2024, **379 of them style words, 66% verbs**. The 2024 style signal is roughly
+double the Covid content-word signal.
+
+The _causal_ half has no source. Traced: the hypothesis originates in one sentence of Alex Hern's
+_Guardian_ TechScape column, 16 April 2024 — "In Nigeria, 'delve' is much more frequently used in
+business English than it is in England or the US" — with **no citation, corpus, link or data**. Every
+downstream repetition leads back to it.
+
+Against it: **Ouyang et al.'s InstructGPT paper, Appendix B.3, Table 12**
+([arXiv:2203.02155](https://arxiv.org/abs/2203.02155)), the only public labeler demographics, surveyed
+19 labelers — Filipino 22%, Bangladeshi 22%, American 17%, then several at 5% each. **Zero Nigerians.**
+Juzek & Ward's COLING 2025 paper cites Hern by name and tests the hypothesis against the ICE corpus:
+"Our initial analysis of ICE does not support this hypothesis." (Honest caveat: ICE is ~1M words per
+variety and "delve" runs at 1–3 per million, so that single-word test is underpowered. GloWbE, at
+1.9bn words including Nigeria, is the right instrument and nobody has used it.)
+
+A conflation worth correcting: the TIME reporting on Sama's Kenyan workers is routinely cited as
+support. Those workers were doing **toxicity labelling for a safety classifier**, not ranking response
+quality for a preference model. Only the latter could plausibly shape writing style.
+
+**Verdict: "delve is overused" is robustly measured. "Because Nigerian annotators" is one uncited
+newspaper sentence, contradicted by the only public demographic data. Do not repeat it.** Juzek &
+Ward's own proposed mechanism is different and explicitly speculative — rushed evaluators judging on
+surface word presence rather than content.
 
 ### 3.5 What we could not establish about origins
 
-Named in §7. In short: no published work connects preference optimisation to _syntactic_ register the
-way Juzek & Ward connect it to vocabulary; and the RLHF-verbosity-and-style literature (length bias,
-style-over-substance in judges) is about what reward models _prefer_, not about what generators
-subsequently _write_ at the sentence level. Treat the bridge between those two as unbuilt.
+Full list in §8. The short version: **no paper operationalises "the LLM register" as a construct and
+traces it to a specific training signal.** The stylometric literature measures _that_ LLM prose
+differs and _how_. The RLHF literature measures _what reward models prefer_. Nothing connects a
+specific reward-model bias to a specific stylistic marker in generated prose, and the obvious
+experiment — debias the reward, then run stylometrics on the output — has not been run despite the
+debiased reward models existing.
+
+One further complication worth carrying, because it cuts against the simple "aligned models converge
+on the same words" story. Guo, Shang & Clavel
+([arXiv:2412.10271](https://arxiv.org/abs/2412.10271), TACL) find across six base/instruct pairs that
+instruction-tuned versions show **higher lexical diversity** than their base counterparts while
+showing **reductions in syntactic and semantic diversity**. The convergence is structural, not
+vocabulary-level. Vocabulary richness actually rises.
+
+And the mechanism behind diversity collapse is genuinely contested — typicality bias in the
+preference data (Zhang et al.'s Verbalized Sampling fits a typicality weight of α̂ = 0.57 ± 0.07,
+p < 10⁻¹⁴, on 6,874 correctness-matched HelpSteer pairs), reverse-KL mode-seeking, cross-entropy SFT
+itself, and the chat template's structural tokens are four live candidates. Any account presenting
+"RLHF causes mode collapse" as a settled single-mechanism story is overclaiming.
 
 ---
 
@@ -571,9 +810,216 @@ the inverse of our mechanism 5: a nominalization that names a shared chunk is ho
 one that names an unshared chunk is not. `plainspoken-edit` currently has no such exemption and will
 over-flag.
 
-### 4.6 Developer-documentation style guides, plain language, controlled languages
+### 4.6 Developer-documentation style guides: fewer numbers than their reputation suggests
 
-_(pending — see §7)_
+All PRESCRIPTIVE ASSERTION. None of these guides cites a study for any threshold.
+
+**Google.** The "fewer than 26 words" figure is real but lives on the
+[accessibility page](https://developers.google.com/style/accessibility): "Use shorter sentences. Try
+to use fewer than 26 words per sentence." The
+[translation/global-audience page](https://developers.google.com/style/translation) says "Write
+shorter sentences" with **no number**, and gives the one numeric noun rule: "don't use more than two
+nouns as modifiers of another noun." It also states our mechanism 2 directly — "Try to keep the main
+subject and verb as close to the beginning of the sentence as possible."
+
+[Active voice](https://developers.google.com/style/voice) is nuanced rather than absolute, with
+explicit exceptions: to emphasise an object, to de-emphasise an actor ("Over 50 conflicts were
+found" is preferred over "You created over 50 conflicts"), or when responsibility does not matter.
+
+The entire [sentence-structure page](https://developers.google.com/style/sentence-structure) is one
+rule, and it is our "point first" rule inverted for instructions: "If you want to tell the reader to
+do something, try to mention the circumstance, conditions, or goal before you provide the
+instruction. Mentioning the circumstance first lets the reader skip the instruction if it doesn't
+apply."
+
+Google's actual anti-nominalisation material is in **Technical Writing One**, not the style guide:
+[short sentences](https://developers.google.com/tech-writing/one/short-sentences) gives "Focus each
+sentence on a single idea, thought, or concept" and the de-nominalising example "An input value
+greater than 100 causes the triggering of logging." → "An input value greater than 100 triggers
+logging."
+
+**Microsoft.** [Top 10 tips](https://learn.microsoft.com/en-us/style-guide/top-10-tips-style-voice):
+#1 "Use bigger ideas, fewer words"; #5 "Be brief — prune every excess word"; #10 "Avoid weak phrasing
+like _there is_, _there are_, and _there were_." The brand voice principles are "Warm and relaxed",
+"Crisp and clear", "Ready to lend a hand". Its one measurable sentence rule is on the
+[global writing tips page](https://learn.microsoft.com/en-us/style-guide/global-communications/writing-tips):
+"Avoid linking more than three phrases or clauses by using coordinate conjunctions such as _and_,
+_or_, or _but_. Better yet, avoid linking more than two." Also "Avoid modifier stacks" and "Use words
+ending in _-ing_ carefully."
+
+**Red Hat** is the most measurable guide surveyed, but its numbers govern headings (3–11 words) and
+short descriptions (50–300 characters), not sentences. It is also the only one with a genuinely
+useful nuance: it _permits_ passive voice in prerequisites.
+[Supplementary style guide](https://redhat-documentation.github.io/supplementary-style-guide/)
+
+**Apple** has essentially no sentence-level rules. **IBM Style** is behind an IBMid gate and its rule
+text is not publicly retrievable.
+
+**Diátaxis does give prose-level guidance, but only as per-type sentence patterns, and it publishes
+no numeric rule at all.** The four "The language of…" sections are the whole of it — how-to guides
+"Use conditional imperatives"
+([source](https://diataxis.fr/how-to-guides/#the-language-of-how-to-guides)); tutorials use
+first-person plural; reference "State facts about the machinery and its behaviour". Our density note
+quotes it correctly: [diataxis.fr/tutorials](https://diataxis.fr/tutorials/) has "Ruthlessly minimise
+explanation" as a section heading, glossed "A tutorial is not the place for explanation."
+
+It also rejects measurement outright, for exactly the qualities we are trying to measure
+([diataxis.fr/quality](https://diataxis.fr/quality/)): "Instead of taking measurements, we must make
+judgements."
+
+**That is a direct challenge to `measure.ts`, from the framework our density note maps onto.** The
+defensible reply is the one our own skill already makes: the measurement is a minimap that decides
+_where to read_, and the judgment stays with the reader. Say it explicitly. A reader who knows
+Diátaxis will notice the tension.
+
+**Consequence for us.** Our 30-word threshold has no external authority. Google's 26 is the closest
+published figure and is framed as accessibility. Cite it as an adopted convention (§4.5).
+
+### 4.7 Controlled languages: ASD-STE100, and the one measured result
+
+**PRESCRIPTIVE BY CONSTRUCTION.** These are engineering constraints for safety-critical maintenance
+procedures read by non-native speakers. Nothing in the specification cites a study for the choice of
+20 words over 25.
+
+The specification is free: [ASD-STE100 Issue 9](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf)
+(2025-01-15), 53 writing rules in 9 sections. The ones that bear on our mechanisms:
+
+| Rule              | Text                                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| 5.1 (procedural)  | "Write short sentences. Use a maximum of **20 words** in each sentence."                                    |
+| 6.3 (descriptive) | "Write short sentences. Use a maximum of **25 words** in each sentence."                                    |
+| 6.6               | "Make sure that no paragraph has more than **six sentences**."                                              |
+| 2.1               | "Write multi-word nouns of no more than **three words**."                                                   |
+| 3.6               | "Use the active voice. In descriptive writing, you can use the passive voice only if the agent is unknown." |
+| 3.7               | Use an approved verb for an action, **not a nominalization**.                                               |
+
+The dictionary is officially ~900 approved words, one meaning and one part of speech each. (A direct
+count of Issue 9 gives roughly 800 approved and 1,290 unapproved; the discrepancy is unresolved and
+recorded rather than smoothed.)
+
+**A correction to our own reading.** "One topic per sentence" is not an STE rule. Rule 5.2 is one
+_instruction_ per sentence; Rule 6.5 is one _topic_ per **paragraph**. And "-ing" is not banned —
+Rule 3.5 permits it as a technical noun or as a modifier within one.
+
+**The measured evidence base for controlled language is two significant studies and one null.** Kuhn
+2014's survey ([_Computational Linguistics_ 40(1)](https://aclanthology.org/J14-1005.pdf)) is the
+authority for that count. The best result is worth knowing because it is counter-intuitive:
+
+- 🟢 **Chervak & Drury 2003** ([doi:10.3233/oer-2003-3204](https://doi.org/10.3233/oer-2003-3204))
+  measured **task error rates** on real aircraft maintenance work. "Task errors were reduced with
+  Simplified English but increased with the hybrid version… Simplified English can be recommended,
+  but hybrid instructions should be avoided." **Partial adoption was worse than no adoption.**
+- ⚠️ O'Brien & Roturier 2007
+  ([MT Summit](https://aclanthology.org/2007.mtsummit-papers.46.pdf)): noun-cluster rules disagreed
+  across studies, and rewriting into active voice **degraded** machine-translation output in 3 of 12
+  cases. The rules with measured effect are the mechanical ones — spelling, punctuation, sentence
+  length, dangling pronouns — not the stylistic ones.
+- ⚠️ **Caterpillar Fundamental English was discontinued in 1982** because its guidelines "were not
+  enforceable". Its successor inverted the design: roughly 70,000 precise terms plus an enforcing
+  tool, instead of under 1,000 vague terms plus goodwill.
+
+**The Chervak & Drury result is the one to carry over, and it is uncomfortable for us.** A style
+applied inconsistently across a corpus performed _worse_ than not applying it. Our current state is
+exactly that: a `Plainspoken` output style that affects only newly written text, over a wiki written
+in the old register. The finding is from maintenance procedures and does not transfer cleanly, but it
+is a reason to run the edit pass over the existing corpus rather than let the two registers sit side
+by side indefinitely.
+
+**The Caterpillar result is the same argument our own three-layer model makes.** Unenforceable
+guidance was abandoned; the replacement was a large precise vocabulary plus a checker. That is layer
+3 losing to layer 2, measured in industry over a decade, and it is the closest external corroboration
+of this project's own thesis that we found anywhere in this search.
+
+### 4.8 Plain language: the movement's own systematic review says its rules are unevidenced
+
+**The question "is there measured evidence that plain language improves comprehension" has a
+published answer, and the answer is mostly no.**
+
+🟢 **MEASURED — systematic review.** Stoll, Kerwer, Lieb & Chasiotis (2022), "Plain language
+summaries: A systematic review of theory, guidelines and empirical research", _PLoS ONE_
+17(6):e0268789, [doi:10.1371/journal.pone.0268789](https://doi.org/10.1371/journal.pone.0268789).
+7,714 records screened, 90 included, 33 empirical. Verbatim:
+
+> We did not find empirical evidence to support most of the criteria we identified in the PLS
+> writing guidelines. We conclude that although considerable work on establishing and investigating
+> PLSs is available, empirical evidence on criteria for high-quality PLSs remains scarce.
+
+🟢 **MEASURED — and the split is preference versus comprehension.** Two randomised trials from the
+same group:
+
+- **Stallwood et al. 2023**, _JAMA Pediatrics_ 177(9):956–965,
+  [doi:10.1001/jamapediatrics.2023.2686](https://doi.org/10.1001/jamapediatrics.2023.2686), N=268.
+  **Null on comprehension** — "No significant difference was found in understanding scores" —
+  positive on accessibility, satisfaction and preference.
+- **Sayfi et al. 2024**, _J Clin Epidemiol_ 165:111219,
+  [doi:10.1016/j.jclinepi.2023.11.009](https://doi.org/10.1016/j.jclinepi.2023.11.009), N=488. About
+  a 20-point gain on one test document, **null on the other**.
+
+The honest reading: plain-language rewriting can produce large comprehension gains but does so
+inconsistently, depending on how bad the original was. **Preference gains are consistent throughout.**
+
+**This is a finding we should hold onto for our own work.** The reader who reported rereading our
+wiki was reporting a preference-and-effort experience, and that is the outcome plain language
+reliably improves. Comprehension gains are the claim that does not replicate. Our density note is
+careful about this already — it says the prose is accurate and expensive, not wrong — and this
+literature supports that separation.
+
+🟢 **MEASURED — the studies that do hold up are about structure, not length.** Charrow & Charrow
+(1979), _Columbia Law Review_ 79(7):1306,
+[doi:10.2307/1121842](https://doi.org/10.2307/1121842) — paraphrase testing with real jurors,
+establishing that nominalisations, embeddings and misplaced phrases measurably depress comprehension.
+And Martínez, Mollica & Gibson, whose 2023 PNAS paper
+([doi:10.1073/pnas.2302672120](https://doi.org/10.1073/pnas.2302672120)) shows **lawyers themselves**
+recall legalese worse and rate simplified contracts equally enforceable.
+
+**The legislation is weaker than its reputation.** The
+[Plain Writing Act of 2010](https://www.govinfo.gov/content/pkg/PLAW-111publ274/html/PLAW-111publ274.htm)
+defines plain writing circularly — "clear, concise, well-organized, and follows other best practices
+appropriate to the subject or field and intended audience" — with no metric and no testing
+requirement; SEC. 3(2)(C) exempts regulations, and SEC. 6 forecloses judicial review.
+
+**ISO 24495-1:2023's four principles are reader-outcome criteria, not sentence rules.** Readers get
+what they need (_relevant_); can easily find it (_findable_); can easily understand it
+(_understandable_); can easily use it (_usable_).
+[ISO catalogue](https://www.iso.org/standard/78907.html) — paywalled, verified second-hand from two
+independent sources. **Anyone citing ISO 24495-1 to justify a sentence-length cap is over-reading
+it.**
+
+**The US federal guidelines give no number.** "Write short sentences" is stated structurally — "Express
+only one idea in each sentence" — not numerically. (Note: `plainlanguage.gov` was retired after OMB
+memo M-23-22 and now redirects to [digital.gov](https://digital.gov/guides/plain-language); the
+original content survives in the read-only archive at
+[GSA/plainlanguage.gov](https://github.com/GSA/plainlanguage.gov).) Two of its pages are direct hits
+on our mechanisms: "Keep the subject, verb, and object close together" (mechanism 2) and "Avoid hidden
+verbs", where **"hidden verbs" is PLAIN's name for nominalisation** (mechanism 3).
+
+**Where the numbers actually come from, and why one of them should not be repeated:**
+
+| Source                 | Target        | Basis                                     |
+| ---------------------- | ------------- | ----------------------------------------- |
+| GOV.UK                 | 25 words      | ⚠️ see below                              |
+| Plain English Campaign | 15–20 average | "Most experts would agree…" — no citation |
+| EU DGT                 | 20 average    | —                                         |
+| US federal             | none          | structural rule only                      |
+
+⚠️ **The GOV.UK number rests on an effectively unsourced claim.** Its
+[stated basis](https://insidegovuk.blog.gov.uk/2014/08/04/sentence-length-why-25-words-is-our-limit/)
+is that at 14-word average sentences readers understand more than 90% and at 43 words comprehension
+drops below 10%, attributed to a trade-press consultancy with no identifiable sample, instrument or
+corpus. **This is the single most-quoted number in plain-language advocacy and it is unverifiable.**
+Treat anything downstream of it as unsupported.
+
+The EU's [How to write clearly](https://op.europa.eu/s/n9L3) is the most sophisticated of the four.
+It frames its ten items as "hints, not rules", contains a centre-embedding rule ("Don't bury important
+information in the middle of the sentence") and a nominalisation rule ("Cut out excess nouns"), and
+uniquely warns that splitting sentences can destroy cohesion: "remember to include link words… so the
+coherence doesn't get lost."
+
+**That last warning applies directly to `plainspoken-edit`.** Our rewrites split long sentences. The
+mechanism by which splitting _harms_ comprehension — removing the connective ("because", "however",
+"unless") and forcing the reader to infer the logical relation — is the same mechanism by which
+optimising a readability score degrades text. The skill should require that a split preserves the
+connective, and it currently does not say so.
 
 ---
 
@@ -754,51 +1200,235 @@ counts; their `split-softmax` method works better early.
 [arXiv:2505.06120](https://arxiv.org/abs/2505.06120) (2025). Degradation across six analytical
 generation tasks in multi-turn settings, driven by premature commitment and anchoring.
 
-Neither is about style, and both are about dialog turns rather than one long document. But the
-practical reading is clear enough: **an output style is not a stable guarantee over a long session,
-and repetition is the evidenced mitigation.** For our purposes that is another argument for the
-review pass, and a small argument for restating the register briefly in a long document's
-frontmatter or in the skill invocation rather than relying on a system prompt set at session start.
+Neither is about style, and both concern dialog turns rather than one long document. The practical
+reading is still clear: **an output style is not a stable guarantee over a long session, and
+repetition is the evidenced mitigation.**
+
+For us that is another argument for the review pass. It is also a small argument for restating the
+register briefly at the point of use — in a long document's frontmatter, or in the skill invocation —
+rather than relying on a system prompt set once at session start.
+
+### 5.7 The best prior art for `plainspoken.md` is the labs' own published system prompts
+
+This is the answer to "has anyone written corrective style instruction that works", and we missed it
+because it is not in a paper.
+
+**Anthropic publishes its production system prompts**
+([release notes](https://platform.claude.com/docs/en/release-notes/system-prompts)), and they are the
+most explicit anti-formulaic-style corpus in existence. They are named-tic prohibitions, in
+production, at scale — exactly the shape of `plainspoken.md`'s "Habits to drop":
+
+- Claude Sonnet 3.5: "responds directly to all human messages **without unnecessary affirmations or
+  filler phrases like 'Certainly!', 'Of course!', 'Absolutely!', 'Great!', 'Sure!'**"
+- Claude Opus/Sonnet 4: "**never starts its response by saying a question or idea or observation was
+  good, great, fascinating, profound, excellent**, or any other positive adjective."
+- Claude Sonnet 4.5 onward: "For reports, documents, technical documentation, and explanations,
+  Claude should instead **write in prose and paragraphs without any lists**."
+- Claude Opus 4.6 / Opus 5: "**avoids saying 'genuinely', 'honestly', or 'straightforward'**… which
+  come off as disingenuous."
+
+**Note what that last one is.** It is a banned-word list of exactly three words, shipped because those
+three words are a tell. It is `plainspoken.md`'s "which is exactly the…" rule, from the vendor, and it
+is strong evidence that a short enumerated list of named tics is the format that actually gets used in
+production.
+
+**The OpenAI Model Spec** ([model-spec.openai.com](https://model-spec.openai.com/), CC0) states the
+same thing as policy. Under "Be clear and direct": avoid "**'purple prose,' hyperbole,
+self-aggrandizing, and clichéd phrases** that do not add to the clarity of communication." Under "Be
+thorough but efficient": avoid "**excessive hedging** (e.g., 'there's no one-size-fits-all
+solution')".
+
+**And the ChatGPT release notes are the closest thing to a public changelog of style corrections:**
+
+- 16 Mar 2026: reduces "**teaser-style phrasing** (e.g., 'If you want…', 'You'll never believe…')."
+- 3 Mar 2026: reduces "unnecessary dead ends, **caveats, and overly declarative phrasing**… These are
+  nuanced problems that don't always show up in benchmarks."
+- 28 May 2026: "fewer overly long or **bullet-heavy** responses."
+
+**Two conclusions for us.**
+
+First, **our approach has more prior art than the academic literature suggested — it is just
+practitioner prior art.** The vendors independently converged on the same format: positive
+specification for the register, plus a short enumerated list of named tics to suppress. That is what
+`plainspoken.md` already is. This is the strongest available answer to "are we reinventing
+something", and the answer is yes, but the thing we reinvented is a good thing that nobody wrote a
+paper about.
+
+Second, a **negative finding worth having: no em-dash instruction and no "not X, but Y" prohibition
+appears in any published system prompt, model spec or constitution from any lab.** The two tics that
+dominate the folklore are absent from every vendor's own corrective instruction. Our `plainspoken.md`
+lists both. That is either an edge we have or a sign that they are not worth the words, and we cannot
+tell which from here.
 
 ---
 
 ## 6. Measurement
 
-_(pending)_
+Our rejection of readability formulas is correct and better supported than we knew. What we chose
+instead is aimed at the wrong mechanism. Both conclusions come from the same literature.
+
+### 6.1 Readability formulas: the critique is authoritative and comes from inside the movement
+
+🟢 The formulas are **correlational grade-placement tools, never causal models of comprehension.**
+Optimising against them can actively harm text: chopping a coherent sentence removes the connective
+("because", "however", "unless") and forces the reader to infer the logical relation, which improves
+the score while degrading understanding.
+
+Primary critiques:
+
+- **Redish**, twice, and she is cited _by_ the plain-language movement:
+  [doi:10.1109/tpc.1981.6447824](https://doi.org/10.1109/tpc.1981.6447824) and "Readability formulas
+  have even more limitations than Klare discusses", _ACM Journal of Computer Documentation_ 2000,
+  [doi:10.1145/344599.344637](https://doi.org/10.1145/344599.344637).
+- **Bruce, Rubin & Starr** (1981), "Why readability formulas fail",
+  [doi:10.1109/tpc.1981.6447826](https://doi.org/10.1109/tpc.1981.6447826).
+- **Bailin & Grafstein** (2016), _Readability: Text and Context_ — the linguistic-assumptions
+  critique.
+- **Lenzner** (2013), [doi:10.1177/0049124113513436](https://doi.org/10.1177/0049124113513436).
+
+**Our §6 exclusion in the density note stands unchanged.** Report a grade level if someone asks;
+never target it.
+
+### 6.2 The instrument we should be using: dependency locality
+
+🟢 **This is the strongest citation in the entire report, and it is for a mechanism we do not
+measure.** Martínez, Mollica & Gibson (2022), "Poor writing, not specialized concepts, drives
+processing difficulty in legal language", _Cognition_ 224:105070,
+[doi:10.1016/j.cognition.2022.105070](https://doi.org/10.1016/j.cognition.2022.105070). A ~10M-word
+corpus analysis plus two experiments (N=184) on **real legal prose**, not constructed stimuli:
+
+> excerpts containing these features were recalled and comprehended at lower rates than excerpts
+> without these features, even for experienced readers, and that center-embedded clauses inhibited
+> recall more-so than other features
+
+**Centre-embedding beat jargon, passive voice and non-standard capitalisation.** It is the one
+mechanism in our table that is established for ordinary prose and that outperformed everything else
+tested against it.
+
+The supporting apparatus:
+
+- **Gibson (1998)**, Dependency Locality Theory, _Cognition_ 68(1):1–76,
+  [doi:10.1016/S0010-0277(98)00034-1](<https://doi.org/10.1016/S0010-0277(98)00034-1>) ·
+  [PDF](https://tedlab.mit.edu/tedlab_website/researchpapers/Gibson_1998_Cogn.pdf). Integration cost
+  scales with **new discourse referents intervening**, not with word count. Reading-time validation:
+  Grodner & Gibson (2005).
+- **Futrell, Mahowald & Gibson (2015)**, PNAS 112(33):10336–10341,
+  [doi:10.1073/pnas.1502134112](https://doi.org/10.1073/pnas.1502134112). Real sentences in 37
+  languages have shorter dependency lengths than structure-preserving random baselines.
+- The classic constructed-stimulus work stands behind it — Miller & Isard 1964, Blaubergs & Braine
+  1974 — and Gibson's methodological point is that the single/double-embedded pair is lexically and
+  semantically matched, so the cost is structural rather than garden-pathing.
+
+⚠️ **The counter-evidence, which we should carry rather than hide.** _Anti-locality_ is real:
+Konieczny (2000), [doi:10.1023/A:1026528912821](https://doi.org/10.1023/A:1026528912821), found
+German clause-final verbs read **faster** when a relative clause intervened; Vasishth & Lewis (2006),
+_Language_ 82(4):767–794 ([PDF](https://www.ling.uni-potsdam.de/~vasishth/pdfs/Vasishth-Lewis-Language2006.pdf)),
+confirmed it in Hindi. Distance produces two opposed forces — activation decay against
+reactivation and anticipation — and which wins is empirical per construction and per language.
+English is SVO so locality mostly holds here. **"Suspension equals cost" is not a safe universal**,
+which is the second independent reason to soften our mechanism 1.
+
+### 6.3 Surprisal, and why an LLM is a poor difficulty meter
+
+🟢 **Very robust.** Hale (2001), [ACL](https://aclanthology.org/N01-1021/); Levy (2008),
+"Expectation-based syntactic comprehension", _Cognition_
+([PDF](https://www.mit.edu/~rplevy/papers/levy-2008-cognition.pdf)); **Smith & Levy (2013)**,
+[doi:10.1016/j.cognition.2013.02.013](https://doi.org/10.1016/j.cognition.2013.02.013) — reading time
+is **linear in surprisal over roughly six orders of magnitude, with no threshold**; Shain et al.
+(2024), PNAS, [doi:10.1073/pnas.2307876121](https://doi.org/10.1073/pnas.2307876121); Wilcox et al.
+(2023), TACL, across 11 languages.
+
+⚠️ **Oh & Schuler (2023)**, TACL, [aclanthology.org/2023.tacl-1.20](https://aclanthology.org/2023.tacl-1.20/):
+**better language models fit human reading times worse.** This matters to us directly. The obvious
+cheap instrument — score a document by per-token surprisal under a good LM — is systematically
+mis-calibrated in the direction of underestimating difficulty, because a strong model finds our
+compressed sentences easy precisely where a human does not. **Do not build an LLM-surprisal
+difficulty meter.**
+
+### 6.4 The register instrument: Biber multidimensional analysis
+
+This is what the LLM-style literature actually uses, and adopting it would put our measurement on the
+same axis as the published work.
+
+**Douglas Biber's** feature set and factor solution — Dimension 1 is "involved versus informational
+production" — is the instrument in Reinhart et al. (PNAS 2025), Milička et al.
+([arXiv:2509.10179](https://arxiv.org/abs/2509.10179)), Goulart et al. (2024) and Dawkins et al.
+([arXiv:2506.09975](https://arxiv.org/abs/2506.09975)). All four report LLM text shifted toward the
+informational pole. **Biber Dimension 1 is, as far as this search found, the closest thing to a
+validated numeric scale for the property our density note calls "register".**
+
+Related instruments, none validated against reading time on its own: L2 Syntactic Complexity Analyzer
+(Lu), TAASSC and TAALES (Kyle), Coh-Metrix (Graesser & McNamara, which does carry a
+`left-embeddedness` index). Concreteness norms — Brysbaert, Warriner & Kuperman (2014), 40,000
+English lemmas — are available and tempting for mechanism 4, but see §6.5's caveat before using them.
+
+⚠️ **We did not verify current maintenance status or licensing for any of these.** Coh-Metrix in
+particular has been intermittently unavailable. Before adopting one, check that it still installs;
+the practical alternative is a spaCy dependency parse, from which mean dependency distance and
+subject–verb distance both fall out directly and which we know is maintained.
+
+### 6.5 What this says about `measure.ts`
+
+**The instrument is aimed at the wrong end of the evidence.** It reports nominalisation density on
+every run and has **no centre-embedding detector at all**. It measures the mechanism with the weakest
+support and is blind to the mechanism with the strongest.
+
+| Mechanism                  | As a _tell_                   | As a _reading cost_                                                                                                                    |
+| -------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Centre-embedding**       | not measured                  | 🟢 **Robust.** Replicated since 1964; lexically matched; beat every other feature in Martínez et al. 2022                              |
+| **Nominal style**          | 🟢 1.5–2× human (Reinhart)    | 🔴 folklore — see §7                                                                                                                   |
+| **Abstraction stacking**   | 🟢 part of the same signature | 🟡 concreteness effects are _single-word_ lexical-decision effects, fragile under controls, and do not transfer to syntactic packaging |
+| **Periodic structure**     | not measured                  | 🟡 contested — storage cost predicts it, anti-locality complicates it                                                                  |
+| **Undeclared compression** | no evidence located           | no evidence located — ours                                                                                                             |
+
+Concrete changes, in order of value:
+
+1. **Add a locality measure.** Words before the main verb is already named in the density note's §6
+   as "the best single proxy for periodic structure"; it is a better proxy for **subject–verb
+   distance**, which is the evidenced mechanism. A dependency parse would give mean dependency
+   distance properly; a POS-tagged approximation would give most of it. Vale's `sequence`
+   extension point has POS tagging built in (§4.4).
+2. **Demote the nominalisation count to a secondary signal**, reported as a _tell_ rather than a
+   defect, with the reason stated.
+3. **Add a metaconcept word list** for mechanism 4, using Pinker's enumeration (§4.1). It is currently
+   unmeasured.
+4. **Add the sentence-final present participial clause** as a tic (§2.2). Regex-visible, and the
+   largest measured deviation in the PNAS study.
+5. **Keep the p90 aggregate**, and describe it as what the code comment already says it is — a habit
+   signal — rather than a threshold with authority behind it.
 
 ---
 
-## 7. What we could not find
+## 7. Reconciliation: a tell is not a defect
 
-_(pending)_
-
----
-
-## 8. Evidence index
-
-_(pending)_
-
----
-
-## 9. Reconciliation: a tell is not a defect
-
-Added after a separate survey of the psycholinguistics literature. That survey and the sources in
-§2 reach opposite verdicts on nominalisation, and both are correct, because they answer different
-questions. Keeping them apart is the most useful thing in this document.
+The two literatures in this report reach opposite verdicts on nominalisation, and both are correct,
+because they answer different questions. Keeping them apart is the most useful single thing in this
+document.
 
 | Question                                  | Verdict                                              |
 | ----------------------------------------- | ---------------------------------------------------- |
 | Do LLMs nominalise more than humans?      | 🟢 **Measured.** 1.5–2× (Reinhart et al., PNAS 2025) |
 | Is nominalised prose harder for a reader? | 🔴 **Largely unmeasured.** See below                 |
 
-The reading-cost literature for nominalisation is two studies from 1963–65 using **cloze scores
-and rote learning** (Coleman & Blumenfeld 1963; Coleman 1965), plus one 1998 recall study whose
-effect was mixed and partly reversed for non-native speakers (Spyridakis & Isakson). Every one
-confounds nominalisation with word length, word frequency and sentence length. **No modern
-reading-time or eye-tracking evidence isolates it.** And Martínez, Mollica & Gibson (2022,
-_Cognition_) — the study usually cited as validating the plain-language checklist — manipulated
-jargon, centre-embedding, passive voice and capitalisation, and **did not test nominalisation at
-all**.
+The reading-cost literature for nominalisation is three studies:
+
+- Coleman & Blumenfeld (1963),
+  [doi:10.2466/pr0.1963.13.3.651](https://doi.org/10.2466/pr0.1963.13.3.651) — **cloze restoration**,
+  9.63 words against 10.80. Significant, and tiny.
+- Coleman (1965), [doi:10.1037/h0022472](https://doi.org/10.1037/h0022472) — the measure is **rote
+  learning**, not comprehension. (Note: this is sometimes cited as "Coleman 1964", conflating two
+  different papers.)
+- Spyridakis & Isakson (1998),
+  [doi:10.2190/01HD-MHU1-QNX9-R3YE](https://doi.org/10.2190/01HD-MHU1-QNX9-R3YE) — mixed, and
+  **reversed by population**: "denominalized text is most effective in helping native speakers focus
+  on more important information, but for nonnative speakers, nominalized text may not work well."
+
+Every one confounds nominalisation with word length, word frequency and sentence length. **No modern
+reading-time or eye-tracking evidence isolates it.**
+
+And Martínez, Mollica & Gibson (2022) — the study usually cited as validating the plain-language
+checklist — manipulated jargon, centre-embedding, passive voice and capitalisation. It **did not test
+nominalisation at all**.
 
 So "avoid nominalisations" is defensible as _stop sounding like an LLM_. It is not defensible as
 _make this easier to read_, and the two motivations lead to different edits.
@@ -810,47 +1440,175 @@ dependencies short, and avoid centre-embedding.** Nominalised bureaucratic prose
 that anyway, which is why the heuristic works — it catches the real thing by correlation. When the
 heuristic and the mechanism disagree, follow the mechanism.
 
-### Evidence tiers for our five mechanisms
-
-| Mechanism                  | As a _tell_                   | As a _reading cost_                                                                                                                                                                                                                                                                                                                      |
-| -------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Centre-embedding**       | not measured                  | 🟢 **Robust.** Replicated since 1964; lexically matched and ambiguity-free; beat every other feature tested in Martínez et al. 2022                                                                                                                                                                                                      |
-| **Nominal style**          | 🟢 1.5–2× human               | 🔴 folklore (above)                                                                                                                                                                                                                                                                                                                      |
-| **Abstraction stacking**   | 🟢 part of the same signature | 🟡 concreteness effects are **single-word** lexical-decision effects, fragile under controls for frequency and age of acquisition, and do not transfer to syntactic packaging. _"The destruction of the city"_ is not more abstract than _"they destroyed the city."_                                                                    |
-| **Periodic structure**     | not measured                  | 🟡 **contested.** Storage cost predicts it, but **anti-locality** is real — in head-final languages more preverbal material can make the head _faster_ (Konieczny 2000; Vasishth & Lewis 2006), and Levy 2008 derives that from surprisal. English is SVO so locality mostly holds here, but "suspension = cost" is not a safe universal |
-| **Undeclared compression** | no evidence located           | no evidence located — ours                                                                                                                                                                                                                                                                                                               |
-
-**The instrument is aimed at the wrong end of this table.** `measure.ts` reports nominalisation
-density on every run, and has no centre-embedding detector at all. It measures the folklore column
-and is blind to the robust one.
-
 ### What this changes
 
-1. **Add a locality measure** — dependency distance, or words before the main verb — and demote
-   the nominalisation count to a secondary signal reported as a _tell_, not a defect.
-2. **Reword the guidance.** "Use verbs, not abstract nouns" stays, relabelled as convention with a
-   stated reason: it correlates with long dependencies, and it is how LLM prose is recognised.
-3. **Soften the periodic rule**, which §1.4 already flagged from a different direction. Two
-   independent literatures now say the same thing.
-4. **Keep the compression framing, and mark it as ours.** No prior art was located for it. That is
-   not a licence to assert it — it is a reason to label it as untested and watch whether it earns
-   its place.
+The evidence tiers per mechanism are in §6.5, and the instrument changes that follow from them are
+there too. Three things that belong here rather than there:
 
-### The numbers a linter may legitimately cite
+1. **Reword the guidance, do not delete it.** "Use verbs, not abstract nouns" stays in
+   `plainspoken.md`. Relabel it as a convention with a stated reason: it correlates with long
+   dependencies, and it is how LLM prose is recognised. What it must stop claiming is that the
+   reader finds it harder, because that claim is not supported.
+2. **Soften the periodic rule.** Two independent literatures now say the same thing from different
+   directions — the rhetorical tradition (Aristotle, Williams) says periodicity is a virtue used
+   sparingly, and the psycholinguistic tradition (anti-locality) says suspension is not reliably a
+   cost. §1.3 and §6.2 are the same correction arriving twice.
+3. **Keep the compression framing, and mark it as ours.** No prior art was located for the
+   acronym-versus-aphorism argument or for the misattribution claim underneath it. That is not a
+   licence to assert it. It is a reason to label it as untested and watch whether it earns its place
+   against real annotated rereads — which is what step 1 of the density note's §8 was already going
+   to produce.
 
-Only three sentence-level figures in the surveyed style guides trace to a real authority:
+---
 
-- **Google: "fewer than 26 words per sentence"** — and it appears on the **accessibility** page,
-  not the global-audience page, which says only "write shorter sentences" with no number.
-- **Google: at most two nouns modifying another noun.**
-- **Microsoft: link at most three coordinated clauses, preferably two.**
+## 8. What we could not find
 
-Paragraph caps: Google "5 or 6 sentences", Microsoft "3 to 7 lines". Red Hat is the most
-measurable guide overall but its numbers govern headings and short descriptions, not sentences.
+Each of these is a gap in the literature or a source we could not reach, not a gap in the search
+plan. Where a gap means we are _not behind_, that is said.
 
-**Diátaxis publishes no numeric rule and explicitly rejects measurement** for the qualities it
-addresses. Its prose guidance is per-type sentence _patterns_ only.
+### 8.1 Genuine gaps in the literature
 
-Our 30-word threshold has no external authority. Google's 26 is the closest published figure and
-it is framed as accessibility. Cite it as an adopted convention, not a finding — and note that
-Gopen & Swan reject word-count limits outright (§4.5).
+**No established method for writing corrective style instruction.** No study compares a pre-writing
+style guide against a post-hoc editorial pass for prose register. No validated rubric for prose
+register exists. No study compares style rules against a scored rubric for controlling generation.
+**We are not behind the state of the art here, because there is no state of the art.** Our pairing of
+an output style with a review skill, with a mechanical measurement in front of the review, is worth
+documenting as an approach rather than replaced with someone else's.
+
+**No study measures negative-parallelism frequency at adequate scale.** Boggia (§2.1) is the only
+direct count and disclaims settled status. No diachronic study of "not only… but also" frequency
+pre- and post-2022 exists — the obvious analogue to the "delve" work, and nobody has run it.
+
+**No published work connects preference optimisation to _syntactic_ register.** Juzek & Ward made
+the causal link for vocabulary by emulating the feedback procedure with human participants. Nobody
+has run the equivalent for a grammatical property. The inference "annotators prefer dense
+confident-sounding prose, therefore RLHF produces it" is plausible, consistent with the base/instruct
+comparisons in §3.1, and **not demonstrated**.
+
+**No post-hoc stylometry of debiased-reward models.** ODIN, R-DPO, Product-of-Experts debiasing and
+DivPO all produce reward models with a style bias removed. Every one of them reports win rates and
+diversity metrics. **None ran stylometrics on the resulting prose.** This is the single cheapest
+unrun experiment in the area.
+
+**No published register or genre census of any large pretraining corpus.** The classifier
+infrastructure exists and HPLT 3.0 now ships register labels, but the census has not been done. So
+the SEO/listicle/self-help hypothesis for the register's origin is **pure speculation** — no study
+exists, in either direction.
+
+**No leaked or published rater guideline about formatting or writing style.** The documented leaks
+concern content safety and source whitelists. The only public statement that style guides exist in
+rater instructions is a labelling vendor's own marketing.
+
+**No GloWbE analysis of "delve" across English varieties.** The right instrument for the
+Nigerian-English claim (1.9bn words, 20 countries) has never been pointed at it. The claim is
+therefore neither confirmed nor properly refuted, only unsupported.
+
+**No lab publication mentions em dashes.** The GPT-5.1 em-dash claim rests entirely on a social-media
+post, not on any OpenAI publication, model spec or release note.
+
+**No modern reading-time or eye-tracking evidence isolates nominalisation.** The entire base is
+Coleman & Blumenfeld (1963, cloze restoration, 9.63 against 10.80 words — significant and tiny),
+Coleman (1965, rote learning), and Spyridakis & Isakson (1998, mixed and **reversed by population**:
+"denominalized text is most effective in helping native speakers focus on more important information,
+but for nonnative speakers, nominalized text may not work well"). Every one confounds nominalisation
+with word length, word frequency and sentence length.
+
+**No application of "gnomic", "sententious" or "aphoristic" as a technical register label for LLM
+output.** The rhetorical vocabulary that _has_ been applied is epanorthosis, correctio, antithesis and
+negative parallelism. Our register framing has no precedent, for better or worse.
+
+**No prior art for "undeclared compression" as a failure mode.** Pinker's chunking is the mechanism;
+the misattribution consequence — the reader concluding the fault is theirs — appears nowhere we
+looked.
+
+### 8.2 Sources we could not reach
+
+- **The Atlantic** (Oremus, 12 July 2026) — the sole source for the widely repeated "3× more
+  frequently than humans" negative-parallelism figure. Paywalled; archive.org, the CDX API and
+  Memento all failed. **The figure is unverified and does not reconcile with Boggia's numbers.**
+- **The Economist**, "How to spot AI writing", 30 July 2026 — paywalled. The em-dash study it reports
+  is not named.
+- **Washington Post**, Merrill, Chen & Kumer, 13 November 2025 — 403. Wikipedia cites it for real
+  counts, so it probably contains the best available em-dash and vocabulary numbers.
+- **ISO 24495-1:2023** — paywalled (~CHF 100). Its four principles are verified second-hand from two
+  independent sources that agree verbatim; the standard's internal wording is unread.
+- **IBM Style** — behind an IBMid gate, 401/403.
+- **Kimble's compilation** of plain-language studies and the deMaine review — SSRN 403, Plain Language
+  Network defunct. The frequently cited "~50 studies" count is **unverified**; do not repeat it.
+- Full texts of Miller & Isard (1964), Konieczny (2000) and Frank et al. (2016) — publisher blocks;
+  abstracts and metadata only.
+- Williams's _Style_ — verified against unauthorised scans of an in-copyright Pearson text. Wording
+  is confirmed; cite the ISBNs, not the PDFs.
+
+### 8.3 Unresolved discrepancies, recorded rather than smoothed
+
+- **ASD-STE100 dictionary size.** The official figure is ~900 approved words; a direct count of Issue
+  9 gives roughly 800 approved and 1,290 unapproved. Unresolved.
+- **Em-dash direction.** Freeburg and Wikipedia say LLMs overuse em dashes (against _nonprofessional_
+  writers); Russell et al.'s expert annotators used dashes as a marker of _human_ writing. Both are
+  measured. They are probably measuring different populations and model generations, and we did not
+  resolve it.
+- **Base-versus-instruct direction.** Reinhart and Padmakumar & He find post-training amplifies the
+  register; Freeburg's one em-dash comparison finds post-training _suppressed_ the habit. Take
+  "post-training shapes it" as established and "post-training always amplifies it" as not.
+
+### 8.4 Method caveat
+
+The session's web-search budget (200 calls) was exhausted partway through this work. Later
+sub-questions were answered by direct fetch of URLs already discovered rather than by fresh search.
+**Absence of a result in §8.1 is therefore weaker evidence of absence than it would normally be**,
+particularly for §8.1's first item, which is the one we would most like to be wrong about.
+
+---
+
+## 9. Evidence index
+
+**Read these six first.** They carry most of the report's weight:
+
+1. Reinhart et al., _PNAS_ 122(8), 2025 — the measured register, base against instruction-tuned, and
+   the null result on style prompting.
+   [doi:10.1073/pnas.2422455122](https://doi.org/10.1073/pnas.2422455122)
+2. Martínez, Mollica & Gibson, _Cognition_ 224:105070, 2022 — centre-embedding beats everything else
+   in real prose. [doi:10.1016/j.cognition.2022.105070](https://doi.org/10.1016/j.cognition.2022.105070)
+3. Lin et al., ICLR 2024 — the register is 5–8% of token positions, mostly discourse markers.
+   [arXiv:2312.01552](https://arxiv.org/abs/2312.01552)
+4. Zhou, Hwang, Ren & Sap, ACL 2024 — hedges are penalised, unmarked declaratives read as confident.
+   [arXiv:2401.06730](https://arxiv.org/abs/2401.06730)
+5. Gopen & Swan, _American Scientist_ 78(6), 1990 — the seven principles, and the explicit rejection
+   of word-count limits. [PDF](https://www.gatsby.ucl.ac.uk/~pel/misc/gopen_swan.pdf)
+6. Wikipedia:Signs of AI writing — the practitioner catalogue, including its own "Ineffective
+   indicators" section. [WP:AIPARALLEL](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing)
+
+**And read one non-paper:** Anthropic's
+[published system prompts](https://platform.claude.com/docs/en/release-notes/system-prompts). They
+are the closest existing artefact to `plainspoken.md` and the only corrective style instruction in
+this report that is known to be deployed at scale.
+
+**Standing bibliography.** Reinhart maintains a current index of the LLM-style literature at
+[refsmmat.com/notebooks/llm-style.html](https://www.refsmmat.com/notebooks/llm-style.html) (updated
+8 June 2026). Start there rather than re-running this search.
+
+**Primary sources read in full or in substantial part:** Wikipedia:Signs of AI writing (wikitext,
+1,830 lines); Reinhart et al. 2025 (PMC); Russell, Karpinska & Iyyer ACL 2025; Freeburg
+arXiv:2603.27006 (HTML, full results tables); Jang, Ye & Seo arXiv:2209.12711; Li et al.
+arXiv:2402.10962; Jaroslawicz et al. arXiv:2507.11538; Bohr arXiv:2511.13972; Panickssery et al.
+arXiv:2404.13076; Baumler et al. arXiv:2604.24444; Juzek & Ward arXiv:2508.01930; Anthropic prompting
+best practices (full page); Vale styles documentation; proselint README; diataxis.fr tutorials.
+
+**Sources read via agent report rather than directly:** Lin et al. 2312.01552; Singhal et al.
+2310.03716; Zhang et al. 2409.11704; Feuer et al. 2409.15268; Wu & Aji 2307.03025; Zhou et al.
+2401.06730; Sharma et al. 2310.13548; Leng et al. 2410.09724; Kirk et al. 2310.06452; Guo et al.
+2412.10271; Ouyang et al. 2203.02155 Table 12; Gudibande et al. 2305.15717; Myntti et al. 2504.01542;
+LMSYS style-control blog; OpenAI Model Spec and ChatGPT release notes; Anthropic system prompts,
+"Claude's Character" and the Constitution; Aristotle _Rhetoric_ II.21 and III.9;
+Gopen & Swan 1990; Williams _Style_ 11e and _Toward Clarity and Grace_; Pinker "Why Academics Stink
+at Writing"; Camerer, Loewenstein & Weber 1989; Gibson 1998; Futrell et al. 2015; Konieczny 2000;
+Vasishth & Lewis 2006; Smith & Levy 2013; Oh & Schuler 2023; Coleman & Blumenfeld 1963; Coleman 1965;
+Spyridakis & Isakson 1998; Charrow & Charrow 1979; Martínez et al. 2022 and 2023; Stoll et al. 2022;
+Stallwood et al. 2023; Sayfi et al. 2024; Kuhn 2014; Chervak & Drury 2003; O'Brien & Roturier 2007;
+ASD-STE100 Issue 9; Plain Writing Act of 2010; Federal Plain Language Guidelines (GitHub archive);
+Google, Microsoft, Red Hat and Apple style guides; Shaib et al. 2024; Padmakumar & He 2024; Jiang &
+Hyland; Milička et al. 2025; Kobak et al. 2025; Liang et al. 2024; Geng & Trotta 2024 and 2025.
+
+**Repository state:** read-only throughout except for this file. No commit, no checkout, no change
+to `plainspoken.md`, `plainspoken-edit/` or `2026-08-16-prose-density.md`.
