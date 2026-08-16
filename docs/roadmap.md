@@ -62,7 +62,7 @@ through a lint designed to prevent spec drift would either weaken the lint or li
    (R4-8) — after the corpus stops changing shape, and not a day later.
 9. [**Adoption surfaces**](#9-adoption-surfaces) — last, deliberately.
 
-The [coverage debt](#the-coverage-debt) is not a step. Those 78 gaps close as their blockers
+The [coverage debt](#the-coverage-debt) is not a step. Those 89 gaps close as their blockers
 land, which is why they are grouped below by what blocks them rather than sequenced.
 
 ### Where this departs from the review
@@ -442,8 +442,8 @@ whose `coverageEstablished` reads "root `--help` exits 0 with non-empty stdout" 
 forgot the stdout half satisfies this lint on all three copies and is wrong on all three. The
 lint compares strings to strings; nothing in it ever runs the checker. **Only a mutation fixture
 establishes that an entry is true of the code** — a target built to violate exactly the named
-property, and the checker made to catch it. Twenty checkers now carry 24 established entries
-between them, and that is 22 mutation fixtures owed, one per claim, which is the concrete shape
+property, and the checker made to catch it. The 22 implemented checkers now carry 32 established entries
+between them, and that is 32 mutation fixtures owed, one per claim, which is the concrete shape
 this step takes for the first time. Until they exist, `coverageEstablished` is a declaration in
 the same sense the project's own thesis warns about, distinguished only by being one the authors
 were careful with. That is a reason to write the fixtures, not a reason to trust the care.
@@ -464,7 +464,7 @@ for, and the same population its false-positive fixtures are written against. If
 turn up, the gap list needs splitting; if G1's was the only one, the honest conclusion is that a
 false-positive risk is a bug to fix rather than a caveat to publish.
 
-**That audit has now happened, and it found two.** The R6-5 sweep read all twenty checkers
+**That audit has now happened, and it found two.** The R6-5 sweep read every implemented checker
 closely and asked of each verdict branch: could this report a violation a conforming target did
 not commit? G1's original instance is excluded — it was resolved by narrowing G1 and C1 to fault
 signals, not by publishing it. Two survive, and neither is expressible as a coverage gap, because
@@ -573,14 +573,16 @@ binding.
 
 ## The coverage debt
 
-All 20 checkers declare `coverage: partial`, over **78 named gaps** — see
+All 23 rules declare `coverage: partial`, over **89 named gaps** — see
 [the matrix](./wiki/index.md#coverage-at-a-glance), which is generated from rule frontmatter and
-fails the lint when it drifts. Closing them is roadmap work, and most of it is blocked rather
+fails the lint when it drifts. Twenty-two of those rules have an implemented checker carrying 87
+of the gaps; `B4` is `checker_status: planned`, so its two gaps live on the page and not yet in
+code. Closing them is roadmap work, and most of it is blocked rather
 than merely unwritten. The groups below are not disjoint: several gaps need two things, and a gap
 blocked on two blockers closes with the later one.
 
-**The count went from 51 to 78 without a single checker getting weaker** (review R6-5), and the
-number was never the achievement. B2 was the review's example and the clearest: it declared three
+**The count went from 51 to 78 without a single checker getting weaker**, and A7 and B5 have since
+taken it to 89. The number was never the achievement. B2 is the clearest case: it declared three
 gaps, all of them real, all of them limits of the DETECTOR — CSI-only matching, no carriage-return
 animation, unreachable TTY overrides — while its rule binds on stdout and stderr for **every**
 output the target produces and its checker samples root help and one usage error. Nested help,

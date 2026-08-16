@@ -113,7 +113,7 @@ violations and `git` is non-conformant for them, on their own merits:
 [D2](../rules/discoverability/bare-invocation-is-a-usage-error.md) because bare `git` writes
 its usage text to stdout, where a consumer reads it as output, rather than to stderr.
 
-The third line is not a violation of anything. `git` advertises no machine-mode flag, so
+B3's line is not a violation of anything. `git` advertises no machine-mode flag, so
 [B3](../rules/streams/machine-output-is-parseable.md) has nothing to parse and says so —
 "could not establish it", not "broke it". Counted as a failure it would have told git's
 maintainers they had broken three rules, one of which names nothing they did wrong, mixed in
