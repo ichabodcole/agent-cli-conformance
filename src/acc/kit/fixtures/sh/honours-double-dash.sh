@@ -36,7 +36,11 @@ for a in "$@"; do
       exit 0
       ;;
     --version)
-      printf '1.0.0\n'
+      # D1's machine-mode half: structured when the caller asked for structure, bare otherwise.
+      case " $* " in
+        *" --json "*) printf '{"ok":true,"data":{"version":"1.0.0"}}\n' ;;
+        *) printf '1.0.0\n' ;;
+      esac
       exit 0
       ;;
   esac

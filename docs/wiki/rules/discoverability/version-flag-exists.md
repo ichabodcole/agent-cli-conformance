@@ -7,7 +7,7 @@ description:
 tags: [discoverability, versioning, core]
 related: [rule/help-exits-zero, concept/machine-mode]
 status: current
-updated: 2026-08-14
+updated: 2026-08-16
 rule_id: D1
 tier: core
 probe_level: L0
@@ -15,13 +15,14 @@ checker: src/acc/kit/checkers/discoverability/version-flag.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - the structured machine-mode version payload is never inspected
+  - the machine-mode payload is only required to be a structured document because no declaration exists at L0 to name the field the version belongs in
   - no network and no credentials and no side effects cannot be observed at L0
   - the SHOULD to support -V is not probed
-  - stdout is only required to be non-empty and is never checked to carry a version string
+  - stdout is never checked to carry a version string in either mode
 coverage_established:
   - --version exits 0 with non-empty stdout
   - --version still does so with HOME and XDG_CONFIG_HOME pointed at a path that does not exist
+  - for a target that advertises a machine-mode flag --version in that mode exits 0 and its whole stdout parses as one JSON object rather than a bare string
 ---
 
 # A version is reportable without side effects
@@ -64,6 +65,7 @@ Inert (`L0`).
 
 ```
 <cli> --version
+<cli> --version --json      # where help advertises a machine-mode flag
 ```
 
 Passes when it exits `0` with non-empty stdout.
@@ -74,8 +76,22 @@ environment fails this rule even though it passes the naive probe.
 
 The unusable-`HOME` probe establishes exactly one of the rule's four "no work" clauses — no
 configuration. No network, no credentials and no side effects are invisible to a runner that
-records argv, streams, exit status and timing, and the machine-mode clause is never asked for
-at all; all three are named under [gaps](#current-checker-coverage) below.
+records argv, streams, exit status and timing; both are named under
+[gaps](#current-checker-coverage) below.
+
+**The machine-mode probe is the clause the reference implementation itself violated for months.**
+`acc --version --json` emitted the bare string `0.0.0` at exit `0`, under every machine-mode
+spelling, because the argument parser's built-in version handling answered before the envelope
+existed — so a caller that asked for structured output received something it had to regex. The
+probe requires the whole stdout to parse as one JSON **object**: an array is refused for the same
+reason a bare string is, because the version is a value inside a document rather than the document
+itself.
+
+It cannot require more. With nothing declared at `L0` there is no schema naming the field the
+version belongs in, so `{"ok":true,"data":"1.0.0"}` and `{"version":"1.0.0"}` are equally
+acceptable here and only one of them is what a declaration would ask for — the same `L1` boundary
+[A3](../parsing/errors-name-the-offending-token.md)'s envelope clause and
+[B3](../streams/machine-output-is-parseable.md)'s output kinds both stop at.
 
 Two further omissions are deliberate, and are **not** gaps, because another rule owns each:
 
@@ -99,13 +115,16 @@ the rest of this page, unexamined.
 
 - --version exits 0 with non-empty stdout
 - --version still does so with HOME and XDG_CONFIG_HOME pointed at a path that does not exist
+- for a target that advertises a machine-mode flag --version in that mode exits 0 and its whole
+  stdout parses as one JSON object rather than a bare string
 
 **Gaps**
 
-- the structured machine-mode version payload is never inspected
+- the machine-mode payload is only required to be a structured document because no declaration
+  exists at L0 to name the field the version belongs in
 - no network and no credentials and no side effects cannot be observed at L0
 - the SHOULD to support -V is not probed
-- stdout is only required to be non-empty and is never checked to carry a version string
+- stdout is never checked to carry a version string in either mode
 
 ## How to comply
 

@@ -37,7 +37,13 @@ if (args.includes("--help") || args.includes("-h")) {
   process.exit(0);
 }
 if (args.includes("--version")) {
-  process.stdout.write("1.0.0\n");
+  // D1's machine-mode half: a caller that asked for structured output must not have to regex a
+  // bare string out of stdout. The plain string survives where it belongs, in text mode.
+  process.stdout.write(
+    args.includes("--json")
+      ? `${JSON.stringify({ ok: true, data: { version: "1.0.0" } })}\n`
+      : "1.0.0\n",
+  );
   process.exit(0);
 }
 

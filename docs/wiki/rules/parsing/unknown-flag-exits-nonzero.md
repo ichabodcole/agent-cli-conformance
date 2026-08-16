@@ -7,7 +7,7 @@ description:
 tags: [parsing, silent-failure, exit-codes, core]
 related: [concept/exit-codes, decision/exit-codes-below-125]
 status: current
-updated: 2026-08-14
+updated: 2026-08-16
 rule_id: A1
 tier: core
 probe_level: L0
@@ -15,14 +15,14 @@ checker: src/acc/kit/checkers/parsing/unknown-flag.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - a flag carrying a value is never probed so absorbing that value as a positional is not established
   - only the root is probed so a flag unknown to a subcommand is not
   - the MUST NOT act on a suggested correction clause is not exercised here
   - the exit code is only required to be non-zero here and not the declared 2
-  - only a long valueless flag is probed so a short flag or a cluster of short flags is not
-  - that the command did not otherwise proceed is inferred from a non-zero exit rather than observed
+  - only long flags are probed so a short flag or a cluster of short flags is not
+  - that the command did not otherwise proceed and that the value was not absorbed are both inferred from a non-zero exit rather than observed
 coverage_established:
   - one unknown long flag given at the root exits non-zero with stdout empty and the sentinel from that flag present on stderr
+  - the same flag carrying a value does likewise rather than accepting the flag and orphaning the value
 ---
 
 # Unknown flags must exit non-zero
@@ -68,17 +68,31 @@ work and a violating one was already broken.
 
 ```
 <cli> --totally-made-up-flag
+<cli> --totally-made-up-flag some-value
 ```
 
-Passes when **all** of:
+Passes when **all** of the following hold for **both**:
 
 - exit code is non-zero
 - stdout is empty
 - stderr names the offending flag
 
-**One probe, exactly as written.** The near-miss variant — a one-character typo of a real flag,
+**The second probe is the value-carrying shape**, and it is there for the clause about absorbing
+a value as a positional. That clause has the most expensive defect population behind it in the
+whole family: `--owner=alice` lost its value, the read filter then matched nothing, and the tool
+returned **the whole board** — a wrong answer wearing a right answer's shape, across five shipped
+tools. The value is itself sentinel-bearing, so the invocation is admissible under the inertness
+gate's `sentinel` class exactly as it stands; that class exists for precisely this, because a
+sentinel token is provably invalid whatever the flag's arity. It carries the same limit
+[A2](./unknown-command-exits-nonzero.md)'s probe does and no more: a bare sentinel token is a
+**prompt** on a CLI whose root positional is free-form, which
+[`inert.ts`](../../../../src/acc/kit/inert.ts) documents and does not claim to detect.
+
+**Two probes, exactly as written.** The near-miss variant — a one-character typo of a real flag,
 discovered from the CLI's own help — belongs to
-[A5](./no-fuzzy-auto-correction.md), which declares and runs it. A1 does not.
+[A5](./no-fuzzy-auto-correction.md), which declares and runs it. A1 does not. The attached
+spelling of a flag that _is_ recognised, carrying a value outside its advertised set, belongs to
+[A7](./advertised-value-set-is-enforced.md).
 
 A hung probe is reported as a **failure**, not as unverified: blocking forever is not
 rejecting. That makes A1 one of four rules in the catalogue that own hangs rather than
@@ -94,15 +108,17 @@ the rest of this page, unexamined.
 
 - one unknown long flag given at the root exits non-zero with stdout empty and the sentinel from
   that flag present on stderr
+- the same flag carrying a value does likewise rather than accepting the flag and orphaning the
+  value
 
 **Gaps**
 
-- a flag carrying a value is never probed so absorbing that value as a positional is not established
 - only the root is probed so a flag unknown to a subcommand is not
 - the MUST NOT act on a suggested correction clause is not exercised here
 - the exit code is only required to be non-zero here and not the declared 2
-- only a long valueless flag is probed so a short flag or a cluster of short flags is not
-- that the command did not otherwise proceed is inferred from a non-zero exit rather than observed
+- only long flags are probed so a short flag or a cluster of short flags is not
+- that the command did not otherwise proceed and that the value was not absorbed are both inferred
+  from a non-zero exit rather than observed
 
 ## How to comply
 

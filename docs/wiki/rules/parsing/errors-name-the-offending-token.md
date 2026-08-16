@@ -7,7 +7,7 @@ description:
 tags: [parsing, errors, remediation, core]
 related: [concept/error-envelope, rule/unknown-flag-exits-nonzero]
 status: current
-updated: 2026-08-14
+updated: 2026-08-16
 rule_id: A3
 tier: core
 probe_level: L0
@@ -15,13 +15,14 @@ checker: src/acc/kit/checkers/parsing/names-offending-token.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - the machine-mode error envelope field is never inspected
+  - the machine-mode field is any string value anywhere in the document because no declaration exists at L0 to name the envelope field the rule requires
   - only an unknown flag and an unknown verb are probed
   - the SHOULD to enumerate a closed set as choices is not exercised
   - the assertion is that the sentinel substring reached stderr and not that the whole offending token appears verbatim
 coverage_established:
   - the stderr of an unknown root flag rejection contains the probe's sentinel string
   - the stderr of an unknown root verb rejection contains the probe's sentinel string
+  - for a target that advertises a machine-mode flag and answers a parser error with a parseable document some string value inside that document contains the sentinel
 ---
 
 # Errors name the offending token
@@ -60,16 +61,37 @@ Inert (`L0`).
 ```
 <cli> --totally-made-up-flag
 <cli> nonsense-verb-xyz
+<cli> --totally-made-up-flag --json      # where help advertises a machine-mode flag
 ```
 
-Passes when stderr contains the literal offending token in each case, checked as a plain
-substring match, mode-agnostic. The checker does not currently invoke the target in machine
-mode or inspect the error envelope for the field "## The rule" above requires there — it
-verifies only the prose-message half. That is unchecked coverage, not a passing result: a
-target could satisfy this probe today and still violate the envelope half of the rule.
+The first two pass when stderr contains the literal offending token, checked as a plain substring
+match, mode-agnostic. The checker deliberately uses a distinctive token unlikely to appear
+incidentally, so a match is evidence the tool echoed it rather than coincidence.
 
-The checker deliberately uses a distinctive token unlikely to appear incidentally, so a match
-is evidence the tool echoed it rather than coincidence.
+**The third probe is the envelope half**, which was unchecked coverage until recently and is the
+clause "## The rule" above actually turns on. It is byte-identical to
+[B5](../streams/machine-mode-holds-on-parser-errors.md)'s probe, so the recorder runs one process
+and both rules read one observation — which is the point, since they are two clauses about a
+single answer and probing separately would let them disagree about what the target did.
+
+That probe is read by walking the **parsed** document for a string **value** containing the
+token, never by searching the bytes. Searching the bytes would answer the question the prose half
+already answers; walking the structure is what makes the two halves different claims.
+
+Three outcomes, and the middle one matters:
+
+- the document carries the token in a value → the clause holds
+- the document parses and carries it nowhere → **fail**
+- no parseable document was produced → **unverified**, and B5 reports that as its own violation.
+  A target that answered a parse error with prose did not put the token in the wrong field; it
+  published no fields at all, so saying `pass` here would license "the token reaches a field" off
+  a run in which no field existed.
+
+**What the closure still does not reach**, and it is the first gap below. With nothing declared
+at `L0` there is no envelope schema to name a field in, so the assertion is the weaker "some
+string value somewhere in the document contains it". A target burying the token in a free-text
+`detail` satisfies this and not the rule. That is the same `L1` boundary
+[B3](../streams/machine-output-is-parseable.md) and B5 both stop at.
 
 ## Current checker coverage
 
@@ -81,10 +103,13 @@ the rest of this page, unexamined.
 
 - the stderr of an unknown root flag rejection contains the probe's sentinel string
 - the stderr of an unknown root verb rejection contains the probe's sentinel string
+- for a target that advertises a machine-mode flag and answers a parser error with a parseable
+  document some string value inside that document contains the sentinel
 
 **Gaps**
 
-- the machine-mode error envelope field is never inspected
+- the machine-mode field is any string value anywhere in the document because no declaration
+  exists at L0 to name the envelope field the rule requires
 - only an unknown flag and an unknown verb are probed
 - the SHOULD to enumerate a closed set as choices is not exercised
 - the assertion is that the sentinel substring reached stderr and not that the whole offending token

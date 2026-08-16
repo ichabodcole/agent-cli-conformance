@@ -4,43 +4,18 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
-import { SENTINEL } from "../../inert.ts";
+import {
+  machineErrorArgs,
+  machineSelector,
+  parsesAsNdjson,
+  parsesWhole,
+} from "../../machine-mode.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
 const RULE_ID = "B5";
 
 const finding = findingFor(RULE_ID);
-
-const parses = (s: string): boolean => {
-  try {
-    JSON.parse(s);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-const parsesAsNdjson = (s: string): boolean => {
-  const lines = s.trim().split("\n").filter(Boolean);
-  return lines.length > 0 && lines.every(parses);
-};
-
-/**
- * The token that selects machine mode, written so the whole probe stays flag-shaped.
- *
- * `--format` takes a value, so it is sent attached — the same reasoning as `FORMAT_TOKENS` in
- * inert.ts, which already whitelists `--format=json` for exactly this. `--output` is refused: it
- * names an output FILE at least as often as an output format, and `--output=json` against a tool
- * of the first kind would create a file rather than select a mode. That is a declared gap, not an
- * oversight — a probe whose meaning depends on which sense of a flag a target implements is not a
- * probe.
- */
-export function machineSelector(d: Discovery): string | null {
-  if (d.machineModeFlag === "--json") return "--json";
-  if (d.machineModeFlag === "--format") return "--format=json";
-  return null;
-}
 
 /** Every non-empty stream, labelled, so a verdict can say WHERE the answer arrived. */
 function answers(stdout: string, stderr: string): Array<{ stream: string; text: string }> {
@@ -85,13 +60,9 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
   probes: (d: Discovery): Invocation[] => {
     const selector = machineSelector(d);
     if (!selector) return [];
-    // Every token begins with `-`, so the invocation satisfies the gate's `no-verb` class, and
-    // the first carries the sentinel, so it satisfies `sentinel` as well. The sentinel flag comes
-    // first deliberately: it is the order in which a caller's mistake actually arrives, and a
-    // target that resolves format only from tokens it has already parsed is the defect.
     return [
       {
-        args: [`--${SENTINEL}-flag`, selector],
+        args: machineErrorArgs(selector),
         inertness: "sentinel",
         purpose: `B5: a parser error under ${selector} must still be a machine document`,
       },
@@ -141,7 +112,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
       );
     }
 
-    const document = streams.find((s) => parses(s.text));
+    const document = streams.find((s) => parsesWhole(s.text));
     if (document) {
       return finding(
         "pass",

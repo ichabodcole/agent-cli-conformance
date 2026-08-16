@@ -6,7 +6,7 @@ description:
 tags: [streams, machine-mode, output, core]
 related: [concept/machine-mode, rule/machine-output-is-parseable]
 status: current
-updated: 2026-08-14
+updated: 2026-08-16
 rule_id: B2
 tier: core
 probe_level: L0
@@ -17,10 +17,10 @@ coverage_gaps:
   - only CSI escapes are detected and not OSC or single-character escape sequences
   - carriage-return animation is not detected
   - the NO_COLOR and --no-color and TERM=dumb overrides need a TTY and are never exercised
-  - only root help and one usage error are sampled so nested help and version output and successful command output and other diagnostics are never inspected
-  - machine mode is never selected although the rule binds whenever machine mode is active
+  - only root help and two usage errors are sampled so nested help and version output and successful command output and other diagnostics are never inspected
 coverage_established:
   - no CSI introducer appears on stdout or stderr for root help or one usage error with both streams attached to pipes
+  - for a target that advertises a machine-mode flag no CSI introducer appears on either stream for a usage error with that mode explicitly selected
 ---
 
 # No ANSI escapes when output is not a terminal
@@ -58,8 +58,9 @@ Inert (`L0`). Help output is used because it is the one path guaranteed to produ
 presentational output without performing work.
 
 ```
-<cli> --help                    # stdout captured to a pipe, i.e. not a TTY
-<cli> --totally-made-up-flag    # stderr captured likewise, on the error path
+<cli> --help                           # stdout captured to a pipe, i.e. not a TTY
+<cli> --totally-made-up-flag           # stderr captured likewise, on the error path
+<cli> --totally-made-up-flag --json    # where help advertises a machine-mode flag
 ```
 
 Passes when neither capture contains `\x1b[`, the CSI introducer — and nothing else. OSC
@@ -72,6 +73,11 @@ Because the runner always captures to a pipe, the CLI is by definition not writi
 so this probe tests the detection path a CLI would use anyway. A tool that colours
 unconditionally fails; a tool that checks `isatty` passes without special handling.
 
+**The third probe exists because the rule's binding condition has two halves.** It binds when
+output is not a terminal _or_ when [machine mode](../../concepts/machine-mode.md) is active, and
+those are separate switches in more than one framework — so a tool can strip colour for a pipe and
+keep it for its own JSON, which is a violation no pipe-only probe can reach.
+
 ## Current checker coverage
 
 [`no-ansi-when-piped.ts`](../../../../src/acc/kit/checkers/streams/no-ansi-when-piped.ts) — `L0`,
@@ -82,15 +88,16 @@ the rest of this page, unexamined.
 
 - no CSI introducer appears on stdout or stderr for root help or one usage error with both streams
   attached to pipes
+- for a target that advertises a machine-mode flag no CSI introducer appears on either stream for a
+  usage error with that mode explicitly selected
 
 **Gaps**
 
 - only CSI escapes are detected and not OSC or single-character escape sequences
 - carriage-return animation is not detected
 - the NO_COLOR and --no-color and TERM=dumb overrides need a TTY and are never exercised
-- only root help and one usage error are sampled so nested help and version output and successful
+- only root help and two usage errors are sampled so nested help and version output and successful
   command output and other diagnostics are never inspected
-- machine mode is never selected although the rule binds whenever machine mode is active
 
 ## How to comply
 

@@ -12,6 +12,7 @@
 import { expect, test } from "bun:test";
 import { join } from "node:path";
 import { type LintPage, yamlList } from "../../scripts/docs-lint/index.ts";
+import { CHECKERS } from "../../src/acc/kit/registry.ts";
 import { AMBIGUOUS_SIGNALS, FAULT_SIGNALS } from "../../src/acc/kit/signals.ts";
 import {
   AMBIGUOUS_SIGNALS_MARKER,
@@ -72,22 +73,18 @@ function pageOf(rel: string, fields: Record<string, string>): LintPage {
   };
 }
 
-// The live `A1` checker's declared gaps, verbatim. The baseline below mirrors them so that a
-// test flipping `checker_status` to `implemented` — several do, to reach the tier and
-// probe_level cross-checks — does not also trip the coverage cross-check it isn't about.
-const A1_GAPS = [
-  "a flag carrying a value is never probed so absorbing that value as a positional is not established",
-  "only the root is probed so a flag unknown to a subcommand is not",
-  "the MUST NOT act on a suggested correction clause is not exercised here",
-  "the exit code is only required to be non-zero here and not the declared 2",
-  "only a long valueless flag is probed so a short flag or a cluster of short flags is not",
-  "that the command did not otherwise proceed is inferred from a non-zero exit rather than observed",
-];
-
-/** ...and the live `A1` checker's established list, mirrored for the same reason. */
-const A1_ESTABLISHED = [
-  "one unknown long flag given at the root exits non-zero with stdout empty and the sentinel from that flag present on stderr",
-];
+// The live `A1` checker's declared lists. The baseline below carries them so that a test
+// flipping `checker_status` to `implemented` — several do, to reach the tier and probe_level
+// cross-checks — does not also trip the coverage cross-check it isn't about.
+//
+// READ FROM THE REGISTRY, not copied. Two hand-maintained copies of one list is the exact drift
+// this wiki fails the gate on, and a copy here would go stale silently: the tests it feeds assert
+// the LINT's behaviour, never these strings' content, so a mismatch shows up as fourteen
+// unrelated failures rather than as anything a reader can act on. The one test that is about the
+// content overrides them explicitly.
+const A1 = CHECKERS.find((c) => c.ruleId === "A1") as (typeof CHECKERS)[number];
+const A1_GAPS = A1.coverageGaps;
+const A1_ESTABLISHED = A1.coverageEstablished;
 
 /** Frontmatter of a rule page that satisfies every check. */
 const OK_RULE: Record<string, string> = {

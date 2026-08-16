@@ -5,7 +5,8 @@ import {
   truncatedUnverified,
 } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
-import type { Checker, Finding, History, Invocation } from "../../types.ts";
+import { machineErrorArgs, machineSelector } from "../../machine-mode.ts";
+import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: matching ESC is the assertion
@@ -30,32 +31,52 @@ export const noAnsiWhenPipedChecker: Checker = {
   // THE LARGER BOUNDARY, and the one this list omitted while looking thorough (review R6-5).
   // Those three are all limits of the DETECTOR, and a reader who checks them off has been told
   // nothing about WHERE it ran. B2 binds on stdout and stderr whenever output is non-TTY or
-  // machine mode is active — which is every byte the target ever writes under this kit — and two
-  // invocations are sampled. Nested help, `--version`, the output of a command that succeeds,
-  // machine-mode output and every diagnostic other than one usage error are unexamined, so a
-  // tool that colours its results and not its help passes B2 outright. A page can scope a
-  // universal clause down to whatever the probe happened to run without ever saying so; the last
-  // two entries are that sentence said out loud.
+  // machine mode is active — which is every byte the target ever writes under this kit — and the
+  // sampled invocations are a handful. Nested help, `--version`, the output of a command that
+  // succeeds and every diagnostic other than these two are unexamined, so a tool that colours its
+  // results and not its help passes B2 outright. A page can scope a universal clause down to
+  // whatever the probe happened to run without ever saying so; the last entry is that sentence
+  // said out loud.
+  //
+  // The MACHINE-MODE half of the binding condition is no longer a gap: the rule binds whenever
+  // machine mode is active, and one invocation now selects it. A tool that suppresses colour for
+  // a pipe but not for its declared machine mode — the two are different switches in more than
+  // one framework — is reachable where it previously was not.
   coverage: "partial",
   coverageGaps: [
     "only CSI escapes are detected and not OSC or single-character escape sequences",
     "carriage-return animation is not detected",
     "the NO_COLOR and --no-color and TERM=dumb overrides need a TTY and are never exercised",
-    "only root help and one usage error are sampled so nested help and version output and successful command output and other diagnostics are never inspected",
-    "machine mode is never selected although the rule binds whenever machine mode is active",
+    "only root help and two usage errors are sampled so nested help and version output and successful command output and other diagnostics are never inspected",
   ],
   coverageEstablished: [
     "no CSI introducer appears on stdout or stderr for root help or one usage error with both streams attached to pipes",
+    "for a target that advertises a machine-mode flag no CSI introducer appears on either stream for a usage error with that mode explicitly selected",
   ],
 
-  probes: (): Invocation[] => [
-    { args: ["--help"], inertness: "help-path", purpose: "B2: help must be escape-free" },
-    {
-      args: [`--${SENTINEL}-flag`],
-      inertness: "sentinel",
-      purpose: "B2: errors must be escape-free",
-    },
-  ],
+  probes: (d: Discovery): Invocation[] => {
+    const selector = machineSelector(d);
+    return [
+      { args: ["--help"], inertness: "help-path", purpose: "B2: help must be escape-free" },
+      {
+        args: [`--${SENTINEL}-flag`],
+        inertness: "sentinel",
+        purpose: "B2: errors must be escape-free",
+      },
+      // The rule binds whenever machine mode is ACTIVE, not only whenever stdout is a pipe, and
+      // those are separate switches in more than one framework — so a tool can strip colour for a
+      // pipe and keep it for its own JSON.
+      ...(selector
+        ? [
+            {
+              args: machineErrorArgs(selector),
+              inertness: "sentinel" as const,
+              purpose: `B2: machine-mode errors must be escape-free under ${selector}`,
+            },
+          ]
+        : []),
+    ];
+  },
 
   check: (h: History): Finding => {
     // findByPurpose, not an `invocation.purpose` scan: the sentinel-flag probe shares its args

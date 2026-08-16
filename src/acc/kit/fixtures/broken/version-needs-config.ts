@@ -48,7 +48,13 @@ if (args.includes("--version")) {
     );
     process.exit(1);
   }
-  process.stdout.write("1.0.0\n");
+  // Structured in machine mode (D1's other half), so the ONE thing this fixture gets wrong stays
+  // the one thing it was written to get wrong: a `--version` that needs a usable HOME.
+  process.stdout.write(
+    args.includes("--json")
+      ? `${JSON.stringify({ ok: true, data: { version: "1.0.0" } })}\n`
+      : "1.0.0\n",
+  );
   process.exit(0);
 }
 

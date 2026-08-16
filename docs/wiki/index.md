@@ -62,15 +62,15 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 
 | Rule                                                              | Tier       | Level | Checker     | Coverage | Gaps |
 | ----------------------------------------------------------------- | ---------- | ----- | ----------- | -------- | ---- |
-| [A1](./rules/parsing/unknown-flag-exits-nonzero.md)               | core       | L0    | implemented | partial  | 6    |
+| [A1](./rules/parsing/unknown-flag-exits-nonzero.md)               | core       | L0    | implemented | partial  | 5    |
 | [A2](./rules/parsing/unknown-command-exits-nonzero.md)            | core       | L0    | implemented | partial  | 4    |
 | [A3](./rules/parsing/errors-name-the-offending-token.md)          | core       | L0    | implemented | partial  | 4    |
 | [A4](./rules/parsing/unexpected-positionals-rejected.md)          | core       | L1    | implemented | partial  | 1    |
 | [A5](./rules/parsing/no-fuzzy-auto-correction.md)                 | core       | L0    | implemented | partial  | 5    |
 | [A6](./rules/parsing/double-dash-terminator.md)                   | diagnostic | L0    | implemented | partial  | 4    |
 | [A7](./rules/parsing/advertised-value-set-is-enforced.md)         | core       | L0    | implemented | partial  | 6    |
-| [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | L0    | implemented | partial  | 4    |
-| [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | L0    | implemented | partial  | 5    |
+| [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | L0    | implemented | partial  | 3    |
+| [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | L0    | implemented | partial  | 4    |
 | [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L0    | implemented | partial  | 4    |
 | [B5](./rules/streams/machine-mode-holds-on-parser-errors.md)      | core       | L0    | implemented | partial  | 6    |
 | [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | L0    | implemented | partial  | 4    |
@@ -85,7 +85,7 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | L0    | implemented | partial  | 4    |
 | [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | L0    | implemented | partial  | 4    |
 
-22 rules · 0 `complete` · 22 `partial` · 90 named gaps.
+22 rules · 0 `complete` · 22 `partial` · 87 named gaps.
 
 ### Parsing
 

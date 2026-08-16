@@ -7,7 +7,7 @@ description:
 tags: [streams, silent-failure, errors, core]
 related: [concept/error-envelope, concept/output-kind, rule/machine-output-is-parseable]
 status: current
-updated: 2026-08-14
+updated: 2026-08-16
 rule_id: B1
 tier: core
 probe_level: L0
@@ -18,9 +18,9 @@ coverage_gaps:
   - only usage-error failures are probed and never a runtime failure
   - stdout on a SUCCESSFUL command is never inspected for diagnostics
   - stderr is never required to carry the diagnostic so a failure that reports nothing at all passes
-  - machine mode is never selected so an error envelope written to stdout only in machine mode is not seen
 coverage_established:
   - every one of an unknown root flag and an unknown root verb that exited non-zero left stdout empty
+  - for a target that advertises a machine-mode flag the same unknown flag sent with that flag also left stdout empty
 ---
 
 # stdout carries only data
@@ -71,6 +71,7 @@ Inert (`L0`).
 ```
 <cli> --totally-made-up-flag
 <cli> nonsense-verb-xyz
+<cli> --totally-made-up-flag --json      # where help advertises a machine-mode flag
 ```
 
 Passes when stdout is **byte-empty** on every failing invocation.
@@ -79,6 +80,19 @@ The runner captures the two streams to separate buffers rather than reading them
 shared pipe — measuring stream separation through a merged stream cannot work, and an early
 attempt at exactly that produced identical byte counts for both streams and nearly went
 unnoticed.
+
+**The third probe selects machine mode, and it convicts a real house style.** A tool that routes
+its [error envelope](../../concepts/error-envelope.md) to **stdout** when machine mode is active —
+on the argument that in machine mode the envelope _is_ the answer — commits this violation on a
+path that previously had no probe. The catalogue's position is this page's first sentence: stdout
+carries the command's **result**, and a failure has no result. A consumer that reads stdout and
+gets a document receives something shaped like an answer.
+
+The **shape** of that document is not this rule's business:
+[B5](./machine-mode-holds-on-parser-errors.md) requires the failure to be emitted in the declared
+machine shape and is satisfied by a valid envelope wherever it lands. A tool with the stdout house
+style therefore passes B5 and fails B1 — one defect reported once by each rule that governs half
+of it, rather than the same rule twice.
 
 ## Current checker coverage
 
@@ -89,14 +103,14 @@ the rest of this page, unexamined.
 **Established**
 
 - every one of an unknown root flag and an unknown root verb that exited non-zero left stdout empty
+- for a target that advertises a machine-mode flag the same unknown flag sent with that flag also
+  left stdout empty
 
 **Gaps**
 
 - only usage-error failures are probed and never a runtime failure
 - stdout on a SUCCESSFUL command is never inspected for diagnostics
 - stderr is never required to carry the diagnostic so a failure that reports nothing at all passes
-- machine mode is never selected so an error envelope written to stdout only in machine mode is not
-  seen
 
 ## How to comply
 

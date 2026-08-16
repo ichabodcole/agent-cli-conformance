@@ -852,12 +852,20 @@ describe("acc check — the outcome exit code", () => {
   }, 30_000);
 
   // Waivers, end to end, against the fixture that motivated them. `exits-zero-on-unknown-flag.ts`
-  // violates seven core rules including D2 — the rule dogfooding found three of four real CLIs
+  // violates eight core rules including D2 — the rule dogfooding found three of four real CLIs
   // breaking deliberately, by printing help and exiting 0 on a bare invocation.
   describe("acc.config.json waivers", () => {
     const BROKEN = join(dirname(CLI), "kit/fixtures/broken/exits-zero-on-unknown-flag.ts");
-    /** Every core rule this fixture violates. Waiving all of them is what clears the gate. */
-    const VIOLATED = ["A1", "A2", "A3", "A5", "B3", "C2", "D2"];
+    /**
+     * Every core rule this fixture violates. Waiving all of them is what clears the gate.
+     *
+     * Pinned as a literal, and it GREW when D1 learned to inspect the machine-mode version
+     * payload: this fixture answers `--version --json` with `did the thing` at exit 0, which is
+     * the same one defect — it accepts everything — surfacing under one more rule. A list that
+     * derived itself from the run would make this test agree with whatever the kit currently
+     * says, which is the opposite of what it is for.
+     */
+    const VIOLATED = ["A1", "A2", "A3", "A5", "B3", "C2", "D1", "D2"];
 
     /** A throwaway directory holding one acc.config.json. Nothing outside it is touched. */
     function configDir(config: unknown): string {
@@ -866,7 +874,7 @@ describe("acc check — the outcome exit code", () => {
       return dir;
     }
 
-    test("a waiver is targeted — waiving D2 alone leaves the other six violations", async () => {
+    test("a waiver is targeted — waiving D2 alone leaves the other seven violations", async () => {
       const dir = configDir({
         rules: { D2: { severity: "off", reason: "human-first CLI; bare help is deliberate" } },
       });
@@ -875,7 +883,7 @@ describe("acc check — the outcome exit code", () => {
         expect(r.code).toBe(9);
         const { data } = JSON.parse(r.stdout);
         expect(data.conformant).toBe(false);
-        expect(data.counts.coreFailures).toBe(6);
+        expect(data.counts.coreFailures).toBe(7);
         expect(data.counts.waived).toBe(1);
       } finally {
         rmSync(dir, { recursive: true, force: true });

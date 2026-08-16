@@ -1,6 +1,6 @@
 import { crashedUnverified, findingFor, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
-import type { Checker, Finding, History, Invocation } from "../../types.ts";
+import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
 const RULE_ID = "C2";
@@ -21,21 +21,50 @@ export const usageDistinguishableChecker: Checker = {
   //
   // The third is the population being contrasted (review R6-5). The page enumerates five things
   // that are usage errors — bad flag, unknown command, unexpected positional, bare invocation,
-  // malformed value — and agreement is measured across two of them. A CLI that answers `2` for
-  // an unknown flag and `1` for a stray positional violates the rule on the axis this checker
-  // is named for and passes it, because the pair it compares happens to agree.
+  // malformed value — and agreement used to be measured across two of them, so a CLI answering
+  // `2` for an unknown flag and `1` for a bare invocation violated the rule on the axis this
+  // checker is named for and passed it, because the pair it compared happened to agree.
+  //
+  // FOUR of the five are now compared. The bare invocation was always recorded (D2 and E1 both
+  // send it) and simply was not read here; the malformed value arrives from A7, whose probe this
+  // one is byte-identical to, so the recorder runs it once. What is left is the unexpected
+  // positional, and it stays out of reach for the reason A4 does: a stray positional is only a
+  // stray positional if there is a verb for it to be stray to, and sending a verb is L1.
   coverage: "partial",
   coverageGaps: [
     "the internal-fault contrast is not established at L0 because no internal fault can be provoked inertly",
     "the taxonomy codes for more specific failures are not exercised",
-    "only an unknown flag and an unknown verb are contrasted so an unexpected positional and a malformed value and the bare invocation are never compared",
+    "an unexpected positional is never compared because a stray positional needs a verb to be stray to and sending a verb is above L0",
   ],
-  coverageEstablished: ["an unknown root flag and an unknown root verb both exit 2"],
+  coverageEstablished: [
+    "an unknown root flag and an unknown root verb and the bare invocation all exit with the same non-zero code",
+    "for a target whose help advertises a closed value set a value outside it exits with that same code",
+    "that code is 2 where the pass is reported and the verdict is unverified where it is any other single code",
+  ],
 
-  probes: (): Invocation[] => [
-    { args: [`--${SENTINEL}-flag`], inertness: "sentinel", purpose: "C2: usage error via flag" },
-    { args: [`${SENTINEL}-verb`], inertness: "sentinel", purpose: "C2: usage error via verb" },
-  ],
+  probes: (d: Discovery): Invocation[] => {
+    const [set] = Object.entries(d.valueSets);
+    return [
+      { args: [`--${SENTINEL}-flag`], inertness: "sentinel", purpose: "C2: usage error via flag" },
+      { args: [`${SENTINEL}-verb`], inertness: "sentinel", purpose: "C2: usage error via verb" },
+      // Already recorded by D2 and E1; declared here so `findByPurpose` returns it and the
+      // contrast is not silently narrower than the page claims.
+      { args: [], inertness: "bare", purpose: "C2: usage error via the bare invocation" },
+      // The malformed value, from A7's declaration. Byte-identical to A7's attached probe, so
+      // dedup runs one process and the two rules read one observation — which matters here,
+      // because a contrast built from a DIFFERENT run of the same argv would be comparing codes
+      // the target chose on two occasions.
+      ...(set
+        ? [
+            {
+              args: [`${set[0]}=${SENTINEL}`],
+              inertness: "sentinel" as const,
+              purpose: `C2: usage error via a value outside ${set[0]}'s advertised set`,
+            },
+          ]
+        : []),
+    ];
+  },
 
   check: (h: History): Finding => {
     // findByPurpose, not an `invocation.purpose` scan: these probes are byte-identical to A1's,
@@ -60,8 +89,14 @@ export const usageDistinguishableChecker: Checker = {
     // A hung probe WAS recorded — it just never returned a code to compare. Reporting that as
     // "not recorded" would conflate two different outcomes A1 and C1 both take care to keep
     // separate: missing evidence vs. evidence that says the target hung.
+    //
+    // ANY hang voids the verdict, not just enough of them to leave fewer than two survivors. This
+    // rule's subject is agreement across a POPULATION of usage errors, so dropping the killed
+    // member and comparing the rest reports agreement over a contrast narrower than the page
+    // claims — and says nothing about it. That was survivable while there were two probes and one
+    // hang left one; with four, three survivors would have passed.
     const usage = recorded.filter((o) => !o.timedOut);
-    if (usage.length < 2) {
+    if (usage.length < recorded.length) {
       const timedOutCount = recorded.length - usage.length;
       return finding(
         "unverified",
@@ -91,7 +126,7 @@ export const usageDistinguishableChecker: Checker = {
     return codes[0] === 2
       ? finding(
           "pass",
-          "usage errors use exit 2 consistently; internal-fault contrast unverified at L0",
+          `${codes.length} usage-error shapes all use exit 2; internal-fault contrast unverified at L0`,
           evidence,
         )
       : finding(

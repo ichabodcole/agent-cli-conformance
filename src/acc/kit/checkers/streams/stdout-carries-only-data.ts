@@ -5,7 +5,8 @@ import {
   truncatedUnverified,
 } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
-import type { Checker, Finding, History, Invocation } from "../../types.ts";
+import { machineErrorArgs, machineSelector } from "../../machine-mode.ts";
+import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
 const RULE_ID = "B1";
@@ -24,27 +25,47 @@ export const stdoutCarriesOnlyDataChecker: Checker = {
   // first sentence — stdout carries the RESULT and nothing else — is about the success path,
   // which this checker never inspects at all.
   //
-  // The third and fourth are what an empty stdout does NOT establish (review R6-5). The rule has
-  // two halves and only one of them is an absence: "stdout MUST be empty on failure" is tested,
+  // The third is what an empty stdout does NOT establish (review R6-5). The rule has two halves
+  // and only one of them is an absence: "stdout MUST be empty on failure" is tested,
   // "diagnostics MUST go to stderr" is not, so a target that fails in total silence — nothing on
-  // either stream — is scored identically to one that reported properly. And the sampled streams
-  // are the target's TEXT streams: a tool that writes its error envelope to stdout only when
-  // machine mode is active commits this violation on a path no probe here selects.
+  // either stream — is scored identically to one that reported properly.
+  //
+  // MACHINE MODE IS NOW SELECTED, and that closure has a consequence worth stating where it is
+  // implemented rather than leaving it to be discovered by a red gate. A tool that routes its
+  // error envelope to STDOUT when machine mode is active — a real and reasonably common house
+  // style, on the argument that the envelope IS the answer — commits this violation on a path
+  // that previously had no probe, and now fails a CORE rule. The catalogue's position is the
+  // rule's first sentence: stdout carries the result, and a failure has no result. The envelope's
+  // SHAPE is B5's subject and passes there regardless; this rule owns the stream.
   coverage: "partial",
   coverageGaps: [
     "only usage-error failures are probed and never a runtime failure",
     "stdout on a SUCCESSFUL command is never inspected for diagnostics",
     "stderr is never required to carry the diagnostic so a failure that reports nothing at all passes",
-    "machine mode is never selected so an error envelope written to stdout only in machine mode is not seen",
   ],
   coverageEstablished: [
     "every one of an unknown root flag and an unknown root verb that exited non-zero left stdout empty",
+    "for a target that advertises a machine-mode flag the same unknown flag sent with that flag also left stdout empty",
   ],
 
-  probes: (): Invocation[] => [
-    { args: [`--${SENTINEL}-flag`], inertness: "sentinel", purpose: "B1: failure via bad flag" },
-    { args: [`${SENTINEL}-verb`], inertness: "sentinel", purpose: "B1: failure via bad verb" },
-  ],
+  probes: (d: Discovery): Invocation[] => {
+    const selector = machineSelector(d);
+    return [
+      { args: [`--${SENTINEL}-flag`], inertness: "sentinel", purpose: "B1: failure via bad flag" },
+      { args: [`${SENTINEL}-verb`], inertness: "sentinel", purpose: "B1: failure via bad verb" },
+      // The path the old gap named: an error envelope written to stdout ONLY when machine mode is
+      // active is invisible to the two probes above, because neither selects it.
+      ...(selector
+        ? [
+            {
+              args: machineErrorArgs(selector),
+              inertness: "sentinel" as const,
+              purpose: `B1: failure under ${selector}`,
+            },
+          ]
+        : []),
+    ];
+  },
 
   check: (h: History): Finding => {
     // findByPurpose, not an `invocation.purpose` scan: these args are identical to A1's and
@@ -88,7 +109,7 @@ export const stdoutCarriesOnlyDataChecker: Checker = {
         )
       : finding(
           "pass",
-          `stdout empty across ${failures.length} failing usage-error invocation(s)`,
+          `stdout empty across ${failures.length} failing usage-error invocation(s), machine mode included where advertised`,
           failures.map((o) => o.id),
         );
   },

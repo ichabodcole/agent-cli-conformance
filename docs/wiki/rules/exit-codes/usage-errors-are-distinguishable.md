@@ -7,7 +7,7 @@ description:
 tags: [exit-codes, errors, core]
 related: [concept/exit-codes, decision/exit-codes-below-125]
 status: current
-updated: 2026-08-14
+updated: 2026-08-16
 rule_id: C2
 tier: core
 probe_level: L0
@@ -17,9 +17,11 @@ coverage: partial
 coverage_gaps:
   - the internal-fault contrast is not established at L0 because no internal fault can be provoked inertly
   - the taxonomy codes for more specific failures are not exercised
-  - only an unknown flag and an unknown verb are contrasted so an unexpected positional and a malformed value and the bare invocation are never compared
+  - an unexpected positional is never compared because a stray positional needs a verb to be stray to and sending a verb is above L0
 coverage_established:
-  - an unknown root flag and an unknown root verb both exit 2
+  - an unknown root flag and an unknown root verb and the bare invocation all exit with the same non-zero code
+  - for a target whose help advertises a closed value set a value outside it exits with that same code
+  - that code is 2 where the pass is reported and the verdict is unverified where it is any other single code
 ---
 
 # "You invoked me wrong" is distinguishable from "I broke"
@@ -62,16 +64,30 @@ Inert (`L0`), but **only partly verifiable without declarations** — and the ch
 rather than implying more.
 
 ```
-<cli> --totally-made-up-flag      # usage error
-<cli> nonsense-verb-xyz           # usage error
+<cli> --totally-made-up-flag      # usage error: unknown flag
+<cli> nonsense-verb-xyz           # usage error: unknown verb
+<cli>                             # usage error: the bare invocation
+<cli> --format=nonsense-xyz       # usage error: a value outside an advertised set
 ```
 
 At `L0` the checker verifies:
 
-- both exit non-zero (**core**)
-- both yield the **same** code, since both are the same error class (**core**)
+- every one exits non-zero (**core**)
+- every one yields the **same** code, since all of them are the same error class (**core**)
 - the code is `2` (**diagnostic** — reported, not failed, because an undeclared tool never
   agreed to the taxonomy)
+
+**Four of this page's five usage-error shapes are now contrasted.** The bare invocation was always
+recorded — [D2](../discoverability/bare-invocation-is-a-usage-error.md) and
+[E1](../interactivity/never-block-without-a-tty.md) both send it — and simply was not read here;
+the malformed value arrives from [A7](../parsing/advertised-value-set-is-enforced.md), whose probe
+this one is byte-identical to, so the recorder runs it once and both rules read the same
+observation. That matters for a contrast: two runs of the same argv would be comparing codes the
+target chose on two separate occasions.
+
+The fifth, an unexpected positional, stays out of reach for the reason
+[A4](../parsing/unexpected-positionals-rejected.md) does — a positional is only _stray_ if there is
+a verb for it to be stray to, and sending a verb is `L1`.
 
 Distinguishability from an internal error **cannot** be verified black-box: there is no
 general, safe way to provoke an internal fault in an arbitrary binary. The checker reports that
@@ -90,15 +106,20 @@ the rest of this page, unexamined.
 
 **Established**
 
-- an unknown root flag and an unknown root verb both exit 2
+- an unknown root flag and an unknown root verb and the bare invocation all exit with the same
+  non-zero code
+- for a target whose help advertises a closed value set a value outside it exits with that same
+  code
+- that code is 2 where the pass is reported and the verdict is unverified where it is any other
+  single code
 
 **Gaps**
 
 - the internal-fault contrast is not established at L0 because no internal fault can be provoked
   inertly
 - the taxonomy codes for more specific failures are not exercised
-- only an unknown flag and an unknown verb are contrasted so an unexpected positional and a
-  malformed value and the bare invocation are never compared
+- an unexpected positional is never compared because a stray positional needs a verb to be stray to
+  and sending a verb is above L0
 
 ## How to comply
 

@@ -206,14 +206,27 @@ describe("a violation already visible in the prefix still fails", () => {
   });
 
   test("A1 still fails on stdout the target had already written", () => {
-    const o = base("a1", ["--acc-probe-xyzzy-flag"], "A1: an unrecognised flag must be rejected");
+    // BOTH of A1's probes, because it now sends two — the valueless flag and the same flag
+    // carrying a value. Only the first floods; the point is that one prefix containing output is
+    // enough to keep the finding, not that every probe has to.
+    const flooded = base(
+      "a1",
+      ["--acc-probe-xyzzy-flag"],
+      "A1: an unrecognised flag must be rejected",
+    );
+    const withValue = base(
+      "a1-value",
+      ["--acc-probe-xyzzy-flag", "acc-probe-xyzzy-value"],
+      "A1: an unrecognised flag carrying a value must be rejected too",
+    );
     const h = historyOf([
       {
-        ...o,
+        ...flooded,
         stdout: "results...",
         stdoutBytes: 4 * 1024 * 1024,
-        invocation: { ...o.invocation, inertness: "sentinel" },
+        invocation: { ...flooded.invocation, inertness: "sentinel" },
       },
+      { ...withValue, invocation: { ...withValue.invocation, inertness: "sentinel" } },
     ]);
     const f = CHECKERS.find((c) => c.ruleId === "A1");
     const verdict = f?.check(h);
