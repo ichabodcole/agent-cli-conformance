@@ -16,7 +16,13 @@ const fixture = (rel: string): TargetInfo => {
 function emptyHistory(): History {
   return {
     target: { path: "x", argv0: ["x"] },
-    discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false },
+    discovery: {
+      subcommands: [],
+      flags: [],
+      machineModeFlag: null,
+      valueSets: {},
+      helpReadable: false,
+    },
     observations: [],
     byId: new Map(),
   };

@@ -189,6 +189,19 @@ export interface Discovery {
   flags: string[];
   /** A machine-mode flag if one was advertised (`--json`, `--format`). */
   machineModeFlag: string | null;
+  /**
+   * Flags whose help ADVERTISES a closed set of values, keyed by flag name.
+   *
+   * The declaration A7 falsifies. A set here is not the kit's opinion about what a flag accepts
+   * — it is what the target's own help says, read back off the surface the target published, so
+   * the probe built from it asks the target to honour its own words. A flag with no advertised
+   * set never appears, and an empty map turns A7 into `unverified` rather than a vacuous pass:
+   * a tool that declares nothing has made no claim to falsify.
+   *
+   * Two members minimum. A one-member "set" is a constant rather than a choice, and the
+   * alternation notations this is parsed from cannot express one anyway.
+   */
+  valueSets: Record<string, string[]>;
   /** True when root help was readable at all. Everything above is meaningless if false. */
   helpReadable: boolean;
 }

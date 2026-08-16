@@ -35,7 +35,13 @@ describe("F1 — help and schema never contain secrets", () => {
   test("reports unverified when the probe was not recorded", () => {
     const h: History = {
       target: { path: "x", argv0: ["x"] },
-      discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false },
+      discovery: {
+        subcommands: [],
+        flags: [],
+        machineModeFlag: null,
+        valueSets: {},
+        helpReadable: false,
+      },
       observations: [],
       byId: new Map(),
     };

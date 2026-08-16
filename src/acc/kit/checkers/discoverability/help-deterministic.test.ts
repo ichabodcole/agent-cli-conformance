@@ -43,7 +43,13 @@ function historyWithOneRun(): History {
   };
   return {
     target: { path: "x", argv0: ["x"] },
-    discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: true },
+    discovery: {
+      subcommands: [],
+      flags: [],
+      machineModeFlag: null,
+      valueSets: {},
+      helpReadable: true,
+    },
     observations: [o],
     byId: new Map([[o.id, o]]),
   };
@@ -125,7 +131,13 @@ describe("D4 compares digests, not the strings the decode produced", () => {
 
   const historyOf = (observations: Observation[]): History => ({
     target: { path: "/invalid-byte-target", argv0: ["/invalid-byte-target"] },
-    discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: true },
+    discovery: {
+      subcommands: [],
+      flags: [],
+      machineModeFlag: null,
+      valueSets: {},
+      helpReadable: true,
+    },
     observations,
     byId: new Map(observations.map((o) => [o.id, o])),
   });

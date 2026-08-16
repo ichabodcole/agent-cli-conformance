@@ -30,7 +30,13 @@ function obs(args: string[], purposes: string[]): Observation {
 function history(observations: Observation[]): History {
   return {
     target: { path: "/dev/null", argv0: ["bun", "/dev/null"] },
-    discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false },
+    discovery: {
+      subcommands: [],
+      flags: [],
+      machineModeFlag: null,
+      valueSets: {},
+      helpReadable: false,
+    },
     observations,
     byId: new Map(observations.map((o) => [o.id, o])),
   };

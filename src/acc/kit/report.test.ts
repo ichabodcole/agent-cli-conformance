@@ -5,7 +5,13 @@ import type { Checker, Coverage, Finding, History, Observation, ProbeLevel } fro
 
 const H: History = {
   target: { path: "x", argv0: ["x"] },
-  discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: true },
+  discovery: {
+    subcommands: [],
+    flags: [],
+    machineModeFlag: null,
+    valueSets: {},
+    helpReadable: true,
+  },
   observations: [],
   byId: new Map(),
 };

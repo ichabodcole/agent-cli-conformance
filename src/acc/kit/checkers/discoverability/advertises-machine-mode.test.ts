@@ -49,7 +49,7 @@ function historyWithHelp(text: string, subcommands: string[] = []): History {
   const o = observation("fake-help", ["--help"], "D3: help mentions machine mode", text);
   return {
     target: { path: "x", argv0: ["x"] },
-    discovery: { subcommands, flags: [], machineModeFlag: null, helpReadable: true },
+    discovery: { subcommands, flags: [], machineModeFlag: null, valueSets: {}, helpReadable: true },
     observations: [o],
     byId: new Map([[o.id, o]]),
   };
@@ -84,6 +84,7 @@ function historyWithAutoMachineHelp(machineHelp: string, forcedHelp: string | nu
       subcommands: ["schema"],
       flags: ["--json", "--format"],
       machineModeFlag: "--json",
+      valueSets: {},
       helpReadable: true,
     },
     observations: [plain, forced],
@@ -116,7 +117,13 @@ describe("D3 — help advertises the machine-readable path", () => {
   test("reports unverified when help was not readable", () => {
     const h: History = {
       target: { path: "x", argv0: ["x"] },
-      discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false },
+      discovery: {
+        subcommands: [],
+        flags: [],
+        machineModeFlag: null,
+        valueSets: {},
+        helpReadable: false,
+      },
       observations: [],
       byId: new Map(),
     };

@@ -73,7 +73,13 @@ describe("A6 — the `--` terminator", () => {
   test("reports unverified when no probe was recorded", () => {
     const empty = {
       target: { path: "x", argv0: ["x"] },
-      discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false },
+      discovery: {
+        subcommands: [],
+        flags: [],
+        machineModeFlag: null,
+        valueSets: {},
+        helpReadable: false,
+      },
       observations: [],
       byId: new Map(),
     };

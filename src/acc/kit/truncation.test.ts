@@ -25,6 +25,7 @@ const DISCOVERY: Discovery = {
   subcommands: ["list"],
   flags: ["--json", "--verbose"],
   machineModeFlag: "--json",
+  valueSets: { "--format": ["text", "json"] },
   helpReadable: true,
 };
 

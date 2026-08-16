@@ -37,7 +37,13 @@ describe("E1 — never block on input without a TTY", () => {
   test("reports unverified when probes were not recorded", () => {
     const h: History = {
       target: { path: "x", argv0: ["x"] },
-      discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false },
+      discovery: {
+        subcommands: [],
+        flags: [],
+        machineModeFlag: null,
+        valueSets: {},
+        helpReadable: false,
+      },
       observations: [],
       byId: new Map(),
     };

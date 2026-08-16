@@ -46,6 +46,115 @@ function extractFlags(text: string, lines: string[]): string[] {
 }
 
 /**
+ * One alternation member: no spaces, no delimiters, and never itself flag-shaped — `[--json]`
+ * is optional-flag notation, not a value set, and `<file|->` offers a bare hyphen as a value.
+ */
+const SET_MEMBER = /^[A-Za-z0-9][A-Za-z0-9._+-]*$/;
+
+/** `<text|json>`, `(text|json)`, `[text|json]` — the delimiter is decoration, the `|` is the set. */
+const DELIMITED_SET = /[<([]([^<>()[\]]+)[>)\]]/;
+
+/** `one of: a, b, c` / `one of a or b` — the prose spelling, which needs no delimiters at all. */
+const ONE_OF = /\bone of:?\s+(.+)$/i;
+
+/** The first long flag on a line, which is the flag the rest of that line describes. */
+const FIRST_FLAG = /(?<![\w-])(--[a-z][a-z0-9-]*)/i;
+
+/**
+ * The closed value sets a help screen advertises, keyed by flag.
+ *
+ * Read off ONE line at a time and only after the flag it belongs to, because that is how every
+ * help layout surveyed writes it — the set sits in the flag's own value slot or in the first
+ * sentence of its description. A continuation line carrying the set two rows below its flag is
+ * not found, and finding nothing is the honest result: A7 reports `unverified`, which is what
+ * "this tool declared nothing here" should look like.
+ *
+ * Scoped to the Options block on the same terms as `extractFlags`, and for the same reason — a
+ * piped example (`mycli list | jq -r '.a|.b'`) is full of alternations that belong to another
+ * program entirely.
+ */
+function extractValueSets(lines: string[], scoped: boolean): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  let inOptions = !scoped;
+  for (const line of lines) {
+    if (scoped && OPTIONS_HEADING.test(line)) {
+      inOptions = true;
+      continue;
+    }
+    if (scoped && inOptions && (line.trim() === "" || NEXT_HEADING.test(line.trim()))) {
+      inOptions = false;
+      continue;
+    }
+    if (!inOptions) continue;
+
+    const flag = FIRST_FLAG.exec(line);
+    if (!flag?.[1]) continue;
+    const after = line.slice((flag.index ?? 0) + (flag[1] as string).length);
+
+    // Delimited alternation first: it is the value slot, so it is unambiguous. `one of:` is the
+    // fallback, since it lives in prose and prose can say anything.
+    const delimited = DELIMITED_SET.exec(after)?.[1];
+    const raw = delimited?.includes("|")
+      ? delimited.split("|")
+      : (ONE_OF.exec(after)?.[1]?.split(/,|\bor\b/) ?? []);
+
+    const values = raw.map((v) => v.trim().replace(/^[`'"]|[`'".]$/g, "")).filter(Boolean);
+    // Two members or nothing. One value is a constant, not a choice, and a stray `<file>` or a
+    // trailing sentence fragment collapses to exactly one — so the floor is also the filter.
+    if (values.length > 1 && values.every((v) => SET_MEMBER.test(v)) && !(flag[1] in out))
+      out[flag[1] as string] = values;
+  }
+  return out;
+}
+
+/**
+ * The same sets, read STRUCTURALLY out of a help document that is itself JSON.
+ *
+ * Not an indulgence: every probe runs with stdout on a pipe, so a tool that switches to machine
+ * mode when its caller is a program — the behaviour this catalogue asks for in
+ * [machine mode](../../../docs/wiki/concepts/machine-mode.md) — answers `--help` with a schema,
+ * and `acc` itself is one of them. Parsing only prose would mean the rule could never be checked
+ * against the tools that took the catalogue's own advice, which is the wrong way round.
+ *
+ * `{ name: "--flag", values: [...] }` is the shape `acc schema` publishes and the one the
+ * `values`/`choices` vocabulary of every schema format surveyed converges on. Anything else is
+ * simply not found, on the same terms as the prose reader above.
+ */
+function valueSetsFromJson(text: string): Record<string, string[]> | null {
+  let doc: unknown;
+  try {
+    doc = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  const out: Record<string, string[]> = {};
+  const visit = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    if (node === null || typeof node !== "object") return;
+    const obj = node as Record<string, unknown>;
+    const { name, values } = obj;
+    if (
+      typeof name === "string" &&
+      /^--[a-z]/i.test(name) &&
+      Array.isArray(values) &&
+      values.length > 1 &&
+      values.every((v) => typeof v === "string" && SET_MEMBER.test(v)) &&
+      !(name in out)
+    ) {
+      out[name] = values as string[];
+    }
+    // Depth-first in declaration order, so the first set found is the one the document presents
+    // first — a global flag ahead of a subcommand's, in every schema layout surveyed.
+    for (const value of Object.values(obj)) visit(value);
+  };
+  visit(doc);
+  return out;
+}
+
+/**
  * Parse a help screen heuristically.
  *
  * Deliberately conservative: finding nothing is a legitimate result. Guessing a subcommand
@@ -85,7 +194,16 @@ export function parseHelp(text: string): Omit<Discovery, "helpReadable"> {
 
   const flags = extractFlags(text, lines);
   const machineModeFlag = MACHINE_FLAGS.find((f) => flags.includes(f)) ?? null;
-  return { subcommands, flags, machineModeFlag };
+  // Same precedence as `extractFlags`: scope to the Options block when there is one, fall back to
+  // the whole text when there is not. The JSON branch wins outright, because a document that
+  // parses whole is a declaration rather than a layout to guess at.
+  const valueSets =
+    valueSetsFromJson(text) ??
+    extractValueSets(
+      lines,
+      lines.some((l) => OPTIONS_HEADING.test(l)),
+    );
+  return { subcommands, flags, machineModeFlag, valueSets };
 }
 
 export async function discover(target: TargetInfo): Promise<Discovery> {
@@ -98,7 +216,13 @@ export async function discover(target: TargetInfo): Promise<Discovery> {
   // Help on stderr still tells us the surface; only an empty or failed run does not.
   const text = o.stdout || o.stderr;
   if (o.timedOut || text.trim() === "") {
-    return { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false };
+    return {
+      subcommands: [],
+      flags: [],
+      machineModeFlag: null,
+      valueSets: {},
+      helpReadable: false,
+    };
   }
   return { ...parseHelp(text), helpReadable: true };
 }

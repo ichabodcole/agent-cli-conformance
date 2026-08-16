@@ -83,6 +83,95 @@ describe("parseHelp", () => {
   });
 });
 
+// A7 falsifies the target's OWN declaration, so everything it can assert rests on what is read
+// back here. A set invented from a layout that does not carry one would make A7 fail a tool for
+// breaking a promise it never made — so the negative cases below matter as much as the positive
+// ones, and there are more of them.
+describe("parseHelp — closed value sets", () => {
+  test.each([
+    ["angle brackets", "Options:\n  --format <text|json>   Output format.\n"],
+    ["parentheses", "Options:\n  --format (text|json)   Output format.\n"],
+    ["square brackets", "Options:\n  --format [text|json]   Output format.\n"],
+    ["an attached value slot", "Options:\n  --format=<text|json>   Output format.\n"],
+    ["prose", "Options:\n  --format   Output format, one of: text, json\n"],
+    ["prose with `or`", "Options:\n  --format   Output format, one of text or json\n"],
+  ])("reads a set advertised with %s", (_label, help) => {
+    expect(parseHelp(help).valueSets).toEqual({ "--format": ["text", "json"] });
+  });
+
+  test("reads sets for several flags, keyed by the flag each belongs to", () => {
+    const d = parseHelp(
+      "Options:\n  --format <text|json>    Output format.\n  --tier <core|diagnostic>  Tier.\n",
+    );
+    expect(d.valueSets).toEqual({
+      "--format": ["text", "json"],
+      "--tier": ["core", "diagnostic"],
+    });
+  });
+
+  // The three shapes that LOOK like a set and are not. Each one would hand A7 a probe built on
+  // a promise the tool never made.
+  test.each([
+    ["a value hint with no alternation", "Options:\n  --format <fmt>   Output format.\n"],
+    ["optional-flag notation", "Options:\n  --format <fmt>   see [--json]\n"],
+    ["an alternation of flags", "Options:\n  --mode <--fast|--slow>   Mode.\n"],
+    ["a bare description", "Options:\n  --verbose   Say more.\n"],
+  ])("finds no set in %s", (_label, help) => {
+    expect(parseHelp(help).valueSets).toEqual({});
+  });
+
+  // Same scoping argument as the flag scan: an alternation inside a piped example belongs to jq,
+  // not to the target.
+  test("does not read a set out of an example outside the options block", () => {
+    const d = parseHelp(
+      "Options:\n  --verbose   Say more.\n\nExamples:\n  mycli list | jq '.a|.b'\n",
+    );
+    expect(d.valueSets).toEqual({});
+  });
+
+  // The structural branch. Every probe runs with stdout on a pipe, so a tool that answers a
+  // program with a schema — exactly what this catalogue asks for — publishes its sets as data
+  // rather than as prose, and reading only prose would exempt the tools that complied.
+  test("reads sets structurally when help is itself a JSON document", () => {
+    const help = JSON.stringify({
+      ok: true,
+      data: {
+        name: "mycli",
+        global_args: [{ name: "--json" }, { name: "--format", values: ["text", "json"] }],
+        commands: [{ name: "rules", args: [{ name: "--tier", values: ["core", "diagnostic"] }] }],
+      },
+    });
+    expect(parseHelp(help).valueSets).toEqual({
+      "--format": ["text", "json"],
+      "--tier": ["core", "diagnostic"],
+    });
+  });
+
+  // Declaration order, not discovery order: A7 probes the first set it is given, and a global
+  // flag reaching the target's root is a stronger probe than a subcommand's flag sent there.
+  test("presents a global flag's set before a subcommand's", () => {
+    const help = JSON.stringify({
+      data: {
+        global_args: [{ name: "--format", values: ["text", "json"] }],
+        commands: [{ args: [{ name: "--tier", values: ["core", "diagnostic"] }] }],
+      },
+    });
+    expect(Object.keys(parseHelp(help).valueSets)).toEqual(["--format", "--tier"]);
+  });
+
+  test("ignores a JSON entry whose values are not a set of at least two plain strings", () => {
+    const help = JSON.stringify({
+      args: [
+        { name: "--one", values: ["only"] },
+        { name: "--objs", values: [{ a: 1 }, { b: 2 }] },
+        { name: "--spaced", values: ["two words", "other"] },
+        { name: "not-a-flag", values: ["a", "b"] },
+      ],
+    });
+    expect(parseHelp(help).valueSets).toEqual({});
+  });
+});
+
 describe("discover", () => {
   test("reads the conforming fixture's surface", async () => {
     const d = await discover(CONFORMING);
@@ -95,5 +184,8 @@ describe("discover", () => {
     const d = await discover({ path: "nope", argv0: ["/nonexistent-acc-xyz"] });
     expect(d.helpReadable).toBe(false);
     expect(d.subcommands).toEqual([]);
+    // A7 reads this map, and a target whose help could not be read has declared nothing —
+    // inheriting a set from a failed run would be the purest form of inventing the evidence.
+    expect(d.valueSets).toEqual({});
   });
 });

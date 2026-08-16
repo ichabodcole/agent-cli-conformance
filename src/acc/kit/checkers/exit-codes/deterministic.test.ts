@@ -44,7 +44,13 @@ function historyWithRuns(n: 0 | 1 | 2): History {
   }));
   return {
     target: { path: "x", argv0: ["x"] },
-    discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false },
+    discovery: {
+      subcommands: [],
+      flags: [],
+      machineModeFlag: null,
+      valueSets: {},
+      helpReadable: false,
+    },
     observations,
     byId: new Map(observations.map((o) => [o.id, o])),
   };
@@ -83,7 +89,13 @@ function historyWithTimedOutRuns(): History {
   }));
   return {
     target: { path: "x", argv0: ["x"] },
-    discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false },
+    discovery: {
+      subcommands: [],
+      flags: [],
+      machineModeFlag: null,
+      valueSets: {},
+      helpReadable: false,
+    },
     observations,
     byId: new Map(observations.map((o) => [o.id, o])),
   };

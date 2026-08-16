@@ -69,7 +69,13 @@ function historyWithOneTimedOutProbe(): History {
   ];
   return {
     target: { path: "x", argv0: ["x"] },
-    discovery: { subcommands: [], flags: [], machineModeFlag: null, helpReadable: false },
+    discovery: {
+      subcommands: [],
+      flags: [],
+      machineModeFlag: null,
+      valueSets: {},
+      helpReadable: false,
+    },
     observations,
     byId: new Map(observations.map((o) => [o.id, o])),
   };

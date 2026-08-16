@@ -36,6 +36,7 @@ describe("A4 — arity cannot be probed at L0", () => {
       subcommands: ["list"],
       flags: ["--json"],
       machineModeFlag: "--json",
+      valueSets: {},
       helpReadable: true,
     });
     expect(probes).toEqual([]);
