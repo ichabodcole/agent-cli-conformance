@@ -200,7 +200,12 @@ bun run check                  # THE gate: typecheck, lint, wiki lint, tests
 bun docs/wiki/lint.ts          # link, anchor, frontmatter, orphan and rule checks
 bun docs/wiki/lint.ts --json   # emit the knowledge graph
 bun run docs:sync              # regenerate the generated blocks in docs/wiki/index.md
+bun run docs:build             # render the wiki to docs/dist/ — open index.html, no server
 ```
+
+`docs:build` consumes the same `--json` graph rather than re-deriving it, which is what lets a
+page show the one thing the markdown cannot: the backlinks, which SCHEMA.md says are computed and
+never authored. The output is gitignored and needs no network — it reads from `file://`.
 
 `bun run check` is the whole gate and the only definition of it — the pre-commit hook and
 [the CI workflow](.github/workflows/check.yml) both run exactly that line, so neither can

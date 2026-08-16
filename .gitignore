@@ -1,5 +1,8 @@
 node_modules/
 dist/
+# `bun run docs:build` — the rendered wiki. Already covered by `dist/` above; named
+# explicitly so the output location is discoverable from here.
+docs/dist/
 .DS_Store
 *.log
 .superpowers/
