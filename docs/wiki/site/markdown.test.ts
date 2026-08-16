@@ -197,6 +197,23 @@ describe("the stylesheet stays on the semantic token layer", () => {
     ]);
   });
 
+  // Both of these walked straight past the gate until the declaration scanner stopped anchoring
+  // to the start of a line and stopped taking only the first match. Found by smuggling a literal
+  // into the shipped stylesheet, which is the only way this class of hole ever shows up.
+  // Two problems each, for the same reason the `#666` case above reports two: a hex in a colour
+  // property is both a literal outside the token block and a bare value in a colour property.
+  test("a hex literal in a SINGLE-LINE rule is caught", () => {
+    const found = tokenViolations(`${css}\n.x { color: #663399; }\n`);
+    expect(found).toHaveLength(2);
+    expect(found.every((p) => p.includes("#663399"))).toBe(true);
+  });
+
+  test("a literal in the SECOND declaration on a line is caught", () => {
+    const found = tokenViolations(`${css}\n.x {\n  margin: 0; color: #663399;\n}\n`);
+    expect(found).toHaveLength(2);
+    expect(found.every((p) => p.includes("#663399"))).toBe(true);
+  });
+
   test("a semantic token in the same position is fine", () => {
     expect(tokenViolations(`${css}\n.x {\n  border: 1px solid var(--color-border);\n}\n`)).toEqual(
       [],

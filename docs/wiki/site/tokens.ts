@@ -90,8 +90,17 @@ export function declarationsOutsideTokens(css: string): Declaration[] {
   const out: Declaration[] = [];
   const lines = scanned.split("\n");
   for (const [n, line] of lines.entries()) {
-    const m = /^\s*([-a-zA-Z]+)\s*:\s*([^;{}]*);/.exec(line);
-    if (m) out.push({ prop: (m[1] as string).toLowerCase(), value: m[2] as string, line: n + 1 });
+    // EVERY declaration on the line, and NOT anchored to its start. Both halves are load-bearing:
+    // `^\s*` made `.x { color: #666; }` invisible because the line begins with the selector, and a
+    // single `exec` saw only the first pair, so `{ color: red; background: blue }` hid the second.
+    // A gate that depends on how the source happens to be wrapped is the unfalsifiable claim this
+    // file exists to refuse — and this one was found by smuggling a literal past it, not by review.
+    //
+    // Dropping the anchor cannot pick up a selector: `a:hover {` and `(prefers-color-scheme: dark)`
+    // both reach a brace before the required `;`, and `[^;{}]*` refuses to cross one.
+    for (const m of line.matchAll(/([-a-zA-Z]+)\s*:\s*([^;{}]*);/g)) {
+      out.push({ prop: (m[1] as string).toLowerCase(), value: m[2] as string, line: n + 1 });
+    }
   }
   return out;
 }
