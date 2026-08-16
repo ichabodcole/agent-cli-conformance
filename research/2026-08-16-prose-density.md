@@ -18,6 +18,38 @@ Nothing here is about correctness. An external review of this wiki found the pro
 the claims "evidenced," and that assessment stands. Density is a separate axis from accuracy, and
 a page can be maximally accurate and still cost more to read than it should.
 
+### Three axes, and this document is only about one
+
+They are separable, they have separate remedies, and conflating them wastes effort on the wrong
+one.
+
+| Axis                      | The question                                 | Where it is handled                           |
+| ------------------------- | -------------------------------------------- | --------------------------------------------- |
+| **Sentence construction** | is this sentence hard to parse?              | this document; the review skill               |
+| **Aggregate register**    | is this page or corpus heavy overall?        | the measurement script, subordinate           |
+| **Content inclusion**     | should this material be on this page at all? | Diátaxis; review findings DTX-2, DTX-3, DTX-4 |
+
+**The first carries most of the cost.** The habits under discussion are sentence-level, and so is
+the reread they produce. The measurement script sees the second and is nearly blind to the first,
+which is why it stays subordinate to reading.
+
+The third is a different problem wearing similar clothes. "Is there too much explanation here" is
+not a prose question — the sentences may be excellent and still belong on another page. That is
+what the Diátaxis type system is for, and the findings are already recorded elsewhere.
+
+### Information density and prose density pull in opposite directions
+
+Worth stating because the word "dense" hides the distinction, and this document used it loosely
+until it was pointed out.
+
+A page carrying a lot of information is a reason to write **more plainly**, not less. When each
+sentence delivers a new fact, the reader has no spare capacity for a construction that also has
+to be decoded. Compression is affordable exactly where the information is thin, which is where it
+buys the least.
+
+So a high aggregate score is not itself a defect. It is a place to go and check whether the
+construction earns its keep against the load the content is already imposing.
+
 ## 1. The register has a name; the difficulty does not come from the name
 
 The overall style is **aphoristic**, or **gnomic**: compressed general truths, stated as though
