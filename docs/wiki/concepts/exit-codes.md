@@ -209,7 +209,7 @@ codes of two provoked usage errors against each other, and
 [C3](../rules/exit-codes/exit-codes-are-deterministic.md) repeats one invocation to see whether
 its code varies. Holding a tool to its own declared mapping is _planned_, and waits on that
 mapping being portable and machine-readable —
-[roadmap step 6](../../roadmap.md#6-r4-7--the-portable-declaration-ir).
+[roadmap step 6](../../roadmap.md#6-the-portable-declaration-ir).
 
 ## Related rules
 

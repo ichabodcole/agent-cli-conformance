@@ -131,7 +131,7 @@ discoverable in help what the kit otherwise has to guess at (advertising `--json
 B3 off `unverified`), and eventually by declaring it outright, once there is a declaration
 format to write it in. That is the direction the spec wants a tool to move; the second half of
 it does not exist yet, and is
-[roadmap step 6](../../roadmap.md#6-r4-7--the-portable-declaration-ir).
+[roadmap step 6](../../roadmap.md#6-the-portable-declaration-ir).
 
 `fullyVerified` is a goal for the kit as much as for the target. Half of it is the target's
 work — nothing failing, nothing unverified. The other half is the kit's own, and no core
@@ -156,7 +156,7 @@ So the question a report answers stops being _did this tool pass_ and becomes **
 it pass in.** `conformant: true` is a claim relative to a declared frame: spec version, probe
 level, and the adopter's own waivers — the fourth coordinate, and the only one the adopter
 authors themselves. The kit's job is to make that frame legible, not to pretend there is only
-one. It is the same question [R4-2](../../roadmap.md#5-r4-2--r4-3--profiles-and-the-outcome-algebra)
+one. It is the same question [R4-2](../../roadmap.md#5-profiles-and-the-outcome-algebra)
 asks when it says a report should answer "conforms to which spec version, profile and probe
 level?"
 

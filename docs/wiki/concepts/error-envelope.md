@@ -163,7 +163,7 @@ this page describes what is actually emitted.
 `next` is advisory, never required: a caller that ignores it should still be able to reach the
 same state by other means. That is guidance too, and it is the clause most likely to change —
 the typed replacement is the first item on the
-[roadmap](../../roadmap.md#1-r4-4--remediation-becomes-structured-data), so anything given a
+[roadmap](../../roadmap.md#1-remediation-becomes-structured-data), so anything given a
 rule id here would be minted against a shape that is about to move.
 
 ### The prose still matters — but it is labelled

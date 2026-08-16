@@ -173,7 +173,7 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 ### Lifecycle
 
 The process itself: how it ends, and what a caller can conclude from that. `G1` is the family's
-first member and the rest is [planned](../roadmap.md#7-r4-5--the-lifecycle-rule-family) —
+first member and the rest is [planned](../roadmap.md#7-the-lifecycle-rule-family) —
 cancellation, bounded shutdown, `SIGPIPE`, resumability.
 
 - [G1 — Inert invocations must not crash the tool](./rules/lifecycle/inert-invocations-do-not-crash.md)

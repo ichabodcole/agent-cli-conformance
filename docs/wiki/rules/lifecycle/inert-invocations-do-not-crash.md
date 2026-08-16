@@ -117,7 +117,7 @@ from a fault, and has no remediation to attempt — the exact loss
 streams, exit codes, discoverability, interactivity, safety) and a crash is none of those: it is
 process lifecycle, which is its own subject.
 
-That family is the one [`docs/roadmap.md` step 7](../../../roadmap.md#7-r4-5--the-lifecycle-rule-family)
+That family is the one [`docs/roadmap.md` step 7](../../../roadmap.md#7-the-lifecycle-rule-family)
 describes — cancellation, bounded shutdown with descendant cleanup, `SIGPIPE` without stack
 traces, resumability. G1 is a **down-payment on it, not a new axis**: later members take G2, G3
 and so on as their checker designs arrive, and the discipline that gates them is the one that

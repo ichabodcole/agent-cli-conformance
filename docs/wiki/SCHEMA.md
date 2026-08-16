@@ -177,7 +177,7 @@ binds the page to the checker's **declaration**. It cannot bind the declaration 
 **code**: a checker whose `coverageEstablished` claims more than its assertions perform passes
 this lint on every copy. Only a mutation fixture closes that — break the property, watch the
 checker catch it — and that work is scoped at
-[`docs/roadmap.md`, R4-8](../roadmap.md#8-r4-8--test-the-checker-as-a-measurement-instrument).
+[`docs/roadmap.md`, R4-8](../roadmap.md#8-test-the-checker-as-a-measurement-instrument).
 
 A gap or established phrase is read back by a deliberately small frontmatter parser that splits
 list items on a comma and on a space-hyphen-space sequence, so it must contain neither. The kit's

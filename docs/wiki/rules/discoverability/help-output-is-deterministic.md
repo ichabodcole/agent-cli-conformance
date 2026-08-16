@@ -72,7 +72,7 @@ emitting `0x80` on the first run and `0x81` on the second produced identical str
 byte counts, and a `pass` certifying byte identity for two different streams. The raw bytes
 themselves are deliberately **not** retained — a digest answers the equality question the rule
 asks and nothing else, which keeps the [observation
-artifact](../../../roadmap.md#4-r4-1--durable-observation-and-replay) free of an unbounded blob
+artifact](../../../roadmap.md#4-durable-observation-and-replay) free of an unbounded blob
 that would need its own encoding, redaction and retention story.
 
 **The two runs are the same invocation** — same argv, same environment, twice. That is worth

@@ -102,7 +102,7 @@ The mapping is additionally **declared in the schema**, so it is machine-discove
 that could read that declaration would be able to verify each declared error kind produces its
 declared code — _planned_, not built: no checker reads a target's schema today, and doing so
 waits on a portable declaration format
-([roadmap step 6](../../roadmap.md#6-r4-7--the-portable-declaration-ir)). See
+([roadmap step 6](../../roadmap.md#6-the-portable-declaration-ir)). See
 [how a caller learns what a code means](../concepts/exit-codes.md#how-a-caller-learns-what-a-code-means).
 
 The three models are not alternatives: "declare per tool" is a _delivery_ mechanism, while

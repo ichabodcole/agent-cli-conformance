@@ -60,7 +60,7 @@ output.
 
 **Planned.** Reading a declaration and checking bytes against it needs somewhere for the target
 to state one, which is the portable declaration IR at
-[roadmap step 6](../../roadmap.md#6-r4-7--the-portable-declaration-ir). Everything below
+[roadmap step 6](../../roadmap.md#6-the-portable-declaration-ir). Everything below
 describes the contract this spec proposes and what a conforming CLI would declare — not a
 measurement the kit performs today.
 
