@@ -9,6 +9,7 @@
     "docs:lint": "bun docs/wiki/lint.ts",
     "docs:graph": "bun docs/wiki/lint.ts --json",
     "docs:sync": "bun docs/wiki/lint.ts --write && prettier --write docs/wiki/index.md",
+    "docs:build": "bun docs/wiki/build.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "lint": "biome check --error-on-warnings .",
