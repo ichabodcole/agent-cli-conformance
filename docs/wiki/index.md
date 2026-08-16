@@ -72,6 +72,7 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | L0    | implemented | partial  | 4    |
 | [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | L0    | implemented | partial  | 5    |
 | [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L0    | implemented | partial  | 4    |
+| [B5](./rules/streams/machine-mode-holds-on-parser-errors.md)      | core       | L0    | implemented | partial  | 6    |
 | [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | L0    | implemented | partial  | 4    |
 | [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | L0    | implemented | partial  | 3    |
 | [C3](./rules/exit-codes/exit-codes-are-deterministic.md)          | core       | L0    | implemented | partial  | 5    |
@@ -84,7 +85,7 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | L0    | implemented | partial  | 4    |
 | [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | L0    | implemented | partial  | 4    |
 
-21 rules · 0 `complete` · 21 `partial` · 84 named gaps.
+22 rules · 0 `complete` · 22 `partial` · 90 named gaps.
 
 ### Parsing
 
@@ -118,6 +119,9 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 - [B3 — Machine output parses as its declared kind](./rules/streams/machine-output-is-parseable.md)
   — Requiring the whole stdout stream to parse turns any stray debug print into a hard failure
   instead of a code-review question.
+- [B5 — Machine mode holds on the parser-error path](./rules/streams/machine-mode-holds-on-parser-errors.md)
+  — Machine mode that survives every failure except the parser's fails on the one an agent hits
+  most — a wrong flag is the commonest way an agent gets a command wrong.
 
 ### Exit codes
 

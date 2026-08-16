@@ -16,6 +16,7 @@ import { unknownCommandChecker } from "./checkers/parsing/unknown-command.ts";
 import { unknownFlagChecker } from "./checkers/parsing/unknown-flag.ts";
 import { firstBytePromptChecker } from "./checkers/safety/first-byte-prompt.ts";
 import { noSecretsInHelpChecker } from "./checkers/safety/no-secrets-in-help.ts";
+import { machineModeHoldsOnParserErrorChecker } from "./checkers/streams/machine-mode-holds-on-parser-error.ts";
 import { machineOutputParseableChecker } from "./checkers/streams/machine-output-parseable.ts";
 import { noAnsiWhenPipedChecker } from "./checkers/streams/no-ansi-when-piped.ts";
 import { stdoutCarriesOnlyDataChecker } from "./checkers/streams/stdout-carries-only-data.ts";
@@ -39,6 +40,7 @@ export const CHECKERS: Checker[] = [
   stdoutCarriesOnlyDataChecker,
   noAnsiWhenPipedChecker,
   machineOutputParseableChecker,
+  machineModeHoldsOnParserErrorChecker,
   helpExitsZeroChecker,
   usageDistinguishableChecker,
   deterministicChecker,

@@ -391,7 +391,7 @@ describe("the partial crasher — a green headline over eleven fallen-over rules
     );
     expect(report.conformant).toBe(true);
     expect(report.counts.coreFailures).toBe(0);
-    expect(report.counts.coreUnverified).toBe(12);
+    expect(report.counts.coreUnverified).toBe(13);
     // ...and the report was never silent about it: `fullyVerified` was false and every gap was
     // named. The defect was the HEADLINE speaking over them, which is what G1 changes.
     expect(report.fullyVerified).toBe(false);
@@ -486,7 +486,7 @@ describe("a signal the kit cannot attribute is nobody's violation", () => {
     expect(report.conformant).toBe(true);
     expect(report.fullyVerified).toBe(false);
     expect(report.counts.corePassed).toBe(0);
-    expect(report.counts.coreUnverified).toBe(17);
+    expect(report.counts.coreUnverified).toBe(18);
     // Asserted as the whole list rather than as `not.toContain("C1")`, so a rule quietly starting
     // to fail this target — the false positive arriving through yet another door — is caught.
     const violated = report.findings.filter(
