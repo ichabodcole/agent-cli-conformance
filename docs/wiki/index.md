@@ -68,6 +68,7 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [A4](./rules/parsing/unexpected-positionals-rejected.md)          | core       | L1    | implemented | partial  | 1    |
 | [A5](./rules/parsing/no-fuzzy-auto-correction.md)                 | core       | L0    | implemented | partial  | 5    |
 | [A6](./rules/parsing/double-dash-terminator.md)                   | diagnostic | L0    | implemented | partial  | 4    |
+| [A7](./rules/parsing/advertised-value-set-is-enforced.md)         | core       | L0    | implemented | partial  | 6    |
 | [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | L0    | implemented | partial  | 4    |
 | [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | L0    | implemented | partial  | 5    |
 | [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L0    | implemented | partial  | 4    |
@@ -83,7 +84,7 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | L0    | implemented | partial  | 4    |
 | [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | L0    | implemented | partial  | 4    |
 
-20 rules · 0 `complete` · 20 `partial` · 78 named gaps.
+21 rules · 0 `complete` · 21 `partial` · 84 named gaps.
 
 ### Parsing
 
@@ -104,6 +105,9 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 - [A6 — Honour the `--` terminator](./rules/parsing/double-dash-terminator.md) _(diagnostic)_ —
   Without it, any value that begins with a hyphen is unpassable — including negative numbers and
   hyphen-leading filenames.
+- [A7 — An advertised value set is enforced](./rules/parsing/advertised-value-set-is-enforced.md) —
+  A flag that publishes a closed set of values and then accepts anything has told its caller a lie
+  the caller cannot detect — the answer arrives in the default shape, at exit 0.
 
 ### Streams
 

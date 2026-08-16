@@ -375,8 +375,11 @@ describe("the partial crasher — a green headline over eleven fallen-over rules
   // THE FALSIFICATION, and the reason this fixture is permanent. Everything above would still
   // hold if some OTHER core rule had quietly started failing this target — so run the same
   // history through the registry with G1 removed and confirm the old, wrong headline comes back
-  // exactly as it was measured: conformant, zero violations, eleven core rules unverified. If
-  // G1 ever stops biting, the assertions above go red rather than passing on a neighbour's work.
+  // exactly as it was measured: conformant, zero violations, and every core rule the fixture
+  // crashes on unverified. The COUNT tracks the catalogue — it was eleven when G1 was minted and
+  // rises with every core rule added that this fixture cannot answer — so it is pinned as a
+  // literal rather than derived: a rule quietly ceasing to report the gap has to be noticed here.
+  // If G1 ever stops biting, the assertions above go red rather than passing on a neighbour's work.
   test("without G1 the same recording certifies as conformant — the pre-G1 report", () => {
     const withoutG1 = CHECKERS.filter((c) => c.ruleId !== "G1");
     const report = buildReport(
@@ -388,7 +391,7 @@ describe("the partial crasher — a green headline over eleven fallen-over rules
     );
     expect(report.conformant).toBe(true);
     expect(report.counts.coreFailures).toBe(0);
-    expect(report.counts.coreUnverified).toBe(11);
+    expect(report.counts.coreUnverified).toBe(12);
     // ...and the report was never silent about it: `fullyVerified` was false and every gap was
     // named. The defect was the HEADLINE speaking over them, which is what G1 changes.
     expect(report.fullyVerified).toBe(false);
@@ -477,13 +480,13 @@ describe("a signal the kit cannot attribute is nobody's violation", () => {
     //
     // This is NOT the pre-G1 hole returning. There, `conformant: true` sat over a target that had
     // demonstrably fallen over on its own and collected four real passes; here nothing passed at
-    // all, and `fullyVerified` is false with all sixteen core rules named as gaps. The difference
+    // all, and `fullyVerified` is false with every applicable core rule named as a gap. The difference
     // between the two is exactly the difference G1's split draws: attributable, or not.
     const report = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadConfig(undefined), "L0");
     expect(report.conformant).toBe(true);
     expect(report.fullyVerified).toBe(false);
     expect(report.counts.corePassed).toBe(0);
-    expect(report.counts.coreUnverified).toBe(16);
+    expect(report.counts.coreUnverified).toBe(17);
     // Asserted as the whole list rather than as `not.toContain("C1")`, so a rule quietly starting
     // to fail this target — the false positive arriving through yet another door — is caught.
     const violated = report.findings.filter(
