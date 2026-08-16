@@ -1379,7 +1379,7 @@ support and is blind to the mechanism with the strongest.
 | **Nominal style**          | 🟢 1.5–2× human (Reinhart)    | 🔴 folklore — see §7                                                                                                                   |
 | **Abstraction stacking**   | 🟢 part of the same signature | 🟡 concreteness effects are _single-word_ lexical-decision effects, fragile under controls, and do not transfer to syntactic packaging |
 | **Periodic structure**     | not measured                  | 🟡 contested — storage cost predicts it, anti-locality complicates it                                                                  |
-| **Undeclared compression** | no evidence located           | no evidence located — ours                                                                                                             |
+| **Undeclared compression** | no frequency count located    | no reading-cost study located — but the category is Aristotle's, not ours; see below and §4                                            |
 
 Concrete changes, in order of value:
 
@@ -1439,6 +1439,25 @@ The honest substitute, and it is better supported than what it replaces: **keep 
 dependencies short, and avoid centre-embedding.** Nominalised bureaucratic prose usually violates
 that anyway, which is why the heuristic works — it catches the real thing by correlation. When the
 heuristic and the mechanism disagree, follow the mechanism.
+
+### Correction: undeclared compression is Aristotle's category, not ours
+
+Recorded because this document contradicted itself. §4 already mapped mechanism 5 to Aristotle's
+_gnome_; the table above, written later, still called it ours with no prior art. §4 was right.
+
+_Rhetoric_ II.21, verified against Perseus: maxims are "the premises or conclusions of enthymemes
+**without the syllogism**" — a conclusion with its reasoning removed. That is the mechanism
+exactly.
+
+He also supplies the explanation the misattribution argument was reaching for. A maxim pleases
+because the speaker "hits upon the opinions which they specially hold": it works by matching what
+the hearer **already believes**. So it lands on a reader who holds the argument and fails on one
+who does not — and the sentence is identical in both cases, which is why the second reader
+concludes the fault is theirs.
+
+One usage condition worth keeping. Maxims suit "one who is advanced in years, and in regard to
+things in which one has experience," and deployed about unfamiliar subjects they reveal
+"foolishness and lack of education." A maxim is earned by experience the audience recognises.
 
 ### What this changes
 
