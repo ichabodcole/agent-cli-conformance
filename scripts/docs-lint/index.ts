@@ -285,7 +285,14 @@ export function runDocsLint(config: DocsLintConfig): number {
 
   const fieldsOf = (f: string): Map<string, string> => meta.get(f) ?? new Map();
   const rel = (f: string) => relative(ROOT, f);
-  const isContract = (f: string) => f.endsWith("SCHEMA.md");
+  // Contract pages are maintainer meta-documents about the wiki, not entries in its type system,
+  // so the OKF frontmatter rules and the slug/catalog checks do not apply to them. Kept as a list
+  // rather than one hardcoded filename: this module is meant to be lifted into other repos, and
+  // the second such page (STYLE.md, prose to SCHEMA.md's structure) proved the single name wrong.
+  // Matching stays a SUFFIX test, which a test pins deliberately — tightening it here would have
+  // changed a documented behaviour as a side effect of adding a file.
+  const CONTRACT_PAGES = ["SCHEMA.md", "STYLE.md"];
+  const isContract = (f: string) => CONTRACT_PAGES.some((c) => f.endsWith(c));
 
   // --- OKF frontmatter conformance ------------------------------------------------------
   for (const file of files) {

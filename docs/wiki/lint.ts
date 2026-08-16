@@ -249,8 +249,9 @@ export function slugChecks(pages: LintPage[]): string[] {
   const problems: string[] = [];
   const seen = new Map<string, string>();
   for (const page of pages) {
-    // SCHEMA.md is the contract, not a page — `graph.ts` skips it, so it cannot collide.
-    if (page.rel.endsWith("SCHEMA.md")) continue;
+    // Contract pages are not entries in the type system — `graph.ts` skips them, so they cannot
+    // collide on a slug. Must agree with CONTRACT_PAGES in scripts/docs-lint.
+    if (/(SCHEMA|STYLE)\.md$/.test(page.rel)) continue;
     const slug = page.rel.slice(page.rel.lastIndexOf("/") + 1, -3);
     const first = seen.get(slug);
     if (first) problems.push(`DUPLICATE slug ${page.rel}: "${slug}" already used by ${first}`);

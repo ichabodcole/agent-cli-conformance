@@ -72,8 +72,9 @@ export function loadGraph(root: string = defaultWikiRoot()): WikiGraph {
 
   for (const file of files) {
     const raw = readFileSync(file, "utf8");
-    // SCHEMA.md is the contract, not a page — the linter exempts it and so does this.
-    if (file.endsWith("SCHEMA.md")) continue;
+    // Contract pages are maintainer meta-documents about the wiki, not entries in its type
+    // system. The linter exempts them and so does this; the two lists must agree.
+    if (/(SCHEMA|STYLE)\.md$/.test(file)) continue;
 
     const fm = /^---\n([\s\S]*?)\n---/.exec(raw);
     const fields = fm ? parseFrontmatter(fm[1]) : new Map<string, string>();
