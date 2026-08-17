@@ -7,12 +7,14 @@ argument-hint: "[pasted passage, or file:line, or nothing]"
 
 # How to capture a prose defect
 
-The catalogue is `docs/reviews/2026-08-16-prose-defect-catalogue.md`. It holds the defect
-definitions, the worked examples, and the evidence behind every instruction below. Read it at
-step 3.
+The catalogue is `.claude/skills/prose-cold-read/references/CATALOGUE.md`. It holds the defect definitions,
+the worked examples, and the evidence behind every instruction below. Read it at step 3.
 
-One passage per run. **This captures a defect. It does not sweep a document against the
-catalogue** — that is a separate job and does not exist yet.
+It is also what the `prose-cold-read` skill hands a fresh subagent, so an entry written here is
+what a cold reader will look for later.
+
+One passage per run. **This captures a defect; it does not sweep a document for them.** Sweeping
+is the `prose-cold-read` skill.
 
 Passage, `file:line`, or nothing: $ARGUMENTS
 
