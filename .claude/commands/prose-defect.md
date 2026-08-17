@@ -1,85 +1,92 @@
 ---
 description:
-  Capture one prose defect — a passage that read badly — into the defect catalogue, with the
-  category agreed with the user before it is written.
+  Work through one passage that read badly — diagnose it, agree the category with the user, rewrite
+  it — and produce a self-contained capture of the defect.
 argument-hint: "[pasted passage, or file:line, or nothing]"
 ---
 
 # How to capture a prose defect
 
-The catalogue is `.claude/skills/prose-cold-read/references/CATALOGUE.md`. It holds the defect definitions,
-the worked examples, and the evidence behind every instruction below. Read it at step 3.
+Someone hit a sentence that read badly. Work out what kind of defect it is, agree that with them,
+fix the passage, and write up the capture.
 
-It is also what the `prose-cold-read` skill hands a fresh subagent, so an entry written here is
-what a cold reader will look for later.
+**One passage per run.** This captures a single defect well; it does not sweep a document for
+them.
 
-One passage per run. **This captures a defect; it does not sweep a document for them.** Sweeping
-is the `prose-cold-read` skill.
+**The capture is the output.** Where it goes afterwards is the user's call, asked at the end.
 
 Passage, `file:line`, or nothing: $ARGUMENTS
 
 ## Steps
 
-1. **Open the file and read around the passage**, even when it was pasted in full. Ask which
-   passage if none was named.
+1. **Identify the passage.** If none was given, ask which one. Then open the file and read around
+   it, even when the passage was pasted in full — the surrounding text often holds what the
+   sentence is missing.
 
-2. **Ask what happened when they read it, and quote the answer verbatim.** The entry uses their
+2. **Ask what happened when they read it, and quote the answer verbatim.** The capture uses their
    words. If they cannot name it: did you read it twice? did you finish and not know what it
    claimed? could you tell whether you were missing background?
 
-   Do not offer a diagnosis first — it becomes their description of their own reading.
+   Do not offer a diagnosis first. Whatever you name, they will reach for — and the capture then
+   records your theory rather than their reading.
 
-3. **Read the catalogue's entries, then say whether this is one of them or new.** Most are
-   existing.
+3. **Say what kind of defect it is.** If a catalogue of known kinds is available, check it first
+   and say whether this is one of them or new.
 
-4. **Look at the sentence again once you have named the first defect.** Strip it to what it
-   asserts and ask whether anything is left. Passages here have carried two and three.
+4. **Look at the sentence again once the first defect is named.** Strip it to what it asserts and
+   ask whether anything is left. A single passage often carries more than one fault, and the named
+   one draws attention away from its neighbours.
 
-5. **State the category and why it is that one. Wait for the user to agree it.** Diagnoses get
-   corrected at this step. A wrong category written down confidently is worse than no entry,
-   because the next reader applies it.
+5. **State the category and why it is that one, and wait for the user to agree it.** This is the
+   step that matters most. A category written down confidently and wrongly is worse than no
+   capture, because the next reader applies it.
 
-6. **Propose a rewrite that keeps the claim exactly** — domain terms, numbers, file paths and
-   figures unchanged. Say what the rewrite costs when it costs something.
+6. **Propose a rewrite that keeps the claim exactly.** Keep numbers, file paths and figures. Keep
+   domain terms unless a term is itself the defect. Say what the rewrite costs when it costs
+   something, and say when a fix is partial.
 
-   Some fixes cannot be a swap: "this checker used to compare X" does not become "this checker
-   compares X", which would be false. It becomes the counterfactual it always was.
+   Some fixes cannot be a straight swap. Where a sentence narrates what a thing used to do, the
+   present tense makes it false — "this checker **used to compare** decoded strings" does not
+   become "this checker compares decoded strings". Recast it as the counterfactual the sentence
+   was really making: "comparing decoded strings **cannot establish** the byte identity this rule
+   requires."
 
-7. **Commit the page fix on its own**, naming the defect in the message. Stage explicit paths;
-   never `git add -A`.
+7. **Apply the rewrite** once the user accepts it, and confirm the file changed.
 
-8. **Update the catalogue, and do not stage it.** It is untracked.
+8. **Write the capture** (shape below) and **ask the user what they want done with it.** Doing
+   nothing is a legitimate answer. So is filing it somewhere, or fixing the other instances. Ask
+   rather than assume — and do not commit, file, or copy it anywhere until they say.
 
-## The entry
+## The capture
+
+Self-contained. Someone must be able to act on it in a different project, months from now,
+without opening anything it mentions.
 
 ```markdown
-## N. <the pattern, not the page>
+## <the pattern, named — not the page it came from>
 
-**Seen in** `path:line`. Fixed in `<sha>`.
+**Where it appears.** <the kind of slot or context, not a path>
 
-> **Before** — …
+> **Before** — <verbatim>
 
-> **After** — …
+> **After** — <verbatim>
 
-**The reader's report.** <verbatim>
+**The reader's report.** <their words>
 
-**What goes wrong.** <the mechanism, specific to this text>
+**What goes wrong.** <the mechanism, specific enough to recognise again>
 
 **Where it looks like this but is not.** <the boundary>
 
-**How to spot it.** <what a reader or a grep can key on>
+**How to spot it.** <a reading tell, or a search pattern with its false positives>
 ```
 
-Extend an existing entry rather than adding a near-duplicate. If you renumber, check every
-`entry N` cross-reference in the file.
+**No file paths, commit hashes or scan counts.** A capture that cites them is dead the moment the
+file moves, and useless anywhere else. Name the kind of place the defect appeared instead.
 
-**Every entry needs its boundary case** — where this looks like the defect and is fine. Without
-one the rule gets over-applied, and the boundary is where the next reader will misapply it.
+**Every capture needs its boundary case.** Where does this look like the defect and turn out to be
+fine? Without one the rule gets over-applied, and the boundary is exactly where the next reader
+will misapply it.
 
-**Record wrong diagnoses.** They stop the same wrong turn being taken twice.
-
-## If you write a grep
-
-Optional, and never a clearance. Run it, count its false positives, and write both numbers into
-the entry alongside what a later extension catches. Entry 3's record of three successive
-under-reports is why the read still happens afterwards.
+**If you write a search pattern, run it before writing it down.** Report what it caught, what it
+false-positives on, and what it cannot see. A pattern is a way to find candidates, never a way to
+declare a document clean.

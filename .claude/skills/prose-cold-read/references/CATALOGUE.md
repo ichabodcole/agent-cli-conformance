@@ -7,8 +7,14 @@ Every entry is self-contained. Nothing here points at a file you would need to o
 come from documentation for a command-line conformance tool, so the domain nouns — exit codes,
 probes, checkers — are incidental; no example needs the domain explained to show what went wrong.
 
-Entries are added by the `/prose-defect` command, from passages a human actually struggled with.
-None is invented to fill a category.
+**Six numbered entries, all of them defects.** Boundary cases live inside the entry they bound,
+under "Where it looks like this but is not". Read those as carefully as the defects: they are
+where a rule gets misapplied.
+
+**Adding an entry.** Match the shape of the ones below — where it appears, before, after, what
+goes wrong, where it looks like this but is not, how to spot it — and add sections beyond those
+when the defect needs them. Every entry needs its boundary case. Do not cite file paths, commits,
+or scan counts: an entry has to survive being read in a different project.
 
 ---
 
@@ -33,8 +39,7 @@ a fronted negator.
 
 **Why it costs more than a reread.** The wrong parse does not break. It is grammatical, it
 finishes, and "the hardest problem is not X" is a normal thing to say. The reader can finish the
-sentence, believe they understood it, and carry away the inverse claim. A garden path that stalls
-at least announces itself.
+sentence, believe they understood it, and carry away the inverse claim.
 
 **The fix.** Remove the negation rather than trying to disambiguate it.
 
@@ -67,28 +72,19 @@ the reader can identify which one is meant. They cannot. The term is defined in 
 page this description introduces and appears nowhere else. **The reader has to open the document
 to understand the description of the document.**
 
-The rewrite uses only terms the reader already holds: the command name, and two field names from
-the tool's own output.
-
 **Why this slot specifically.** Every other line on a page may borrow from what came before it —
 that is what being on a page means. A description is read in an index, in search results, in a
 hover, by someone deciding whether to open the thing. It is read **out of context by
 construction**, so it must carry its own antecedents.
 
-**The underlying cause is a register mismatch**, and it generalises past descriptions. The
-description's reader is working; the page's reader is studying. An author writes both in one
-sitting and the description inherits the page's voice without the page's reader.
-
-So: **when an artifact has a Diátaxis type, check its prose is in that type's register rather
-than in the register of whatever produced it.** A how-to assembled by whoever gathered the
-evidence tends to arrive full of evidence, for the same reason.
-
 **The fix.** Work back from the decision the text supports. For an index entry that is only ever
 _is this the page I need_, which needs the subject named in words the reader already has, plus one
-distinguishing fact.
+distinguishing fact. The rewrite above uses the command name and two field names from the tool's
+own output — all three visible to anyone holding a report.
 
-**How to spot it.** For each term in a description, count its occurrences across the corpus. A
-term appearing only in the description and in its own page's body is coined by that page.
+**How to spot it.** For each term in a description, count its occurrences across the documentation
+set the description will be read inside — the whole page collection, not the single page. A term
+appearing only in the description and in its own page's body is coined by that page.
 
 **Where it looks like this but is not.**
 
@@ -97,6 +93,9 @@ term appearing only in the description and in its own page's body is coined by t
   many pages, a coined one appears twice.
 - **Fragment is not the mechanism.** A verbless noun phrase can be a fine description — entry 1's
   rewrite is one. Self-contained versus referring is the mechanism.
+- **A rewrite here will not keep the original's vocabulary, and should not.** The offending term
+  is the defect. "Keep the claim exactly" governs what the sentence asserts, not which words carry
+  it.
 
 ---
 
@@ -136,13 +135,28 @@ purpose or provenance depending only on tense.**
 
 - **Appended.** The live claim is already complete and the history hangs off the end of it:
   "…**and this page used to claim it did**." Delete the clause. Nothing else moves.
-- **Load-bearing.** The live constraint sits inside the narration and has to be lifted out. One
-  design constraint appeared on three pages, each opening "That is worth stating because it was
-  once not true" and then narrating an earlier implementation. What worked: state the constraint
-  plainly in the main paragraph, and give the rejected alternative its own labelled paragraph —
-  "**Not an environment variable, deliberately.**" _We considered X and here is why it fails_ is a
-  design constraint a reader needs. _We once used X and it was wrong_ is not. Same information,
-  minus the claim that anyone shipped the mistake.
+
+- **Load-bearing.** The live constraint sits inside the narration and has to be lifted out. Worked
+  example, in full, because the shape is the useful part:
+
+  > **Before** — The two runs are the same invocation. That is worth stating because it was once
+  > not true. The runner deduplicates identical probes into a single recording, so an earlier
+  > version of this checker perturbed the second run with an `ACC_PROBE_NONCE` environment
+  > variable purely to get a second sample past the dedup — and then compared two invocations that
+  > differed, while claiming to measure determinism.
+
+  > **After** — The two runs are the same invocation. The runner deduplicates identical probes
+  > into a single recording, so the repetitions are told apart by a **recorder-only index** the
+  > target never sees.
+  >
+  > **Not an environment variable, deliberately.** A variable the target can read is part of the
+  > input to the measurement: a tool that echoed its environment into its output would fail this
+  > check for a legitimate reason, indistinguishable from a real defect.
+
+  Two moves. The constraint becomes a plain statement of current behaviour. The rejected
+  alternative gets its own labelled paragraph, because **_we considered X and here is why it
+  fails_ is a design constraint a reader needs, while _we once used X and it was wrong_ is not.**
+  Same information, minus the claim that anyone shipped the mistake.
 
 **How to spot it.** Not by past tense — `was` is load-bearing throughout ordinary technical prose
 ("the probe ran and the rule **was** broken"), and grepping it buries the signal. What is findable
@@ -158,18 +172,39 @@ contrast:
 work of "and it used to be otherwise". Check for it explicitly; it hides in sentences that
 otherwise read as plain statements of current behaviour.
 
-**Where it looks like this but is not.**
+### Where it looks like this but is not — whose history is it?
 
+The single question that settles every hit: **whose past is this?** History of the **thing being
+documented** is reference material. History of the **document** is provenance.
+
+- **Third-party history belongs.** "The behaviour has also shifted across releases (earlier
+  versions additionally …)" is the release history of a tool the page documents. Keep it.
 - **`once` meaning _one time_**, not _formerly_: "the recorder runs it once", "an agent learns it
   once and it holds everywhere".
 - **`no longer` is usually logical rather than historical** in technical prose — "an excused
   `fail` no longer blocks it", "a flag the child can no longer receive transparently" — where it
-  means _not, once X holds_. Low yield; check each one rather than trusting the marker.
-- **Third-party history**, which is reference material. See entry 5.
+  means _not, once X holds_. Low yield; check each rather than trusting the marker.
+
+**Decision pages are not exempt, and not guilty either.** A decision record looks like a
+counter-example, because arguing a decision means showing the research, the alternatives and the
+conventions that made the line fall where it did. That material is historical and it belongs. The
+question is not whether the history is historical. It is whose.
+
+Subject history belongs: a specification's meaning for an exit code, a proposal that has sat
+behind a feature flag for years, a measurement of what a well-known tool returns, a standard that
+never caught on. Each is evidence a reader needs to judge the decision.
+
+Document history does not, and reads almost identically. "This page previously described it as
+'understood by every shell', which is false" has the page as its subject and informed no decision.
+
+**A second test exists and is weaker.** "Is the history shown, or gestured at?" catches most
+cases, but not one that quotes its own false wording verbatim and is therefore fully
+self-contained — and still is not evidence. Use **whose history** as primary and **is it shown**
+as the tiebreaker.
 
 ---
 
-## 4. Compound — an unresolvable ordinal wearing a history
+## 4. Compound — an unresolvable ordinal with a history attached
 
 **Where it appears.** Section openers and transitions, where a sentence's job is to connect
 rather than to state.
@@ -198,56 +233,26 @@ backwards through the document.
 **How to spot it.** No single tell. **After naming any defect, strip the sentence to what it
 asserts and ask whether anything is left.** Here, nothing was.
 
----
+**Where it looks like this but is not.**
 
-## 5. Boundary case — whose history is it?
-
-**Not a defect.** This entry exists because it is where entry 3 gets misapplied.
-
-> The behaviour has also shifted across releases (earlier versions additionally …)
-
-**Why this is fine.** It is the release history of a third-party tool the page documents. History
-of the **thing being documented** is reference material. History of the **document** is
-provenance. Entry 3's grep cannot tell them apart, so ask of every hit: **whose past is this?**
-
-### Decision pages are not exempt, and not guilty either
-
-A decision record looks like a counter-example to entry 3, because arguing a decision means
-showing the research, the alternatives and the conventions that made the line fall where it did.
-That material is historical and it belongs. **The question is not whether the history is
-historical. It is whose.**
-
-**Subject history — belongs.** A POSIX specification's meaning for an exit code; an enhancement
-proposal that has sat behind a feature flag for years; a measurement of what `git` returns for an
-unrecognised flag; a proposed standard that never caught on. Each is evidence a reader needs in
-order to judge the decision, and each is shown rather than gestured at.
-
-**Document history — does not.** Every one of these had "this page" or "both pages" as its
-subject, and none informed the decision:
-
-- "Both pages previously listed `124` as an adopted timeout outcome _and_ counted it among the
-  unallocated codes."
-- "Both pages used to tell a reader to read `> 128` as a signal death."
-- "This page previously described it as 'understood by every shell, CI runner and process
-  supervisor', which is false."
-- "It does not eliminate wrapper-versus-child ambiguity, **and this page used to claim it did.**"
-  Here the sentence stays and only the tail goes — the main clause is live scoping, because
-  staying below that code sounds like it solves the collision and does not.
-
-**A second test exists and is weaker.** "Is the history shown, or gestured at?" catches most of
-these, but not one that quotes its own false wording verbatim and is therefore fully
-self-contained — and still is not evidence for the decision. Use **whose history** as primary and
-**is it shown** as the tiebreaker.
+- **An ordinal whose antecedent is genuinely present is fine**, even at a distance. "The second
+  reason" is good writing when a first reason was labelled as one. Check for the antecedent before
+  reporting the ordinal.
+- **A transition sentence may legitimately carry no new claim.** "Three consequences follow" earns
+  its place by structuring what comes next. The defect is a transition that also asks the reader
+  to resolve something — the emptiness only matters because they paid for it.
+- **Do not report a compound as three findings.** One passage, one finding, the faults listed
+  inside it. Splitting them makes a report look longer and a document look worse than it is.
 
 ---
 
-## 6. A figure of speech where the mechanism belongs
+## 5. A figure of speech where the mechanism belongs
 
 **Where it appears.** Rationale and summary sentences, especially ones that feel well-turned.
 
 > **Before** — …which is a weaker claim wearing the words of a stronger one.
 
-> **After** — deleted. The literal statement two clauses later already carried it.
+> **After** — deleted. The literal statement in the next clause already carried it.
 
 **The reader's report.** "That sentence just gives me a little bit of an itch, because I gotta
 read it twice." And on why it matters: "it makes it in a kind of clever way… don't be clever,
@@ -258,14 +263,17 @@ claim's clothes — so the reader decodes the figure and then maps it back onto 
 steps where one would do. Here `weaker` meant string equality and `stronger` meant byte equality,
 and nothing in the sentence supplied either mapping.
 
-**What made this one pure cost.** The literal version sat in the same paragraph, right after it:
-"a pass certifying byte identity for two different streams". Figure first, translation second, so
-the reader pays for the image and then reads its plain equivalent.
+**What made this one pure cost.** The literal version was already there, in the next clause: "a
+pass certifying byte identity for two different streams". Figure first, translation second, so the
+reader pays for the image and then reads its plain equivalent.
 
 **Why it matters more than one sentence suggests.** From the reader: seeing it often enough, "I
 start understanding what it means, but that to me is more like me accommodating the documentation
 than the documentation accommodating me as a reader." A figure is affordable once. A house style
 of them trains the reader to decode rather than read.
+
+**How to spot it.** No grep. The reading tell: you understood the sentence and cannot say it back
+in the document's own vocabulary without reaching for the same image.
 
 **Where it looks like this but is not.** Figures are not banned, and one naming something the
 domain has no word for does work no plain phrasing would. Two tests, in order:
@@ -275,8 +283,57 @@ domain has no word for does work no plain phrasing would. Two tests, in order:
    carried nothing. If the plain version needs three clauses and a definition, keep the figure and
    put the plain version beside it once.
 
-**How to spot it.** No grep. The reading tell: you understood the sentence and cannot say it back
-in the document's own vocabulary without reaching for the same image.
+---
+
+## 6. Prose in the wrong register for what the artifact is
+
+**Where it appears.** Wherever one artifact is written inside another, or an artifact changes what
+it is for.
+
+[Diátaxis](https://diataxis.fr) sorts documentation four ways by what its reader is doing:
+**tutorial** (learning by doing), **how-to** (working, attention elsewhere), **reference**
+(consulted mid-task), **explanation** (studying). Each wants a different register, and the
+framework's core claim is that a reader is only ever in one mode at a time.
+
+**What goes wrong.** The prose ends up in the register of whatever produced it rather than the
+register its own type calls for. Two triggers, and the second is harder to catch.
+
+**Trigger one — a slot inherits its container's voice.** Entry 2 is a case of this: a description
+is written while writing the page, so it comes out in the page's explanatory register, when its
+reader is scanning an index mid-task.
+
+**Trigger two — the artifact changed roles.** A document written as a report and later repurposed
+as a reference will still argue for itself: scan counts, measurement narratives, "here is how we
+established this". That was correct content for a report, whose reader is deciding whether to
+believe you. A reference's reader has already decided and only needs to act.
+
+> **Before** (a how-to for agents, carrying its evidence) — Read the passage in context even when
+> it was pasted in full. Context has changed the diagnosis repeatedly — a description turned out
+> to be leaning on a term defined 22 lines below it, and an ordinal turned out to have no
+> antecedent anywhere on the page.
+
+> **After** — Open the file and read around the passage, even when it was pasted in full.
+
+Same instruction. The evidence was true, and belonged in the explanation the how-to already points
+at.
+
+**Why the second trigger is hard.** Nothing about the prose reads as a mistake, because it was not
+one when written. There is no defect to find — only a fit that lapsed. So the question has to be
+asked deliberately: **has this document changed what it is for since it was written?** If yes, its
+register is wrong by default until re-checked.
+
+**How to spot it.** Ask what the reader is doing when they meet this text, then check the prose
+matches. The reliable tell for a how-to is justification: if most steps explain why, the reader is
+being taught rather than helped, and the explanation belongs somewhere the how-to links to.
+
+**Where it looks like this but is not.**
+
+- **A how-to may state a reason where the reason changes the action.** "Do not brief the subagent
+  — the missing context is the instrument" earns its clause, because someone who does not know why
+  will helpfully brief it.
+- **An explanation is supposed to argue.** Weighing alternatives and admitting the counter-case is
+  that type's job, not over-inclusion.
+- **A tutorial minimising explanation is following its type, not failing to explain.**
 
 ---
 
@@ -287,5 +344,6 @@ cannot distinguish a term the page coined from a term the domain already owns, a
 domain vocabulary as unexplained. Report what did not resolve; do not rule on whether it should
 have.
 
-**Look twice wherever you already found something.** Both compounds in this catalogue were found
-that way — the second and third faults surfaced only after the first was named.
+**Look twice wherever you already found something.** The compound in entry 4 gave up its second
+and third faults only after the first was named, and it was reported as a single "subtle" problem
+until the sentence was stripped to what it asserts.
