@@ -58,9 +58,9 @@ printed beside the verdict rather than left implicit.
 
 ### Coverage: a pass can be narrower than its rule
 
-The `pass` row above carries a qualifier the other two do not, and it is the second half of
-what `fullyVerified` had to be taught. A rule page states several normative clauses; a checker
-establishes some subset of them. Every rule page declares which case it is in:
+The `pass` row above carries a qualifier the other two do not: it blocks `fullyVerified` only
+when the checker declares `partial` coverage. A rule page states several normative clauses; a
+checker establishes some subset of them. Every rule page declares which case it is in:
 
 | `coverage` | What a `pass` from that checker means                                  |
 | ---------- | ---------------------------------------------------------------------- |
