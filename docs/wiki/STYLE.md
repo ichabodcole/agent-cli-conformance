@@ -4,8 +4,8 @@
 enforces. This page governs **prose**. Read it before writing a page; use it as the checklist when
 editing one.
 
-It is the source. The `Plainspoken` output style and the `plainspoken-edit` skill are both derived
-from it, so when they disagree with this page, this page is right and they need updating.
+It is the source. The `Plainspoken` output style is derived from it, so when the two disagree, this
+page is right and the output style needs updating.
 
 ## This wiki uses Diátaxis
 
@@ -124,7 +124,7 @@ whether an explanation explains.
 Diátaxis says the same about itself, and more sharply — it addresses qualities that "cannot be
 checked or measured… Instead of taking measurements, we must make judgements."
 
-So the measurement script that accompanies `plainspoken-edit` deliberately has no pass/fail
-result. A green check would read as "the prose is fine", and nothing available can support that
-claim. **The check is a reading, by a person or an agent, page by page.** Everything on this page
-is input to that reading, not a substitute for it.
+There is deliberately no prose checker, and a green one would be worse than none. It would read as
+"the prose is fine", and nothing available can support that claim. **The check is a reading, by a
+person or an agent, page by page.** Everything on this page is input to that reading, not a
+substitute for it.
