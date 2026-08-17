@@ -2,8 +2,8 @@
 type: concept
 title: Conformance
 description:
-  What the kit's headline verdict claims, and the separate claim it deliberately does not
-  make — no core rule was violated, versus every core rule was established.
+  What `acc check` means by `conformant` and `fullyVerified`, and why a target can be conformant
+  without being fully verified.
 tags: [conformance, verdict, evidence, agent-facing]
 related:
   [

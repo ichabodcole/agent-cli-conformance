@@ -34,9 +34,8 @@ What each part of a CLI _is_.
   records, or opaque bytes — declared, so a caller never has to guess how to read it.
 - [Error envelope](./concepts/error-envelope.md) — The structured failure payload — a stable
   machine code, a retry verdict, and the valid alternatives — that prose on stderr cannot provide.
-- [Conformance](./concepts/conformance.md) — What the kit's headline verdict claims, and the
-  separate claim it deliberately does not make — no core rule was violated, versus every core rule
-  was established.
+- [Conformance](./concepts/conformance.md) — What `acc check` means by `conformant` and
+  `fullyVerified`, and why a target can be conformant without being fully verified.
 
 ## Archetypes
 
