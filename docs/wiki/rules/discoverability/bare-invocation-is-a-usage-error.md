@@ -18,6 +18,7 @@ coverage_gaps:
   - the exit code is only required to be non-zero here and not the declared 2
   - stderr is never checked to carry the usage summary
   - the bare invocation is only run against pipes so a wizard that starts only with a terminal attached is out of reach
+  - only a genuinely empty argv is sent so an invocation carrying nothing but global flags requests nothing either and is never probed
 coverage_established:
   - the bare invocation exits non-zero with stdout empty and terminates rather than waiting for input
 ---
@@ -95,6 +96,14 @@ the rest of this page, unexamined.
 - stderr is never checked to carry the usage summary
 - the bare invocation is only run against pipes so a wizard that starts only with a terminal
   attached is out of reach
+- only a genuinely empty argv is sent so an invocation carrying nothing but global flags
+  requests nothing either and is never probed
+
+That last gap is not hypothetical, and `acc` is the tool it was found on. `acc --json` named no
+command, so it requested nothing — and it answered exit `0` with both streams empty while this
+rule's probe, which sends an empty argv only, reported `pass`. The defect and the blind spot
+share one shape: an invocation is bare in the sense this rule cares about when it names no
+command, not when it carries no tokens.
 
 ## How to comply
 

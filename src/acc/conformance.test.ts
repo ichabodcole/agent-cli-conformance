@@ -266,6 +266,31 @@ describe("D — discoverability", () => {
     expect(r.stderr.length).toBeGreaterThan(0);
   });
 
+  // The same rule, one token further on, which is where it used to break. A global flag with no
+  // command is still an invocation that requested nothing — but it is not the BARE argv the
+  // guard was written against, and commander answers a missing subcommand by throwing
+  // `commander.help`, which was classified alongside the `commander.helpDisplayed` of a real
+  // `--help`. Both reported success; `writeErr` is captured rather than printed, so both streams
+  // were empty too. `acc --json` is the invocation an agent produces by selecting machine mode
+  // and omitting the verb, and it answered exit 0 with nothing to read.
+  for (const flags of [["--json"], ["--format", "json"], ["--format", "text"]]) {
+    test(`D2 \`${flags.join(" ")}\` with no command is a usage error, not silent success`, async () => {
+      const r = await run(flags);
+      expect(r.code).toBe(2);
+      expect(r.stdout).toBe("");
+      expect(r.stderr.length).toBeGreaterThan(0);
+    });
+  }
+
+  // The other side of that split: an explicit help request is still a request that succeeded.
+  for (const flags of [["--help"], ["--format", "text", "--help"], ["--version"]]) {
+    test(`\`${flags.join(" ")}\` remains a success after the commander.help split`, async () => {
+      const r = await run(flags);
+      expect(r.code).toBe(0);
+      expect(r.stdout.length).toBeGreaterThan(0);
+    });
+  }
+
   test("D3 help advertises the machine-readable path", async () => {
     const r = await run(["--help"]);
     expect(r.stdout).toMatch(/--json|--format|schema/);

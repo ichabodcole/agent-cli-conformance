@@ -29,6 +29,7 @@ export const bareInvocationChecker: Checker = {
     "the exit code is only required to be non-zero here and not the declared 2",
     "stderr is never checked to carry the usage summary",
     "the bare invocation is only run against pipes so a wizard that starts only with a terminal attached is out of reach",
+    "only a genuinely empty argv is sent so an invocation carrying nothing but global flags requests nothing either and is never probed",
   ],
   coverageEstablished: [
     "the bare invocation exits non-zero with stdout empty and terminates rather than waiting for input",

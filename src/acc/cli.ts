@@ -123,20 +123,38 @@ try {
   process.exit(emitError({ mode, command: argv[2] ?? "", error: err }));
 }
 
-// Bare invocation is a usage error (rule D2): nothing was requested, nothing ran. Exiting 0
-// here is how an unset shell variable becomes a silent no-op that reports success.
-if (argv.length <= 2) {
-  process.exit(
-    emitError({
-      mode,
-      command: "",
-      error: usageError("no command given", {
-        hint: "Run `acc --help` to see available commands.",
-        choices: COMMANDS.map((c) => c.name),
-      }),
+/**
+ * Bare invocation is a usage error (rule D2): nothing was requested, nothing ran. Exiting 0
+ * here is how an unset shell variable becomes a silent no-op that reports success.
+ *
+ * This is decided from commander's own outcome rather than from `argv.length <= 2`, which asks
+ * the wrong question: it tests how many tokens arrived when the rule is about whether any of
+ * them named a command. Every global flag made the two disagree, and `acc --json` — three
+ * tokens, no verb — is the shape an agent hits by selecting machine mode and forgetting the
+ * command.
+ *
+ * What that invocation met is subtler than a missing guard. Commander answers a missing
+ * subcommand by writing usage through `writeErr` and throwing `commander.help` with its own
+ * exit code of `1`; an explicit `--help` writes through `writeOut` and throws
+ * `commander.helpDisplayed` with `0`. The two were classified together as "help is a request,
+ * and it succeeded", so the incomplete invocation exited `0` — and because this CLI captures
+ * `writeErr` rather than printing it (so failures leave through the envelope), it also wrote
+ * nothing at all. Exit `0`, both streams empty: D2's own failure mode in the tool that defines
+ * D2, and the silent no-op this catalogue exists to report.
+ *
+ * They are distinguished below by code. A pre-parse scan for a known command name would not
+ * work: it cannot tell `acc --json` from `acc --bogus`, so it would answer both with "no
+ * command given" and swallow the unknown flag commander names for us (rule A3).
+ */
+const noCommandGiven = () =>
+  emitError({
+    mode,
+    command: "",
+    error: usageError("no command given", {
+      hint: "Run `acc --help` to see available commands.",
+      choices: COMMANDS.map((c) => c.name),
     }),
-  );
-}
+  });
 
 // In machine mode a help request must still yield parseable stdout (rule B3), so it is
 // answered with the schema rather than prose. An agent asking what the tool can do gets
@@ -176,6 +194,8 @@ function toOption(a: ArgSpec): Option {
 
 const program = new Command();
 let commanderStderr = "";
+/** Set by every command action; read after the parse to detect an invocation that named none. */
+let commandRan = false;
 
 program
   .name("acc")
@@ -217,6 +237,7 @@ for (const spec of COMMANDS) {
   for (const example of spec.examples) cmd.addHelpText("after", `\n  ${example}`);
 
   cmd.action((...actionArgs: unknown[]) => {
+    commandRan = true;
     // commander passes: ...positionals, options, command
     const positionals = actionArgs.slice(0, spec.positionals.length) as string[];
     const opts = actionArgs[spec.positionals.length] as Record<string, string | boolean>;
@@ -271,10 +292,12 @@ try {
   if (err instanceof CommanderError) {
     // Help and version are REQUESTS, and they succeeded. Commander models them as exceptions;
     // that is a control-flow detail, not a failure.
-    if (err.code === "commander.helpDisplayed" || err.code === "commander.help") {
-      process.exit(ExitCode.Success);
-    }
+    if (err.code === "commander.helpDisplayed") process.exit(ExitCode.Success);
     if (err.code === "commander.version") process.exit(ExitCode.Success);
+
+    // NOT a request that succeeded: commander throws this when it printed usage because the
+    // invocation named no subcommand. See `noCommandGiven` for what classifying it as help cost.
+    if (err.code === "commander.help") process.exit(noCommandGiven());
 
     // Everything else commander throws is the caller getting the invocation wrong. Commander
     // already named the offending token (rule A3); that text becomes the envelope's message.
@@ -294,3 +317,11 @@ try {
   // `internal` (exit 1). Forgetting to classify a failure therefore yields the honest answer.
   process.exit(emitError({ mode, command: argv[2] ?? "", error: err }));
 }
+
+// A BACKSTOP, not the primary guard: commander answers today's no-command invocations by
+// throwing `commander.help`, which the catch above classifies. This catches the other shape —
+// a parse that resolves with no action having fired — because the failure it would otherwise
+// produce is exit 0 with nothing written, which is the one outcome this CLI must never have.
+// Commands set `process.exitCode` and return rather than exiting, so reaching here after one
+// has run is the normal success path and must not be disturbed.
+if (!commandRan) process.exit(noCommandGiven());
