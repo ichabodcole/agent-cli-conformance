@@ -43,7 +43,8 @@ What each part of a CLI _is_.
 The shapes a CLI takes, and which rules bind differently for each.
 
 - [Delegator](./archetypes/delegator.md) — A CLI whose job is to resolve and run another program —
-  where the hardest problem is not confusing its own failures with the child's.
+  where the hardest problem is reporting failures so a caller can tell the delegator's from the
+  child's.
 
 _Planned: stateless-verb, service-client, daemon-session, streaming._
 
