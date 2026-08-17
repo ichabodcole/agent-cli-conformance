@@ -139,6 +139,7 @@ describe("type groups come from the data, not from a list in the builder", () =>
       "rule",
       "decision",
       "guide",
+      "tutorial",
     ]);
   });
 

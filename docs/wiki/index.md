@@ -192,4 +192,12 @@ Why we chose what we chose, citing the research.
 
 How to actually do things.
 
-_Planned: adopting the spec, adding a checker, migrating an existing CLI._
+- [Check your first CLI](./guides/check-your-first-cli.md) — A first run of the conformance kit
+  against a tool that passes, one that fails, and one you did not write — learning to read the
+  report rather than to fix anything.
+
+- [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — Take a CLI
+  from its first failing check to a green gate — triaging each failure into a fix, a declared
+  waiver, or named debt.
+
+_Planned: adding a checker._

@@ -205,6 +205,13 @@ the exit codes the spec itself mandates.
 | `rule`      | The rule (normative) · Why · The probe · Current checker coverage · How to comply · Evidence |
 | `decision`  | Context · Decision · Rationale · Consequences · What would change our mind                   |
 | `guide`     | Goal · Steps · Verification                                                                  |
+| `tutorial`  | What we will do · Step 1..n · What we learned · Where to go next                             |
+
+`guide` and `tutorial` are both work-shaped and they are not interchangeable. A `guide` serves
+someone with a goal they already have — it assumes competence and may branch. A `tutorial`
+serves someone acquiring a skill: one path, no alternatives, a visible result at every step, and
+a learning goal rather than a task. Explanation belongs in neither; both link out to `concept`
+pages instead of restating them.
 
 Normative language in `rule` pages follows RFC 2119: **MUST**, **MUST NOT**, **SHOULD**,
 **MAY**. Nothing else is normative — if a `concept` page seems to state a requirement, the
