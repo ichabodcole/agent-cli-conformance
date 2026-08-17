@@ -140,8 +140,8 @@ failure mode this section exists to prevent.
 
 ### The frame a verdict was reached in
 
-There is a second reason `conformant` and `fullyVerified` are separate booleans, and it only
-became visible once projects could tune the rules.
+The second reason `conformant` and `fullyVerified` are separate booleans is that projects can
+tune the rules.
 
 **An unwaivable specification silently deforms what you are building.** Faced with a rule that
 does not fit your use case and no way to decline it, the path of least resistance is to reshape
