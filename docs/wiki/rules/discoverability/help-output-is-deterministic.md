@@ -64,11 +64,10 @@ Inert (`L0`).
 Passes when the two captures have the same **SHA-256 digest**, taken over the raw bytes before
 they are decoded.
 
-**The digest is the comparison, and the decoded text is not.** This checker used to compare the
-two decoded strings while its rule, its page and its own pass detail all said "byte-identical",
-which is a weaker claim wearing the words of a stronger one. UTF-8 decoding is many-to-one on
+**The digest is the comparison, and the decoded text is not.** Comparing the two decoded strings
+cannot establish the byte identity this rule requires. UTF-8 decoding is many-to-one on
 ill-formed input: every invalid byte becomes the single replacement character `U+FFFD`, so a tool
-emitting `0x80` on the first run and `0x81` on the second produced identical strings, identical
+emitting `0x80` on the first run and `0x81` on the second produces identical strings, identical
 byte counts, and a `pass` certifying byte identity for two different streams. The raw bytes
 themselves are deliberately **not** retained — a digest answers the equality question the rule
 asks and nothing else, which keeps the [observation
