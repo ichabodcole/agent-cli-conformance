@@ -188,8 +188,8 @@ A project may name rules it currently cannot satisfy under `knownFailures` in
 without a wall of red, while keeping every outstanding gap named and visible. It only ever
 shrinks, and nothing in the kit adds to it automatically.
 
-An excuse covers both `fail` and `unverified`. Excusing only failures left a project blocked by
-an unverified rule with nothing it could change to clear it. When an excused rule starts
+An excuse covers both `fail` and `unverified`. Excusing only failures leaves a project blocked by
+an unverified rule with nothing it can change to clear it. When an excused rule starts
 passing, the run reports it as a **stale expectation** — that is the ratchet tightening, and
 the line to delete.
 
