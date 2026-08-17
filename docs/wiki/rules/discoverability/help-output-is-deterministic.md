@@ -74,15 +74,16 @@ asks and nothing else, which keeps the [observation
 artifact](../../../roadmap.md#4-durable-observation-and-replay) free of an unbounded blob
 that would need its own encoding, redaction and retention story.
 
-**The two runs are the same invocation** — same argv, same environment, twice. That is worth
-stating because it was once not true. The runner deduplicates identical probes into a single
-recording, so an earlier version of this checker perturbed the second run with an
-`ACC_PROBE_NONCE` environment variable purely to get a second sample past the dedup — and then
-compared two invocations that differed, while claiming to measure determinism. A CLI that echoed
-its environment into help would have failed D4 for a legitimate reason, indistinguishable from a
-timestamp. The repetitions are now told apart by a **recorder-only index** the target never sees
-(`Invocation.repeat`, built for [C3](../exit-codes/exit-codes-are-deterministic.md), which had
-the identical defect in its own spelling).
+**The two runs are the same invocation** — same argv, same environment, twice. The runner
+deduplicates identical probes into a single recording, so the repetitions are told apart by a
+**recorder-only index** the target never sees: `Invocation.repeat`, shared with
+[C3](../exit-codes/exit-codes-are-deterministic.md).
+
+**Not an environment variable, deliberately.** Perturbing the second run with something like
+`ACC_PROBE_NONCE` would get it past the dedup, and would also make the two invocations differ
+while the checker claimed to measure determinism. A variable the target can read is part of the
+input to the measurement: a CLI that echoed its environment into help would fail D4 for a
+legitimate reason, indistinguishable from a timestamp.
 
 When the two differ, the checker reports the **index of the first differing character** — not a
 diff. That is enough to tell a one-character timestamp delta from wholesale reordering, and it
@@ -98,7 +99,7 @@ verdict: a `fail`, because the rule was violated, with the location withheld bec
 does not carry it.
 
 Deliberately not attempted: distinguishing "nondeterministic" from "changed because the
-environment changed". D4 no longer varies the environment at all, so it cannot see that
+environment changed". D4 does not vary the environment at all, so it cannot see that
 difference either way — help that reacts to a hostile environment is
 [D1](./version-flag-exists.md)'s subject, where `--version` is run with an unusable `HOME` and
 `XDG_CONFIG_HOME` on purpose, rather than a claim duplicated here.
