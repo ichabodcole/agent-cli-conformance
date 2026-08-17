@@ -50,8 +50,7 @@ saying once.** `125` is where the band POSIX and the wrapper conventions occupy 
 for a delegator_, and the name has been in links since the decision was written. `124` sits above
 our ceiling for the same reason `125` does — it is spoken for by `timeout`, a convention this
 project has chosen to respect, and a code that is spoken for is not ours to allocate however
-unassigned it looks from inside our own table. Both pages previously listed `124` as an adopted
-timeout outcome _and_ counted it among the unallocated codes; it cannot be both.
+unassigned it looks from inside our own table.
 
 Two different kinds of authority sit in that reserved band, and conflating them is how the
 portability claim on this page came to be overstated. They are separated here deliberately.
@@ -69,8 +68,7 @@ greater than 128. It does not license the inference backwards, and an ordinary p
 a status in that range for its own reasons — `git` returns `129` for an unrecognised flag, which
 is measured in [`research/01-case-studies.md`](../../../research/01-case-studies.md) and quoted on
 the [exit-codes concept page](../concepts/exit-codes.md#there-is-no-industry-standard) as evidence
-that `sysexits.h` never caught on. Both pages used to tell a reader to read `> 128` as a signal
-death a few lines from that number. It is not safe to read a status above `128` as "the process
+that `sysexits.h` never caught on. It is not safe to read a status above `128` as "the process
 was signalled", and the exact `128+n` spelling — `143` for SIGTERM, `137` for SIGKILL — is a
 widespread convention implemented by bash, dash, zsh and their peers on top of the POSIX floor,
 so `n` is not portably recoverable either.
@@ -92,8 +90,7 @@ Both come from `timeout` (POSIX Issue 8 and GNU coreutils), where `125` means "a
 than [126 or 127] occurred", and Docker uses `125` the same way for `docker run` itself
 failing. No shell assigns `125` any meaning. It is a strong convention among the tools that
 delegate, which is exactly the population that matters here — but it is a convention, not a
-standard, and this page previously described it as "understood by every shell, CI runner and
-process supervisor", which is false.
+standard.
 
 A delegating CLI **passes the child's exit code through verbatim** and uses `125` when the
 wrapper itself failed before or around the child.
@@ -122,7 +119,7 @@ that nothing else recognises; ours is assembled from ones callers already meet.
 discarding which code it actually was. Keeping our own codes below `125` means _our_ domain
 codes never collide with the shell band, so no remapping is needed and no information is lost.
 
-**It does not eliminate wrapper-versus-child ambiguity, and this page used to claim it did.**
+**It does not eliminate wrapper-versus-child ambiguity.**
 Verbatim passthrough still collides when the child itself exits `125`, `126` or `127` — a
 wrapper around `docker` or `timeout` will meet exactly that — and the caller cannot then tell
 the wrapper's own failure from the child's report of the same number. What staying below `125`
