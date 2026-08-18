@@ -11,8 +11,8 @@ _is_ (concepts), what shapes CLIs take (archetypes), the normative rules a confo
 satisfy (rules), why we chose what we chose (decisions), and how to actually do things
 (guides).
 
-It is **not** the evidence trail. Research reports live in `research/` outside this wiki —
-dated, unmaintained, cited by `decision` pages. The wiki is what we believe; `research/` is
+It is **not** the evidence trail. Research reports live in `docs/research/` outside this wiki —
+dated, unmaintained, cited by `decision` pages. The wiki is what we believe; `docs/research/` is
 what convinced us.
 
 Two audiences, one source of truth:
@@ -31,7 +31,7 @@ docs/wiki/
   concepts/      ← the vocabulary: what each part of a CLI IS
   archetypes/    ← the shapes a CLI takes (stateless-verb, daemon-session, delegator…)
   rules/         ← ONE PAGE PER NORMATIVE RULE, grouped by category folder
-  decisions/     ← why we chose X over Y, citing research/
+  decisions/     ← why we chose X over Y, citing docs/research/
   guides/        ← how to adopt the spec, add a checker, migrate a CLI
 ```
 

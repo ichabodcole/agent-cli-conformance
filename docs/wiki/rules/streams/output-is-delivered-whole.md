@@ -177,6 +177,6 @@ after its write.
 
 The defect population — six code fixes, four gate commits, 37 pinned exit sites, and the corpus's
 only rework — is catalogued as class 1 in
-[`research/2026-08-15-defect-archaeology.md`](../../../../research/2026-08-15-defect-archaeology.md),
+[`research/2026-08-15-defect-archaeology.md`](../../../research/2026-08-15-defect-archaeology.md),
 which ranks it the highest-cost missing rule and records the two probe-design traps above as
 measurements rather than as advice.

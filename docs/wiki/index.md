@@ -11,7 +11,7 @@ updated: 2026-08-15
 
 Durable, curated knowledge for building command-line tools that LLM agents can drive without
 falling into silent failures. The contract for maintaining these pages is
-[SCHEMA.md](./SCHEMA.md); the evidence that produced them lives in `research/`, outside this
+[SCHEMA.md](./SCHEMA.md); the evidence that produced them lives in `docs/research/`, outside this
 wiki.
 
 > **Status: early.** Every rule below is checked at `L0` today, except two that declare `L1`:

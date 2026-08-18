@@ -149,4 +149,4 @@ Requiring determinism at the source is strictly better than scrubbing it afterwa
 is a per-consumer workaround that each new caller must reinvent, and every scrubber is a place
 a real change can be masked.
 
-Full analysis: [`research/04-testing-enforcement.md`](../../../../research/04-testing-enforcement.md).
+Full analysis: [`research/04-testing-enforcement.md`](../../../research/04-testing-enforcement.md).

@@ -120,4 +120,4 @@ All five CLIs surveyed reject unknown root verbs non-zero with empty stdout. The
 entirely in the exit code chosen — `git` `129`, `docker` `125`, others `1` — which is what the
 [taxonomy](../../concepts/exit-codes.md#the-taxonomy) settles.
 
-Full survey: [`research/01-case-studies.md`](../../../../research/01-case-studies.md).
+Full survey: [`research/01-case-studies.md`](../../../research/01-case-studies.md).

@@ -136,4 +136,4 @@ JSON" — failure falls back to prose. Of the tools surveyed, only `cargo`, `ter
 gap in the industry, and the reason the [error envelope](../../concepts/error-envelope.md) is
 specified as tightly as it is.
 
-Full survey: [`research/01-case-studies.md`](../../../../research/01-case-studies.md).
+Full survey: [`research/01-case-studies.md`](../../../research/01-case-studies.md).

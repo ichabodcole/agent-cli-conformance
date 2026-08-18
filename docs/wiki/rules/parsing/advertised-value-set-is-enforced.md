@@ -186,6 +186,6 @@ stderr   {"ok":false,"error":{"kind":"usage","message":"invalid value for --form
 
 The defect population behind the rule — two fixed instances, one open at HEAD, plus the one in
 `acc` — is catalogued as class 11 in
-[`research/2026-08-15-defect-archaeology.md`](../../../../research/2026-08-15-defect-archaeology.md),
+[`research/2026-08-15-defect-archaeology.md`](../../../research/2026-08-15-defect-archaeology.md),
 which also ranks it as the lowest-cost of the missing rules to build and the only one reachable
 without leaving `L0`.

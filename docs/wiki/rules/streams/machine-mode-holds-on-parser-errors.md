@@ -154,7 +154,7 @@ stderr   {"ok":false,"error":{"kind":"usage","exit_code":2,"message":"unknown op
 
 The defect population — five commits in one repository, two independent fixes, and the class in
 its absolute form across a second — is catalogued as class 4 in
-[`research/2026-08-15-defect-archaeology.md`](../../../../research/2026-08-15-defect-archaeology.md),
+[`research/2026-08-15-defect-archaeology.md`](../../../research/2026-08-15-defect-archaeology.md),
 alongside the measurement that gives the rule its urgency: `ok:true` counted **112 times and
 `ok:false` zero** across one tree, with every failure printing prose. A piping agent receives
 `ok:true` and exit 0 — not a degraded signal but no signal, and a positively reassuring one.

@@ -187,8 +187,9 @@ acc rules --tier nonsense  # exit 2, kind: usage, choices: ["core","diagnostic"]
 ```
 docs/wiki/     the spec and its rationale — see docs/wiki/SCHEMA.md before editing
 src/acc/       the reference implementation; spec.ts is its single source of truth
-research/      the evidence trail: four reports on case studies, frameworks,
-               CLI-vs-MCP, and testing methodology. Cited by decision pages; not maintained.
+docs/research/ the evidence trail: reports on case studies, frameworks, CLI-vs-MCP,
+               testing methodology, defect archaeology and prose. Cited by decision and
+               rule pages; dated and not maintained.
 scripts/
   docs-lint/   portable, zero-dependency wiki linter (lift it into other repos as-is)
 ```

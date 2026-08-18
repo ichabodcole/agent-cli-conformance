@@ -111,8 +111,8 @@ Four things no measurement detects, which reading must catch:
 
 ## Satellites
 
-`docs/roadmap.md` and the files in `research/` are not wiki pages and carry no `type`. The
-type-specific language rules above do not bind them; the density rules do. `research/` files are
+`docs/roadmap.md` and the files in `docs/research/` are not wiki pages and carry no `type`. The
+type-specific language rules above do not bind them; the density rules do. `docs/research/` files are
 dated evidence documents and are not maintained after the fact.
 
 ## What is not enforced, and cannot be
