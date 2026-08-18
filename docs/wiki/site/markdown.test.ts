@@ -19,6 +19,21 @@ describe("inline", () => {
     expect(renderInline("`<cli> --help`")).toBe("<code>&lt;cli&gt; --help</code>");
   });
 
+  // A bare destination ends at the first `)`, so a URL carrying one is unwritable without the
+  // pointy-bracket form. Every DOI-bearing citation in docs/research/ needs it, and the
+  // truncated href leaked the rest of the URL into the document as text.
+  test("a pointy-bracket destination may contain parentheses", () => {
+    expect(renderInline("[doi](<https://doi.org/10.1016/S0010-0277(98)00034-1>)")).toBe(
+      '<a href="https://doi.org/10.1016/S0010-0277(98)00034-1">doi</a>',
+    );
+  });
+
+  test("a bare destination still ends at the first parenthesis", () => {
+    expect(renderInline("[x](https://example.com/a) then")).toBe(
+      '<a href="https://example.com/a">x</a> then',
+    );
+  });
+
   test("strong beats emphasis", () => {
     expect(renderInline("**Gaps**")).toBe("<strong>Gaps</strong>");
     expect(renderInline("_planned_")).toBe("<em>planned</em>");

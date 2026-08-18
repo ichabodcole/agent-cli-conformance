@@ -23,7 +23,7 @@
 // every link resolves in the SOURCE, so a break here is always this file's rewriting, never the
 // page's.
 
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseFrontmatter, yamlList } from "../../scripts/docs-lint/index.ts";
@@ -78,15 +78,38 @@ function documentTitle(pageTitle: string): string {
 const TAG_INDEX = "tags.html";
 
 /**
- * Satellite pages: markdown outside the wiki root that the site still renders.
+ * Satellite pages: markdown outside the wiki root that the site still renders, and that earns a
+ * place in the primary nav.
  *
  * `docs/roadmap.md` is linked from the README and from a dozen wiki pages, and it deliberately
  * lives outside the wiki — it says so itself, under "Why this is not in the wiki". Rendering it
- * keeps those links working without pretending it is a wiki page. `research/` and `docs/reviews/`
- * are NOT here: both are untracked working material, and the wiki's own contract says the
- * evidence trail is not part of the knowledge.
+ * keeps those links working without pretending it is a wiki page.
+ *
+ * `docs/reviews/` is NOT here: it is working material, not knowledge. `docs/research/` is
+ * rendered too, but separately — see EVIDENCE.
  */
 const SATELLITES = ["../roadmap.md"];
+
+/**
+ * Evidence reports: rendered, but not part of the knowledge and not pinned in the primary nav.
+ *
+ * These were excluded from the site on the reasoning that the wiki's contract calls them
+ * evidence rather than knowledge. That is true of their STATUS and was wrong about their
+ * PUBLICATION: `## Evidence` is a required section on every rule page, and a dozen of them
+ * bottom out in a link to one of these files. Excluding them meant the built site shipped
+ * `href="../../../research/01-case-studies.md"` — a path that escapes the output root, so every
+ * one of those links was dead for anyone reading the published site rather than the repo.
+ *
+ * Discovered rather than listed, so a new report is published by existing. They keep their own
+ * nav group instead of joining SATELLITES, because a bibliography does not belong in "Start
+ * here".
+ */
+const EVIDENCE = existsSync(resolve(WIKI_ROOT, "../research"))
+  ? readdirSync(resolve(WIKI_ROOT, "../research"))
+      .filter((f) => f.endsWith(".md"))
+      .sort()
+      .map((f) => `../research/${f}`)
+  : [];
 
 // --- the page model -----------------------------------------------------------------------
 
@@ -251,7 +274,7 @@ function build(): void {
   };
 
   for (const node of graph.nodes) addPage(node.path, node);
-  for (const key of SATELLITES) {
+  for (const key of [...SATELLITES, ...EVIDENCE]) {
     if (existsSync(resolve(WIKI_ROOT, key))) addPage(key, null);
   }
 
@@ -377,6 +400,21 @@ function build(): void {
           : [{ label: null, links: members.map((m) => link(m)) }];
 
       groups.push({ label: typeLabel(type), subgroups });
+    }
+
+    // Evidence gets its own group rather than falling through to "Unclassified" below. It is
+    // correctly untyped — these are not wiki pages and carry no frontmatter — but "the builder
+    // did not know what this was" is the wrong thing to tell a reader about a report the rule
+    // pages cite by name.
+    const evidence = EVIDENCE.map((k) => byKey.get(k)).filter(
+      (p): p is SitePage => p !== undefined,
+    );
+    if (evidence.length) {
+      for (const e of evidence) placed.add(e.key);
+      groups.push({
+        label: "Evidence",
+        subgroups: [{ label: null, links: evidence.map((e) => link(e)) }],
+      });
     }
 
     // A page with no `type`, or one the graph never indexed, is SURFACED rather than dropped. A

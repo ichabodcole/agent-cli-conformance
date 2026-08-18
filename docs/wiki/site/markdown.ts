@@ -169,6 +169,21 @@ function parseLink(src: string, at: number): { text: string; target: string; end
     }
   }
   if (close === -1 || src[close + 1] !== "(") return null;
+  // CommonMark's pointy-bracket destination. A bare destination ends at the first `)`, so a URL
+  // containing one cannot be written without this form — which is why every citation style that
+  // carries a DOI reaches for it: `[doi:10.1016/S0010-0277(98)00034-1](<https://…(98)…>)`.
+  // Without this branch the destination was truncated mid-URL and the trailing text leaked into
+  // the document, which the site's own link verifier caught the moment research/ began rendering.
+  if (src[close + 2] === "<") {
+    const gt = src.indexOf(">", close + 3);
+    if (gt !== -1 && src[gt + 1] === ")") {
+      return {
+        text: src.slice(open + 1, close),
+        target: src.slice(close + 3, gt).trim(),
+        end: gt + 2,
+      };
+    }
+  }
   const paren = src.indexOf(")", close + 2);
   if (paren === -1) return null;
   return {
