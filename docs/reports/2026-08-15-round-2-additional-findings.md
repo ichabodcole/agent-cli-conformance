@@ -1,7 +1,8 @@
 ---
 type: report
 generated: { by: unknown, at: 2026-08-15 }
-status: live
+status: stable
+lifecycle: live
 description: Verification of the 29 remediation commits answering the round-1 review, and the six findings that survived it.
 tags: [conformance, remediation]
 subject: src/acc

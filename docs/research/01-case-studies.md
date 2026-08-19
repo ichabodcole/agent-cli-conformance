@@ -1,7 +1,7 @@
 ---
 type: research
 generated: { by: unknown, at: 2026-08-13 }
-status: current
+status: stable
 description: How best-in-class CLIs actually structure themselves, probed primary-source against gh, kubectl, docker, git, cargo, deno and npm.
 tags: [exit-codes, parsing, streams, discoverability]
 ---

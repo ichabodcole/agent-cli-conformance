@@ -54,7 +54,8 @@ Every file here carries frontmatter, checked by `bun run docs:lint:artifacts`.
 ---
 type: report
 generated: { by: claude-opus-5, at: 2026-08-15 }
-status: live                 # live | discharged
+status: stable               # OKF: draft | stable | deprecated
+lifecycle: live              # live | discharged
 description: One sentence; what this examined and what it concluded.
 tags: [conformance, remediation]
 subject: src/acc             # what was examined
@@ -62,7 +63,16 @@ examined: 90ea2a8..6adc9de   # the state it describes: commit range, version or 
 ---
 ```
 
-**Required:** `type`, `generated`, `status`, `subject`, `examined`. **Optional:** `description`, `tags`.
+**Required:** `type`, `generated`, `status`, `lifecycle`, `subject`, `examined`. **Optional:** `description`, `tags`.
+
+`status` is **OKF 0.2 §5.4** and uses the spec's vocabulary, not a house one: `draft` (not yet
+reviewed), `stable` (ready for consumption, and the default when absent), `deprecated` (kept for
+links and history; no longer current).
+
+The discharge state these documents actually need is a different question, so it lives in
+`lifecycle`, an extension. OKF permits additional keys outright, and adding a field is a weaker
+deviation than redefining one the spec already defines — a consumer reading `status: discharged`
+would be reading a value the spec says cannot occur.
 
 `generated` follows **OKF 0.2 §13.1**, which supersedes `timestamp` with `generated: { by, at }`.
 `at` is when the content was produced and is never bumped; `by` is the actor that produced it,

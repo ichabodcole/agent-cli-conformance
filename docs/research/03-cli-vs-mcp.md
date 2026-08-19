@@ -1,7 +1,7 @@
 ---
 type: research
 generated: { by: unknown, at: 2026-08-13 }
-status: current
+status: stable
 description: Where the boundary falls between shipping a CLI and shipping an MCP server, for local agents doing tooling work.
 tags: [schema, agent-facing, mcp]
 ---

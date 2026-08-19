@@ -1,7 +1,8 @@
 ---
 type: report
 generated: { by: claude-opus-5, at: 2026-08-15 }
-status: live
+status: stable
+lifecycle: live
 description: The wiki read against the Diataxis framework; the application half of the map was empty and the rule page's proportions invert its own stated purpose.
 tags: [documentation, guide]
 subject: docs/wiki

@@ -6,8 +6,8 @@ description:
   failure into an intermittent one.
 tags: [exit-codes, determinism, core]
 related: [concept/exit-codes, rule/help-output-is-deterministic]
-status: current
-updated: 2026-08-14
+status: stable
+generated: { by: unknown, at: 2026-08-14 }
 rule_id: C3
 tier: core
 probe_level: L0

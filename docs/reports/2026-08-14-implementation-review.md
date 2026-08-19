@@ -1,7 +1,8 @@
 ---
 type: report
 generated: { by: unknown, at: 2026-08-14 }
-status: live
+status: stable
+lifecycle: live
 description: Round-1 review of the conformance kit implementation against the rule catalogue; 18 findings fixed, 9 promoted to the roadmap, 3 still open.
 tags: [conformance, remediation, testing]
 subject: src/acc

@@ -6,8 +6,8 @@ description:
   most — a wrong flag is the commonest way an agent gets a command wrong.
 tags: [streams, machine-mode, errors, core]
 related: [concept/machine-mode, concept/error-envelope, rule/machine-output-is-parseable]
-status: current
-updated: 2026-08-16
+status: stable
+generated: { by: unknown, at: 2026-08-16 }
 rule_id: B5
 tier: core
 probe_level: L0

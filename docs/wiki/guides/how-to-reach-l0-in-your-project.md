@@ -6,8 +6,8 @@ description:
   declared waiver, or named debt.
 tags: [guide, adoption, conformance, acc-config, l0]
 related: [concept/conformance, rule/help-advertises-machine-mode, rule/unknown-flag-exits-nonzero]
-status: current
-updated: 2026-08-17
+status: stable
+generated: { by: unknown, at: 2026-08-17 }
 ---
 
 # How to reach L0 in your project

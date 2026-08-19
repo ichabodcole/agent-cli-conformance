@@ -6,8 +6,8 @@ description:
   failures so a caller can tell the delegator's from the child's.
 tags: [archetype, delegation, exit-codes, passthrough]
 related: [concept/exit-codes, rule/double-dash-terminator, decision/exit-codes-below-125]
-status: current
-updated: 2026-08-14
+status: stable
+generated: { by: unknown, at: 2026-08-14 }
 ---
 
 # Delegator

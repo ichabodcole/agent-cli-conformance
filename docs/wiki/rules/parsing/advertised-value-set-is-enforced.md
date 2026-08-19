@@ -6,8 +6,8 @@ description:
   lie the caller cannot detect — the answer arrives in the default shape, at exit 0.
 tags: [parsing, silent-failure, machine-mode, core]
 related: [rule/unknown-flag-exits-nonzero, rule/errors-name-the-offending-token, concept/error-envelope]
-status: current
-updated: 2026-08-16
+status: stable
+generated: { by: unknown, at: 2026-08-16 }
 rule_id: A7
 tier: core
 probe_level: L0

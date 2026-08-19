@@ -618,7 +618,7 @@ if (import.meta.main) {
     const problems = runDocsLint({
       root: WIKI_ROOT,
       types: ["concept", "archetype", "rule", "decision", "guide", "tutorial", "index"],
-      dateField: "updated",
+      dateField: "generated",
       allowDateOnly: true,
       extraChecks: (pages) => [
         ...ruleChecks(pages),

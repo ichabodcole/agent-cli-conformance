@@ -40,7 +40,7 @@ Every file here carries frontmatter, checked by `bun run docs:lint:artifacts`.
 ---
 type: research
 generated: { by: unknown, at: 2026-08-13 }
-status: current              # current | superseded
+status: stable               # OKF: draft | stable | deprecated
 description: One sentence; the question and what answered it.
 tags: [exit-codes, parsing]
 supersedes: 01-case-studies.md   # optional; a later report answering the same question
@@ -48,6 +48,10 @@ supersedes: 01-case-studies.md   # optional; a later report answering the same q
 ```
 
 **Required:** `type`, `generated`, `status`. **Optional:** `description`, `tags`, `supersedes`.
+
+`status` is **OKF 0.2 §5.4**: `draft | stable | deprecated`. Research carries no `lifecycle`,
+because it never completes — a report that has been answered by a later one becomes
+`deprecated`, and the newer report names it in `supersedes`.
 
 `generated` follows **OKF 0.2 §13.1**, which supersedes `timestamp` with `generated: { by, at }`.
 `at` is when the content was produced and is never bumped; `by` is the actor that produced it,

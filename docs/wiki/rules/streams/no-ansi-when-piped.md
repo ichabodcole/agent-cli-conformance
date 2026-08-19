@@ -5,8 +5,8 @@ description:
   Colour codes are invisible in a terminal and very visible in a string comparison.
 tags: [streams, machine-mode, output, core]
 related: [concept/machine-mode, rule/machine-output-is-parseable]
-status: current
-updated: 2026-08-16
+status: stable
+generated: { by: unknown, at: 2026-08-16 }
 rule_id: B2
 tier: core
 probe_level: L0

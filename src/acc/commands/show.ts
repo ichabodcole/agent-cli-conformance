@@ -26,7 +26,7 @@ export function showCommand(
     tags: page.tags,
     related: page.related,
     status: page.status,
-    updated: page.updated,
+    generated: page.generated,
     ...(page.ruleId ? { rule_id: page.ruleId } : {}),
     ...(page.tier ? { tier: page.tier } : {}),
     ...(page.probeLevel ? { probe_level: page.probeLevel } : {}),

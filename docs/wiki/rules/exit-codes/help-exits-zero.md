@@ -6,8 +6,8 @@ description:
   other path that prints help.
 tags: [exit-codes, discoverability, core]
 related: [concept/exit-codes, rule/bare-invocation-is-a-usage-error]
-status: current
-updated: 2026-08-15
+status: stable
+generated: { by: unknown, at: 2026-08-15 }
 rule_id: C1
 tier: core
 probe_level: L0

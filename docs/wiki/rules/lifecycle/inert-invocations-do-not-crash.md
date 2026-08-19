@@ -6,8 +6,8 @@ description:
   rule reports a gap in the evidence rather than the defect.
 tags: [lifecycle, crash, signals, silent-failure, core]
 related: [rule/help-exits-zero, rule/never-block-without-a-tty, concept/exit-codes]
-status: current
-updated: 2026-08-15
+status: stable
+generated: { by: unknown, at: 2026-08-15 }
 rule_id: G1
 tier: core
 probe_level: L0

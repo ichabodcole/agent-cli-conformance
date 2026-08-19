@@ -6,8 +6,8 @@ description:
   alternatives — that prose on stderr cannot provide.
 tags: [errors, contract, agent-facing, remediation]
 related: [concept/exit-codes, concept/machine-mode, rule/stdout-carries-only-data]
-status: current
-updated: 2026-08-15
+status: stable
+generated: { by: unknown, at: 2026-08-15 }
 ---
 
 # Error envelope

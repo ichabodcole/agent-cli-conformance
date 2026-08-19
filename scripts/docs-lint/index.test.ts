@@ -20,6 +20,7 @@ import {
   headingSlugsOf,
   type LintPage,
   parseFrontmatter,
+  parseGenerated,
   runDocsLint,
   slug,
   stripCode,
@@ -297,6 +298,33 @@ describe("stripCode", () => {
 // ---------------------------------------------------------------------------------------
 // parseFrontmatter
 // ---------------------------------------------------------------------------------------
+
+describe("parseGenerated (OKF 0.2 §5.2)", () => {
+  test("reads the flow mapping the spec documents", () => {
+    expect(
+      parseGenerated("{ by: reference_agent/gemini-2.5-pro, at: 2026-06-20T22:53:05Z }"),
+    ).toEqual({ by: "reference_agent/gemini-2.5-pro", at: "2026-06-20T22:53:05Z" });
+  });
+
+  test("tolerates the spacing an author actually types", () => {
+    expect(parseGenerated("{by: unknown,at: 2026-08-13}")).toEqual({
+      by: "unknown",
+      at: "2026-08-13",
+    });
+  });
+
+  test("a missing half is not a partial answer", () => {
+    // Returning `{ by, at: "" }` would let a page satisfy a presence check while declaring no
+    // instant. OKF requires the actor INSIDE the mapping, so half a mapping is no mapping.
+    expect(parseGenerated("{ by: unknown }")).toBeNull();
+    expect(parseGenerated("{ at: 2026-08-13 }")).toBeNull();
+  });
+
+  test("absent and malformed are both null", () => {
+    expect(parseGenerated(undefined)).toBeNull();
+    expect(parseGenerated("2026-08-13")).toBeNull();
+  });
+});
 
 describe("parseFrontmatter", () => {
   test("reads simple key: value pairs, including the last one", () => {
@@ -989,6 +1017,37 @@ describe("runDocsLint — the date field", () => {
     // and with the field present, the same config is clean while `updated` is now irrelevant
     const present = oneCatalogedPage({ ...OK_FM, updated: null, reviewed: DATE });
     expect(lint(config(present, { dateField: "reviewed" })).problems).toEqual([]);
+  });
+
+  test("`dateField: generated` validates the instant INSIDE the mapping", () => {
+    // OKF 0.2 replaced the scalar `timestamp` with a mapping, so the field the lint requires is
+    // present while the instant it carries is one level down. Both pages carry it: the index is
+    // a page too, and a config that only checked the leaves would miss the catalog itself.
+    const build = (at: string) =>
+      wiki({
+        "index.md": page(
+          {
+            type: "index",
+            title: "Catalog",
+            tags: "[index]",
+            generated: `{ by: agent, at: ${DATE} }`,
+          },
+          "# Catalog\n\n- [A](./a.md)\n",
+        ),
+        "a.md": page({
+          type: "concept",
+          title: "Page",
+          tags: "[t]",
+          generated: `{ by: agent, at: ${at} }`,
+        }),
+      });
+
+    expect(
+      lint(config(build(DATE), { dateField: "generated", allowDateOnly: true })).problems,
+    ).toEqual([]);
+    expect(
+      lint(config(build("soon"), { dateField: "generated", allowDateOnly: true })).problems[0],
+    ).toContain("BAD generated.at");
   });
 
   test("allowDateOnly:true accepts YYYY-MM-DD", () => {

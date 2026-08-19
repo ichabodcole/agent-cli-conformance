@@ -244,6 +244,21 @@ export function parseFrontmatter(fm: string): Map<string, string> {
  * kind of value these lists carry, so this is a defect and not a documented limitation like the
  * spaced-hyphen split below it.
  */
+/**
+ * OKF 0.2 §5.2 `generated: { by: <actor>, at: <ISO 8601> }`, which supersedes v0.1's
+ * `timestamp` (§13.1). Returned as a pair so a caller can check the actor and the instant
+ * separately; `null` means the value is not a well-formed flow mapping.
+ *
+ * A deliberately small parser, like `parseFrontmatter` beside it: the flow mapping is the form
+ * the spec documents, and supporting block mappings too would mean carrying a YAML engine into
+ * a linter whose whole point is having no dependencies.
+ */
+export function parseGenerated(raw: string | undefined): { by: string; at: string } | null {
+  if (!raw) return null;
+  const m = /^\{\s*by:\s*([^,}]+?)\s*,\s*at:\s*([^,}]+?)\s*\}$/.exec(raw.trim());
+  return m ? { by: (m[1] as string).trim(), at: (m[2] as string).trim() } : null;
+}
+
 export function yamlList(raw: string | undefined): string[] {
   if (!raw) return [];
   return raw
@@ -313,8 +328,21 @@ export function runDocsLint(config: DocsLintConfig): number {
     if (!tags || !(/^\[.*\S.*\]$/.test(tags) || /^- \S/.test(tags)))
       say(`MISSING tags   ${rel(file)}  (expected \`tags: [ ... ]\`)`);
 
-    if (!DATE_RE.test(fields.get(DATE_FIELD) ?? ""))
+    // `generated` is OKF 0.2's replacement for `timestamp`, and it is a mapping rather than a
+    // scalar — so the instant to validate is inside it, and the actor beside it is checked too.
+    // Any other `dateField` stays the plain scalar it always was.
+    if (DATE_FIELD === "generated") {
+      const g = parseGenerated(fields.get("generated"));
+      if (!g)
+        say(
+          `MISSING generated  ${rel(file)}  (expected \`generated: { by: <actor>, at: YYYY-MM-DD }\`)`,
+        );
+      else if (!DATE_RE.test(g.at))
+        say(`BAD generated.at  ${rel(file)}: "${g.at}"  (expected YYYY-MM-DD)`);
+      else if (!g.by) say(`MISSING generated.by  ${rel(file)}  (OKF requires an actor)`);
+    } else if (!DATE_RE.test(fields.get(DATE_FIELD) ?? "")) {
       say(`MISSING ${DATE_FIELD}  ${rel(file)}  (expected \`${DATE_FIELD}: YYYY-MM-DD\`)`);
+    }
 
     // Frontmatter values are user-facing output downstream (`acc show` prints title and
     // description verbatim), so an escape this parser cannot decode must fail the gate rather

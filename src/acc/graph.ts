@@ -3,6 +3,7 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   parseFrontmatter,
+  parseGenerated,
   stripCode,
   walkMarkdown,
   yamlList,
@@ -27,7 +28,8 @@ export interface WikiPage {
   tags: string[];
   related: string[];
   status: string;
-  updated: string;
+  /** OKF 0.2 `generated.at` — when the content last meaningfully changed. */
+  generated: string;
   /** Rule pages only. */
   ruleId?: string;
   tier?: string;
@@ -90,7 +92,7 @@ export function loadGraph(root: string = defaultWikiRoot()): WikiGraph {
       tags: yamlList(fields.get("tags")),
       related: yamlList(fields.get("related")),
       status: fields.get("status") ?? "",
-      updated: fields.get("updated") ?? "",
+      generated: parseGenerated(fields.get("generated"))?.at ?? "",
       coverageGaps: yamlList(fields.get("coverage_gaps")),
       linksOut: [],
       linksIn: [],

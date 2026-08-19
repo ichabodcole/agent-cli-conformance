@@ -6,8 +6,8 @@ description:
   that cannot tell them apart retries forever or gives up wrongly.
 tags: [exit-codes, errors, core]
 related: [concept/exit-codes, decision/exit-codes-below-125]
-status: current
-updated: 2026-08-16
+status: stable
+generated: { by: unknown, at: 2026-08-16 }
 rule_id: C2
 tier: core
 probe_level: L0

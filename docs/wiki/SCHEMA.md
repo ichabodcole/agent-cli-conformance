@@ -53,11 +53,19 @@ folders organise them. `decisions` / `guides` are **atomic and cross-cutting** �
    verified exist** in the target file. `lint.ts` fails on any break.
 3. **Filenames** are kebab-case slugs of the title (`exit-codes.md`,
    `unknown-flag-exits-nonzero.md`).
-4. **Frontmatter on every page.** We follow **OKF (Open Knowledge Format)** — a directory of
-   markdown files plus YAML frontmatter, one concept per file. OKF requires exactly one field,
-   `type`; `tags` is its optional convention we've adopted; `updated`, `related`, `status` and
-   the rule fields are our extensions (OKF permits extras). We skip OKF's `resource` — our
-   pages _are_ the knowledge, not pointers to one.
+4. **Frontmatter on every page.** We follow **OKF (Open Knowledge Format) 0.2** — a directory
+   of markdown files plus YAML frontmatter, one concept per file. `type` is OKF's only required
+   field; `title`, `description`, `tags` and `status` are its recommended ones; `generated` is
+   its trust family. `related` and the rule fields are our extensions, which OKF permits
+   outright ("Producers MAY include any additional keys"). We skip OKF's `resource` — our pages
+   _are_ the knowledge, not pointers to one.
+
+   **We take the spec's vocabularies rather than inventing parallel ones.** `status` is
+   OKF's `draft | stable | deprecated`, not a house set: a consumer reading `status: superseded`
+   would be reading a value the spec says cannot occur, and the cost of discovering that after a
+   release is higher than the cost of matching it now. Where our domain needs a distinction OKF
+   has no field for, we add a field rather than widen one of theirs — see `lifecycle` in
+   [`../reports/README.md`](../reports/README.md#frontmatter).
 
    ```yaml
    ---
@@ -66,13 +74,19 @@ folders organise them. `decisions` / `guides` are **atomic and cross-cutting** �
    description: One sentence; doubles as the catalog hook in index.md.
    tags: [exit-codes, errors] # OKF convention; primary relation for atomic pages
    related: [rule/unknown-flag-exits-nonzero] # `type/slug` — NOT a folder path
-   status: current # draft | current | superseded
-   updated: 2026-08-13 # when the CONTENT last changed
+   status: stable # OKF 0.2: draft | stable | deprecated (absent means stable)
+   generated: { by: unknown, at: 2026-08-13 } # OKF 0.2 §5.2; supersedes v0.1's `timestamp`
    ---
    ```
 
    `related` keys are `type/slug`, where slug is the **basename** — so a page can move
    between folders without rewriting every `related:` that points at it.
+
+   `generated.at` is when the content last meaningfully changed — the field that used to be
+   `updated`, renamed to the spec's. `generated.by` is the actor that produced it, which OKF
+   requires inside the mapping; `unknown` is a legal actor and is what the existing pages carry,
+   because nobody recorded which of a human and several agents wrote each one. Record a real
+   actor on anything you write from here.
 
 5. **No page is an orphan.** Every page must be reachable from `index.md`, transitively. Add
    the catalog line in the same commit as the page.

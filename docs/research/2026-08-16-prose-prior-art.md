@@ -1,7 +1,7 @@
 ---
 type: research
 generated: { by: unknown, at: 2026-08-16 }
-status: current
+status: stable
 description: What already exists for prose density: the phenomenon, its cause, the guidance, the method of correcting a model, and the measurement.
 tags: [prose, documentation]
 ---

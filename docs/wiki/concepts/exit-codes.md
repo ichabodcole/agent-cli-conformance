@@ -6,8 +6,8 @@ description:
   signal that survives truncation.
 tags: [exit-codes, errors, contract, agent-facing]
 related: [rule/unknown-flag-exits-nonzero, decision/exit-codes-below-125]
-status: current
-updated: 2026-08-15
+status: stable
+generated: { by: unknown, at: 2026-08-15 }
 ---
 
 # Exit codes

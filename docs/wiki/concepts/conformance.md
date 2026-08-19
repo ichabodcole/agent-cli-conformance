@@ -12,8 +12,8 @@ related:
     rule/machine-output-is-parseable,
     rule/usage-errors-are-distinguishable,
   ]
-status: current
-updated: 2026-08-15
+status: stable
+generated: { by: unknown, at: 2026-08-15 }
 ---
 
 # Conformance

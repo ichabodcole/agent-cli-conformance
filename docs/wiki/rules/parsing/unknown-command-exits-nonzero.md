@@ -6,8 +6,8 @@ description:
   parsers most often let one through.
 tags: [parsing, silent-failure, core]
 related: [rule/unknown-flag-exits-nonzero, concept/exit-codes]
-status: current
-updated: 2026-08-14
+status: stable
+generated: { by: unknown, at: 2026-08-14 }
 rule_id: A2
 tier: core
 probe_level: L0

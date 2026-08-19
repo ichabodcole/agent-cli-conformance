@@ -6,8 +6,8 @@ description:
   cached reference wrong.
 tags: [discoverability, determinism, testing, core]
 related: [rule/exit-codes-are-deterministic, rule/help-exits-zero]
-status: current
-updated: 2026-08-15
+status: stable
+generated: { by: unknown, at: 2026-08-15 }
 rule_id: D4
 tier: core
 probe_level: L0

@@ -6,8 +6,8 @@ description:
   rather than an error.
 tags: [streams, silent-failure, errors, core]
 related: [concept/error-envelope, concept/output-kind, rule/machine-output-is-parseable]
-status: current
-updated: 2026-08-16
+status: stable
+generated: { by: unknown, at: 2026-08-16 }
 rule_id: B1
 tier: core
 probe_level: L0

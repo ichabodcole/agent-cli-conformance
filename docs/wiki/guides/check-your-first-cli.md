@@ -6,8 +6,8 @@ description:
   did not write — learning to read the report rather than to fix anything.
 tags: [tutorial, getting-started, conformance, acc-check]
 related: [concept/conformance, rule/unknown-flag-exits-nonzero]
-status: current
-updated: 2026-08-17
+status: stable
+generated: { by: unknown, at: 2026-08-17 }
 ---
 
 # Check your first CLI

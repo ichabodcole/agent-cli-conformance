@@ -6,8 +6,8 @@ description:
   that is how an unset shell variable becomes a silent no-op.
 tags: [discoverability, exit-codes, silent-failure, core]
 related: [rule/help-exits-zero, concept/exit-codes]
-status: current
-updated: 2026-08-14
+status: stable
+generated: { by: unknown, at: 2026-08-14 }
 rule_id: D2
 tier: core
 probe_level: L0

@@ -6,8 +6,8 @@ description:
   and hyphen-leading filenames.
 tags: [parsing, posix, diagnostic]
 related: [rule/unexpected-positionals-rejected, archetype/delegator]
-status: current
-updated: 2026-08-14
+status: stable
+generated: { by: unknown, at: 2026-08-14 }
 rule_id: A6
 tier: diagnostic
 probe_level: L0

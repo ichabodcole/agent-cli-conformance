@@ -6,8 +6,8 @@ description:
   contract it implements.
 tags: [discoverability, versioning, core]
 related: [rule/help-exits-zero, concept/machine-mode]
-status: current
-updated: 2026-08-16
+status: stable
+generated: { by: unknown, at: 2026-08-16 }
 rule_id: D1
 tier: core
 probe_level: L0

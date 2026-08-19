@@ -6,8 +6,8 @@ description:
   keeps our domain codes clear of the shell's — on POSIX, and not without residue.
 tags: [exit-codes, delegation, contract, posix]
 related: [concept/exit-codes, rule/unknown-flag-exits-nonzero]
-status: current
-updated: 2026-08-15
+status: stable
+generated: { by: unknown, at: 2026-08-15 }
 ---
 
 # Exit codes stay below 125

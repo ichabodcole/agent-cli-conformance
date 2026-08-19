@@ -6,8 +6,8 @@ description:
   went wrong.
 tags: [parsing, silent-failure, exit-codes, core]
 related: [concept/exit-codes, decision/exit-codes-below-125]
-status: current
-updated: 2026-08-16
+status: stable
+generated: { by: unknown, at: 2026-08-16 }
 rule_id: A1
 tier: core
 probe_level: L0

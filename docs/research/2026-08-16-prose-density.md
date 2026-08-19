@@ -1,7 +1,7 @@
 ---
 type: research
 generated: { by: unknown, at: 2026-08-16 }
-status: current
+status: stable
 description: A vocabulary for the property of this wiki's prose that makes a reader go back and read a sentence twice.
 tags: [prose, documentation]
 ---

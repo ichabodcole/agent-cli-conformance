@@ -6,8 +6,8 @@ description:
   hung gets killed and retried.
 tags: [performance, streaming, diagnostic]
 related: [concept/output-kind, rule/help-exits-zero]
-status: current
-updated: 2026-08-14
+status: stable
+generated: { by: unknown, at: 2026-08-14 }
 rule_id: F2
 tier: diagnostic
 probe_level: L0

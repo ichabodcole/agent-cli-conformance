@@ -6,8 +6,8 @@ description:
   instead of a code-review question.
 tags: [streams, machine-mode, output, core]
 related: [concept/output-kind, concept/machine-mode, rule/stdout-carries-only-data]
-status: current
-updated: 2026-08-14
+status: stable
+generated: { by: unknown, at: 2026-08-14 }
 rule_id: B3
 tier: core
 probe_level: L0

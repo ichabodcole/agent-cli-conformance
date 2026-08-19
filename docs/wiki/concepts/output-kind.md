@@ -6,8 +6,8 @@ description:
   a caller never has to guess how to read it.
 tags: [output, streaming, schema, contract]
 related: [concept/machine-mode, rule/machine-output-is-parseable]
-status: current
-updated: 2026-08-15
+status: stable
+generated: { by: unknown, at: 2026-08-15 }
 ---
 
 # Output kind

@@ -1,7 +1,8 @@
 ---
 type: plan
 generated: { by: unknown, at: 2026-08-13 }
-status: discharged
+status: stable
+lifecycle: discharged
 description: Implementation plan for `acc check`: record observations by spawning the target, then run pure checkers over the recorded history.
 tags: [conformance, testing, l0]
 ---

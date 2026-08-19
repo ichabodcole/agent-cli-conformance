@@ -21,28 +21,42 @@ import { parseFrontmatter, walkMarkdown, yamlList } from "../scripts/docs-lint/i
 const DOCS_ROOT = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(DOCS_ROOT, "..");
 
-/** `status` vocabularies differ by type, because the lifecycles genuinely differ. A report and
- *  a plan COMPLETE — they are discharged when their findings are actioned or their work ships.
- *  Research never completes; it can only be answered by a later report, hence `superseded`. */
+/**
+ * `status` is OKF 0.2 §5.4 and its vocabulary is the spec's, not ours: `draft` (not yet
+ * reviewed), `stable` (ready for consumption, and the default when absent), `deprecated` (kept
+ * for links and history; no longer current).
+ *
+ * The discharge state these folders actually need — has this report been actioned, has this
+ * plan shipped — is a DIFFERENT question, and it lives in `lifecycle`, an extension. OKF
+ * permits additional keys outright, and redefining a field the spec already defines is a
+ * stronger deviation than adding one it does not: a consumer reading `status: discharged`
+ * would be reading a value the spec says cannot occur. Research carries no `lifecycle`,
+ * because research never completes — it is answered by a later report, which is what
+ * `deprecated` plus `supersedes` records.
+ */
 const SPEC = {
   reports: {
     type: "report",
-    status: ["live", "discharged"],
-    required: ["type", "generated", "status", "subject", "examined"],
+    lifecycle: ["live", "discharged"],
+    required: ["type", "generated", "status", "lifecycle", "subject", "examined"],
   },
   plans: {
     type: "plan",
-    status: ["live", "discharged"],
-    required: ["type", "generated", "status"],
+    lifecycle: ["live", "discharged"],
+    required: ["type", "generated", "status", "lifecycle"],
   },
   research: {
     type: "research",
-    status: ["current", "superseded"],
+    lifecycle: null,
     required: ["type", "generated", "status"],
   },
 } as const;
 
-const OPTIONAL = new Set(["description", "tags", "supersedes"]);
+/** OKF 0.2 §5.4. Absent means `stable`; we require it explicitly so a reader never has to know
+ *  the default to know what a document claims about itself. */
+const OKF_STATUS = ["draft", "stable", "deprecated"];
+
+const OPTIONAL = new Set(["description", "tags", "supersedes", "stale_after"]);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TAG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -116,9 +130,19 @@ export function artifactProblems(): string[] {
       }
 
       const status = fields.get("status");
-      if (status && !(spec.status as readonly string[]).includes(status))
+      if (status && !OKF_STATUS.includes(status))
+        problems.push(`BAD STATUS  ${rel}: "${status}"  (OKF 0.2: ${OKF_STATUS.join(" | ")})`);
+
+      const lifecycle = fields.get("lifecycle");
+      if (spec.lifecycle === null && lifecycle)
+        problems.push(`LIFECYCLE  ${rel}: research never completes, so it carries no lifecycle`);
+      else if (
+        spec.lifecycle &&
+        lifecycle &&
+        !(spec.lifecycle as readonly string[]).includes(lifecycle)
+      )
         problems.push(
-          `BAD STATUS  ${rel}: "${status}"  (${spec.type}: ${spec.status.join(" | ")})`,
+          `BAD LIFECYCLE  ${rel}: "${lifecycle}"  (${spec.type}: ${spec.lifecycle.join(" | ")})`,
         );
 
       // `updated` is the wiki's field and means "when the content last changed". On a frozen

@@ -6,8 +6,8 @@ description:
   answer is the more dangerous of the two.
 tags: [interactivity, silent-failure, safety, core]
 related: [concept/error-envelope, rule/bare-invocation-is-a-usage-error]
-status: current
-updated: 2026-08-14
+status: stable
+generated: { by: unknown, at: 2026-08-14 }
 rule_id: E1
 tier: core
 probe_level: L0

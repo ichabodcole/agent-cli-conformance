@@ -6,8 +6,8 @@ description:
   and why it must be selectable explicitly, never only inferred.
 tags: [machine-mode, output, agent-facing, detection]
 related: [concept/output-kind, rule/no-ansi-when-piped, rule/help-advertises-machine-mode]
-status: current
-updated: 2026-08-15
+status: stable
+generated: { by: unknown, at: 2026-08-15 }
 ---
 
 # Machine mode

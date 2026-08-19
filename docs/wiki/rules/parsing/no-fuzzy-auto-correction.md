@@ -6,8 +6,8 @@ description:
   wrong action.
 tags: [parsing, safety, core]
 related: [rule/unknown-flag-exits-nonzero, concept/error-envelope]
-status: current
-updated: 2026-08-14
+status: stable
+generated: { by: unknown, at: 2026-08-14 }
 rule_id: A5
 tier: core
 probe_level: L0

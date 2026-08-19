@@ -6,8 +6,8 @@ description:
   answer with nothing anywhere to say a third is missing.
 tags: [streams, silent-failure, lifecycle, core]
 related: [rule/machine-output-is-parseable, concept/output-kind, concept/exit-codes]
-status: current
-updated: 2026-08-16
+status: stable
+generated: { by: unknown, at: 2026-08-16 }
 rule_id: B4
 tier: core
 probe_level: L1
