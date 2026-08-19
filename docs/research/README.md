@@ -51,7 +51,7 @@ Every file here carries frontmatter, checked by `bun run docs:lint:artifacts`.
 ```yaml
 ---
 type: research
-generated: { by: unknown, at: 2026-08-13 }
+generated: { by: claude-opus-5, at: 2026-08-13 }
 status: stable               # OKF: draft | stable | deprecated
 description: One sentence; the question and what answered it.
 tags: [exit-codes, parsing]

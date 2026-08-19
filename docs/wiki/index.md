@@ -4,7 +4,7 @@ title: Agent CLI Conformance — wiki
 description: The catalog. One line per page; update it in the same commit as the page.
 tags: [index, catalog]
 status: stable
-generated: { by: unknown, at: 2026-08-15 }
+generated: { by: claude-opus-5, at: 2026-08-15 }
 ---
 
 # Agent CLI Conformance — wiki

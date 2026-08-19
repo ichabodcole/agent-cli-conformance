@@ -7,7 +7,7 @@ description:
 tags: [parsing, silent-failure, core]
 related: [rule/unknown-flag-exits-nonzero, rule/double-dash-terminator]
 status: stable
-generated: { by: unknown, at: 2026-08-14 }
+generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: A4
 tier: core
 probe_level: L1

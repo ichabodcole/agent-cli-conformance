@@ -1,6 +1,6 @@
 ---
 type: research
-generated: { by: unknown, at: 2026-08-15 }
+generated: { by: claude-opus-5, at: 2026-08-15 }
 status: stable
 description: Whether the rule catalogue covers the CLI defects that actually happened, mined from two repositories' commit histories and replayed against acc check.
 tags: [conformance, silent-failure, testing]

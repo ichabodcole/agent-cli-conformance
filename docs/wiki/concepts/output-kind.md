@@ -7,7 +7,7 @@ description:
 tags: [output, streaming, schema, contract]
 related: [concept/machine-mode, rule/machine-output-is-parseable]
 status: stable
-generated: { by: unknown, at: 2026-08-15 }
+generated: { by: claude-opus-5, at: 2026-08-15 }
 ---
 
 # Output kind

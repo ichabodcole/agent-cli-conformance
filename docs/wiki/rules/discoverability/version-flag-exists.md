@@ -7,7 +7,7 @@ description:
 tags: [discoverability, versioning, core]
 related: [rule/help-exits-zero, concept/machine-mode]
 status: stable
-generated: { by: unknown, at: 2026-08-16 }
+generated: { by: claude-opus-5, at: 2026-08-16 }
 rule_id: D1
 tier: core
 probe_level: L0

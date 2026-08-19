@@ -7,7 +7,7 @@ description:
 tags: [tutorial, getting-started, conformance, acc-check]
 related: [concept/conformance, rule/unknown-flag-exits-nonzero]
 status: stable
-generated: { by: unknown, at: 2026-08-17 }
+generated: { by: claude-opus-5, at: 2026-08-17 }
 ---
 
 # Check your first CLI

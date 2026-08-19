@@ -7,7 +7,7 @@ description:
 tags: [errors, contract, agent-facing, remediation]
 related: [concept/exit-codes, concept/machine-mode, rule/stdout-carries-only-data]
 status: stable
-generated: { by: unknown, at: 2026-08-15 }
+generated: { by: claude-opus-5, at: 2026-08-15 }
 ---
 
 # Error envelope

@@ -1,6 +1,6 @@
 ---
 type: report
-generated: { by: unknown, at: 2026-08-15 }
+generated: { by: claude-opus-5, at: 2026-08-15 }
 status: stable
 lifecycle: live
 description: Verification of the 29 remediation commits answering the round-1 review, and the six findings that survived it.

@@ -1,6 +1,6 @@
 ---
 type: research
-generated: { by: unknown, at: 2026-08-16 }
+generated: { by: claude-opus-5, at: 2026-08-16 }
 status: stable
 description: What already exists for prose density: the phenomenon, its cause, the guidance, the method of correcting a model, and the measurement.
 tags: [prose, documentation]
@@ -13,7 +13,7 @@ tags: [prose, documentation]
 cause, the content of the guidance, the method of correcting a model, and the measurement?
 **Method:** Literature and documentation search against the five questions in the brief. Primary
 sources fetched and read where reachable; paywalled and blocked sources are marked as such.
-**Companion:** `research/2026-08-16-prose-density.md` (our characterisation),
+**Companion:** `reports/2026-08-16-prose-density.md` (our characterisation),
 `.claude/output-styles/plainspoken.md` and `.claude/skills/plainspoken-edit/` (what we built).
 **Caveat on coverage:** the session's web-search budget was exhausted partway through. Several
 sub-questions were answered by direct fetch of known URLs rather than by search, so absence of a

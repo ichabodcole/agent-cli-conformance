@@ -7,7 +7,7 @@ description:
 tags: [exit-codes, errors, contract, agent-facing]
 related: [rule/unknown-flag-exits-nonzero, decision/exit-codes-below-125]
 status: stable
-generated: { by: unknown, at: 2026-08-15 }
+generated: { by: claude-opus-5, at: 2026-08-15 }
 ---
 
 # Exit codes

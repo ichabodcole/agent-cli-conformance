@@ -1,6 +1,6 @@
 ---
 type: research
-generated: { by: unknown, at: 2026-08-13 }
+generated: { by: claude-opus-5, at: 2026-08-13 }
 status: stable
 description: How to move CLI-quality invariants from documented, to caught by a test, to impossible to express.
 tags: [testing, determinism, contract]

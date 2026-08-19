@@ -7,7 +7,7 @@ description:
 tags: [guide, adoption, conformance, acc-config, l0]
 related: [concept/conformance, rule/help-advertises-machine-mode, rule/unknown-flag-exits-nonzero]
 status: stable
-generated: { by: unknown, at: 2026-08-17 }
+generated: { by: claude-opus-5, at: 2026-08-17 }
 ---
 
 # How to reach L0 in your project

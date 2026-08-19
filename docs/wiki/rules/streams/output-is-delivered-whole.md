@@ -7,7 +7,7 @@ description:
 tags: [streams, silent-failure, lifecycle, core]
 related: [rule/machine-output-is-parseable, concept/output-kind, concept/exit-codes]
 status: stable
-generated: { by: unknown, at: 2026-08-16 }
+generated: { by: claude-opus-5, at: 2026-08-16 }
 rule_id: B4
 tier: core
 probe_level: L1

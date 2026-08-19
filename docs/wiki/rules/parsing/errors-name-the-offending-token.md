@@ -7,7 +7,7 @@ description:
 tags: [parsing, errors, remediation, core]
 related: [concept/error-envelope, rule/unknown-flag-exits-nonzero]
 status: stable
-generated: { by: unknown, at: 2026-08-16 }
+generated: { by: claude-opus-5, at: 2026-08-16 }
 rule_id: A3
 tier: core
 probe_level: L0

@@ -7,7 +7,7 @@ description:
 tags: [machine-mode, output, agent-facing, detection]
 related: [concept/output-kind, rule/no-ansi-when-piped, rule/help-advertises-machine-mode]
 status: stable
-generated: { by: unknown, at: 2026-08-15 }
+generated: { by: claude-opus-5, at: 2026-08-15 }
 ---
 
 # Machine mode

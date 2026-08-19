@@ -6,7 +6,7 @@ description:
 tags: [streams, machine-mode, output, core]
 related: [concept/machine-mode, rule/machine-output-is-parseable]
 status: stable
-generated: { by: unknown, at: 2026-08-16 }
+generated: { by: claude-opus-5, at: 2026-08-16 }
 rule_id: B2
 tier: core
 probe_level: L0

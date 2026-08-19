@@ -75,7 +75,7 @@ folders organise them. `decisions` / `guides` are **atomic and cross-cutting** �
    tags: [exit-codes, errors] # OKF convention; primary relation for atomic pages
    related: [rule/unknown-flag-exits-nonzero] # `type/slug` — NOT a folder path
    status: stable # OKF 0.2: draft | stable | deprecated (absent means stable)
-   generated: { by: unknown, at: 2026-08-13 } # OKF 0.2 §5.2; supersedes v0.1's `timestamp`
+   generated: { by: claude-opus-5, at: 2026-08-13 } # OKF 0.2 §5.2; supersedes v0.1's `timestamp`
    ---
    ```
 
@@ -84,9 +84,11 @@ folders organise them. `decisions` / `guides` are **atomic and cross-cutting** �
 
    `generated.at` is when the content last meaningfully changed — the field that used to be
    `updated`, renamed to the spec's. `generated.by` is the actor that produced it, which OKF
-   requires inside the mapping; `unknown` is a legal actor and is what the existing pages carry,
-   because nobody recorded which of a human and several agents wrote each one. Record a real
-   actor on anything you write from here.
+   requires inside the mapping. Every page currently records `claude-opus-5`, attested by the
+   maintainer as the model these were drafted with rather than captured per page at the time.
+   `unknown` is also a legal actor, and is the right entry when a producer genuinely was not
+   recorded — a plausible guess is worse than an admitted gap, on the same reasoning that makes
+   a rule report `unverified` rather than pass.
 
 5. **No page is an orphan.** Every page must be reachable from `index.md`, transitively. Add
    the catalog line in the same commit as the page.

@@ -1,6 +1,6 @@
 ---
 type: report
-generated: { by: unknown, at: 2026-08-14 }
+generated: { by: claude-opus-5, at: 2026-08-14 }
 status: stable
 lifecycle: live
 description: Round-1 review of the conformance kit implementation against the rule catalogue; 18 findings fixed, 9 promoted to the roadmap, 3 still open.

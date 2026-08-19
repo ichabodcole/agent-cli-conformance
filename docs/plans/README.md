@@ -46,7 +46,7 @@ Every file here carries frontmatter, checked by `bun run docs:lint:artifacts`.
 ```yaml
 ---
 type: plan
-generated: { by: unknown, at: 2026-08-13 }
+generated: { by: claude-opus-5, at: 2026-08-13 }
 status: stable               # OKF: draft | stable | deprecated
 lifecycle: discharged        # live | discharged
 description: One sentence; what this plans to build.

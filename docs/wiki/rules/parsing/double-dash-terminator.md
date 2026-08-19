@@ -7,7 +7,7 @@ description:
 tags: [parsing, posix, diagnostic]
 related: [rule/unexpected-positionals-rejected, archetype/delegator]
 status: stable
-generated: { by: unknown, at: 2026-08-14 }
+generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: A6
 tier: diagnostic
 probe_level: L0

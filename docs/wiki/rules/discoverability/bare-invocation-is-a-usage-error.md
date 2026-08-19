@@ -7,7 +7,7 @@ description:
 tags: [discoverability, exit-codes, silent-failure, core]
 related: [rule/help-exits-zero, concept/exit-codes]
 status: stable
-generated: { by: unknown, at: 2026-08-14 }
+generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: D2
 tier: core
 probe_level: L0

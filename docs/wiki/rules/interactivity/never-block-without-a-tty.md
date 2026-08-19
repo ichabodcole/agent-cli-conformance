@@ -7,7 +7,7 @@ description:
 tags: [interactivity, silent-failure, safety, core]
 related: [concept/error-envelope, rule/bare-invocation-is-a-usage-error]
 status: stable
-generated: { by: unknown, at: 2026-08-14 }
+generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: E1
 tier: core
 probe_level: L0

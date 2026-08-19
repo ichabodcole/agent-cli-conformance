@@ -1,7 +1,10 @@
 ---
-type: research
-generated: { by: unknown, at: 2026-08-16 }
+type: report
+generated: { by: claude-opus-5, at: 2026-08-16 }
 status: stable
+lifecycle: discharged
+subject: docs/wiki
+examined: docs/wiki @ 2026-08-16
 description: A vocabulary for the property of this wiki's prose that makes a reader go back and read a sentence twice.
 tags: [prose, documentation]
 ---
@@ -10,8 +13,9 @@ tags: [prose, documentation]
 
 Date: 2026-08-16
 
-Status: analysis and vocabulary. No guidance is enforced yet; this is the groundwork for a
-writing guide and a review skill.
+Status: discharged. The vocabulary below was promoted into
+[`../wiki/STYLE.md`](../wiki/STYLE.md#density), and the review step §7 argues for exists as the
+`prose-cold-read` skill. This document is kept as the reasoning behind both.
 
 **Method:** Characterisation, not measurement. A reader's reported experience of this wiki was
 worked back to the sentence-level constructions producing it, and each construction was named

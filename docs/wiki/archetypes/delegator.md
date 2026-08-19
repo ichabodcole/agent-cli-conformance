@@ -7,7 +7,7 @@ description:
 tags: [archetype, delegation, exit-codes, passthrough]
 related: [concept/exit-codes, rule/double-dash-terminator, decision/exit-codes-below-125]
 status: stable
-generated: { by: unknown, at: 2026-08-14 }
+generated: { by: claude-opus-5, at: 2026-08-14 }
 ---
 
 # Delegator

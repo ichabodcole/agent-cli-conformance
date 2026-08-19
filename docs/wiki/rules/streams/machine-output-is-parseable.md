@@ -7,7 +7,7 @@ description:
 tags: [streams, machine-mode, output, core]
 related: [concept/output-kind, concept/machine-mode, rule/stdout-carries-only-data]
 status: stable
-generated: { by: unknown, at: 2026-08-14 }
+generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: B3
 tier: core
 probe_level: L0

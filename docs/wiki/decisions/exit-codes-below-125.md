@@ -7,7 +7,7 @@ description:
 tags: [exit-codes, delegation, contract, posix]
 related: [concept/exit-codes, rule/unknown-flag-exits-nonzero]
 status: stable
-generated: { by: unknown, at: 2026-08-15 }
+generated: { by: claude-opus-5, at: 2026-08-15 }
 ---
 
 # Exit codes stay below 125

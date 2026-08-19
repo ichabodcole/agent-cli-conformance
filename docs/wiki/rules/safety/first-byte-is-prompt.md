@@ -7,7 +7,7 @@ description:
 tags: [performance, streaming, diagnostic]
 related: [concept/output-kind, rule/help-exits-zero]
 status: stable
-generated: { by: unknown, at: 2026-08-14 }
+generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: F2
 tier: diagnostic
 probe_level: L0

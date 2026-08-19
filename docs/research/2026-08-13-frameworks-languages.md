@@ -1,6 +1,6 @@
 ---
 type: research
-generated: { by: unknown, at: 2026-08-13 }
+generated: { by: claude-opus-5, at: 2026-08-13 }
 status: stable
 description: Whether a language or framework is genuinely better suited to agent-first CLIs, or whether the problem follows you across all of them.
 tags: [parsing, performance, contract]

@@ -7,7 +7,7 @@ description:
 tags: [parsing, silent-failure, machine-mode, core]
 related: [rule/unknown-flag-exits-nonzero, rule/errors-name-the-offending-token, concept/error-envelope]
 status: stable
-generated: { by: unknown, at: 2026-08-16 }
+generated: { by: claude-opus-5, at: 2026-08-16 }
 rule_id: A7
 tier: core
 probe_level: L0

@@ -7,7 +7,7 @@ description:
 tags: [discoverability, machine-mode, diagnostic]
 related: [concept/machine-mode, rule/machine-output-is-parseable]
 status: stable
-generated: { by: unknown, at: 2026-08-14 }
+generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: D3
 tier: diagnostic
 probe_level: L0

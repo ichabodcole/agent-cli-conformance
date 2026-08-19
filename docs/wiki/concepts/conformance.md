@@ -13,7 +13,7 @@ related:
     rule/usage-errors-are-distinguishable,
   ]
 status: stable
-generated: { by: unknown, at: 2026-08-15 }
+generated: { by: claude-opus-5, at: 2026-08-15 }
 ---
 
 # Conformance

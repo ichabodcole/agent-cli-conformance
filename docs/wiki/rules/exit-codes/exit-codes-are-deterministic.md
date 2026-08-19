@@ -7,7 +7,7 @@ description:
 tags: [exit-codes, determinism, core]
 related: [concept/exit-codes, rule/help-output-is-deterministic]
 status: stable
-generated: { by: unknown, at: 2026-08-14 }
+generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: C3
 tier: core
 probe_level: L0

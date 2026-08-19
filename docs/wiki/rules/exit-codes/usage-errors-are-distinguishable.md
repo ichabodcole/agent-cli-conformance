@@ -7,7 +7,7 @@ description:
 tags: [exit-codes, errors, core]
 related: [concept/exit-codes, decision/exit-codes-below-125]
 status: stable
-generated: { by: unknown, at: 2026-08-16 }
+generated: { by: claude-opus-5, at: 2026-08-16 }
 rule_id: C2
 tier: core
 probe_level: L0
