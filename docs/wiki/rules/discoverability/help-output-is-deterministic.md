@@ -74,48 +74,32 @@ Inert (`L0`).
 <cli> --help     ×2      # the SAME invocation twice, captured and byte-compared
 ```
 
-Passes when the two captures have the same **SHA-256 digest**, taken over the raw bytes before
-they are decoded.
+**Passes** when the two captures have the same **SHA-256 digest**, taken over the raw stdout
+bytes before they are decoded. The bytes themselves are not retained — a digest answers the
+equality question this rule asks and nothing else, which keeps the [observation
+artifact](../../../roadmap.md#4-durable-observation-and-replay) free of an unbounded blob.
 
-**The digest is the comparison, and the decoded text is not.** Comparing the two decoded strings
-cannot establish the byte identity this rule requires. UTF-8 decoding is many-to-one on
-ill-formed input: every invalid byte becomes the single replacement character `U+FFFD`, so a tool
-emitting `0x80` on the first run and `0x81` on the second produces identical strings, identical
-byte counts, and a `pass` certifying byte identity for two different streams. The raw bytes
-themselves are deliberately **not** retained — a digest answers the equality question the rule
-asks and nothing else, which keeps the [observation
-artifact](../../../roadmap.md#4-durable-observation-and-replay) free of an unbounded blob
-that would need its own encoding, redaction and retention story.
+**Both runs are the same invocation** — same argv, same environment, twice. Nothing tells them
+apart from the target's side: no nonce argument, no marker environment variable, because a
+variable the target can read is part of the input to the measurement. The runner deduplicates
+identical probes and separates the repetitions by a recorder-side index the target never sees;
+see [probing](../../concepts/probing.md#probes-are-shared-and-a-rule-may-declare-none).
 
-**The two runs are the same invocation** — same argv, same environment, twice. The runner
-deduplicates identical probes into a single recording, so the repetitions are told apart by a
-**recorder-only index** the target never sees: `Invocation.repeat`, shared with
-[C3](../exit-codes/exit-codes-are-deterministic.md).
+**Fails**, when the captures differ, with the **index of the first differing character** — not a
+diff. That is enough to tell a one-character timestamp delta from wholesale reordering, and it is
+all the checker computes; a reader expecting a rendered delta will not find one. The index is an
+offset into the **decoded string** — UTF-16 code units — which diverges from a byte offset as soon
+as help contains a non-ASCII character, and the finding says so.
 
-**Not an environment variable, deliberately.** Perturbing the second run with something like
-`ACC_PROBE_NONCE` would get it past the dedup, and would also make the two invocations differ
-while the checker claimed to measure determinism. A variable the target can read is part of the
-input to the measurement: a CLI that echoed its environment into help would fail D4 for a
-legitimate reason, indistinguishable from a timestamp.
+**Fails without an offset** when the digests differ but the decoded strings match. The difference
+lives in bytes the decode collapsed, so the finding names the two byte counts and the two digests
+and says where the answer is not: still a `fail`, because the rule was violated, with the location
+withheld because the evidence does not carry it.
 
-When the two differ, the checker reports the **index of the first differing character** — not a
-diff. That is enough to tell a one-character timestamp delta from wholesale reordering, and it
-is all the checker computes; a reader expecting a rendered delta will not find one. The index is
-an offset into the **decoded string** — JS string offsets, i.e. UTF-16 code units — which diverges
-from a byte offset as soon as help contains a non-ASCII character, and the finding says so rather
-than leaving a reader to assume otherwise.
-
-When the digests differ but the decoded strings match, there **is no offset** and the checker does
-not invent one. The difference lives in bytes the decode collapsed, so the finding names the byte
-counts and the two digests and says where the answer is not. That is the honest shape of the
-verdict: a `fail`, because the rule was violated, with the location withheld because the evidence
-does not carry it.
-
-Deliberately not attempted: distinguishing "nondeterministic" from "changed because the
-environment changed". D4 does not vary the environment at all, so it cannot see that
-difference either way — help that reacts to a hostile environment is
-[D1](./version-flag-exists.md)'s subject, where `--version` is run with an unusable `HOME` and
-`XDG_CONFIG_HOME` on purpose, rather than a claim duplicated here.
+**Not attempted:** telling "nondeterministic" apart from "changed because the environment
+changed". D4 never varies the environment, so it cannot see that difference either way. Help that
+reacts to a hostile environment is [D1](./version-flag-exists.md)'s subject, where `--version` is
+run with an unusable `HOME` and `XDG_CONFIG_HOME` on purpose.
 
 ## Current checker coverage
 

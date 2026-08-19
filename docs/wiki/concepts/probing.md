@@ -69,6 +69,12 @@ The sentinel is guaranteed **invalid** — no real CLI declares a flag or verb b
 is not the same as guaranteed **harmless**. A CLI whose root positional is free-form text reads
 it as input rather than rejecting it, which is exactly the shape of `claude`, `llm` or `aider`.
 
+This is also why a probe omits a verb wherever it can. Prefixing one — `<verb> -- <sentinel>` —
+puts the same question in front of the probe that closed off A2's nested case and dropped A4 to
+`L1`: discovery has no way to know a verb is side-effect-free, and a target that mishandles the
+rest of the argv would run that verb for real. Leaving the verb out is what makes a probe inert
+without needing to know anything about the target's command surface.
+
 So the classes bound one invocation each; they do not bound the run. `acc check` **executes the
 target**, and at `L0` the fresh temporary working directory redirects relative paths only —
 nothing stops a write through `HOME`, an XDG path, an absolute path or a subprocess, the child
@@ -80,6 +86,17 @@ against an arbitrary binary.
 
 Checkers declare the invocations they need; the runner deduplicates them and sends each once. A
 rule reading an invocation another rule requested is the normal case, not a shortcut.
+
+A rule that needs the _same_ invocation twice — [D4](../rules/discoverability/help-output-is-deterministic.md)
+comparing two help captures, [C3](../rules/exit-codes/exit-codes-are-deterministic.md) comparing
+exit codes — meets that deduplication head-on. The repetitions are told apart by
+`Invocation.repeat`, a **recorder-side index the target never sees**.
+
+Deliberately not an environment variable. A marker like `ACC_PROBE_NONCE` would get the second
+run past the dedup, and would also make the two invocations differ while the checker claimed to
+measure determinism: a variable the target can read is part of the input to the measurement, so a
+CLI that echoed its environment into help would fail D4 for a legitimate reason, indistinguishable
+from a timestamp.
 
 Two rules declare an empty probe list, from opposite directions.
 [A4](../rules/parsing/unexpected-positionals-rejected.md) has no probe it can safely send at
@@ -106,6 +123,12 @@ Three different endings all look like "a signal arrived", and they mean three di
 violation when some _other_ probe later hits the deadline — that process is gone and its streams
 are closed. It is the same asymmetry that lets a truncated capture still prove a violation its
 prefix contains.
+
+**The tree bound is POSIX only.** Windows has no process group of this kind — terminating a tree
+there needs `taskkill /T` or a job object, and the runner does neither today. The deadline still
+bounds the probe, because the finalisation timer resolves it either way, but a descendant the
+target spawned may outlive the run. Stated rather than implied: a deadline that quietly does less
+than it claims on one platform is the same silent-failure shape this catalogue exists to report.
 
 The distinction matters because a signal death is **not a low exit code — it is no exit code**.
 The observation records `exitCode: null`, which satisfies every "it exited non-zero" clause in

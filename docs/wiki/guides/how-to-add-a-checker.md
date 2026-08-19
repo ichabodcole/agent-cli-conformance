@@ -52,7 +52,7 @@ evidence, not additional evidence.
 `check(history)` reads observations and returns a finding. It must not spawn anything — that
 separation is what lets a new rule be a new reading of evidence already collected.
 
-Three failure modes worth naming, all of them learned the hard way:
+Four failure modes worth naming, all of them learned the hard way:
 
 - **Do not shell out to `timeout`.** It is GNU coreutils and absent on stock macOS; invoking it
   yields `127` and the probe silently measures nothing. Enforce deadlines in-process.
@@ -65,17 +65,48 @@ Three failure modes worth naming, all of them learned the hard way:
   took 30 seconds against a 50 ms deadline. This is the runner's job, not yours, but a checker
   that adds its own timing must not undo it.
 
+- **Compare digests, not decoded text, when a rule asserts byte identity.** UTF-8 decoding is
+  many-to-one on ill-formed input: every invalid byte becomes the same `U+FFFD`, so a target
+  emitting `0x80` on one run and `0x81` on the next yields identical strings, identical lengths,
+  and a `pass` certifying byte identity for two different streams.
+
 Decide explicitly whether your rule **owns** a hang or defers it. Most defer to
 [E1](../rules/interactivity/never-block-without-a-tty.md); four own it, because on their probe
 blocking forever _is_ the violation.
 
-### 4. Register it
+### 4. Know what actually launches the target
+
+A checker measures the program the launcher hands it, which is not always the program the target
+is. `bun <script> -- --x` gives the script `["--x"]`: bun consumes exactly one bare `--` after the
+script path, so a probe of that shape never reaches the target and
+[A6](../rules/parsing/double-dash-terminator.md) would otherwise measure
+[A1](../rules/parsing/unknown-flag-exits-nonzero.md) wearing A6's name. No launcher form avoids
+it — `bun run`, `bun --bun` and `bun -- <script>` all strip the same token — so A6 reports
+`unverified` rather than guessing at an argv the target never saw.
+
+The guard keys on the launcher, which left a hole worth knowing about: a Bun CLI installed with
+**no `.ts` extension** named `bun` nowhere in the invocation, so the swallow happened anyway and
+the target collected a `FAIL` — a wrong verdict on a conforming tool, which is worse than a wrong
+`unverified`. `acc check` now reads the target's first line and treats a shebang naming `bun` as
+inside the guard.
+
+Reading a `#!` line is not the kind of guess the inertness gate refuses. That gate refuses to
+guess whether a root positional is free-form data — a property with no observable signal, where a
+wrong answer licenses an unsafe spawn. A shebang is the kernel's own contract about what runs the
+file, and a wrong answer costs one diagnostic verdict.
+
+The reverse inference had to go: `acc check` used to launch every `.ts` path through bun, handing
+a Deno or Node-TypeScript CLI to a runtime it never declared. An **executable** target is now
+executed as itself so the kernel honours its own shebang; bun is the fallback only for a
+non-executable `.ts` source declaring no interpreter.
+
+### 5. Register it
 
 Add the import and the entry to [`registry.ts`](../../../src/acc/kit/registry.ts), in rule-id
 order. Until it is there, `acc check` does not run it and `checker_status: implemented` is a
 promise the kit does not keep — which the lint will tell you.
 
-### 5. Declare what a pass means, and what it does not
+### 6. Declare what a pass means, and what it does not
 
 `coverage: complete` claims the whole page held. `partial` claims only that nothing the checker
 looked at was violated. Every rule in the catalogue is `partial` today.
@@ -93,12 +124,14 @@ than letting the lint fail with a mismatch that explains nothing.
 Prefer an honest gap to a silent one. A gap costs a reader one line; an overstated `Established`
 list costs them a wrong conclusion.
 
-### 6. Add a fixture that fails it
+### 7. Add a fixture that fails it
 
 A checker with no negative control is untested. Put a deliberately-broken target in
 `src/acc/kit/fixtures/broken/` and assert the rule fails against it.
 
-Write the fixture in POSIX shell rather than TypeScript when the defect is a signal death: Bun
+The kit's own `.ts` fixtures inherit the launcher problem above, which is why A6's tests use
+POSIX shell fixtures. Write the fixture in POSIX shell rather than TypeScript when the defect is a
+signal death, too: Bun
 installs its own `SIGSEGV` handler and converts the signal into an ordinary exit with a crash
 report on stderr, which is a chosen status and a non-empty stream — a different observation
 entirely, and one that would not exercise the rule at all.

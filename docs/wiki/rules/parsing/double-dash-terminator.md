@@ -58,75 +58,35 @@ is reserved for what binds everywhere.
 
 ## The probe
 
-Inert (`L0`).
+Inert (`L0`). No verb precedes the terminator, and the value after it is built from the sentinel,
+so nothing in the invocation names a command the target could run.
 
 ```
 <cli> -- --<sentinel>-value
 ```
 
-No verb precedes the `--`. Prefixing one — `<known-verb> -- --<sentinel>-value` — would put the
-same question in front of this probe that closed off A2's nested case and dropped A4 to `L1`:
-`Discovery` has no way to know a verb is side-effect-free, and a target that does not honour
-`--` would run that verb for real, with the sentinel landing as its argument. Leaving the verb
-out entirely — and building the value after `--` from the sentinel — is what makes this probe
-inert without needing to know anything about the target's command surface: nothing in it names
-a valid command, whether or not `--` is honoured.
+**Passes** when the invocation does **not** fail with an unknown-flag/-option error naming the
+sentinel value — i.e. `--<sentinel>-value` was treated as a positional rather than re-parsed as a
+flag. Note the inversion: most parsing rules assert that a rejection arrives, and this one asserts
+that a particular rejection does not. The command may still exit non-zero for an unrelated reason
+(no verb was given), which is why the check reads stderr for that specific rejection rather than
+the exit code.
 
-Passes when the invocation does **not** fail with an unknown-flag/-option error that names the
-sentinel value — i.e. `--<sentinel>-value` was treated as a positional, not re-parsed as a
-flag. The command may still exit non-zero for an unrelated reason (no verb was given), which is
-why the check reads stderr for that specific rejection rather than the exit code.
-
-Note the inversion: for most parsing rules the probe asserts a rejection; here it asserts the
-absence of one naming a specific token. That inversion is what makes the probe non-obvious, not
-a reason it's less inert.
-
-### Where this probe cannot be delivered
-
-**Any target launched through `bun` reports `unverified`.** `bun <script> -- --x` hands the
-script `["--x"]`: Bun consumes exactly one bare `--` immediately after the script path, which
-is exactly this probe's shape. The target never receives the terminator, so what gets measured
-is [A1](./unknown-flag-exits-nonzero.md) wearing A6's name. No launcher form avoids it —
-`bun run`, `bun --bun` and `bun -- <script>` all strip the same token. The checker refuses to
-guess rather than reporting a verdict about an argv the target never saw.
-
-The kit's `.ts` fixtures inherit this, so A6's own tests use POSIX shell fixtures instead.
-
-The guard keys on the launcher, so it only fires when the invocation itself names `bun`. A Bun
-CLI installed with **no `.ts` extension** used to slip past it: nothing in the invocation said
-"bun", the swallow happened anyway, and the target collected a `FAIL` — for a probe it never
-received, on a CLI that honours `--` perfectly. The cost of leaving it open was never a wrong
-`unverified`; it was a wrong verdict, on a conforming target. So `acc check` reads the target's
-first line and names `bun` in `argv0` whenever the shebang does, which puts it back inside the
-guard — the kernel would hand the file to bun regardless, and bun swallows the token either way.
-
-Reading a `#!` line is not the kind of guess this catalogue refuses elsewhere. What
-[the inertness gate](#where-this-probe-is-not-inert) refuses to guess is whether a target's
-root positional is free-form data — a property with no observable signal, where a wrong answer
-licenses an unsafe spawn. A shebang is the kernel's own contract about what runs the file, it
-is in the first bytes of the file, and a wrong answer costs one diagnostic verdict.
-
-The reverse inference is the one that had to go. `acc check` used to launch every `.ts` path
-through bun, which handed a Deno or Node-TypeScript CLI to a runtime it never declared — a
-different program from the one its users run, and an odd claim for a kit that calls itself
-language-agnostic. An **executable** target is now executed as itself, so the kernel honours its
-own shebang; bun remains the documented fallback for a **non-executable** `.ts` source file that
-declares no other interpreter.
-
-### Where this probe is not inert
+**Reports `unverified` for any target launched through `bun`**, which is why A6 is the rule most
+often unverified in a report. `bun <script> -- --x` hands the script `["--x"]`: bun consumes
+exactly one bare `--` after the script path, which is exactly this probe's shape, so the target
+never receives the terminator and what would be measured is
+[A1](./unknown-flag-exits-nonzero.md) wearing A6's name. No launcher form avoids it, and a target
+whose shebang names `bun` is inside the guard too. Read that verdict as "not measured here" rather
+than as a fault, and re-run the check through a launcher that forwards `--` if you want an answer.
 
 After a terminator the sentinel is **guaranteed** to arrive as a positional — that is what the
-probe is testing. For a CLI whose root positional is a verb, the sentinel names no declared
-command, so the probe reaches no declared code path: **risk-reduced, not inert**, since nothing
-here prevents a default root action or work done before dispatch. For a CLI whose root positional
-is **free-form data** — `claude "…"`, `llm "…"`, `aider "…"` — the sentinel is a prompt, and
-running it spends money and may take actions.
-
-The kit cannot detect that shape and does not try: a wrong guess is worse than a documented
-limit. Probes run in a fresh temporary working directory, which redirects **relative** paths
-and nothing else — not a write through `HOME` or an absolute path, not a subprocess, not the
-credentials the child inherits, and not a network call. Do not point `acc check` at a CLI of
-that shape.
+probe is testing. For a CLI whose root positional is a verb it names no declared command, so the
+probe reaches no declared code path. For a CLI whose root positional is **free-form data** —
+`claude "…"`, `llm "…"`, `aider "…"` — the sentinel is a prompt, and running it spends money and
+may take actions. The kit cannot detect that shape and does not try, so do not point `acc check`
+at a CLI of that kind: an `L0` run is
+[risk-reduced rather than safe](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe).
 
 ## Current checker coverage
 
