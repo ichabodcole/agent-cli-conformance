@@ -67,39 +67,38 @@ Prose gets rewritten; a field is a contract.
 Inert (`L0`).
 
 ```
-<cli> --totally-made-up-flag
+<cli> --acc-probe-xyzzy-flag
 <cli> nonsense-verb-xyz
-<cli> --totally-made-up-flag --json      # where help advertises a machine-mode flag
+<cli> --acc-probe-xyzzy-flag --json      # where help advertises a machine-mode flag
 ```
 
-The first two pass when stderr contains the literal offending token, checked as a plain substring
-match, mode-agnostic. The checker deliberately uses a distinctive token unlikely to appear
-incidentally, so a match is evidence the tool echoed it rather than coincidence.
+**The first two pass** when stderr contains the offending token, checked as a plain substring
+match, mode-agnostic. The token sent is the kit's
+[sentinel](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe),
+distinctive enough that a match is evidence the tool echoed it rather than coincidence.
 
-**The third probe is the envelope half**, which was unchecked coverage until recently and is the
-clause "## The rule" above actually turns on. It is byte-identical to
-[B5](../streams/machine-mode-holds-on-parser-errors.md)'s probe, so the recorder runs one process
-and both rules read one observation — which is the point, since they are two clauses about a
-single answer and probing separately would let them disagree about what the target did.
+**The third probe is the envelope half** — the clause the rule's machine-mode sentence turns on.
+It is byte-identical to [B5](../streams/machine-mode-holds-on-parser-errors.md)'s, so both rules
+read [one observation](../../concepts/probing.md#probes-are-shared-and-a-rule-may-declare-none)
+of a single answer rather than two runs that could disagree.
 
-That probe is read by walking the **parsed** document for a string **value** containing the
-token, never by searching the bytes. Searching the bytes would answer the question the prose half
-already answers; walking the structure is what makes the two halves different claims.
-
+It is read by walking the **parsed** document for a string **value** containing the token, never
+by searching the bytes — a token present in the raw output but in no value does not satisfy it.
 Three outcomes, and the middle one matters:
 
 - the document carries the token in a value → the clause holds
 - the document parses and carries it nowhere → **fail**
 - no parseable document was produced → **unverified**, and B5 reports that as its own violation.
   A target that answered a parse error with prose did not put the token in the wrong field; it
-  published no fields at all, so saying `pass` here would license "the token reaches a field" off
-  a run in which no field existed.
+  published no fields at all.
 
 **What the closure still does not reach**, and it is the first gap below. With nothing declared
 at `L0` there is no envelope schema to name a field in, so the assertion is the weaker "some
 string value somewhere in the document contains it". A target burying the token in a free-text
-`detail` satisfies this and not the rule. That is the same `L1` boundary
-[B3](../streams/machine-output-is-parseable.md) and B5 both stop at.
+`detail` satisfies this and not the rule — the same
+[`L1` boundary](../../concepts/probing.md#what-it-is)
+[D1](../discoverability/version-flag-exists.md)'s version field and
+[B3](../streams/machine-output-is-parseable.md)'s output kinds stop at.
 
 ## Current checker coverage
 

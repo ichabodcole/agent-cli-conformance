@@ -74,7 +74,7 @@ Inert (`L0`), and only half of this rule is reachable there: the usage errors ar
 against each other, the internal-fault contrast is not reached at all.
 
 ```
-<cli> --totally-made-up-flag      # usage error: unknown flag
+<cli> --acc-probe-xyzzy-flag      # usage error: unknown flag
 <cli> nonsense-verb-xyz           # usage error: unknown verb
 <cli>                             # usage error: the bare invocation
 <cli> --format=nonsense-xyz       # usage error: a value outside an advertised set

@@ -81,9 +81,9 @@ suspicious.
 Inert (`L0`).
 
 ```
-<cli> --totally-made-up-flag
+<cli> --acc-probe-xyzzy-flag
 <cli> nonsense-verb-xyz
-<cli> --totally-made-up-flag --json      # where help advertises a machine-mode flag
+<cli> --acc-probe-xyzzy-flag --json      # where help advertises a machine-mode flag
 ```
 
 Passes when stdout is **byte-empty** on every failing invocation.

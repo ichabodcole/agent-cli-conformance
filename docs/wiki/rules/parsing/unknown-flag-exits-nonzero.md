@@ -85,30 +85,30 @@ configuration value — and the most commonly violated.
 
 ## The probe
 
-Inert (`L0`): the probe is a deliberately invalid invocation, so a conforming CLI performs no
-work and a violating one was already broken.
+Inert (`L0`): both probes are deliberately invalid invocations.
 
 ```
-<cli> --totally-made-up-flag
-<cli> --totally-made-up-flag some-value
+<cli> --acc-probe-xyzzy-flag
+<cli> --acc-probe-xyzzy-flag acc-probe-xyzzy-value
 ```
 
-Passes when **all** of the following hold for **both**:
+**The second shape is the value-carrying one**, sent for the clause about absorbing a value as a
+positional — the [orphaned value](#why) above, and the most expensive failure in the family.
+
+**Passes** when **all** of the following hold for **both**:
 
 - exit code is non-zero
 - stdout is empty
 - stderr names the offending flag
 
-**The second probe is the value-carrying shape**, and it is there for the clause about absorbing
-a value as a positional. That clause has the most expensive defect population behind it in the
-whole family: `--owner=alice` lost its value, the read filter then matched nothing, and the tool
-returned **the whole board** — a wrong answer wearing a right answer's shape, across five shipped
-tools. The value is itself sentinel-bearing, so the invocation is admissible under the inertness
-gate's `sentinel` class exactly as it stands; that class exists for precisely this, because a
-sentinel token is provably invalid whatever the flag's arity. It carries the same limit
-[A2](./unknown-command-exits-nonzero.md)'s probe does and no more: a bare sentinel token is a
-**prompt** on a CLI whose root positional is free-form, which
-[`inert.ts`](../../../../src/acc/kit/inert.ts) documents and does not claim to detect.
+**Fails** when either shape is still running at the probe deadline. Blocking forever is not
+rejecting, which makes A1 one of the
+[four rules that own a hang](../../concepts/probing.md#hangs-are-owned-by-four-rules-and-deferred-by-the-rest)
+rather than deferring it to [E1](../interactivity/never-block-without-a-tty.md).
+
+**Reports `unverified`** when a probe died on a signal. A crash is not a slower rejection: the
+target never chose a status at all, so nothing here was established — see
+[the signal taxonomy](../../concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed).
 
 **Two probes, exactly as written.** The near-miss variant — a one-character typo of a real flag,
 discovered from the CLI's own help — belongs to
@@ -116,9 +116,10 @@ discovered from the CLI's own help — belongs to
 spelling of a flag that _is_ recognised, carrying a value outside its advertised set, belongs to
 [A7](./advertised-value-set-is-enforced.md).
 
-A hung probe is reported as a **failure**, not as unverified: blocking forever is not
-rejecting. That makes A1 one of four rules in the catalogue that own hangs rather than
-deferring them to [E1](../interactivity/never-block-without-a-tty.md).
+The value token carries the sentinel, so a parser that does not consume it leaves a bare sentinel
+token — which a CLI whose root positional is free-form text reads as input rather than rejecting,
+the same limit [A2](./unknown-command-exits-nonzero.md)'s probe carries. An `L0` run is
+[risk-reduced rather than safe](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe).
 
 ## Current checker coverage
 

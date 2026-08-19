@@ -89,34 +89,35 @@ Inert (`L0`) — an unrecognised flag alongside the machine-mode flag the target
 <cli> --acc-probe-xyzzy-flag --json          # or --format=json
 ```
 
-Every token begins with `-`, so the invocation satisfies the inertness gate's `no-verb` class,
-and the first carries the sentinel, so it satisfies its `sentinel` class as well — admissible
-twice over under the gate exactly as it stands. `--format` is sent attached because it takes a
-value, which is the spelling [`inert.ts`](../../../../src/acc/kit/inert.ts) already whitelists.
-`--output` is refused as a selector: it names an output **file** at least as often as an output
-format, and a probe whose meaning depends on which sense a target implements is not a probe.
+The sentinel flag is sent **first**, deliberately: that is the order in which a caller's mistake
+actually arrives, and a target that resolves its format only from the tokens it managed to parse
+before stopping is the defect this rule is named for. Every token begins with `-` and the first
+carries the sentinel, so the invocation is admissible twice over under the
+[inertness gate](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe).
 
-The sentinel flag is sent **first**, deliberately. That is the order in which a caller's mistake
-actually arrives, and a target that resolves its format only from tokens it managed to parse
-before stopping is the defect this rule is named for.
+`--output` is not accepted as a selector. It names an output **file** at least as often as an
+output format, so a target advertising machine mode only that way is never probed here — the third
+[gap](#current-checker-coverage) below.
 
-Passes when at least one non-empty stream parses **whole** as exactly one JSON document. Fails
-when the failure comes back as prose, or with nothing on either stream — silence is not a shape.
-NDJSON is reported **unverified**, on the same terms as [B3](./machine-output-is-parseable.md):
-nothing was declared, so a stream of valid records is a plausible design rather than a violation
-of a contract nobody was asked to state.
+**Passes** when at least one non-empty stream parses **whole** as exactly one JSON document.
+**Fails** when the failure comes back as prose, or with nothing on either stream — silence is not
+a shape.
 
-**Where the invocation does not fail at all**, the checker reports **unverified**. A target that
-exits `0` here accepted the unknown flag — [A1](../parsing/unknown-flag-exits-nonzero.md)'s
-violation, on a path where this rule's subject never occurred. Convicting it here would report one
-defect twice under a rule that was never reached.
+**Reports `unverified`** for NDJSON, on the same terms as
+[B3](./machine-output-is-parseable.md): nothing was declared, so a stream of valid records is a
+plausible design rather than a violation of a contract nobody was asked to state.
+
+**Reports `unverified` where the invocation does not fail at all.** A target that exits `0` here
+accepted the unknown flag — [A1](../parsing/unknown-flag-exits-nonzero.md)'s violation, on a path
+where this rule's subject never occurred. Convicting it here would report one defect twice under a
+rule that was never reached.
 
 **The selection gap is the one to read before trusting a pass**, and it is first on the list
-below. This probe selects machine mode **explicitly**. The archaeology's own implementation note
-records a fix that repaired exactly that row and left the **no-flag-piped** row broken — which is
-the row that matters most, because piped output already defaults to machine mode and a tool's own
-emitted commands pass no format flag at all. Reaching that row means comparing two invocations
-that differ only in the flag, which this checker does not do.
+below. This probe selects machine mode **explicitly**, and the row that matters most is the other
+one: piped output already defaults to machine mode and a tool's own emitted commands pass no
+format flag at all, so the piped-default resolution path is where this defect most often survives
+a fix. Reaching it means contrasting two invocations that differ only in the flag, which this
+checker does not do.
 
 ## Current checker coverage
 

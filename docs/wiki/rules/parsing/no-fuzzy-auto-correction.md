@@ -80,13 +80,12 @@ Inert (`L0`), since a near-miss must not run.
 <cli> --<one-character-typo-of-a-real-flag>
 ```
 
-Only a FLAG near-miss is probed — never a verb, and only alone, with no verb present anywhere
-in the invocation (the `no-verb` inertness class requires every argument to look like a flag).
-A near-miss VERB is excluded entirely: correcting `dpelte` to `delete` and then running it is
-exactly the failure this rule exists to catch, so testing that half would mean invoking a real
-command, which is only safe once the kit knows that command has no side effects — the same
-reason [unexpected positionals](./unexpected-positionals-rejected.md) moved off `L0`. The verb
-half of this rule is unverified until that effect classification exists.
+Only a FLAG near-miss is probed, and only alone, with no verb present anywhere in the
+invocation. A near-miss VERB is excluded entirely: correcting `dpelte` to `delete` and then
+running it is exactly the failure this rule exists to catch, so testing that half would mean
+invoking a real command — which is why
+[a probe omits a verb wherever it can](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe).
+The verb half of this rule is unverified until an effect classification exists.
 
 The typo is derived from a flag discovered in the CLI's own `--help` output (drop one
 character — the edit a fuzzy matcher is most likely to "fix"), so it's genuinely one edit away

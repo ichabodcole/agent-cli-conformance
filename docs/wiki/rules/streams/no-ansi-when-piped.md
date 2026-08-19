@@ -70,8 +70,8 @@ presentational output without performing work.
 
 ```
 <cli> --help                           # stdout captured to a pipe, i.e. not a TTY
-<cli> --totally-made-up-flag           # stderr captured likewise, on the error path
-<cli> --totally-made-up-flag --json    # where help advertises a machine-mode flag
+<cli> --acc-probe-xyzzy-flag           # stderr captured likewise, on the error path
+<cli> --acc-probe-xyzzy-flag --json    # where help advertises a machine-mode flag
 ```
 
 Passes when neither capture contains `\x1b[`, the CSI introducer — and nothing else. OSC

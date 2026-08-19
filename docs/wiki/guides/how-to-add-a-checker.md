@@ -87,6 +87,15 @@ best-of-three rather than a mean, because the interesting number is the floor �
 measures the machine, not the tool — and it excludes any run the deadline or the output ceiling
 killed, since averaging over the ones that stayed under the limit would measure the limit.
 
+**Two clauses reading one observation must read it differently, or the second establishes
+nothing.** A3 asserts both that a rejection names the offending token in prose and that a
+machine-mode envelope carries it in a field: searching the raw bytes would answer the first
+question twice, so the second walks the parsed structure instead.
+
+**Report `unverified`, not `pass`, when the precondition never held.** A target that published no
+fields at all has not satisfied the envelope clause — saying `pass` would license "the token
+reaches a field" off a run in which no field existed.
+
 Decide explicitly whether your rule **owns** a hang or defers it. Most defer to
 [E1](../rules/interactivity/never-block-without-a-tty.md); four own it, because on their probe
 blocking forever _is_ the violation.
@@ -149,6 +158,10 @@ could not check is the same defect as a CLI reporting success for work it did no
 the subject of the catalogue you are extending.
 
 ### 7. Add a fixture that fails it
+
+Guard the recorder's own bookkeeping with a fixture that echoes its argv, if your rule repeats
+an invocation. A `repeat` index that leaked into argv or the environment would silently restore
+the defect it was built to remove, and nothing else would notice.
 
 A checker with no negative control is untested — and the reference implementation is often the
 best source of one. `acc --version --json` emitted the bare string `0.0.0` at exit `0` for months,

@@ -31,10 +31,13 @@ applicable to a run at all:
 | `L1`  | Invocations the target has **declared** read-only                             |
 | `L2`  | Mutating invocations, inside a contained environment                          |
 
-Three rules stop at the same `L1` boundary, for the same reason — nothing at `L0` says what a
-payload was supposed to contain: D1's version field,
-[A3](../rules/parsing/errors-name-the-offending-token.md)'s envelope clause and
-[B3](../rules/streams/machine-output-is-parseable.md)'s output kinds.
+Four rules stop at the same `L1` boundary, for the same reason — nothing at `L0` says what a
+payload was supposed to contain, so each can check that an answer parses and not that it is the
+right shape: [A3](../rules/parsing/errors-name-the-offending-token.md) (which envelope field must
+name the token), [B3](../rules/streams/machine-output-is-parseable.md) (which output kind to
+expect), [B5](../rules/streams/machine-mode-holds-on-parser-errors.md) (the envelope shape an
+error must take) and [D1](../rules/discoverability/version-flag-exists.md) (which field carries
+the version). Their `coverage_gaps` all say some version of "no declaration exists at `L0`".
 
 `L1` and `L2` are named in every rule page that needs them and neither exists yet — both wait on
 a portable declaration format and a real sandbox
@@ -60,8 +63,9 @@ verdict rather than left implicit.
 
 ### Inertness classifies an invocation; it does not make the run safe
 
-Every probe declares an **inertness class**, and the runner refuses to send one that does not
-match its claim:
+Every probe is sent with **stdin closed**, under a **deadline**, and in a fresh temporary
+working directory. Each declares an **inertness class**, and the runner refuses to send one that
+does not match its claim:
 
 | Class       | What it is                                                  |
 | ----------- | ----------------------------------------------------------- |
@@ -70,15 +74,27 @@ match its claim:
 | `no-verb`   | every token looks like a flag, and there is at least one    |
 | `bare`      | no arguments at all                                         |
 
-The sentinel is guaranteed **invalid** — no real CLI declares a flag or verb by that name — which
-is not the same as guaranteed **harmless**. A CLI whose root positional is free-form text reads
+The sentinel is guaranteed **invalid** — no real CLI declares a flag or verb by that name — and
+distinctive enough that finding it in a target's output is evidence the target echoed it rather
+than coincidence, which is what every checker matching on it rests on. Invalid is not the same as
+guaranteed **harmless**, though. A CLI whose root positional is free-form text reads
 it as input rather than rejecting it, which is exactly the shape of `claude`, `llm` or `aider`.
+
+The same limit applies to a flag that takes a value: without knowing that flag's arity, the
+runner cannot tell its value from a verb, so it cannot send one inertly. That is why a machine
+mode advertised only as `--format json` goes unprobed where `--json` does not — and, per B5, why a
+probe whose meaning depends on which sense the target implements is not a probe.
 
 This is also why a probe omits a verb wherever it can. Prefixing one — `<verb> -- <sentinel>` —
 puts the same question in front of the probe that closed off A2's nested case and dropped A4 to
 `L1`: discovery has no way to know a verb is side-effect-free, and a target that mishandles the
 rest of the argv would run that verb for real. Leaving the verb out is what makes a probe inert
 without needing to know anything about the target's command surface.
+
+Even against an ordinary verb-dispatching CLI the guarantee is narrower than it looks: a
+sentinel establishes that no _declared_ verb was named, not that nothing ran. A target that
+ignores an unrecognised token and falls through to a default root action still does that action,
+and anything the tool does during initialisation happens before dispatch is ever reached.
 
 So the classes bound one invocation each; they do not bound the run. `acc check` **executes the
 target**, and at `L0` the fresh temporary working directory redirects relative paths only —
@@ -102,6 +118,12 @@ A rule that needs the _same_ invocation twice — [D4](../rules/discoverability/
 comparing two help captures, [C3](../rules/exit-codes/exit-codes-are-deterministic.md) comparing
 exit codes — meets that deduplication head-on. The repetitions are told apart by
 `Invocation.repeat`, a **recorder-side index the target never sees**.
+
+Deliberately not distinct argv either. Sending three textually different flags
+(`--<sentinel>-repeat-1`, `-2`, `-3`) also clears the dedup, and measures the wrong thing: agreement
+across three _equivalent usage errors_ rather than repetition of one invocation. A parser that
+hashed the offending token into its exit code would fail that deterministically, and a parser
+genuinely nondeterministic on identical input would pass it.
 
 Deliberately not an environment variable. A marker like `ACC_PROBE_NONCE` would get the second
 run past the dedup, and would also make the two invocations differ while the checker claimed to

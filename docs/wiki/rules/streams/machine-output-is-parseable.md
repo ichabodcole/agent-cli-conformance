@@ -81,31 +81,30 @@ Inert (`L0`) — help output in machine mode, where such a path exists.
 <cli> --help --json          # or the tool's discovered machine-mode flag
 ```
 
-One probe. A `<cli> schema` probe would be the natural second one, but it is not implemented
-and is not safe to add at `L0`: `schema` is a real verb, and the inertness gate refuses any
-invocation carrying a real verb precisely because a CLI that does not recognise it will run
-whatever it does recognise. Establishing that a discovered verb has no effects is `L1` work.
+**One probe.** `<cli> schema` would be the natural second one, but `schema` is a real verb and
+[a probe omits a verb wherever it can](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe).
+`--format` is not treated as a machine-mode selector either, even where discovery finds it,
+because it takes a value: only the `--json` pairing with `--help` is `L0`-safe, so a tool whose
+only machine mode is `--format json` is not probed here.
 
-Note also that `--format` is not treated as a machine-mode selector here even when discovery
-finds it: it takes a value, and a bare value token is indistinguishable from a verb without
-knowing the flag's arity. Only the `--json` pairing with `--help` is `L0`-safe.
+**Passes** when the captured stdout parses whole, as the declared kind.
 
-Passes when the captured stdout parses whole, as the declared kind.
-
-Under `L0` nothing is declared, so the checker reports valid NDJSON as **`unverified`** rather
-than failing it: a stream of valid NDJSON is a plausible legitimate design, and failing it
-without a declaration would punish a tool for a choice it was never asked to state. Once the
-tool declares `output_kind`, the same probe becomes a hard `L1` check against the declaration.
-
-Two things that is **not**. The rule stays **core** — nothing about the NDJSON case downgrades
-the tier, and a failure here still makes a target non-conformant. And `unverified` is not a
-diagnostic failure: it is the verdict for "the probe ran and established neither answer", so it
-blocks [full verification](../../concepts/conformance.md) without blocking conformance. The
-sentence above — undeclared output defaults to `data` — is the normative rule, and this is the
-one place the `L0` checker does not enforce it.
-
-Where no machine-mode flag can be discovered, the checker reports **unverified** and raises
+**Reports `unverified`** where no machine-mode flag can be discovered, and raises
 [help advertises machine mode](../discoverability/help-advertises-machine-mode.md) instead.
+
+**Reports `unverified`** for valid NDJSON, rather than failing it. Under `L0` nothing is declared,
+and a stream of valid NDJSON is a plausible legitimate design — failing it without a declaration
+would punish a tool for a choice it was never asked to state. Once the tool declares `output_kind`
+the same probe becomes a hard `L1` check against the declaration, at
+[the boundary](../../concepts/probing.md#what-it-is)
+[A3](../parsing/errors-name-the-offending-token.md)'s envelope clause and
+[D1](../discoverability/version-flag-exists.md)'s version field also stop at. The sentence above —
+undeclared output defaults to `data` — is the normative rule, and this is the one place the `L0`
+checker does not enforce it.
+
+Neither verdict softens the rule. It stays **core**, a failure here still makes a target
+non-conformant, and `unverified` blocks [full verification](../../concepts/conformance.md)
+without blocking conformance.
 
 ## Current checker coverage
 

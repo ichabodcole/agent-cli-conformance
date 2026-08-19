@@ -77,19 +77,13 @@ Inert (`L0`).
 One unknown-flag invocation, run three times. Byte-identical argv on every run, and an
 environment identical to the other two — which is what the rule's first word requires.
 
-Getting there needed a change in the recorder. The runner deduplicates invocations by an id
-derived from args and environment, so three identical probes used to collapse into one recorded
-run. The workaround was to send three textually distinct flags
-(`--<sentinel>-repeat-1/-2/-3`), and it measured the wrong thing: agreement across three
-_equivalent usage errors_ rather than repetition of one invocation. A parser that hashed the
-offending token into its exit code would fail that probe deterministically, and a parser
-genuinely nondeterministic on repeated identical input would pass it. `Invocation.repeat` now
-carries a recorder-only index — it takes part in the invocation id, so the repetitions stay
-distinct recordings, and it is never passed to the target as an argument or through the
-environment. A test using an argv-echoing fixture asserts exactly that, because a `repeat` that
-leaked into argv would silently restore the defect.
+**The three runs are one invocation repeated, not three similar ones.** Nothing tells them apart
+from the target's side: no distinguishing argument, no marker environment variable. The runner
+deduplicates identical probes and separates the repetitions by a recorder-side index the target
+never sees; see
+[probing](../../concepts/probing.md#probes-are-shared-and-a-rule-may-declare-none).
 
-Passes when all three runs return the same code.
+**Passes** when all three runs return the same code.
 
 Three runs is a cheap smoke test, not proof — it catches gross nondeterminism (an uninitialised
 value, a race in startup, a random default) and will miss anything rarer. The checker reports
