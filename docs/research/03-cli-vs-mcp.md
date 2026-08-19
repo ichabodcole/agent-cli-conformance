@@ -1,6 +1,18 @@
+---
+type: research
+generated: { by: unknown, at: 2026-08-13 }
+status: current
+description: Where the boundary falls between shipping a CLI and shipping an MCP server, for local agents doing tooling work.
+tags: [schema, agent-facing, mcp]
+---
+
 # 03 — The CLI / MCP Boundary
 
 Research date: 2026-08-13. Scope: local agents doing tooling work. Not a general MCP primer.
+
+**Method:** Documentation, specification and published-benchmark survey. Nothing here was
+measured for this note; every quantitative claim carries the label below naming whose experiment
+it came from, so a reader can weigh a vendor's number differently from an independent one.
 
 **Evidence labels used throughout:**
 

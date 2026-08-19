@@ -1,3 +1,11 @@
+---
+type: research
+generated: { by: unknown, at: 2026-08-15 }
+status: current
+description: Whether the rule catalogue covers the CLI defects that actually happened, mined from two repositories' commit histories and replayed against acc check.
+tags: [conformance, silent-failure, testing]
+---
+
 # Defect Archaeology: does the rule catalogue cover the CLI failures that actually happened?
 
 **Research date:** 2026-08-15

@@ -18,7 +18,8 @@ The wiki is what we believe; this is what convinced us. See
 A file belongs here when all five hold. They are not aspirational — they are extracted from
 what the existing reports already do.
 
-1. **Dated.** It claims something about a moment, not about now.
+1. **Dated.** It claims something about a moment, not about now — recorded as
+   `generated.at`, alongside the actor that produced it.
 2. **Method stated.** A stranger can tell how the claim was reached, and could challenge or
    reproduce it. Name versions, corpora, harnesses, and anything that would change the result.
 3. **Scope bounded.** Say what you deliberately did not look at.
@@ -30,6 +31,41 @@ what the existing reports already do.
    who asked the question.
 
 Fail any of them and it is working material, not research.
+
+## Frontmatter
+
+Every file here carries frontmatter, checked by `bun run docs:lint:artifacts`.
+
+```yaml
+---
+type: research
+generated: { by: unknown, at: 2026-08-13 }
+status: current              # current | superseded
+description: One sentence; the question and what answered it.
+tags: [exit-codes, parsing]
+supersedes: 01-case-studies.md   # optional; a later report answering the same question
+---
+```
+
+**Required:** `type`, `generated`, `status`. **Optional:** `description`, `tags`, `supersedes`.
+
+`generated` follows **OKF 0.2 §13.1**, which supersedes `timestamp` with `generated: { by, at }`.
+`at` is when the content was produced and is never bumped; `by` is the actor that produced it,
+which for this corpus is usually a model. That is a fact `git blame` cannot record — it names
+whoever committed the file, not what wrote it. `unknown` is a legal actor and is the honest entry
+for a document whose producer was never captured; a plausible-looking model name would be
+fabricated provenance.
+
+These documents are frozen, so `updated` and `date` are **rejected** rather than merely unused.
+The wiki's `updated` means "when the content last changed", which is right for a page kept true
+and wrong for a record of a moment — carried here it invites a bump that destroys what the
+document is for.
+
+`tags` are kebab-case and should be drawn from the vocabulary the wiki already uses
+(`bun run acc tags`) so that one query reaches the concept, the evidence behind it and the
+report that audited it. A shared vocabulary is not enforced outright — research legitimately
+opens subjects the wiki has no page for — but near-duplicate spellings are rejected, since
+`exit-code` beside `exit-codes` splits the answer in half.
 
 ## Where work goes before it gets here
 

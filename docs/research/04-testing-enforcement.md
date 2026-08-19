@@ -1,4 +1,20 @@
+---
+type: research
+generated: { by: unknown, at: 2026-08-13 }
+status: current
+description: How to move CLI-quality invariants from documented, to caught by a test, to impossible to express.
+tags: [testing, determinism, contract]
+---
+
 # Testing & Enforcement Methodology for Agent-First CLIs
+
+**Research date:** 2026-08-13
+**Method:** Documentation and source reading across the testing tools named below, plus the
+enforcement mechanisms already in use by the CLIs surveyed in `01-case-studies.md`. This note is
+synthesis rather than measurement: no benchmark was run for it, and claims about a tool's
+behaviour are documentation-level unless the text says otherwise.
+**Scope:** Mechanisms for enforcing CLI-quality invariants. Not a general testing primer, and not
+a comparison of test runners.
 
 Research note 04. Focus: how to move CLI-quality invariants from **tier 3 (documented)** to
 **tier 2 (caught)** and **tier 1 (impossible)**.

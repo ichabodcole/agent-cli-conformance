@@ -1,9 +1,26 @@
+---
+type: research
+generated: { by: unknown, at: 2026-08-16 }
+status: current
+description: A vocabulary for the property of this wiki's prose that makes a reader go back and read a sentence twice.
+tags: [prose, documentation]
+---
+
 # Prose density in this wiki: a vocabulary for the thing that makes you reread
 
 Date: 2026-08-16
 
 Status: analysis and vocabulary. No guidance is enforced yet; this is the groundwork for a
 writing guide and a review skill.
+
+**Method:** Characterisation, not measurement. A reader's reported experience of this wiki was
+worked back to the sentence-level constructions producing it, and each construction was named
+and illustrated from pages in the corpus. No reading times were collected and no readers were
+tested; the external evidence for the phenomenon is surveyed separately in
+`2026-08-16-prose-prior-art.md`.
+
+**Scope:** This wiki's own prose. The vocabulary is meant to travel, but nothing here establishes
+that it does.
 
 ## The observation that started this
 

@@ -1,3 +1,11 @@
+---
+type: research
+generated: { by: unknown, at: 2026-08-13 }
+status: current
+description: Whether a language or framework is genuinely better suited to agent-first CLIs, or whether the problem follows you across all of them.
+tags: [parsing, performance, contract]
+---
+
 # 02 — Framework & Language Survey for Agent-First CLIs
 
 **Date:** 2026-08-13

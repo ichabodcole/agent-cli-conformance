@@ -29,6 +29,40 @@ and use checkboxes, as the existing one does.
 Working material that is none of these goes in `.scratch/`, untracked — see
 [`../research/README.md`](../research/README.md#where-work-goes-before-it-gets-here).
 
+## Frontmatter
+
+Every file here carries frontmatter, checked by `bun run docs:lint:artifacts`.
+
+```yaml
+---
+type: plan
+generated: { by: unknown, at: 2026-08-13 }
+status: discharged           # live | discharged
+description: One sentence; what this plans to build.
+tags: [conformance, testing]
+---
+```
+
+**Required:** `type`, `generated`, `status`. **Optional:** `description`, `tags`.
+
+`generated` follows **OKF 0.2 §13.1**, which supersedes `timestamp` with `generated: { by, at }`.
+`at` is when the content was produced and is never bumped; `by` is the actor that produced it,
+which for this corpus is usually a model. That is a fact `git blame` cannot record — it names
+whoever committed the file, not what wrote it. `unknown` is a legal actor and is the honest entry
+for a document whose producer was never captured; a plausible-looking model name would be
+fabricated provenance.
+
+These documents are frozen, so `updated` and `date` are **rejected** rather than merely unused.
+The wiki's `updated` means "when the content last changed", which is right for a page kept true
+and wrong for a record of a moment — carried here it invites a bump that destroys what the
+document is for.
+
+`tags` are kebab-case and should be drawn from the vocabulary the wiki already uses
+(`bun run acc tags`) so that one query reaches the concept, the evidence behind it and the
+report that audited it. A shared vocabulary is not enforced outright — research legitimately
+opens subjects the wiki has no page for — but near-duplicate spellings are rejected, since
+`exit-code` beside `exit-codes` splits the answer in half.
+
 ## Discharge
 
 A plan is spent when the work ships. Its durable residue has two homes, and neither is this one:

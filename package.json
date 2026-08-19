@@ -7,6 +7,7 @@
   "scripts": {
     "prepare": "husky",
     "docs:lint": "bun docs/wiki/lint.ts",
+    "docs:lint:artifacts": "bun docs/lint.ts",
     "docs:graph": "bun docs/wiki/lint.ts --json",
     "docs:sync": "bun docs/wiki/lint.ts --write && prettier --write docs/wiki/index.md",
     "docs:build": "bun docs/wiki/build.ts",
@@ -16,7 +17,7 @@
     "lint:fix": "biome check --write --error-on-warnings .",
     "format": "biome format --write .",
     "format:md": "prettier --write '**/*.md'",
-    "check": "bun run typecheck && biome check --error-on-warnings . && bun run docs:lint && bun run test",
+    "check": "bun run typecheck && biome check --error-on-warnings . && bun run docs:lint && bun run docs:lint:artifacts && bun run test",
     "acc": "bun src/acc/cli.ts"
   },
   "lint-staged": {
