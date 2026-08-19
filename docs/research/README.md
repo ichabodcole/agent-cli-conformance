@@ -7,7 +7,7 @@ report, not by editing the old one.
 
 `research` is a mass noun on purpose. This is a **corpus**, not a queue: files accumulate, and
 nothing here is ever "done" and cleared. That is what separates it from
-[`../reviews/`](../reviews/README.md) and [`../plans/`](../plans/README.md), whose contents
+[`../reports/`](../reports/README.md) and [`../plans/`](../plans/README.md), whose contents
 complete and expire.
 
 The wiki is what we believe; this is what convinced us. See
@@ -53,7 +53,9 @@ anything that started citing it.
 
 ## What does not belong here
 
-- **A defect worklist against our own code** — that is [`../reviews/`](../reviews/README.md).
+- **An analysis of our own material** — the code, the docs, a plan — that is
+  [`../reports/`](../reports/README.md). The subject there is ours; the subject here is the
+  world.
 - **A statement of how the system is, or what we have decided** — that is
   [`../wiki/`](../wiki/SCHEMA.md), which cites this folder rather than absorbing it.
 - **An answer nobody will depend on.** The bar exists so that this stays a corpus worth reading

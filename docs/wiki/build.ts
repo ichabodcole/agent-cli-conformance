@@ -85,7 +85,8 @@ const TAG_INDEX = "tags.html";
  * lives outside the wiki — it says so itself, under "Why this is not in the wiki". Rendering it
  * keeps those links working without pretending it is a wiki page.
  *
- * `docs/reviews/` is NOT here: it is working material, not knowledge. `docs/research/` is
+ * `docs/reports/` is NOT here: its findings are discharged into the code and the wiki,
+ * and the report itself is a record of that work rather than knowledge to publish. `docs/research/` is
  * rendered too, but separately — see EVIDENCE.
  */
 const SATELLITES = ["../roadmap.md"];

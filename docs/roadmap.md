@@ -21,7 +21,7 @@ because the distance between "not started" and "two thirds of the data model is 
 is the most useful thing a roadmap can record.
 
 The evidence is the Round 4 findings of an implementation review conducted in six numbered rounds
-— `docs/reviews/2026-08-14-implementation-review.md`, untracked and local to the maintainer's
+— `docs/reports/2026-08-14-implementation-review.md`, untracked and local to the maintainer's
 checkout — plus the scope decisions taken during Phases 1 to 4, the four remediation phases that
 preceded this page. The order is argued here on its own terms rather than transcribed from that
 review; the two disagree in five places, reconciled in
@@ -744,7 +744,7 @@ that line, reporting `unverified` on a signal G1 has declined to attribute.
 
 ## Appendix: where this departs from the review
 
-For the reader who has `docs/reviews/2026-08-14-implementation-review.md` open. Its Round 4
+For the reader who has `docs/reports/2026-08-14-implementation-review.md` open. Its Round 4
 findings map onto this page as R4-4 → [step 1](#1-remediation-becomes-structured-data), R4-6 →
 [step 2](#2-version-the-contract-not-only-the-rules), R4-9 →
 [step 3](#3-control-the-observation-environment-which-is-also-the-l0-safety-work), R4-1 →
@@ -776,6 +776,6 @@ Five findings are cited above by name rather than by number, because a number re
 a reader can open: the **normative-scope** finding (R3-1) at
 [design guidance](#design-guidance-that-is-not-yet-normative), the **adoption guide** (R3-8) at
 [step 9](#9-adoption-surfaces), the **false-positive sweep** (R6-5) and the bidirectional
-`coverage_established` lint (DTX-8, from `docs/reviews/2026-08-15-wiki-diataxis-review.md`) at
+`coverage_established` lint (DTX-8, from `docs/reports/2026-08-15-wiki-diataxis-review.md`) at
 [step 8](#8-test-the-checker-as-a-measurement-instrument), and the **probe nonce** in F2's timing
 runs (R6-6) in [the coverage debt](#the-coverage-debt).
