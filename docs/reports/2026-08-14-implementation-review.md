@@ -285,7 +285,7 @@ Suggested direction:
 
 > **Remediation: FIXED** — `a5d4d44`. Root and `knownFailures` are validated as plain objects, reasons must be non-empty strings, IDs are validated against the active checker registry, and the offending path is reported in a structured usage-class error. Tests cover nulls, arrays, unknown IDs, empty reasons, invalid JSON, and a missing explicit directory. One extension beyond the finding: an explicit `--expectations` pointing at a directory with _no_ expectations file is now an error too — silently ignoring a flag the caller passed is the same silent-failure shape.
 
-Location: [`src/acc/kit/expectations.ts`](../../src/acc/kit/expectations.ts).
+Location: [`src/acc/kit/expectations.ts`](../../src/acc/kit/config.ts) — renamed to `config.ts` during remediation, when it grew waivers alongside known failures.
 
 The parsed JSON is cast directly to `Partial<Expectations>`. Consequences include:
 

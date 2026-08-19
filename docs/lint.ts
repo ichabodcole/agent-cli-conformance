@@ -16,7 +16,12 @@
 import { readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseFrontmatter, walkMarkdown, yamlList } from "../scripts/docs-lint/index.ts";
+import {
+  checkLinks,
+  parseFrontmatter,
+  walkMarkdown,
+  yamlList,
+} from "../scripts/docs-lint/index.ts";
 
 const DOCS_ROOT = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(DOCS_ROOT, "..");
@@ -92,6 +97,18 @@ export function artifactProblems(): string[] {
     const dir = join(DOCS_ROOT, folder);
     for (const file of walkMarkdown(dir)) {
       const rel = relative(REPO_ROOT, file);
+
+      // Links are checked on EVERY file including the READMEs. They carry no frontmatter and
+      // are skipped below for that reason, but they are the folder contracts and cross-link
+      // each other constantly — a dead pointer there misroutes the next document written.
+      for (const bad of checkLinks(file, readFileSync(file, "utf8")).problems) {
+        problems.push(
+          bad.kind === "MISSING FILE"
+            ? `MISSING FILE  ${rel}: ${bad.target}`
+            : `MISSING ANCHOR  ${rel}: ${bad.target}  (#${bad.anchor} not a heading)`,
+        );
+      }
+
       if (rel.endsWith("README.md")) continue;
 
       const name = rel.replace(/^.*\//, "");

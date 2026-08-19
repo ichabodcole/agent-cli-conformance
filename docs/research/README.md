@@ -35,7 +35,9 @@ Fail any of them and it is working material, not research.
 
 ## Filenames
 
-`YYYY-MM-DD-kebab-slug.md`, checked by the lint.
+`YYYY-MM-DD-kebab-slug.md`, checked by the lint — as are the links: every relative link in
+this folder, README included, must resolve, and any `#anchor` must be a real heading in the
+target.
 
 The date is when the document was **first published**, and it is deliberately not required to
 equal `generated.at`. The first four notes here were once `01-`..`04-`; a sequence implies a

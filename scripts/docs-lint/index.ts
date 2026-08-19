@@ -268,6 +268,76 @@ export function yamlList(raw: string | undefined): string[] {
     .filter(Boolean);
 }
 
+/** One broken link. Worded by the caller, so each linter keeps its own message column widths. */
+export interface BrokenLink {
+  kind: "MISSING FILE" | "MISSING ANCHOR";
+  /** The link target exactly as written, including any `#anchor`. */
+  target: string;
+  /** The anchor that did not resolve; only set for `MISSING ANCHOR`. */
+  anchor?: string;
+}
+
+/**
+ * Resolve every relative markdown link in one file: does the target exist, and if it names an
+ * anchor, is that anchor a heading there?
+ *
+ * Extracted from `runDocsLint` so a corpus that is NOT a wiki can borrow it. The wiki lint pairs
+ * this with orphan and catalog checks that assume an `index.md`; a folder of frozen reports has
+ * no catalog and no graph, and still owes its readers working links.
+ *
+ * Targets are resolved with no containment check, deliberately: a page linking out of its own
+ * tree — a rule page citing a checker in `src/`, a report citing the wiki — is a link like any
+ * other, and the failure that matters is that it does not resolve.
+ */
+export function checkLinks(
+  file: string,
+  body: string,
+  opts: {
+    anchorCache?: Map<string, Set<string>>;
+    /** Prefer an already-read body; falls back to disk for a target outside the corpus. */
+    bodyOf?: (path: string) => string;
+  } = {},
+): { outbound: string[]; problems: BrokenLink[] } {
+  const anchorCache = opts.anchorCache ?? new Map<string, Set<string>>();
+  const bodyOf = opts.bodyOf ?? ((p: string) => readFileSync(p, "utf8"));
+  const outbound: string[] = [];
+  const problems: BrokenLink[] = [];
+
+  // matchAll rather than a hand-rolled exec loop: this body uses `continue`, and an exec
+  // loop with a `continue` before the next exec is an easy infinite loop. matchAll also
+  // owns its lastIndex, so the regex can't leak state between files.
+  // The second alternative is CommonMark's pointy-bracket destination, which exists so a URL
+  // may contain `)` — every DOI-bearing citation needs it. Matching only `[^)]+` truncated such
+  // a link mid-URL and then reported the fragment as a missing FILE, since a truncated URL no
+  // longer looks like one. `docs/wiki/site/markdown.ts` learned the same form; a linter that
+  // disagrees with the renderer about what a link is will pass pages that render broken.
+  for (const m of stripCode(body).matchAll(/\]\((<[^>]*>|[^)]+)\)/g)) {
+    const target = (m[1] as string).trim().replace(/^<(.*)>$/, "$1");
+    if (/^https?:\/\//.test(target) || target.startsWith("mailto:")) continue;
+    const [pathPart, anchor] = target.split("#");
+    let filePath: string;
+    if (pathPart === "") {
+      filePath = file; // same-file anchor
+    } else {
+      filePath = resolve(dirname(file), pathPart);
+      if (!existsSync(filePath)) {
+        problems.push({ kind: "MISSING FILE", target });
+        continue;
+      }
+      if (filePath.endsWith(".md")) outbound.push(filePath);
+    }
+    if (anchor && filePath.endsWith(".md")) {
+      let anchors = anchorCache.get(filePath);
+      if (!anchors) {
+        anchors = headingSlugsOf(bodyOf(filePath));
+        anchorCache.set(filePath, anchors);
+      }
+      if (!anchors.has(anchor)) problems.push({ kind: "MISSING ANCHOR", target, anchor });
+    }
+  }
+  return { outbound, problems };
+}
+
 export function runDocsLint(config: DocsLintConfig): number {
   const ROOT = config.root;
   const JSON_MODE = config.json ?? false;
@@ -356,40 +426,18 @@ export function runDocsLint(config: DocsLintConfig): number {
 
   // --- links + anchors, and the graph they form -----------------------------------------
   const anchorCache = new Map<string, Set<string>>();
-  const headingSlugs = (file: string): Set<string> =>
-    headingSlugsOf(body.get(file) ?? readFileSync(file, "utf8"));
+  const bodyOf = (f: string): string => body.get(f) ?? readFileSync(f, "utf8");
 
   const outbound = new Map<string, Set<string>>();
   for (const file of files) {
-    const outs = new Set<string>();
-    outbound.set(file, outs);
-    // matchAll rather than a hand-rolled exec loop: this body uses `continue`, and an exec
-    // loop with a `continue` before the next exec is an easy infinite loop. matchAll also
-    // owns its lastIndex, so the regex can't leak state between files.
-    for (const m of stripCode(body.get(file) ?? "").matchAll(/\]\(([^)]+)\)/g)) {
-      const target = m[1].trim();
-      if (/^https?:\/\//.test(target) || target.startsWith("mailto:")) continue;
-      const [pathPart, anchor] = target.split("#");
-      let filePath: string;
-      if (pathPart === "") {
-        filePath = file; // same-file anchor
-      } else {
-        filePath = resolve(dirname(file), pathPart);
-        if (!existsSync(filePath)) {
-          say(`MISSING FILE   ${rel(file)}: ${target}`);
-          continue;
-        }
-        if (filePath.endsWith(".md")) outs.add(filePath);
-      }
-      if (anchor && filePath.endsWith(".md")) {
-        let anchors = anchorCache.get(filePath);
-        if (!anchors) {
-          anchors = headingSlugs(filePath);
-          anchorCache.set(filePath, anchors);
-        }
-        if (!anchors.has(anchor))
-          say(`MISSING ANCHOR ${rel(file)}: ${target}  (#${anchor} not a heading)`);
-      }
+    const res = checkLinks(file, body.get(file) ?? "", { anchorCache, bodyOf });
+    outbound.set(file, new Set(res.outbound));
+    for (const p of res.problems) {
+      say(
+        p.kind === "MISSING FILE"
+          ? `MISSING FILE   ${rel(file)}: ${p.target}`
+          : `MISSING ANCHOR ${rel(file)}: ${p.target}  (#${p.anchor} not a heading)`,
+      );
     }
   }
 

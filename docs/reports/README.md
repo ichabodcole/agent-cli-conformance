@@ -48,7 +48,9 @@ Work that fits none of these goes in `.scratch/`, untracked — see
 
 ## Filenames
 
-`YYYY-MM-DD-kebab-slug.md`, checked by the lint.
+`YYYY-MM-DD-kebab-slug.md`, checked by the lint — as are the links: every relative link in
+this folder, README included, must resolve, and any `#anchor` must be a real heading in the
+target.
 
 The date is when the document was **first published**, and it is deliberately not required to
 equal `generated.at`. OKF defines that as the last meaningful change, so an amended document

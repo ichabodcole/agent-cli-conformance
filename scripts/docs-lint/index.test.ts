@@ -16,6 +16,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
+  checkLinks,
   type DocsLintConfig,
   headingSlugsOf,
   type LintPage,
@@ -298,6 +299,44 @@ describe("stripCode", () => {
 // ---------------------------------------------------------------------------------------
 // parseFrontmatter
 // ---------------------------------------------------------------------------------------
+
+describe("checkLinks", () => {
+  const dir = mkdtempSync(join(tmpdir(), "links-"));
+  writeFileSync(join(dir, "target.md"), "# T\n\n## A Heading\n");
+
+  const check = (body: string) => checkLinks(join(dir, "a.md"), body).problems;
+
+  test("a resolving link with a real anchor is silent", () => {
+    expect(check("[x](./target.md#a-heading)")).toEqual([]);
+  });
+
+  test("a missing file and a missing anchor are distinguished", () => {
+    expect(check("[x](./gone.md)")).toEqual([{ kind: "MISSING FILE", target: "./gone.md" }]);
+    expect(check("[x](./target.md#nope)")).toEqual([
+      { kind: "MISSING ANCHOR", target: "./target.md#nope", anchor: "nope" },
+    ]);
+  });
+
+  test("external and mailto targets are not filesystem paths", () => {
+    expect(check("[x](https://example.com/a) [y](mailto:a@b.c)")).toEqual([]);
+  });
+
+  test("a link inside a fence is a specimen, not a link", () => {
+    expect(check("```\n[x](./gone.md)\n```\n")).toEqual([]);
+  });
+
+  // The pointy-bracket destination exists so a URL may contain `)`. Matched as `[^)]+` it was
+  // truncated mid-URL, and the fragment no longer looked like a URL — so an external citation
+  // was reported as a missing local FILE.
+  test("a pointy-bracket destination containing parentheses is left alone", () => {
+    expect(check("[doi](<https://doi.org/10.1016/S0010-0277(98)00034-1>)")).toEqual([]);
+  });
+
+  test("outbound edges name the markdown targets", () => {
+    const res = checkLinks(join(dir, "a.md"), "[x](./target.md) [y](https://example.com)");
+    expect(res.outbound).toEqual([join(dir, "target.md")]);
+  });
+});
 
 describe("parseGenerated (OKF 0.2 §5.2)", () => {
   test("reads the flow mapping the spec documents", () => {
