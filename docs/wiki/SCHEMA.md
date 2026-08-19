@@ -214,14 +214,27 @@ the exit codes the spec itself mandates.
 
 ## Per-type page shape
 
-| `type`      | Required sections                                                                            |
-| ----------- | -------------------------------------------------------------------------------------------- |
-| `concept`   | What it is · Why it matters for agents · The details · Related rules                         |
-| `archetype` | Shape · What makes it hard · Rules that apply differently · Examples                         |
-| `rule`      | The rule (normative) · Why · The probe · Current checker coverage · How to comply · Evidence |
-| `decision`  | Context · Decision · Rationale · Consequences · What would change our mind                   |
-| `guide`     | Goal · Steps · Verification                                                                  |
-| `tutorial`  | What we will do · Step 1..n · What we learned · Where to go next                             |
+| `type`      | Required sections                                                                |
+| ----------- | -------------------------------------------------------------------------------- |
+| `concept`   | What it is · Why it matters for agents · The details · Related rules             |
+| `archetype` | Shape · What makes it hard · Rules that apply differently · Examples             |
+| `rule`      | The rule · How to comply · Why · The probe · Current checker coverage · Evidence |
+| `decision`  | Context · Decision · Rationale · Consequences · What would change our mind       |
+| `guide`     | Goal · Steps · Verification                                                      |
+| `tutorial`  | What we will do · What we learned · Where to go next                             |
+
+These are the sections a page **must** carry, in this order; a page may add others between them
+(an `archetype` ends with `Related rules`, a `decision` with `Sources`, a `tutorial` with as many
+`Step n` headings as the lesson needs). `lint.ts` reads this table and checks both, so the shape
+is enforced rather than described — the numbered steps are dropped from the `tutorial` row for
+that reason, since they are not a fixed heading anyone could check for.
+
+**`rule` puts the remedy second, directly under the norm.** The page exists because a conformance
+failure cites it, so its reader arrives knowing only a rule id and wanting two things: what they
+violated, and how to fix it. Those used to be the first and fifth sections, with `How to comply`
+starting around 84% of the way down every page and the three sections describing the kit's own
+measurement in between (review DTX-2). The measurement material still belongs on the page; it is
+not what that reader came for.
 
 `guide` and `tutorial` are both work-shaped and they are not interchangeable. A `guide` serves
 someone with a goal they already have — it assumes competence and may branch. A `tutorial`

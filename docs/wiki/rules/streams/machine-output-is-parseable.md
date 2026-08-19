@@ -42,6 +42,16 @@ Where nothing is declared, `data` is assumed.
 A command **MUST NOT** vary its output shape between invocations, and a tool **MUST NOT** vary
 it between commands under the same flag.
 
+## How to comply
+
+Route all stdout writes through one emitter (see
+[stdout carries only data](./stdout-carries-only-data.md)) and give it the declared kind. Then
+`data` commands physically cannot emit two documents, because there is one place that writes.
+
+For `stream`, flush per record. A stream that buffers until completion is indistinguishable
+from a slow `data` command, and defeats the purpose for a caller that wanted incremental
+results.
+
 ## Why
 
 Two distinct reasons, and the second is the one that earns the rule its strictness.
@@ -116,16 +126,6 @@ the rest of this page, unexamined.
 - shape stability across invocations and across commands is not compared
 - the stream and opaque output kinds are never exercised because no declaration exists at L0 to
   select them
-
-## How to comply
-
-Route all stdout writes through one emitter (see
-[stdout carries only data](./stdout-carries-only-data.md)) and give it the declared kind. Then
-`data` commands physically cannot emit two documents, because there is one place that writes.
-
-For `stream`, flush per record. A stream that buffers until completion is indistinguishable
-from a slow `data` command, and defeats the purpose for a caller that wanted incremental
-results.
 
 ## Evidence
 

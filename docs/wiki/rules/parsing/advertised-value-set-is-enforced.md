@@ -47,6 +47,28 @@ This rule binds only where the tool made the claim. A flag whose help declares a
 `--output <path>`, `--message <text>` — is outside it entirely: there is no set, so there is
 nothing to be outside of.
 
+## How to comply
+
+Declare the set once, in the place the parser reads and the help renderer prints. Two sources of
+truth for one set is the whole defect: help says `text|json` because a human wrote it there, and
+the parser accepts anything because nobody wired the two together.
+
+| Framework              | Compliant by default?     | How                    |
+| ---------------------- | ------------------------- | ---------------------- |
+| `clap` (Rust, derive)  | yes                       | `value_enum`           |
+| `@stricli/core` (TS)   | yes                       | a union-typed parser   |
+| `commander` ≥13 (TS)   | **no** — the set is decor | `.choices([...])`      |
+| `node:util parseArgs`  | **no** — no set concept   | validate after parsing |
+| `click` / `typer` (Py) | yes                       | `click.Choice`         |
+| `cobra` (Go)           | **no**                    | a custom `pflag.Value` |
+
+`commander` is the trap worth naming: `--format <text|json>` renders that alternation into help
+and enforces nothing, so the declaration and the behaviour disagree by default and the help
+screen is the half that lies. `acc`'s own instance of this rule was exactly that shape.
+
+When you reject, say what would have been right. A rejection naming only what was wrong costs the
+caller a round trip to `--help`; one carrying the set costs it nothing.
+
 ## Why
 
 Every other parsing rule in this family asks whether the tool honours the **catalogue's**
@@ -151,28 +173,6 @@ are the rest of this page, unexamined.
 - the exit code is only required to be non-zero here and not the declared 2
 - that the flag's default did not silently apply is inferred from a non-zero exit rather than
   observed
-
-## How to comply
-
-Declare the set once, in the place the parser reads and the help renderer prints. Two sources of
-truth for one set is the whole defect: help says `text|json` because a human wrote it there, and
-the parser accepts anything because nobody wired the two together.
-
-| Framework              | Compliant by default?     | How                    |
-| ---------------------- | ------------------------- | ---------------------- |
-| `clap` (Rust, derive)  | yes                       | `value_enum`           |
-| `@stricli/core` (TS)   | yes                       | a union-typed parser   |
-| `commander` ≥13 (TS)   | **no** — the set is decor | `.choices([...])`      |
-| `node:util parseArgs`  | **no** — no set concept   | validate after parsing |
-| `click` / `typer` (Py) | yes                       | `click.Choice`         |
-| `cobra` (Go)           | **no**                    | a custom `pflag.Value` |
-
-`commander` is the trap worth naming: `--format <text|json>` renders that alternation into help
-and enforces nothing, so the declaration and the behaviour disagree by default and the help
-screen is the half that lies. `acc`'s own instance of this rule was exactly that shape.
-
-When you reject, say what would have been right. A rejection naming only what was wrong costs the
-caller a round trip to `--help`; one carrying the set costs it nothing.
 
 ## Evidence
 

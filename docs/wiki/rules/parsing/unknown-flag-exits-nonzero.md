@@ -39,6 +39,28 @@ proceed with the command.
 A CLI **MAY** suggest a correction (`did you mean --format?`). It **MUST NOT** act on that
 guess.
 
+## How to comply
+
+Most parsers support this; many do not enable it by default.
+
+| Framework              | Compliant by default? | How                        |
+| ---------------------- | --------------------- | -------------------------- |
+| `clap` (Rust, derive)  | yes                   | —                          |
+| `commander` ≥13 (TS)   | yes                   | —                          |
+| `@stricli/core` (TS)   | yes                   | —                          |
+| `node:util parseArgs`  | **no**                | `{ strict: true }`         |
+| `citty` (TS)           | **no**                | not supported; migrate off |
+| `yargs` (TS)           | **no**                | `.strict()`                |
+| `cobra` (Go)           | **no**                | see below                  |
+| `click` / `typer` (Py) | yes                   | —                          |
+
+`cobra` is the worst case surveyed: it exits `0` on unknown _nested subcommands_ and extra
+positionals, and has a path that exits `0` while printing help to stdout.
+
+If your parser cannot be made strict, it is the wrong parser for an agent-facing CLI. A
+wrapper that post-validates argv is possible but re-introduces the two-sources-of-truth
+problem this framework exists to remove.
+
 ## Why
 
 This is the single highest-value rule in the catalog, because violating it produces a failure
@@ -119,28 +141,6 @@ the rest of this page, unexamined.
 - only long flags are probed so a short flag or a cluster of short flags is not
 - that the command did not otherwise proceed and that the value was not absorbed are both inferred
   from a non-zero exit rather than observed
-
-## How to comply
-
-Most parsers support this; many do not enable it by default.
-
-| Framework              | Compliant by default? | How                        |
-| ---------------------- | --------------------- | -------------------------- |
-| `clap` (Rust, derive)  | yes                   | —                          |
-| `commander` ≥13 (TS)   | yes                   | —                          |
-| `@stricli/core` (TS)   | yes                   | —                          |
-| `node:util parseArgs`  | **no**                | `{ strict: true }`         |
-| `citty` (TS)           | **no**                | not supported; migrate off |
-| `yargs` (TS)           | **no**                | `.strict()`                |
-| `cobra` (Go)           | **no**                | see below                  |
-| `click` / `typer` (Py) | yes                   | —                          |
-
-`cobra` is the worst case surveyed: it exits `0` on unknown _nested subcommands_ and extra
-positionals, and has a path that exits `0` while printing help to stdout.
-
-If your parser cannot be made strict, it is the wrong parser for an agent-facing CLI. A
-wrapper that post-validates argv is possible but re-introduces the two-sources-of-truth
-problem this framework exists to remove.
 
 ## Evidence
 

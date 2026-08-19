@@ -36,6 +36,15 @@ or a credential file inside the handler, never declared in the command definitio
 Error messages **MUST NOT** echo a credential back, including when reporting that it is
 malformed or rejected.
 
+## How to comply
+
+Default every secret-bearing flag to `null` and resolve it inside the handler. Read from the
+environment or a credential file; never from a default, and never from a flag value the caller
+has to type, since that lands in process listings and shell history.
+
+When reporting a credential problem, describe the _class_ of fault and never the value: which
+credential was expected, where it is read from, how to supply it.
+
 ## Why
 
 The mechanism is specific and easy to miss: **flag defaults are copied verbatim into
@@ -100,15 +109,6 @@ the rest of this page, unexamined.
 - a secret carried as a flag default is only seen if help prints defaults
 - nested subcommand help is never scanned even though a flag default usually belongs to a leaf
   command
-
-## How to comply
-
-Default every secret-bearing flag to `null` and resolve it inside the handler. Read from the
-environment or a credential file; never from a default, and never from a flag value the caller
-has to type, since that lands in process listings and shell history.
-
-When reporting a credential problem, describe the _class_ of fault and never the value: which
-credential was expected, where it is read from, how to supply it.
 
 ## Evidence
 

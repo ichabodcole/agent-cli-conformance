@@ -35,6 +35,15 @@ This holds at every level: `<cli> --help`, `<cli> <group> --help`, `<cli> <group
 It **MUST** work regardless of what else is on the command line — a caller must be able to
 append `--help` to any invocation and receive help rather than execution.
 
+## How to comply
+
+Universal across parsers — this is the single most consistently implemented behaviour in the
+survey. The failures are in hand-rolled dispatch, where `help` is sometimes routed through the
+same "unknown command" path that exits non-zero.
+
+Verify the _nested_ case explicitly; `<cli> <group> --help` is the one that gets missed when
+groups are dispatched manually.
+
 ## Why
 
 Help is the one case where printing usage means the command _succeeded_. The caller asked a
@@ -136,15 +145,6 @@ itself.
 - a help subcommand is not probed
 - appending --help to an otherwise complete invocation is not probed
 - stdout is only required to be non-empty and is never checked to contain help text
-
-## How to comply
-
-Universal across parsers — this is the single most consistently implemented behaviour in the
-survey. The failures are in hand-rolled dispatch, where `help` is sometimes routed through the
-same "unknown command" path that exits non-zero.
-
-Verify the _nested_ case explicitly; `<cli> <group> --help` is the one that gets missed when
-groups are dispatched manually.
 
 ## Evidence
 

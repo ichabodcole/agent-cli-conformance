@@ -37,6 +37,19 @@ Where work genuinely takes longer, the command **SHOULD** signal that it started
 never polluting [stdout](../streams/stdout-carries-only-data.md), and without
 [ANSI animation when not a terminal](../streams/no-ansi-when-piped.md).
 
+## How to comply
+
+Do nothing before dispatch. The usual cause of a slow `--help` is initialisation that runs
+unconditionally — reading config, opening a database, resolving credentials, importing the
+whole command tree — before the parser has looked at argv.
+
+Dispatch first, initialise inside the handler. This also happens to be what
+[`--version` requires](../discoverability/version-flag-exists.md), which is a useful check: if
+`--version` needs config, work is running too early.
+
+For a heavier tool, lazy-load subcommand modules so that invoking one command does not pay for
+importing all of them.
+
 ## Why
 
 Two separate costs, and the second is the one that changes design decisions.
@@ -131,19 +144,6 @@ the rest of this page, unexamined.
 - the stream first-record and per-record flush requirement is not exercised
 - the progress signal a long-running command owes stderr is not exercised
 - the verdict is the fastest of three runs so a target that is usually slower still passes
-
-## How to comply
-
-Do nothing before dispatch. The usual cause of a slow `--help` is initialisation that runs
-unconditionally — reading config, opening a database, resolving credentials, importing the
-whole command tree — before the parser has looked at argv.
-
-Dispatch first, initialise inside the handler. This also happens to be what
-[`--version` requires](../discoverability/version-flag-exists.md), which is a useful check: if
-`--version` needs config, work is running too early.
-
-For a heavier tool, lazy-load subcommand modules so that invoking one command does not pay for
-importing all of them.
 
 ## Evidence
 

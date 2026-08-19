@@ -32,6 +32,19 @@ command (`schema`) where one exists.
 A CLI **SHOULD** make its structured surface discoverable from the surface a caller reaches
 first — which is `--help`, not documentation.
 
+## How to comply
+
+One line in the root help. Two things worth doing beyond the minimum:
+
+- **Make the flag teach its own vocabulary.** `gh` runs `--json` with _no_ field list and
+  prints the full set of available fields. The caller who misuses the flag is handed exactly
+  the information needed to use it correctly — discovery delivered at the moment of need,
+  paid for only on the mistake. This is the same shape as
+  [`choices` in an error](../../concepts/error-envelope.md#choices-is-just-in-time-discovery).
+- **Point at the generated reference, not just the flag.** Where the tool ships an agent skill
+  or compact reference derived from its schema, naming it in help routes callers to the cheap
+  path rather than the expensive one.
+
 ## Why
 
 An agent encountering an unfamiliar tool runs `--help`. If structured output exists but is not
@@ -104,19 +117,6 @@ all.
 - the flag scan falls back to the whole help text when no options block is recognised so a flag
   named only in an example can satisfy it
 - a pass establishes only that help names the flag and never that the flag is accepted
-
-## How to comply
-
-One line in the root help. Two things worth doing beyond the minimum:
-
-- **Make the flag teach its own vocabulary.** `gh` runs `--json` with _no_ field list and
-  prints the full set of available fields. The caller who misuses the flag is handed exactly
-  the information needed to use it correctly — discovery delivered at the moment of need,
-  paid for only on the mistake. This is the same shape as
-  [`choices` in an error](../../concepts/error-envelope.md#choices-is-just-in-time-discovery).
-- **Point at the generated reference, not just the flag.** Where the tool ships an agent skill
-  or compact reference derived from its schema, naming it in help routes callers to the cheap
-  path rather than the expensive one.
 
 ## Evidence
 

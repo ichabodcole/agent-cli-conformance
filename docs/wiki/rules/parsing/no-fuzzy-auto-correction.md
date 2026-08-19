@@ -37,6 +37,14 @@ no work — whether or not a suggestion was printed.
 A CLI **MUST NOT** prompt interactively to confirm a guess. See
 [never block on input without a TTY](../interactivity/never-block-without-a-tty.md).
 
+## How to comply
+
+Turn off fuzzy execution; keep fuzzy suggestion.
+
+Most parsers separate these already. The risk is in hand-written dispatch code that reaches
+for a nearest-match helper to be forgiving, and in shells or wrappers that add
+correct-and-retry behaviour around a compliant binary.
+
 ## Why
 
 The instinct behind auto-correction is sound for humans: a typo is obvious, the fix is
@@ -111,14 +119,6 @@ rather than a pass — a probe that could not be built is not a probe that succe
   insertion or a case change is not
 - the near-miss is sent at the root so a near-miss of a flag belonging to a subcommand is never
   built
-
-## How to comply
-
-Turn off fuzzy execution; keep fuzzy suggestion.
-
-Most parsers separate these already. The risk is in hand-written dispatch code that reaches
-for a nearest-match helper to be forgiving, and in shells or wrappers that add
-correct-and-retry behaviour around a compliant binary.
 
 ## Evidence
 

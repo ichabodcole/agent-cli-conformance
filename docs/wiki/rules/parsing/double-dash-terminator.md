@@ -33,6 +33,14 @@ value, even if it begins with `-`.
 A CLI that [delegates to a child process](../../archetypes/delegator.md) **MUST** honour it,
 and **MUST** pass everything after `--` to the child unmodified.
 
+## How to comply
+
+Free in most parsers — POSIX-conformant option parsing includes it, and `clap`, `commander`,
+`click`, and `node:util parseArgs` all handle it by default.
+
+Hand-rolled `argv` loops are where it goes missing. If you iterate arguments yourself, stop
+flag interpretation at the first bare `--` and treat the remainder as values.
+
 ## Why
 
 Some values legitimately start with a hyphen — a negative number, a filename like `-report.md`,
@@ -142,14 +150,6 @@ verdict is `unverified` rather than a measurement of an argv the target never re
 - a rejection is recognised only from an English unknown-option or unknown-flag phrase so a
   differently worded rejection reads as a pass
 - only a bare terminator at the root followed by a single value is probed
-
-## How to comply
-
-Free in most parsers — POSIX-conformant option parsing includes it, and `clap`, `commander`,
-`click`, and `node:util parseArgs` all handle it by default.
-
-Hand-rolled `argv` loops are where it goes missing. If you iterate arguments yourself, stop
-flag interpretation at the first bare `--` and treat the remainder as values.
 
 ## Evidence
 

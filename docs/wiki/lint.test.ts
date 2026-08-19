@@ -10,6 +10,7 @@
 // the `import.meta.main` guard: before it, importing ran the wiki lint and killed the runner.
 
 import { expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type LintPage, yamlList } from "../../scripts/docs-lint/index.ts";
 import { CHECKERS } from "../../src/acc/kit/registry.ts";
@@ -27,8 +28,10 @@ import {
   matrixChecks,
   normalizeBlock,
   readPages,
+  requiredSectionsFromSchema,
   ruleChecks,
   sectionBody,
+  sectionChecks,
   signalScopeChecks,
   slugChecks,
   statedEstablished,
@@ -932,4 +935,63 @@ test("a signal list Prettier wrapped across lines is read as one paragraph", () 
     "\n",
   );
   expect(statedSignals(body, FAULT_SIGNALS_MARKER)).toEqual(["SIGSEGV", "SIGBUS", "SIGILL"]);
+});
+
+// --- per-type page shape ------------------------------------------------------------------
+
+const SCHEMA_TEXT = readFileSync(join(import.meta.dir, "SCHEMA.md"), "utf8");
+
+test("required sections are read from SCHEMA.md's table, not restated in the linter", () => {
+  const required = requiredSectionsFromSchema(SCHEMA_TEXT);
+  expect(required.get("rule")).toEqual([
+    "The rule",
+    "How to comply",
+    "Why",
+    "The probe",
+    "Current checker coverage",
+    "Evidence",
+  ]);
+  expect(required.get("concept")).toEqual([
+    "What it is",
+    "Why it matters for agents",
+    "The details",
+    "Related rules",
+  ]);
+});
+
+test("the remedy sits second on a rule page, where the citing reader arrives", () => {
+  // review DTX-2: `How to comply` used to start ~84% down every page, behind three sections
+  // describing the kit's own measurement. A reader who arrives from a FAIL wants the norm and
+  // the fix; the order is now a checked property rather than a convention.
+  const order = requiredSectionsFromSchema(SCHEMA_TEXT).get("rule") as string[];
+  expect(order.indexOf("How to comply")).toBe(1);
+  expect(order.indexOf("How to comply")).toBeLessThan(order.indexOf("The probe"));
+});
+
+test("a page missing a required section, or carrying them out of order, is reported", () => {
+  const fields = new Map([["type", "rule"]]);
+  const shaped = (body: string): LintPage => ({ rel: "r.md", fields, body }) as LintPage;
+
+  expect(sectionChecks([shaped("## The rule\n## Why\n")], SCHEMA_TEXT)[0]).toContain(
+    "MISSING SECTION",
+  );
+
+  const scrambled =
+    "## The rule\n## Why\n## The probe\n## Current checker coverage\n## How to comply\n## Evidence\n";
+  expect(sectionChecks([shaped(scrambled)], SCHEMA_TEXT)[0]).toContain("SECTION ORDER");
+
+  const correct =
+    "## The rule\n## How to comply\n## Why\n## The probe\n## Current checker coverage\n## Evidence\n";
+  expect(sectionChecks([shaped(correct)], SCHEMA_TEXT)).toEqual([]);
+});
+
+test("an unlisted section is allowed and does not disturb the order", () => {
+  // An archetype ends with `Related rules` the table does not name, and a tutorial interleaves
+  // `Step n`. Extras are the norm, not an exception.
+  const fields = new Map([["type", "rule"]]);
+  const withExtra =
+    "## The rule\n## How to comply\n## Notes\n## Why\n## The probe\n## Current checker coverage\n## Evidence\n";
+  expect(
+    sectionChecks([{ rel: "r.md", fields, body: withExtra } as LintPage], SCHEMA_TEXT),
+  ).toEqual([]);
 });

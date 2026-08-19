@@ -37,6 +37,17 @@ It **MUST** perform no work, require no configuration, no credentials, and no ne
 In [machine mode](../../concepts/machine-mode.md) the version **MUST** be a field in a
 structured payload, not a bare string requiring a regex to extract.
 
+## How to comply
+
+Free in every framework surveyed. The two ways it goes wrong:
+
+- **Version reads from a config or a network call.** Usually accidental — a global
+  initialisation step runs before argument dispatch, so _every_ invocation requires config,
+  including `--version`. Dispatch `--version` before initialising anything.
+- **Machine mode still emits a bare string.** `--version --json` returning `1.4.2` rather than
+  a payload forces the caller back to string handling for the one value most likely to be
+  compared, sorted, or range-checked.
+
 ## Why
 
 `--version` is the invocation with the strongest convention behind it for doing nothing, which
@@ -125,17 +136,6 @@ the rest of this page, unexamined.
 - no network and no credentials and no side effects cannot be observed at L0
 - the SHOULD to support -V is not probed
 - stdout is never checked to carry a version string in either mode
-
-## How to comply
-
-Free in every framework surveyed. The two ways it goes wrong:
-
-- **Version reads from a config or a network call.** Usually accidental — a global
-  initialisation step runs before argument dispatch, so _every_ invocation requires config,
-  including `--version`. Dispatch `--version` before initialising anything.
-- **Machine mode still emits a bare string.** `--version --json` returning `1.4.2` rather than
-  a payload forces the caller back to string handling for the one value most likely to be
-  compared, sorted, or range-checked.
 
 ## Evidence
 

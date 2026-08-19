@@ -37,6 +37,18 @@ Help output is the one deliberate exception: `--help` is a request whose _result
 text, so it goes to stdout with exit `0`. See
 [help exits zero](../exit-codes/help-exits-zero.md).
 
+## How to comply
+
+Route every write through a single emitter that knows which stream it is addressing, rather
+than calling `console.log` / `println!` ad hoc. Two benefits: the discipline holds by
+construction, and it makes
+[whole-stream JSON validation](./machine-output-is-parseable.md) possible — which turns a
+stray debug print anywhere in the codebase into a hard test failure rather than a code-review
+question.
+
+The failure mode to watch for is a command that computes a default result, writes it, and only
+then discovers the error. Validate first, emit second.
+
 ## Why
 
 This is the rule that separates "the tool failed" from "the tool answered wrongly", and the
@@ -111,18 +123,6 @@ the rest of this page, unexamined.
 - only usage-error failures are probed and never a runtime failure
 - stdout on a SUCCESSFUL command is never inspected for diagnostics
 - stderr is never required to carry the diagnostic so a failure that reports nothing at all passes
-
-## How to comply
-
-Route every write through a single emitter that knows which stream it is addressing, rather
-than calling `console.log` / `println!` ad hoc. Two benefits: the discipline holds by
-construction, and it makes
-[whole-stream JSON validation](./machine-output-is-parseable.md) possible — which turns a
-stray debug print anywhere in the codebase into a hard test failure rather than a code-review
-question.
-
-The failure mode to watch for is a command that computes a default result, writes it, and only
-then discovers the error. Validate first, emit second.
 
 ## Evidence
 

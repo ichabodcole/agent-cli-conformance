@@ -36,6 +36,15 @@ It **MUST NOT** exit `0`, and **MUST NOT** wait for input — see
 This is the deliberate inverse of [`--help`](../exit-codes/help-exits-zero.md), which is a
 request and therefore succeeds.
 
+## How to comply
+
+Two lines in most frameworks: on no arguments, print usage to stderr and exit `2`. The trap is
+that many parsers default to printing help to stdout and exiting `0`, so this usually requires
+overriding a default rather than adding behaviour.
+
+If your framework routes bare invocation through the same handler as `--help`, split them —
+they need different streams and different codes.
+
 ## Why
 
 The failure this prevents is mundane and common:
@@ -104,15 +113,6 @@ command, so it requested nothing — and it answered exit `0` with both streams 
 rule's probe, which sends an empty argv only, reported `pass`. The defect and the blind spot
 share one shape: an invocation is bare in the sense this rule cares about when it names no
 command, not when it carries no tokens.
-
-## How to comply
-
-Two lines in most frameworks: on no arguments, print usage to stderr and exit `2`. The trap is
-that many parsers default to printing help to stdout and exiting `0`, so this usually requires
-overriding a default rather than adding behaviour.
-
-If your framework routes bare invocation through the same handler as `--help`, split them —
-they need different streams and different codes.
 
 ## Evidence
 

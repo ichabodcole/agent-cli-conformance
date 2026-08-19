@@ -35,6 +35,19 @@ that varies by environment, or a collection whose order depends on hash iteratio
 Where a value genuinely varies (a resolved config path, a detected platform), it belongs in a
 diagnostic command such as `doctor` or `info`, not in help.
 
+## How to comply
+
+Usually satisfied by accident, and broken by accident too. The recurring causes:
+
+- **A version banner with a build timestamp.** Put the build date in `--version`, where it is
+  data, not in help, where it is noise.
+- **Iterating a hash map to list commands or flags.** Sort explicitly. Insertion-ordered maps
+  make this work by luck until a refactor changes it.
+- **Absolute paths interpolated into examples.** `~/.config/mycli` is stable; a resolved home
+  directory is not, and it also leaks the operator's username into anything captured.
+- **Terminal-width-dependent wrapping.** Wrap to a fixed width when not a TTY. This one is
+  invisible locally and appears only in CI, where the width differs.
+
 ## Why
 
 Two consequences, one immediate and one structural.
@@ -121,19 +134,6 @@ the rest of this page, unexamined.
 - forbidden content such as a timestamp or a varying absolute path is only caught when it differs
   between two adjacent runs
 - only stdout is compared and never stderr
-
-## How to comply
-
-Usually satisfied by accident, and broken by accident too. The recurring causes:
-
-- **A version banner with a build timestamp.** Put the build date in `--version`, where it is
-  data, not in help, where it is noise.
-- **Iterating a hash map to list commands or flags.** Sort explicitly. Insertion-ordered maps
-  make this work by luck until a refactor changes it.
-- **Absolute paths interpolated into examples.** `~/.config/mycli` is stable; a resolved home
-  directory is not, and it also leaks the operator's username into anything captured.
-- **Terminal-width-dependent wrapping.** Wrap to a fixed width when not a TTY. This one is
-  invisible locally and appears only in CI, where the width differs.
 
 ## Evidence
 

@@ -29,6 +29,15 @@ _n_: exit `2`, name the unexpected value, leave stdout empty.
 
 A command declaring none **MUST** reject any positional at all.
 
+## How to comply
+
+Declare arity explicitly rather than reading `argv` remainder. Parsers that expose positionals
+as an untyped array (`args._`, `ctx.args._`) invite this bug, because "extra" and "expected"
+look identical to the handler.
+
+`cobra` (Go) accepts extra positionals at exit `0` by default; it requires an explicit `Args`
+validator such as `cobra.NoArgs` or `cobra.ExactArgs(n)`.
+
 ## Why
 
 This rule exists because of what a stray positional usually _means_. It is rarely a caller
@@ -85,15 +94,6 @@ There is no pass to describe rather than a pass with a narrow scope: `check` ret
 **Gaps**
 
 - no probe is declared so nothing about arity is established
-
-## How to comply
-
-Declare arity explicitly rather than reading `argv` remainder. Parsers that expose positionals
-as an untyped array (`args._`, `ctx.args._`) invite this bug, because "extra" and "expected"
-look identical to the handler.
-
-`cobra` (Go) accepts extra positionals at exit `0` by default; it requires an explicit `Args`
-validator such as `cobra.NoArgs` or `cobra.ExactArgs(n)`.
 
 ## Evidence
 

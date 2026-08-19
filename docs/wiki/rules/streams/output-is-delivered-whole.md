@@ -36,6 +36,26 @@ A CLI **MUST NOT** call `process.exit()`, `exit()`, `os.Exit()` or any equivalen
 has written to a stream it has not drained. Terminating by returning from the entry point, or by
 awaiting the flush, is the only form that is correct on every platform and every stream type.
 
+## How to comply
+
+**Do not call `process.exit()` after writing.** Return from the entry point and let the runtime
+flush. Where an exit code must be set, set it (`process.exitCode = 2`) rather than calling the
+function that terminates immediately.
+
+Where an immediate exit is genuinely required, await the drain first — `await new
+Promise((r) => process.stdout.write(payload, r))` in Node and Bun, `writer.Flush()` before
+`os.Exit` in Go, an explicit `flush()` in Python. The rule is the same in every runtime: the write
+call returning is not the bytes arriving.
+
+**Pin the exit sites.** The subject repository ended up pinning **37** of them with a test that
+enumerates every `process.exit` in the tree, because one new call site reintroduces the whole
+class and nothing else notices. A grep-based gate is unglamorous and it is what held.
+
+**Gate it through a shell pipe with a sleeping consumer**, never through a language-level pipe.
+Their own gate law requires the `sh -c "… | ( sleep 1; cat )"` construction verbatim, for exactly
+the reason [the probe](#the-blocker-is-the-runner-not-the-probe-level) records: a pipe the test
+harness drains is a pipe the defect cannot reach.
+
 ## Why
 
 **This is the costliest defect class in the entire archaeology corpus** — six code fixes, four
@@ -148,25 +168,6 @@ the file exists, and the count of `planned` rules is the visible remaining work.
 - no checker exists so nothing about delivery is established
 - the blocker is the runner rather than the probe level because a pipe the runner creates cannot
   exhibit the defect at all
-
-## How to comply
-
-**Do not call `process.exit()` after writing.** Return from the entry point and let the runtime
-flush. Where an exit code must be set, set it (`process.exitCode = 2`) rather than calling the
-function that terminates immediately.
-
-Where an immediate exit is genuinely required, await the drain first — `await new
-Promise((r) => process.stdout.write(payload, r))` in Node and Bun, `writer.Flush()` before
-`os.Exit` in Go, an explicit `flush()` in Python. The rule is the same in every runtime: the write
-call returning is not the bytes arriving.
-
-**Pin the exit sites.** The subject repository ended up pinning **37** of them with a test that
-enumerates every `process.exit` in the tree, because one new call site reintroduces the whole
-class and nothing else notices. A grep-based gate is unglamorous and it is what held.
-
-**Gate it through a shell pipe with a sleeping consumer**, never through a language-level pipe.
-Their own gate law requires the `sh -c "… | ( sleep 1; cat )"` construction verbatim, for exactly
-the reason measured above: a pipe the test harness drains is a pipe the defect cannot reach.
 
 ## Evidence
 

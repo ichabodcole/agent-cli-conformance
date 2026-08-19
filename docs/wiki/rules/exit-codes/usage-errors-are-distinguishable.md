@@ -40,6 +40,16 @@ More specific failures **MUST** use their own codes from the
 
 `1` **MUST NOT** be the catch-all for everything non-zero.
 
+## How to comply
+
+Define the taxonomy once as constants and give every described failure an explicit code —
+`operator`'s approach, where each error class is a typed error carrying its own exit code, and
+an escaping error of any other type is by definition `1`.
+
+That last part is what makes it hold: the default is _internal_, so forgetting to classify a
+failure produces `1`, which is the honest answer for an unclassified fault. The failure mode is
+safe rather than misleading.
+
 ## Why
 
 The distinction determines what the caller does next, and the two correct behaviours are
@@ -120,16 +130,6 @@ the rest of this page, unexamined.
 - the taxonomy codes for more specific failures are not exercised
 - an unexpected positional is never compared because a stray positional needs a verb to be stray to
   and sending a verb is above L0
-
-## How to comply
-
-Define the taxonomy once as constants and give every described failure an explicit code —
-`operator`'s approach, where each error class is a typed error carrying its own exit code, and
-an escaping error of any other type is by definition `1`.
-
-That last part is what makes it hold: the default is _internal_, so forgetting to classify a
-failure produces `1`, which is the honest answer for an unclassified fault. The failure mode is
-safe rather than misleading.
 
 ## Evidence
 

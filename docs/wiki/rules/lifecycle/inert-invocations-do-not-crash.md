@@ -76,6 +76,30 @@ the catalogue that judges how a process **ended** rather than what a probe estab
 checker importing from another checker's file is a dependency the wiki's own
 undocumented-checker scan cannot express.
 
+## How to comply
+
+Mostly this rule is satisfied by not having the bug. The recurring ways to acquire one:
+
+- **A null dereference or an out-of-bounds index in argument handling.** The parser is the code
+  every invocation reaches, including the ones nobody tested, and an unknown flag or an empty
+  argv is exactly the input a hand-rolled parser handles least.
+- **Re-raising a signal to report it.** The idiom "restore the default handler and re-raise, so
+  my exit status looks right to the shell" is correct for `SIGINT`; done on the inert paths it
+  turns a clean answer into a signal death. G1 only fails the fault-signal spelling of that
+  mistake — a re-raised `SIGABRT` is a violation, a re-raised `SIGINT` is `unverified` here
+  because the kit cannot tell it from an operator's — but the caller loses its exit code either
+  way, so both are worth not doing.
+- **A native extension loaded at startup.** A crash in a linked library takes the process with
+  it before `--version` gets a chance to answer, so the cheapest possible probe of "is this tool
+  installed and working" is the one that falls over.
+- **Aborting on an assertion instead of exiting.** `abort()` raises `SIGABRT`; a failed assertion
+  is an internal fault and belongs at [exit `1`](../../concepts/exit-codes.md#the-taxonomy) with
+  a message, which is a thing the caller can read.
+
+If the tool genuinely cannot continue, exit — with a code and a diagnostic. An internal fault
+reported as exit `1` is a bad day; the same fault delivered as `SIGSEGV` is a bad day the caller
+cannot even classify.
+
 ## Why
 
 **A signal death is not a low exit code. It is no exit code.**
@@ -197,30 +221,6 @@ the rest of this page, unexamined.
   suffer on any input
 - only the target's own termination is recorded so a fault in a child process it spawned is never
   observed
-
-## How to comply
-
-Mostly this rule is satisfied by not having the bug. The recurring ways to acquire one:
-
-- **A null dereference or an out-of-bounds index in argument handling.** The parser is the code
-  every invocation reaches, including the ones nobody tested, and an unknown flag or an empty
-  argv is exactly the input a hand-rolled parser handles least.
-- **Re-raising a signal to report it.** The idiom "restore the default handler and re-raise, so
-  my exit status looks right to the shell" is correct for `SIGINT`; done on the inert paths it
-  turns a clean answer into a signal death. G1 only fails the fault-signal spelling of that
-  mistake — a re-raised `SIGABRT` is a violation, a re-raised `SIGINT` is `unverified` here
-  because the kit cannot tell it from an operator's — but the caller loses its exit code either
-  way, so both are worth not doing.
-- **A native extension loaded at startup.** A crash in a linked library takes the process with
-  it before `--version` gets a chance to answer, so the cheapest possible probe of "is this tool
-  installed and working" is the one that falls over.
-- **Aborting on an assertion instead of exiting.** `abort()` raises `SIGABRT`; a failed assertion
-  is an internal fault and belongs at [exit `1`](../../concepts/exit-codes.md#the-taxonomy) with
-  a message, which is a thing the caller can read.
-
-If the tool genuinely cannot continue, exit — with a code and a diagnostic. An internal fault
-reported as exit `1` is a bad day; the same fault delivered as `SIGSEGV` is a bad day the caller
-cannot even classify.
 
 ## Evidence
 

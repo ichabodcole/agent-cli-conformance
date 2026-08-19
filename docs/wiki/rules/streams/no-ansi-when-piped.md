@@ -36,6 +36,17 @@ This applies to stderr as well. Diagnostics get captured too.
 A CLI **MUST** additionally honour `NO_COLOR` and a `--no-color` flag when a TTY _is_ present,
 and **SHOULD** treat `TERM=dumb` the same way.
 
+## How to comply
+
+Nearly every colour library detects TTY automatically — the common failure is bypassing it with
+a hand-written escape in one code path, typically an error message or a banner.
+
+Two specifics:
+
+- Check the stream you are writing to. `stdout.isTTY` says nothing about stderr, and a tool
+  writing coloured diagnostics while stdout is piped is the usual half-fixed state.
+- Suppress animation, not just colour. Spinners and progress bars need the same guard.
+
 ## Why
 
 An escape sequence is invisible to the person the colour was for, and perfectly visible to
@@ -98,17 +109,6 @@ the rest of this page, unexamined.
 - the NO_COLOR and --no-color and TERM=dumb overrides need a TTY and are never exercised
 - only root help and two usage errors are sampled so nested help and version output and successful
   command output and other diagnostics are never inspected
-
-## How to comply
-
-Nearly every colour library detects TTY automatically — the common failure is bypassing it with
-a hand-written escape in one code path, typically an error message or a banner.
-
-Two specifics:
-
-- Check the stream you are writing to. `stdout.isTTY` says nothing about stderr, and a tool
-  writing coloured diagnostics while stdout is piped is the usual half-fixed state.
-- Suppress animation, not just colour. Spinners and progress bars need the same guard.
 
 ## Evidence
 

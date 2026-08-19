@@ -34,6 +34,20 @@ Where an operation genuinely can fail intermittently — a network call, a lock 
 **MUST** be expressed as a distinct, declared code carrying `retryable: true`, not as the same
 code sometimes meaning success.
 
+## How to comply
+
+Almost always satisfied for free. When it isn't, the usual causes are:
+
+- exit status derived from a value that depends on iteration order over a hash map or a set
+- a timeout or deadline short enough to be marginal on a loaded machine, so the same command
+  sometimes completes and sometimes times out
+- a cleanup path that races the exit and occasionally changes the status
+- signal handling that lets the process exit with `128+n` under conditions the caller did not
+  cause
+
+The timeout case is the common one and the most misleading, because it makes a
+performance problem present as a correctness problem.
+
 ## Why
 
 Every retry policy a caller can write assumes the code means something stable. If `mycli
@@ -104,20 +118,6 @@ the rest of this page, unexamined.
 - only a usage-error path is repeated so a success path or a real command is never compared
 - the three runs land within milliseconds of each other so variation that appears only over a longer
   interval is invisible
-
-## How to comply
-
-Almost always satisfied for free. When it isn't, the usual causes are:
-
-- exit status derived from a value that depends on iteration order over a hash map or a set
-- a timeout or deadline short enough to be marginal on a loaded machine, so the same command
-  sometimes completes and sometimes times out
-- a cleanup path that races the exit and occasionally changes the status
-- signal handling that lets the process exit with `128+n` under conditions the caller did not
-  cause
-
-The timeout case is the common one and the most misleading, because it makes a
-performance problem present as a correctness problem.
 
 ## Evidence
 

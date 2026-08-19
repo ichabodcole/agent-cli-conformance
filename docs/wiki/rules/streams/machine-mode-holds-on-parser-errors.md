@@ -45,6 +45,22 @@ This rule governs the **shape** of the answer. Which stream may carry it is
 answering with a valid envelope on stdout satisfies this rule and violates that one, which is one
 defect reported once by each rule that governs half of it.
 
+## How to comply
+
+Resolve the mode **before** the parser can fail, from the raw argv, and hand the resolved mode to
+one emitter that every exit path goes through. The fix that only patches the parser's error
+handler leaves the next parser error — a missing value, an out-of-set value, an arity violation —
+to be found separately.
+
+Do **not** resolve machine mode by matching the literal string `json` in the argv the parser
+accepted. The archaeology's eight-cell matrix showed parser errors not participating in format
+resolution **at all**, so a literal-match repair fixes the explicit-flag row and leaves the
+piped-default row exactly as broken as before. `acc`'s own early-mode resolution reads the whole
+argv plus the TTY state before any parsing happens, which is the shape that works.
+
+A repeated `--format` must resolve **last wins**, or the same argv yields two verdicts depending
+on which code path saw it.
+
 ## Why
 
 `--format json` is a promise about **every** outcome, and the outcome an agent reaches most often
@@ -125,22 +141,6 @@ are the rest of this page, unexamined.
 - the answer is only required to parse and is never checked against a declared envelope shape
 - that the invocation failed to PARSE is inferred from a non-zero exit rather than observed
 - NDJSON is reported unverified rather than failed because no output kind is declared at L0
-
-## How to comply
-
-Resolve the mode **before** the parser can fail, from the raw argv, and hand the resolved mode to
-one emitter that every exit path goes through. The fix that only patches the parser's error
-handler leaves the next parser error — a missing value, an out-of-set value, an arity violation —
-to be found separately.
-
-Do **not** resolve machine mode by matching the literal string `json` in the argv the parser
-accepted. The archaeology's eight-cell matrix showed parser errors not participating in format
-resolution **at all**, so a literal-match repair fixes the explicit-flag row and leaves the
-piped-default row exactly as broken as before. `acc`'s own early-mode resolution reads the whole
-argv plus the TTY state before any parsing happens, which is the shape that works.
-
-A repeated `--format` must resolve **last wins**, or the same argv yields two verdicts depending
-on which code path saw it.
 
 ## Evidence
 

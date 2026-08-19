@@ -33,6 +33,16 @@ name the offending verb on stderr, and leave stdout empty.
 This **MUST** hold at every level of nesting, not only at the root. `mycli jobs nonsense` is
 as much an unknown command as `mycli nonsense`.
 
+## How to comply
+
+Most frameworks handle the root case. Verify the nested case explicitly; it is the one that
+regresses.
+
+`cobra` (Go) is the notable failure: its argument validation checks only the root command, so
+an unknown nested subcommand exits `0`. One code path even exits `0` while printing help to
+stdout — combining this violation with
+[stdout carrying non-data](../streams/stdout-carries-only-data.md) in a single invocation.
+
 ## Why
 
 An unknown verb is the agent's most likely mistake, because verbs are what it invents when
@@ -103,16 +113,6 @@ the rest of this page, unexamined.
 - the exit code is only required to be non-zero here and not the declared 2
 - naming the offending verb on stderr is not asserted
 - only a sentinel-shaped token is probed so a verb that near-misses a real command is never offered
-
-## How to comply
-
-Most frameworks handle the root case. Verify the nested case explicitly; it is the one that
-regresses.
-
-`cobra` (Go) is the notable failure: its argument validation checks only the root command, so
-an unknown nested subcommand exits `0`. One code path even exits `0` while printing help to
-stdout — combining this violation with
-[stdout carrying non-data](../streams/stdout-carries-only-data.md) in a single invocation.
 
 ## Evidence
 

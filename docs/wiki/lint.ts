@@ -232,6 +232,66 @@ export function ruleChecks(pages: LintPage[]): string[] {
 }
 
 /** The index section the matrix owns. Everything between it and the next heading is generated. */
+
+/**
+ * The per-type required sections, read from SCHEMA.md's own table rather than restated here.
+ *
+ * Same discipline as `MATRIX_HEADING` below and `typeOrderFromSchema` in the builder: a contract
+ * stated in the document a writer reads and again in the code that checks it will drift, and the
+ * copy that drifts is always the prose one. Cells are ` · `-separated and must be the heading
+ * text verbatim.
+ */
+export function requiredSectionsFromSchema(schema: string): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  const table = /## Per-type page shape\n([\s\S]*?)\n\n/.exec(schema);
+  if (!table) return out;
+  for (const line of (table[1] as string).split("\n")) {
+    const m = /^\|\s*`([a-z]+)`\s*\|(.+?)\|\s*$/.exec(line);
+    if (!m) continue;
+    out.set(
+      m[1] as string,
+      (m[2] as string)
+        .split("·")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    );
+  }
+  return out;
+}
+
+/**
+ * Every page carries its type's required sections, in the table's order.
+ *
+ * Extra sections are allowed and are ignored for ordering — a tutorial's `Step n` headings sit
+ * between the fixed ones, and an archetype ends with a `Related rules` the table does not name.
+ * What is checked is that the required ones are all present and that their RELATIVE order holds,
+ * which is what makes the reordering in review DTX-2 a property rather than a convention that
+ * decays the next time someone drafts a page from a neighbour.
+ */
+export function sectionChecks(pages: LintPage[], schema: string): string[] {
+  const required = requiredSectionsFromSchema(schema);
+  const problems: string[] = [];
+  for (const page of pages) {
+    const type = page.fields.get("type");
+    const want = type ? required.get(type) : undefined;
+    if (!want?.length) continue;
+    const have = [...page.body.matchAll(/^## (.+)$/gm)].map((m) => (m[1] as string).trim());
+    const missing = want.filter((s) => !have.includes(s));
+    if (missing.length) {
+      problems.push(`MISSING SECTION ${page.rel}: ${missing.join(", ")}  (see SCHEMA.md)`);
+      continue; // order is meaningless while a section is absent
+    }
+    const positions = want.map((s) => have.indexOf(s));
+    const sorted = [...positions].sort((a, b) => a - b);
+    if (positions.join() !== sorted.join())
+      problems.push(
+        `SECTION ORDER  ${page.rel}: ${want.filter((_, i) => positions[i] !== sorted[i]).join(", ")}` +
+          `  (SCHEMA.md orders them: ${want.join(" · ")})`,
+      );
+  }
+  return problems;
+}
+
 export const MATRIX_HEADING = "### Coverage at a glance";
 
 /**
@@ -621,6 +681,7 @@ if (import.meta.main) {
       dateField: "generated",
       allowDateOnly: true,
       extraChecks: (pages) => [
+        ...sectionChecks(pages, readFileSync(join(WIKI_ROOT, "SCHEMA.md"), "utf8")),
         ...ruleChecks(pages),
         ...slugChecks(pages),
         ...matrixChecks(pages),

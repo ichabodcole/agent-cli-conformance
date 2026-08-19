@@ -40,6 +40,14 @@ in the [error envelope](../../concepts/error-envelope.md), not only inside the p
 Where the valid alternatives form a closed set, the CLI **SHOULD** enumerate them in a
 `choices` field.
 
+## How to comply
+
+Nearly free — most parsers already include the token in their default message. The work is
+usually in _not losing it_: a handler that catches a parse error and re-raises its own
+`invalid arguments` message discards exactly the information this rule requires.
+
+If you wrap or rewrite parser errors, carry the token through.
+
 ## Why
 
 A rejection the caller cannot act on is barely better than no rejection at all. `Error:
@@ -114,14 +122,6 @@ the rest of this page, unexamined.
 - the SHOULD to enumerate a closed set as choices is not exercised
 - the assertion is that the sentinel substring reached stderr and not that the whole offending token
   appears verbatim
-
-## How to comply
-
-Nearly free — most parsers already include the token in their default message. The work is
-usually in _not losing it_: a handler that catches a parse error and re-raises its own
-`invalid arguments` message discards exactly the information this rule requires.
-
-If you wrap or rewrite parser errors, carry the token through.
 
 ## Evidence
 

@@ -37,6 +37,18 @@ error and exit `8`, naming the flag that would supply the answer.
 It **MUST NOT** treat EOF, an empty line, or closed stdin as an answer — neither as consent nor
 as refusal.
 
+## How to comply
+
+Guard every prompt with an `isatty(stdin)` check, and make the non-TTY branch a structured
+refusal rather than a default answer.
+
+The tempting shortcut — "no TTY, so assume no" — is precisely the Docker failure. Declining is
+a decision, and a decision the caller did not make must not be reported as success. If you
+default at all, the exit code must still say that nothing happened.
+
+Provide the bypass flag (`--yes`, `--confirm`) and name it in the error, so the remediation is
+mechanical rather than a search through help.
+
 ## Why
 
 A prompt with nobody to answer it has two possible outcomes, and both are bad in ways that are
@@ -137,18 +149,6 @@ the rest of this page, unexamined.
 - treating EOF or closed stdin as an answer is not detectable from termination alone
 - blocking is only detected when it outlasts the kit's deadline so a prompt that gives up sooner
   reads as terminating
-
-## How to comply
-
-Guard every prompt with an `isatty(stdin)` check, and make the non-TTY branch a structured
-refusal rather than a default answer.
-
-The tempting shortcut — "no TTY, so assume no" — is precisely the Docker failure. Declining is
-a decision, and a decision the caller did not make must not be reported as success. If you
-default at all, the exit code must still say that nothing happened.
-
-Provide the bypass flag (`--yes`, `--confirm`) and name it in the error, so the remediation is
-mechanical rather than a search through help.
 
 ## Evidence
 
