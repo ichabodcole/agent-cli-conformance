@@ -36,6 +36,9 @@ What each part of a CLI _is_.
   machine code, a retry verdict, and the valid alternatives — that prose on stderr cannot provide.
 - [Conformance](./concepts/conformance.md) — What `acc check` means by `conformant` and
   `fullyVerified`, and why a target can be conformant without being fully verified.
+- [Probing](./concepts/probing.md) — How the kit obtains the observations a verdict rests on —
+  what it is allowed to send at each level, and why a probe that ran is not the same as a probe
+  that established something.
 
 ## Archetypes
 
@@ -200,4 +203,6 @@ How to actually do things.
   from its first failing check to a green gate — triaging each failure into a fix, a declared
   waiver, or named debt.
 
-_Planned: adding a checker._
+- [How to add a checker](./guides/how-to-add-a-checker.md) — Take a rule from a page with no
+  enforcement to one the gate holds — declaring probes, writing the check, wiring the registry,
+  and declaring honestly what a pass now means.

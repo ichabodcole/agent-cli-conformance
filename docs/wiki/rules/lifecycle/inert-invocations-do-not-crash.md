@@ -137,17 +137,12 @@ from a fault, and has no remediation to attempt — the exact loss
 
 ### The first of a family
 
-`G` is the **lifecycle** family, and G1 is its first member. Families A–F are taken (parsing,
-streams, exit codes, discoverability, interactivity, safety) and a crash is none of those: it is
-process lifecycle, which is its own subject.
-
-That family is the one [`docs/roadmap.md` step 7](../../../roadmap.md#7-the-lifecycle-rule-family)
-describes — cancellation, bounded shutdown with descendant cleanup, `SIGPIPE` without stack
-traces, resumability. G1 is a **down-payment on it, not a new axis**: later members take G2, G3
-and so on as their checker designs arrive, and the discipline that gates them is the one that
-gated this id. Rule ids are append-only and outlive any release, so one is minted when there is
-a checker design to give it — G1 has one, which is the whole reason it exists now rather than
-with the rest of the family.
+`G` is the **lifecycle** family and G1 is its first member — families A–F are taken, and a crash
+is none of those. The rest of the family is
+[roadmap step 7](../../../roadmap.md#7-the-lifecycle-rule-family): cancellation, bounded shutdown,
+`SIGPIPE`, resumability. G1 is a down-payment on it rather than a new axis, minted early because
+it had a checker design when the others did not — the discipline that gates a new id is
+[step 1 of adding a checker](../../guides/how-to-add-a-checker.md#1-write-the-rule-page-first-and-let-it-be-the-specification).
 
 ## The probe
 
@@ -157,47 +152,24 @@ Inert (`L0`) — and G1 **declares no probes of its own**.
 (none — G1 reads the invocations every other checker already recorded)
 ```
 
-Every invocation the kit sends is already recorded, and every recording already carries whether
-the process was ended by a signal the kit did not send. A probe of G1's own would spawn the
-target again to learn a fact fourteen recordings already carry, and duplicate recordings are
-not additional evidence. [A4](../parsing/unexpected-positionals-rejected.md) is the standing
-precedent for a checker with an empty probe list; the two rules reach it from opposite
-directions, since A4 has no probe it can safely send and G1 has none it needs to.
+Every recording already carries whether the process was ended by a signal the kit did not send,
+so G1 reads them rather than spawning the target again; see
+[probing](../../concepts/probing.md#probes-are-shared-and-a-rule-may-declare-none).
 
-Fails when **any** observation was ended by one of the **fault signals** above, naming the signal
-and the invocations that died. Reports `unverified` when there are no observations to read at all.
+**Fails** when any observation was ended by one of the **fault signals** above, naming the signal
+and the invocations that died.
 
-**A signal the kit cannot attribute is not a pass either.** An observation ended by an externally
-ambiguous signal reports `unverified` and names it. The kit knows the signal was not its own; it
-does not know whether an operator, an outer deadline, an OOM killer or the target itself sent it,
-and a conformance gate that reports a violation it cannot substantiate is a gate someone
-eventually switches off. An honest gap costs a reader one line.
+**Reports `unverified`** when there are no observations to read, when an observation ended on an
+externally ambiguous signal, and when the kit's own deadline or output ceiling killed the probe.
+A gate that reports a violation it cannot substantiate is a gate someone eventually switches off;
+an honest gap costs a reader one line. The three endings and why they are kept apart are
+[probing's subject](../../concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed).
 
-**A probe the kit killed is not a crash, and is not a pass either.** A hang and an
-output-ceiling kill both end in the runner's own `SIGKILL`, so "a signal arrived" is true of all
-three cases and means three different things — the distinction `Observation.crashed` exists to
-carry. Those targets did not fail to exit under their own control; they were never allowed to,
-so G1 reports `unverified` for them and leaves the hang to
-[E1](../interactivity/never-block-without-a-tty.md), which owns it.
-
-The order matters and it is deliberate: a fault is decided **first**. A completed observation of
-a violation stays a violation when a different probe hits the deadline — the process is gone and
-the streams are closed. This is the same asymmetry that lets a truncated capture still prove a
-violation the prefix contains.
-
-**Every other rule still reports `unverified` for both classes**, and that asymmetry is the point.
-G1 asks _whose fault the death was_, and the answer depends on the signal. Every other rule asks
-_what the probe established_, and the answer is "nothing" whoever sent it — a target killed
-halfway through writing help did not produce help. The evidence is void either way; only the blame
-differs. See `crashedUnverified` in [`finding.ts`](../../../../src/acc/kit/finding.ts).
-
-The one rule that asks G1's question rather than the other one is
-[C1](../exit-codes/help-exits-zero.md), on the two help paths it declares: help that faulted has
-not succeeded, so C1 fails it. C1 makes the **same split, from the same list** — an ambiguous
-signal there is `unverified` too, because C1 cannot attribute what this rule has just declined to
-attribute. A report that said "cannot attribute the signal" on G1's line and "died on `SIGTERM`"
-on C1's would state both halves of a contradiction, which is exactly what it did until the
-narrowing landed.
+**A crashed help path fails [C1](../exit-codes/help-exits-zero.md) as well**, and that is not a
+second attribution claim: C1 asserts that a help request _succeeded_, and help that ended on a
+signal did not, whoever sent it. C1 makes the same fault-versus-ambiguous split from the same
+list, so a report cannot say "cannot attribute the signal" on G1's line and "died on `SIGTERM`"
+on C1's — which is exactly what it did until the narrowing landed.
 
 ## Current checker coverage
 
