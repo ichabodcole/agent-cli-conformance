@@ -70,15 +70,24 @@ a bug report.
 
 ## The probe
 
-Inert (`L0`).
+Inert
+([`L0`](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe)).
 
 ```
 <cli> --help
 ```
 
-Passes when no capture matches a known credential pattern: common provider prefixes (`sk-`,
-`ghp_`, `xox`), an AWS access key (`AKIA…`), a `PRIVATE KEY` block, a JWT, or a password embedded
-in a URL.
+Detection is **pattern-based**, against a fixed list of known credential shapes: common provider
+prefixes (`sk-`, `ghp_`, `xox`), an AWS access key (`AKIA…`), a `PRIVATE KEY` block, a JWT, or a
+password embedded in a URL.
+
+**Passes** when neither the stdout nor the stderr of root help matches one of them; **fails** when
+either does, naming the pattern that matched.
+
+**Reports `unverified`** when the probe hung, or was truncated or
+[died on a signal](../../concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed)
+with no match found: a clean scan over help the target never finished printing establishes nothing.
+A match in the bytes that _were_ captured fails regardless — what was printed has already leaked.
 
 Two honest limits, both reported rather than glossed:
 
@@ -89,8 +98,7 @@ Two honest limits, both reported rather than glossed:
   **MUST NOT** above are not exercised at all. A clean result means "no known pattern found in
   root help", not "no secret present", and the checker's own pass detail says so.
 - **It cannot distinguish a real credential from a placeholder.** `--token sk-example-xxxx` in
-  an example is flagged. That is the correct bias — a false positive costs one look, a false
-  negative publishes a key — but it means findings need reading, not automatic trust.
+  an example is flagged, so findings need reading rather than automatic trust.
 
 ## Current checker coverage
 

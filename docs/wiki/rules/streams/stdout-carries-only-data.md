@@ -82,29 +82,30 @@ Inert (`L0`).
 
 ```
 <cli> --acc-probe-xyzzy-flag
-<cli> nonsense-verb-xyz
-<cli> --acc-probe-xyzzy-flag --json      # where help advertises a machine-mode flag
+<cli> acc-probe-xyzzy-verb
+<cli> --acc-probe-xyzzy-flag --json      # or --format=json, where help advertises one
 ```
 
-Passes when stdout is **byte-empty** on every failing invocation.
-
-The runner captures the two streams to separate buffers rather than reading them through a
-shared pipe — measuring stream separation through a merged stream cannot work, and an early
-attempt at exactly that produced identical byte counts for both streams and nearly went
-unnoticed.
+**Passes** when stdout is **byte-empty** on every one of those invocations that exited non-zero.
 
 **The third probe selects machine mode, and it convicts a real house style.** A tool that routes
 its [error envelope](../../concepts/error-envelope.md) to **stdout** when machine mode is active —
-on the argument that in machine mode the envelope _is_ the answer — commits this violation on a
-path that previously had no probe. The catalogue's position is this page's first sentence: stdout
-carries the command's **result**, and a failure has no result. A consumer that reads stdout and
-gets a document receives something shaped like an answer.
+on the argument that in machine mode the envelope _is_ the answer — fails this rule. The
+catalogue's position is this page's first sentence: stdout carries the command's **result**, and a
+failure has no result. A consumer that reads stdout and gets a document receives something shaped
+like an answer.
 
 The **shape** of that document is not this rule's business:
 [B5](./machine-mode-holds-on-parser-errors.md) requires the failure to be emitted in the declared
 machine shape and is satisfied by a valid envelope wherever it lands. A tool with the stdout house
 style therefore passes B5 and fails B1 — one defect reported once by each rule that governs half
 of it, rather than the same rule twice.
+
+**Reports `unverified`** when no probe exited non-zero, so no failure was observed to judge, and
+when a probe hung, was cut at the output ceiling, or
+[ended on a signal](../../concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed):
+a target that never got as far as reporting a failure is not a data point, whichever way its
+stdout looks.
 
 ## Current checker coverage
 

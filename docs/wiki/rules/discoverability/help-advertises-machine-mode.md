@@ -66,35 +66,31 @@ Inert (`L0`).
 
 ```
 <cli> --help
-<cli> --help --format=text
+<cli> --help --format=text     # only where help advertises --format
 ```
 
-Passes when the captured **human** help mentions a machine-mode flag or an introspection
-command. The checker looks for the conventional spellings and reports which it found.
+**Passes** when the captured **human** help names a machine-mode flag — `--json`, `--format` or
+`--output` — or carries a schema command row. The finding reports which of them it found.
 
-The second probe is what makes the first sentence true. The runner always gives the target a
-pipe for stdout, so a CLI that switches to machine mode when stdout is not a terminal answers
-plain `--help` with its **schema** — and a schema necessarily contains the spelling of the
-machine-mode flag it declares. Scanning that would make this rule test its own machine output
-rather than the human surface it is named after, and hand a free pass to every auto-switching
-tool. `acc` was one: its human root help listed only `--version` and `--help` while this
-checker reported a pass.
+**The human surface is what gets scanned, not whatever `--help` happened to print.** The runner
+always gives the target a pipe for stdout, so a CLI that switches to machine mode when stdout is
+not a terminal answers plain `--help` with its **schema** — which necessarily contains the
+spelling of the machine-mode flag it declares. So plain `--help` is read when it is human text,
+and the forced-text form only when it is not. That second form is sent only to a target whose
+help advertises `--format`, since asking a CLI with no such flag to force text mode is an
+invocation it can only reject, and it is written as one token to stay
+[flag-only](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe).
 
-So plain `--help` is used when it is human text, and the forced-text form only when it is not.
-When help parses as a machine document and no forced-text form is available, the verdict is
-`unverified` — the surface the rule is about was never observed, and both a pass and a fail
-would be claims about something unseen.
+**Reports `unverified`** when help parses as a machine document and no forced-text form is
+available. The surface the rule is about was never observed, so both a pass and a fail would be
+claims about something unseen.
 
-The second probe runs only against a target whose help advertises `--format` — asking a CLI
-with no such flag to force text mode is an invocation it can only reject. `--format=text` is
-written as one token so the probe stays flag-only; see the safety argument in
-[`src/acc/kit/inert.ts`](../../../../src/acc/kit/inert.ts).
-
-A negative result is reported as a finding, not a failure — and it also disables other probes:
-[machine output is parseable](../streams/machine-output-is-parseable.md) is reported
-**unverified** when no machine-mode path can be discovered, since there is nothing to check.
-That coupling is the practical argument for the rule: an undiscoverable feature is, to a
-conformance kit, indistinguishable from an absent one.
+**A fail is a finding rather than a failure — and it disables other probes.** Both
+[B3](../streams/machine-output-is-parseable.md) and
+[B5](../streams/machine-mode-holds-on-parser-errors.md) report **unverified** when no
+machine-mode path can be discovered here, because neither has anything to send. That coupling is
+the practical argument for the rule: an undiscoverable feature is, to a conformance kit,
+indistinguishable from an absent one.
 
 ## Current checker coverage
 

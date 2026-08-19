@@ -68,7 +68,7 @@ Inert (`L0`).
 
 ```
 <cli> --acc-probe-xyzzy-flag
-<cli> nonsense-verb-xyz
+<cli> acc-probe-xyzzy-verb
 <cli> --acc-probe-xyzzy-flag --json      # where help advertises a machine-mode flag
 ```
 

@@ -65,8 +65,8 @@ the "Christmas tree in CI logs" problem.
 
 ## The probe
 
-Inert (`L0`). Help output is used because it is the one path guaranteed to produce
-presentational output without performing work.
+Inert (`L0`) — help and error paths only, which produce presentational output without
+performing work.
 
 ```
 <cli> --help                           # stdout captured to a pipe, i.e. not a TTY
@@ -74,20 +74,21 @@ presentational output without performing work.
 <cli> --acc-probe-xyzzy-flag --json    # where help advertises a machine-mode flag
 ```
 
-Passes when neither capture contains `\x1b[`, the CSI introducer — and nothing else. OSC
+**Passes** when neither capture contains `\x1b[`, the CSI introducer — and nothing else. OSC
 (`ESC ]`, used for hyperlinks and window titles), the single-character escapes (`ESC c`,
-`ESC 7`), and animation built from bare carriage returns all pass this probe. The three
-override clauses above are unreachable rather than unimplemented: they bind only when a TTY
-**is** present, and every probe the runner makes captures to a pipe.
+`ESC 7`), and animation built from bare carriage returns all pass this probe.
 
-Because the runner always captures to a pipe, the CLI is by definition not writing to a TTY —
-so this probe tests the detection path a CLI would use anyway. A tool that colours
-unconditionally fails; a tool that checks `isatty` passes without special handling.
+**Fails** for a tool that colours unconditionally. Every capture goes to a pipe, so the CLI is by
+definition not writing to a TTY, and a tool that checks `isatty` passes with no special handling.
 
-**The third probe exists because the rule's binding condition has two halves.** It binds when
-output is not a terminal _or_ when [machine mode](../../concepts/machine-mode.md) is active, and
-those are separate switches in more than one framework — so a tool can strip colour for a pipe and
-keep it for its own JSON, which is a violation no pipe-only probe can reach.
+**The third invocation is the machine-mode half of the rule.** It binds when output is not a
+terminal _or_ when [machine mode](../../concepts/machine-mode.md) is active, and those are
+separate switches in more than one framework — so a tool can strip colour for a pipe and keep it
+for its own JSON, which is a violation no pipe-only probe can reach.
+
+**Not established:** the `NO_COLOR`, `--no-color` and `TERM=dumb` clauses. They bind only when a
+TTY **is** present, and every probe captures to a pipe, so they are unreachable rather than
+unimplemented — a pass here says nothing about them.
 
 ## Current checker coverage
 

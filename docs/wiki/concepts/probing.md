@@ -63,6 +63,9 @@ verdict rather than left implicit.
 
 ### Inertness classifies an invocation; it does not make the run safe
 
+Help is the path most probes reach for, because it is the one invocation guaranteed to produce
+presentational output without performing work.
+
 Every probe is sent with **stdin closed**, under a **deadline**, and in a fresh temporary
 working directory. Each declares an **inertness class**, and the runner refuses to send one that
 does not match its claim:

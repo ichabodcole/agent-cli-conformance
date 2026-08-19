@@ -50,6 +50,11 @@ the value validation the rule is about ever running. The archaeology records `--
 unparsed across five tools, so that is the modal shape of the population, not an exotic one. A
 probe whose only spelling can be refused on syntax measures the syntax.
 
+**Probe the surface the rule names, not the one that is easier to read.** D3 is about the help a
+person sees, so it must not scan machine output — doing so would hand a free pass to every
+auto-switching tool. `acc` was one: its human root help listed only `--version` and `--help` while
+this checker reported a pass.
+
 If your rule reads facts every recording already carries, declare no probes at all. G1 does:
 spawning the target again to learn something fourteen observations already hold is duplicate
 evidence, not additional evidence.
@@ -86,6 +91,16 @@ When a rule measures rather than compares, say which statistic decides it and wh
 best-of-three rather than a mean, because the interesting number is the floor — a slow run usually
 measures the machine, not the tool — and it excludes any run the deadline or the output ceiling
 killed, since averaging over the ones that stayed under the limit would measure the limit.
+
+**Capture the two streams separately, never through one pipe.** A rule about stream separation
+measured through a merged stream cannot work: an early attempt produced identical byte counts for
+both streams and nearly went unnoticed.
+
+**Lean the way the cheap error lies.** F1 matches known credential shapes and flags
+`--token sk-example-xxxx` in an example, which is the correct bias — a false positive costs one
+look, a false negative publishes a key. Any detector whose false negative is catastrophic and
+whose false positive is cheap should lean the same way, and say so where a reader meets the
+verdict.
 
 **Two clauses reading one observation must read it differently, or the second establishes
 nothing.** A3 asserts both that a rejection names the offending token in prose and that a

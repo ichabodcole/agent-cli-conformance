@@ -63,7 +63,7 @@ validated the second token.
 Inert (`L0`) — an unknown verb should perform no work by definition.
 
 ```
-<cli> nonsense-verb-xyz
+<cli> acc-probe-xyzzy-verb
 ```
 
 Passes when the invocation exits non-zero and leaves stdout empty. The checker does **not**
@@ -78,7 +78,7 @@ and can take actions. The kit cannot detect that shape and does not guess, so do
 `acc check` at a CLI of that kind: an `L0` run is
 [risk-reduced rather than safe](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe).
 
-The nested case (`<cli> <known-group> nonsense-verb-xyz`) is **not probed**, so a pass here
+The nested case (`<cli> <known-group> acc-probe-xyzzy-verb`) is **not probed**, so a pass here
 establishes nothing about it. Building that probe means putting a real subcommand in front of the
 sentinel, which is [the shape `L0` cannot send](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe);
 the checker verifies the root case only until `L1` makes the nested probe safe to run.

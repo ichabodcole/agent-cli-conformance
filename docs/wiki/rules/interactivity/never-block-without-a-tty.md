@@ -82,8 +82,8 @@ something real.
 ```
 <cli>                       < /dev/null   # bare invocation
 <cli> --help                < /dev/null
-<cli> --nonsense-flag-xyz   < /dev/null
-<cli> nonsense-verb-xyz     < /dev/null
+<cli> --acc-probe-xyzzy-flag   < /dev/null
+<cli> acc-probe-xyzzy-verb     < /dev/null
 ```
 
 Every probe is sent with stdin closed, which is the condition the rule is about.

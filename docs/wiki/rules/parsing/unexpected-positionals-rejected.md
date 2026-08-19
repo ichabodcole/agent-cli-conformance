@@ -60,22 +60,29 @@ class of mistake, and a caller has to defeat both to get a silent wrong answer.
 
 ## The probe
 
-Not safe at `L0`, and this rule is probed at `L1` accordingly.
+`L1` — and A4 **declares no probes**, so it is not applicable to a `L0` run.
+
+```
+(none — every invocation that would test arity has to run a real verb)
+```
+
+**Always reports `unverified` today.** Everything the kit does now is `L0`, so this rule
+establishes nothing about your tool either way: no pass to earn and no failure to fix, and its
+line in a report is a gap in the evidence rather than a judgement.
+
+Testing arity means putting extra values behind a real verb, and a CLI with this defect runs
+that verb for real — which is why the safety gate refuses to build the probe. That limit is
+[probing's subject](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe),
+and A4 is one of the two rules that
+[declare an empty probe list](../../concepts/probing.md#probes-are-shared-and-a-rule-may-declare-none).
+
+**What changes at `L1`**: once the target declares which verbs are read-only, the probe becomes
+sendable against those verbs, and this rule starts returning verdicts.
 
 ```
 <cli> <known-verb> unexpected-value-xyz
 <cli> <known-verb> --<known-flag> <value> extra-one extra-two
 ```
-
-reads like an inert, sentinel-only invocation, but it isn't one: both lines put a REAL verb in
-front of the sentinel extras. A CLI that ignores extra positionals — the exact defect this rule
-exists to catch — runs that verb for real. `Discovery` carries no signal for whether a verb is
-read-only, so at L0 the kit cannot tell "list" from "deploy" before invoking either, and the
-safety gate correctly refuses to build this probe.
-
-The checker therefore declares no probes and always reports **unverified** at this probe level.
-Testing arity for real requires waiting until the command's effects have been classified (L1),
-so it can be probed only for verbs already known to be read-only.
 
 ## Current checker coverage
 

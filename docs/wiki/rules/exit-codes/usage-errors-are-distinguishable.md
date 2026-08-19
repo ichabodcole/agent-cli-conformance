@@ -75,9 +75,9 @@ against each other, the internal-fault contrast is not reached at all.
 
 ```
 <cli> --acc-probe-xyzzy-flag      # usage error: unknown flag
-<cli> nonsense-verb-xyz           # usage error: unknown verb
+<cli> acc-probe-xyzzy-verb           # usage error: unknown verb
 <cli>                             # usage error: the bare invocation
-<cli> --format=nonsense-xyz       # usage error: a value outside an advertised set
+<cli> --format=acc-probe-xyzzy       # usage error: a value outside an advertised set
 ```
 
 At `L0` the checker verifies:
