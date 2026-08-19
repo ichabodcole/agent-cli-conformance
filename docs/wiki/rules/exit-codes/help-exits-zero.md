@@ -77,51 +77,33 @@ Inert (`L0`).
 <cli> -h
 ```
 
-Passes when each exits `0` with non-empty stdout.
+**Passes** when each exits `0` with non-empty stdout.
 
-A help path that hits the probe deadline is reported as a **failure**, not `unverified`: help
-is a request, and a request that never returns has definitively not succeeded. That makes C1
-one of four rules in the catalogue that own hangs — with
-[A1](../parsing/unknown-flag-exits-nonzero.md),
-[D2](../discoverability/bare-invocation-is-a-usage-error.md) and
-[E1](../interactivity/never-block-without-a-tty.md) — rather than deferring them to E1.
+**Fails** when either exits non-zero, writes nothing to stdout, or is still running at the probe
+deadline. A hang is a failure here rather than `unverified`: help is a request, and a request that
+never returns has definitively not succeeded — which makes C1 one of the
+[four rules that own a hang](../../concepts/probing.md#hangs-are-owned-by-four-rules-and-deferred-by-the-rest).
 
-A help path killed at the checker's **output limit** is the opposite case and reports
-`unverified`: that target was writing, not failing to, and the exit code C1 turns on is one the
-checker prevented it from choosing. The two ways a probe can be cut short are recorded
-separately for exactly this reason.
+**Reports `unverified`** when the help path was killed at the checker's **output limit**. That
+target was writing, not failing to, and the exit code C1 turns on is one the checker prevented it
+from choosing.
 
 ### A help path that died on a signal
 
-Help that ends on a **signal the kit did not send** has no exit code to read either, and which
-of the two answers above it gets depends on **who sent the signal** — the same split
-[G1](../lifecycle/inert-invocations-do-not-crash.md) makes, read from the same list.
+Help that ends on a **signal the kit did not send** has no exit code to read either, and which of
+the two answers above it gets depends on **which signal** — the same split
+[G1](../lifecycle/inert-invocations-do-not-crash.md) makes, read from the
+[same list](../../concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed).
 
 - A **fault signal** (`SIGSEGV`, `SIGBUS`, `SIGILL`, `SIGFPE`, `SIGABRT`, `SIGSYS`, `SIGTRAP`) is
-  a **failure**. The process raised it on itself as a direct consequence of what it just
-  executed; help that segfaulted has definitively not succeeded, and the fault is the target's
-  own. This is the hang sentence with a different ending.
+  a **failure**: help that segfaulted has definitively not succeeded, and the fault is the
+  target's own.
 - Any **other** signal — an operator's Ctrl-C, an outer deadline's `SIGTERM`, an OOM killer's
   `SIGKILL`, or any name the kit does not recognise — is `unverified`. C1 cannot attribute what
-  G1 has just declined to attribute. The recording an outer CI timeout produces is byte-for-byte
-  the recording a perfectly conforming tool produces under that timeout, and a gate that reports
-  a violation it cannot substantiate is a gate someone eventually switches off.
+  G1 has just declined to attribute.
 
-When one run contains both, the **fault wins**: an observed violation stays a violation when a
-different probe was killed by something unattributable. Same for an ordinary violation — help
-that exited `2` exited `2`, whatever ended the other probe.
-
-The two lists are `FAULT_SIGNALS` and `AMBIGUOUS_SIGNALS` in
-[`signals.ts`](../../../../src/acc/kit/signals.ts), which G1's page quotes in full and
-[`docs/wiki/lint.ts`](../../lint.ts) binds to the code in both directions. C1 reads the taxonomy
-rather than restating it, because a rule that failed on a signal G1 had just declined to
-attribute would put two contradictory lines in one report — which is what it did, until the
-narrowing.
-
-Not yet checked at `L0`: stderr emptiness on the help path, and the nested case (`<cli>
-<group> --help`). The nested case needs the discovered group to also be a leaf-or-group
-distinction `Discovery` does not currently carry — see `unknown-command.ts`'s checker for the
-same limitation — so it is left for a later probe level rather than guessed at.
+Not yet checked at `L0`: stderr emptiness on the help path, and the nested case
+(`<cli> <group> --help`).
 
 ## Current checker coverage
 

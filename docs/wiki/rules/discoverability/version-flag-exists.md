@@ -76,45 +76,35 @@ Inert (`L0`).
 
 ```
 <cli> --version
+<cli> --version             # again, with HOME and XDG_CONFIG_HOME unusable
 <cli> --version --json      # where help advertises a machine-mode flag
 ```
 
-Passes when it exits `0` with non-empty stdout.
+**Passes** when `--version` exits `0` with non-empty stdout, and still does so when the kit
+re-sends it with `HOME` and `XDG_CONFIG_HOME` pointed at a path that does not exist. A
+`--version` that only works in a configured environment fails this rule even though it passes the
+naive probe.
 
-The checker additionally runs it with a deliberately unusable `HOME` and `XDG_CONFIG_HOME`, to
-verify the no-configuration requirement — a `--version` that only works in a configured
-environment fails this rule even though it passes the naive probe.
+That second invocation establishes exactly one of the rule's four "no work" clauses — no
+configuration. A pass says nothing about no network, no credentials or no side effects, none of
+which are observable at `L0`; they are named under [gaps](#current-checker-coverage) below.
 
-The unusable-`HOME` probe establishes exactly one of the rule's four "no work" clauses — no
-configuration. No network, no credentials and no side effects are invisible to a runner that
-records argv, streams, exit status and timing; both are named under
-[gaps](#current-checker-coverage) below.
+**Fails in machine mode** when the whole of stdout does not parse as one JSON **object**. The
+common shape is a bare string — `--version --json` printing `1.4.2` — and an array is refused for
+the same reason, because the version is a value inside a document rather than the document itself.
+The probe cannot ask for more: with nothing declared at `L0` there is no schema naming the field
+the version belongs in, so `{"ok":true,"data":"1.0.0"}` and `{"version":"1.0.0"}` both pass.
 
-**The machine-mode probe is the clause the reference implementation itself violated for months.**
-`acc --version --json` emitted the bare string `0.0.0` at exit `0`, under every machine-mode
-spelling, because the argument parser's built-in version handling answered before the envelope
-existed — so a caller that asked for structured output received something it had to regex. The
-probe requires the whole stdout to parse as one JSON **object**: an array is refused for the same
-reason a bare string is, because the version is a value inside a document rather than the document
-itself.
+**Not checked: stderr.** Chatter alongside a correct version on stdout — deprecation notices,
+update nags — does not stop a caller reading the version, and nothing in the checker reads the
+stream.
 
-It cannot require more. With nothing declared at `L0` there is no schema naming the field the
-version belongs in, so `{"ok":true,"data":"1.0.0"}` and `{"version":"1.0.0"}` are equally
-acceptable here and only one of them is what a declaration would ask for — the same `L1` boundary
-[A3](../parsing/errors-name-the-offending-token.md)'s envelope clause and
-[B3](../streams/machine-output-is-parseable.md)'s output kinds both stop at.
+**Not checked: promptness.** How quickly the first byte arrives is
+[F2](../safety/first-byte-is-prompt.md)'s measurement, and F2 times `--version` specifically.
 
-Two further omissions are deliberate, and are **not** gaps, because another rule owns each:
-
-- **stderr.** Chatter on stderr alongside a correct version on stdout is real-world common
-  (deprecation notices, update nags) and does not stop a caller reading the version. Nothing
-  in the checker reads the stream.
-- **promptness.** How quickly the first byte arrives is
-  [F2](../safety/first-byte-is-prompt.md)'s measurement, and F2 times `--version` specifically.
-  D1 would only duplicate it, at a different threshold.
-
-A hung probe is reported `unverified` rather than failed: D1 does not own hangs —
-[E1](../interactivity/never-block-without-a-tty.md) does.
+**Reports `unverified`** for a hung probe. D1 does not own hangs —
+[E1](../interactivity/never-block-without-a-tty.md)
+[does](../../concepts/probing.md#hangs-are-owned-by-four-rules-and-deferred-by-the-rest).
 
 ## Current checker coverage
 

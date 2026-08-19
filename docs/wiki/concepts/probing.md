@@ -31,6 +31,11 @@ applicable to a run at all:
 | `L1`  | Invocations the target has **declared** read-only                             |
 | `L2`  | Mutating invocations, inside a contained environment                          |
 
+Three rules stop at the same `L1` boundary, for the same reason — nothing at `L0` says what a
+payload was supposed to contain: D1's version field,
+[A3](../rules/parsing/errors-name-the-offending-token.md)'s envelope clause and
+[B3](../rules/streams/machine-output-is-parseable.md)'s output kinds.
+
 `L1` and `L2` are named in every rule page that needs them and neither exists yet — both wait on
 a portable declaration format and a real sandbox
 ([roadmap](../../roadmap.md#6-the-portable-declaration-ir)). Everything the kit does today is
@@ -87,6 +92,12 @@ against an arbitrary binary.
 Checkers declare the invocations they need; the runner deduplicates them and sends each once. A
 rule reading an invocation another rule requested is the normal case, not a shortcut.
 
+A rule that CONTRASTS invocations depends on this in the other direction:
+[C2](../rules/exit-codes/usage-errors-are-distinguishable.md) compares the codes of four
+usage-error shapes it mostly did not send — the bare invocation comes from D2 and E1, the
+malformed value from A7, whose probe it is byte-identical to. Two runs of the same argv would be
+comparing codes the target chose on two separate occasions.
+
 A rule that needs the _same_ invocation twice — [D4](../rules/discoverability/help-output-is-deterministic.md)
 comparing two help captures, [C3](../rules/exit-codes/exit-codes-are-deterministic.md) comparing
 exit codes — meets that deduplication head-on. The repetitions are told apart by
@@ -96,7 +107,10 @@ Deliberately not an environment variable. A marker like `ACC_PROBE_NONCE` would 
 run past the dedup, and would also make the two invocations differ while the checker claimed to
 measure determinism: a variable the target can read is part of the input to the measurement, so a
 CLI that echoed its environment into help would fail D4 for a legitimate reason, indistinguishable
-from a timestamp.
+from a timestamp. [F2](../rules/safety/first-byte-is-prompt.md) disqualifies it for a second
+reason: it does not compare its runs, it times them, and a target that re-reads configuration on
+meeting an unfamiliar variable would be made faster or slower by the recorder's own bookkeeping.
+An earlier checker did exactly that, with an `ACC_PROBE_TIMING` variable per run.
 
 Two rules declare an empty probe list, from opposite directions.
 [A4](../rules/parsing/unexpected-positionals-rejected.md) has no probe it can safely send at
@@ -114,10 +128,16 @@ Three different endings all look like "a signal arrived", and they mean three di
   doubt. [G1](../rules/lifecycle/inert-invocations-do-not-crash.md) owns them.
 - **An externally ambiguous signal** — `SIGINT`, `SIGTERM`, `SIGHUP`, `SIGQUIT`, `SIGKILL`,
   `SIGPIPE`, and anything not in the fault list. The kit knows it did not send it; it cannot
-  know whether an operator, an outer deadline or an OOM killer did. Reported `unverified` and
-  named.
+  know whether an operator, an outer deadline or an OOM killer did — the recording an outer CI
+  timeout produces is byte-for-byte the recording a perfectly conforming tool produces under that
+  timeout. Reported `unverified` and named.
 - **The kit's own kill** — a hang past the deadline, or an output ceiling. The target was never
   allowed to choose a status, so nothing about it was established.
+
+Both lists live as `FAULT_SIGNALS` and `AMBIGUOUS_SIGNALS` in
+[`signals.ts`](../../../src/acc/kit/signals.ts), which [`lint.ts`](../lint.ts) binds to G1's page
+in both directions — so a rule cannot fail on a signal G1 has just declined to attribute, which
+would put two contradictory lines in one report.
 
 **A fault is decided first**, deliberately. A completed observation of a violation stays a
 violation when some _other_ probe later hits the deadline — that process is gone and its streams

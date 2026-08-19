@@ -91,41 +91,29 @@ Inert (`L0`).
 <cli> --version          # time to first byte, best of 3
 ```
 
-Runs that probe three times and reports the fastest time to first byte: `pass` at or under
-100 ms, `fail` above it. `diagnostic` softens what the _rule_ demands (`SHOULD`, not `MUST`) —
-it does not soften what a `fail` verdict means once the measurement is taken. A report that
-weighs a diagnostic finding more lightly than a core one is a decision for whatever aggregates
-findings across the whole run, not something this checker decides on its own by staying silent.
+**Three runs of the same invocation** — same argv, same environment, three times. Nothing tells
+them apart from the target's side: no marker argument, no marker environment variable, because a
+variable the target can read is part of the input to the quantity being measured. The runner
+deduplicates identical probes and separates the repetitions by a recorder-side index the target
+never sees; see
+[probing](../../concepts/probing.md#probes-are-shared-and-a-rule-may-declare-none).
 
-Best-of-three rather than mean, because the interesting number is the floor — a slow run
-usually measures the machine, not the tool. The checker records all three so a wide spread is
-visible, since high variance is itself a finding and can indicate work happening before
-argument dispatch.
+**Passes** when the _fastest_ of the three emitted its first byte at or under 100 ms; **fails**
+above it. All three times are recorded, so a wide spread is visible — high variance is itself a
+finding, and can indicate work happening before argument dispatch.
 
-**The three runs are the same invocation** — same argv, same environment, three times. That is
-worth stating because it was once not true. The runner deduplicates identical probes into a
-single recording, so an earlier version of this checker gave each run a different
-`ACC_PROBE_TIMING` environment variable purely to get three samples past the dedup. The
-objection is not [D4](../discoverability/help-output-is-deterministic.md)'s — F2 does not compare
-its runs, it times them — it is that a variable the target can read is part of the input to the
-measurement. A tool that re-reads configuration when it meets an unfamiliar variable, or logs it,
-would have been made faster or slower by the recorder's bookkeeping, and best-of-three would then
-report a number about the bookkeeping. The repetitions are now told apart by a **recorder-only
-index** the target never sees (`Invocation.repeat`, built for
-[C3](../exit-codes/exit-codes-are-deterministic.md)).
+Cold-start effects are not controlled for. The numbers are the ones observed on the machine the
+run happened on, not a claim about the tool's inherent cost.
 
-Cold-start effects are not controlled for. The checker reports the numbers it observed and does
-not claim they are the tool's inherent cost.
+`diagnostic` softens what the _rule_ demands (`SHOULD`, not `MUST`); it does not soften what a
+`fail` means once the measurement is taken.
 
-**All three runs must complete.** If any of them hits the probe deadline the rule reports
-`unverified` and names how many, rather than measuring the survivors: a process the deadline
-killed may have written its first byte quickly and then blocked forever, and F2's claim is
-about the run as a whole. F2 is not one of the four rules that own hangs — the hang itself is
-[E1](../interactivity/never-block-without-a-tty.md)'s finding to report.
-
-A run killed at the checker's **output limit** is treated the same way, for the same reason. Its
-first byte is real, but the run did not complete, and averaging over the ones that happened to
-stay under the ceiling would be measuring the limit rather than the tool.
+**Reports `unverified` if any of the three did not complete** — a run the probe deadline killed,
+or one killed at the checker's output limit — naming how many, rather than measuring the
+survivors. A first byte from a run that then blocked forever is real, but F2's claim is about the
+run as a whole. The hang itself is [E1](../interactivity/never-block-without-a-tty.md)'s finding
+to report; F2 is not one of
+[the rules that own a hang](../../concepts/probing.md#hangs-are-owned-by-four-rules-and-deferred-by-the-rest).
 
 ## Current checker coverage
 

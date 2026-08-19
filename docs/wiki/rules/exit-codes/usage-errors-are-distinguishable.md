@@ -70,8 +70,8 @@ actionable by its maintainer. Merging them loses the routing.
 
 ## The probe
 
-Inert (`L0`), but **only partly verifiable without declarations** — and the checker says so
-rather than implying more.
+Inert (`L0`), and only half of this rule is reachable there: the usage errors are compared
+against each other, the internal-fault contrast is not reached at all.
 
 ```
 <cli> --totally-made-up-flag      # usage error: unknown flag
@@ -87,26 +87,21 @@ At `L0` the checker verifies:
 - the code is `2` (**diagnostic** — reported, not failed, because an undeclared tool never
   agreed to the taxonomy)
 
-**Four of this page's five usage-error shapes are now contrasted.** The bare invocation was always
-recorded — [D2](../discoverability/bare-invocation-is-a-usage-error.md) and
-[E1](../interactivity/never-block-without-a-tty.md) both send it — and simply was not read here;
-the malformed value arrives from [A7](../parsing/advertised-value-set-is-enforced.md), whose probe
-this one is byte-identical to, so the recorder runs it once and both rules read the same
-observation. That matters for a contrast: two runs of the same argv would be comparing codes the
-target chose on two separate occasions.
+A mismatch is the violation: those four are one error class, so a target that answers them with
+different codes has given the caller nothing to route on.
 
-The fifth, an unexpected positional, stays out of reach for the reason
+**Four of this page's five usage-error shapes are compared.** The last of them only applies to a
+target whose help advertises a closed value set — it is
+[A7](../parsing/advertised-value-set-is-enforced.md)'s probe, read a second time here rather than
+sent again ([probes are shared](../../concepts/probing.md#probes-are-shared-and-a-rule-may-declare-none)).
+The fifth shape, an unexpected positional, stays out of reach for the reason
 [A4](../parsing/unexpected-positionals-rejected.md) does — a positional is only _stray_ if there is
 a verb for it to be stray to, and sending a verb is `L1`.
 
-Distinguishability from an internal error **cannot** be verified black-box: there is no
-general, safe way to provoke an internal fault in an arbitrary binary. The checker reports that
-half as **unverified** at `L0`. It becomes a hard check at `L1`, where the tool has declared its
-error kinds and each one can be provoked and confirmed against its declared code.
-
-Stating this openly matters more than it might seem. A conformance report that quietly implies
-it checked something it could not check is the same defect as a CLI reporting success for work
-it did not do.
+Distinguishability from an internal error is reported **unverified** at `L0`: nothing
+[`L0` may send](../../concepts/probing.md#what-it-is) provokes an internal fault in an arbitrary
+binary. It becomes a hard check at `L1`, where the tool has declared its error kinds and each one
+can be provoked and confirmed against its declared code.
 
 ## Current checker coverage
 

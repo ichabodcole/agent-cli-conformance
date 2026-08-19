@@ -97,57 +97,45 @@ closed set is a declaration.
 
 ## The probe
 
-Inert (`L0`). Discovery reads the sets a target advertises off its own help — the four notations
-help screens actually use (`<a|b>`, `(a|b)`, `[a|b]`, `one of: a, b`), plus the structural
-`{ name, values }` form for a target whose help is itself a JSON document. Where help advertises
-no set, the checker reports **unverified**: a tool that declared nothing has made no claim to
-falsify.
+Inert (`L0`). The probe is built from the target's own help: discovery takes the first flag whose
+help advertises a closed set, in any of the four notations help screens actually use — `<a|b>`,
+`(a|b)`, `[a|b]`, `one of: a, b` — plus the structural `{ name, values }` form for a target whose
+help is itself a JSON document. A set advertised in some other notation is a set the probe cannot
+see, and where help advertises no set at all the checker reports **unverified**: a tool that
+declared nothing has made no claim to falsify.
 
 ```
 <cli> --format=acc-probe-xyzzy          # attached
 <cli> --format acc-probe-xyzzy          # detached — the same request, the other spelling
 ```
 
-**Two spellings, and the second one is load-bearing.** The attached form alone would have made
-this rule vacuous on the corpus it was written for. `--format=acc-probe-xyzzy` is one token, so a
-parser with no support for the attached spelling rejects it as an _unknown option_ — non-zero,
-stdout empty, the whole token named — without the value validation ever running. That parser is
-not exotic: the archaeology records `--flag=value` going unparsed as a shipped defect across five
-tools, which makes it the **modal** shape of the population this rule is aimed at. Between the two
-spellings, at least one reaches the value on any parser that reads values at all.
+**Both spellings are sent, and one reaching the value is enough.** `--format=acc-probe-xyzzy` is a
+single token, so a parser with no support for the attached spelling rejects it as an _unknown
+option_ — non-zero, stdout empty, the whole token named — without the value validation ever
+running. The detached form reaches the value on any parser that reads values at all. A target that
+refuses the syntax of one spelling while silently accepting the value in the other is a violation
+here, not a pass.
 
-**Both are admissible under the existing inertness gate, unmodified.** The attached form is a
-single token beginning with `-`, so it satisfies the `no-verb` class, and it carries the sentinel,
-so it satisfies the `sentinel` class — admissible twice over. The detached form is admissible
-under `sentinel` alone, which is exactly what that class exists for:
-[`inert.ts`](../../../../src/acc/kit/inert.ts) says a probe needing a flag **with** a value uses
-`sentinel`, because a sentinel token is provably invalid whatever the flag's arity.
-
-**The safety limit the detached form inherits**, and it is the one A2's probe already carries: a
-bare sentinel token is an unknown verb on a verb-dispatching CLI and a **prompt** on a CLI whose
-root positional is free-form. `inert.ts` documents that it cannot detect the second shape and does
-not claim to. This probe inherits that limit rather than adding to it.
-
-Passes when **all** of:
+**Passes** when **all** of:
 
 - neither spelling exits 0
 - neither spelling writes to stdout
 - at least one spelling names the offending value on stderr
 
-**The third condition is attribution, not a second requirement.** Neither probe names a verb, so
-a verb-dispatching CLI answers both on its missing-verb path — a non-zero exit and an empty stdout
-that have nothing to do with the value. Scored as a pass, that would be the vacuous pass this
-project exists to catch: the rule's subject never ran and the report would say it held. The
-sentinel reaching the diagnostic is the cheapest available evidence that the target read the token
-at all, and one spelling suffices, because a parser only has to understand one of them. Where
-neither names it, the verdict is **unverified**.
+**Reports `unverified` when neither spelling names the value.** Neither probe names a verb, so a
+verb-dispatching CLI can answer both on its missing-verb path — a non-zero exit and an empty
+stdout that have nothing to do with the value. The sentinel reaching the diagnostic is the cheapest
+available evidence that the target read the token at all, and one spelling suffices, because a
+parser only has to understand one of them.
 
-**What that still does not establish**, and it is the first declared gap. A rejection naming the
-value proves the target **read** the token; it never proves **which check** refused it. The set
-validation, an unparsable spelling and a stray positional produce the same three observables. What
-the second probe buys is that a parser cannot pass by refusing the syntax of one spelling while
-silently accepting the value in the other — which is a violation this rule now catches and a
-one-probe version would have certified.
+**What a pass does not establish** is _which_ check refused the value. A rejection naming it proves
+the target read the token; the set validation, an unparsable spelling and a stray positional
+produce the same three observables. That is the first of the
+[declared gaps](#current-checker-coverage).
+
+The detached spelling puts the sentinel where an unparsed flag leaves it as a bare token, which a
+CLI whose root positional is free-form text reads as input rather than rejecting — an `L0` run is
+[risk-reduced rather than safe](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe).
 
 ## Current checker coverage
 

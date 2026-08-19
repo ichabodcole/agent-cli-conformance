@@ -86,7 +86,7 @@ implements this rule should read [G-family lifecycle work](../../../roadmap.md) 
 ## The probe
 
 `L1`, and **not implemented** — `checker_status: planned` is what that field is for. What follows
-is the design, and the measured reason the kit cannot run it today.
+is what the probe will send, and the measured reason no verdict exists today.
 
 The probe compares the same invocation under two consumers:
 
@@ -95,21 +95,13 @@ The probe compares the same invocation under two consumers:
 <cli> <bulk-output-command> | ( sleep 1; cat ) | wc -c  # the discriminator
 ```
 
-It fails when the second is short of the first.
+**Fails** when the second is short of the first. The consumer is **momentarily non-draining** on
+purpose: what discriminates is whether bytes are undrained at the instant of exit, so a consumer
+that keeps reading lets each write finish and a defective CLI arrives looking complete.
 
-**Two traps, both non-obvious, both already paid for by the subject repository.**
-
-- **A payload over 64 KiB is not sufficient, and neither is any single consumer.** What
-  discriminates is whether bytes are _undrained at the instant of exit_, and how likely that is
-  depends on the runtime, the payload and the machine. The archaeology measured 10 MB arriving
-  **complete** through `| cat` with the defect present, because a consumer that keeps draining
-  lets each write finish; the fixture measured below loses two thirds through the same `| cat`,
-  because one large write outruns a consumer that has to be scheduled. A probe that relied on
-  either observation would be measuring its own timing. Driving a **momentarily non-draining
-  consumer** is what makes the discriminator deliberate rather than lucky.
-- **The level is `L1` because the probe needs a command that produces bulk output**, and nothing
-  at `L0` does. Help and version are small and fixed; a real payload means a real verb, which
-  means a declaration of effects.
+**`L1` rather than `L0`**, because the probe needs a command that produces bulk output and nothing
+at [`L0`](../../concepts/probing.md#what-it-is) does — help and version are small and fixed. A real
+payload means a real verb, which means a declaration of effects.
 
 ### The blocker is the runner, not the probe level
 
@@ -131,23 +123,20 @@ bun drained-conforming.ts list | cat | wc -c              ->   65,536 bytes, exi
 acc's runner (Bun.spawn, stdout: "pipe")                  ->  195,837 bytes, parses whole
 ```
 
-The last two lines are the finding. A shell pipe loses **67% of the payload** whether or not its
-consumer sleeps, and the cut lands mid-string — `…"title":"a bounty card with a title long e` —
-so what arrives is unparseable rather than merely short. The runner's own pipe receives the
-document **complete and parsing**, on every run.
-
-And the verdict `acc check` gives that fixture today, against the full 22-rule catalogue:
+A shell pipe loses **67% of the payload**, and the cut lands mid-string — `…"title":"a bounty card
+with a title long e` — so what arrives is unparseable rather than merely short. The runner's own
+pipe receives the document **complete and parsing**, on every run. The verdict `acc check` gives
+that fixture today, against the full 22-rule catalogue:
 
 ```
 conformant: true    coreFailures: 0    coreUnverified: 0
 ```
 
-Every applicable core rule **passing**, on a CLI that delivers a third of its answer. That is the
-single most consequential result in the archaeology and it is unchanged by the rules added since.
-
-Closing it needs a **deliberately non-draining consumer in the runner** — an instrument change,
-not a rule change and not a probe-level change. Until that exists, this page is the specification
-and the honest declaration that nothing enforces it.
+**Read no assurance about delivery into a passing report.** Every applicable core rule passes on a
+CLI that delivers a third of its answer, and will keep doing so until the runner can drive a
+**deliberately non-draining consumer** — an instrument change, not a rule change and not a
+probe-level change. Until that exists, this page is the specification and the honest declaration
+that nothing enforces it.
 
 ## Current checker coverage
 

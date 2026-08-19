@@ -43,6 +43,13 @@ Every probe must claim an inertness class the runner can verify, and `assertIner
 that does not match — a probe carrying an environment variable outside the allowed pattern is
 refused whatever its argv looks like, because an env var can change what the target _does_.
 
+**Send a request in every spelling a parser might refuse on syntax alone.** A7 sends both
+`--flag=<sentinel>` and `--flag <sentinel>`, because a parser with no support for the attached
+form rejects the single token as an unknown option — non-zero, stdout empty, token named — without
+the value validation the rule is about ever running. The archaeology records `--flag=value` going
+unparsed across five tools, so that is the modal shape of the population, not an exotic one. A
+probe whose only spelling can be refused on syntax measures the syntax.
+
 If your rule reads facts every recording already carries, declare no probes at all. G1 does:
 spawning the target again to learn something fourteen observations already hold is duplicate
 evidence, not additional evidence.
@@ -52,7 +59,7 @@ evidence, not additional evidence.
 `check(history)` reads observations and returns a finding. It must not spawn anything — that
 separation is what lets a new rule be a new reading of evidence already collected.
 
-Four failure modes worth naming, all of them learned the hard way:
+Five failure modes worth naming, all of them learned the hard way:
 
 - **Do not shell out to `timeout`.** It is GNU coreutils and absent on stock macOS; invoking it
   yields `127` and the probe silently measures nothing. Enforce deadlines in-process.
@@ -65,10 +72,20 @@ Four failure modes worth naming, all of them learned the hard way:
   took 30 seconds against a 50 ms deadline. This is the runner's job, not yours, but a checker
   that adds its own timing must not undo it.
 
+- **A consumer that keeps draining cannot see a truncation defect.** What discriminates is
+  whether bytes are undrained _at the instant of exit_, so probe design has to force that state
+  rather than hope for it: 10 MB was measured arriving complete through `| cat` with the defect
+  present, while one large write outran a scheduled consumer and lost two thirds through the same
+  pipe. A probe resting on either observation is measuring its own timing.
 - **Compare digests, not decoded text, when a rule asserts byte identity.** UTF-8 decoding is
   many-to-one on ill-formed input: every invalid byte becomes the same `U+FFFD`, so a target
   emitting `0x80` on one run and `0x81` on the next yields identical strings, identical lengths,
   and a `pass` certifying byte identity for two different streams.
+
+When a rule measures rather than compares, say which statistic decides it and why. F2 reports
+best-of-three rather than a mean, because the interesting number is the floor — a slow run usually
+measures the machine, not the tool — and it excludes any run the deadline or the output ceiling
+killed, since averaging over the ones that stayed under the limit would measure the limit.
 
 Decide explicitly whether your rule **owns** a hang or defers it. Most defer to
 [E1](../rules/interactivity/never-block-without-a-tty.md); four own it, because on their probe
@@ -121,12 +138,23 @@ Write gaps as one phrase per unestablished clause, containing **no comma and no 
 — the frontmatter parser splits on both, and the registry test rejects them at the source rather
 than letting the lint fail with a mismatch that explains nothing.
 
+Distinguish a gap from a clause another rule owns. D1 does not read stderr and does not time
+startup; neither is a D1 gap, because B1 and F2 own them. A gap is something THIS rule asserts and
+this checker does not reach — listing another rule's subject there inflates the debt and hides the
+real holes.
+
 Prefer an honest gap to a silent one. A gap costs a reader one line; an overstated `Established`
-list costs them a wrong conclusion.
+list costs them a wrong conclusion — and a report that quietly implies it checked something it
+could not check is the same defect as a CLI reporting success for work it did not do, which is
+the subject of the catalogue you are extending.
 
 ### 7. Add a fixture that fails it
 
-A checker with no negative control is untested. Put a deliberately-broken target in
+A checker with no negative control is untested — and the reference implementation is often the
+best source of one. `acc --version --json` emitted the bare string `0.0.0` at exit `0` for months,
+under every machine-mode spelling, because the argument parser's built-in version handling
+answered before the envelope existed. A caller asking for structured output got something it had
+to regex. That defect is now D1's fixture. Put a deliberately-broken target in
 `src/acc/kit/fixtures/broken/` and assert the rule fails against it.
 
 The kit's own `.ts` fixtures inherit the launcher problem above, which is why A6's tests use
