@@ -162,4 +162,4 @@ Contrast [`hf`](../../concepts/machine-mode.md), which fails destructive command
 remediation (_"Use `--yes` to skip confirmation"_) and runs no interactive prompts in agent
 mode.
 
-Full survey: [`research/01-case-studies.md`](../../../research/01-case-studies.md).
+Full survey: [`research/2026-08-13-case-studies.md`](../../../research/2026-08-13-case-studies.md).

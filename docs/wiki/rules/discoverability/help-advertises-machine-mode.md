@@ -129,4 +129,4 @@ substantially outperforms one discovered at runtime, and the cheapest arrangemen
 reference loaded once, with introspection as the fallback. Help text is the pointer that makes
 the cheap path findable.
 
-Full analysis: [`research/03-cli-vs-mcp.md`](../../../research/03-cli-vs-mcp.md).
+Full analysis: [`research/2026-08-13-cli-vs-mcp.md`](../../../research/2026-08-13-cli-vs-mcp.md).

@@ -153,4 +153,4 @@ harness — comparative within the table, not portable as absolutes.
 The 100 ms threshold is clig.dev's, which advises printing something within 100 ms so a program
 does not appear broken, and disabling animation when stdout is not a terminal.
 
-Full analysis: [`research/02-frameworks-languages.md`](../../../research/02-frameworks-languages.md).
+Full analysis: [`research/2026-08-13-frameworks-languages.md`](../../../research/2026-08-13-frameworks-languages.md).

@@ -6,7 +6,7 @@ description: Whether a language or framework is genuinely better suited to agent
 tags: [parsing, performance, contract]
 ---
 
-# 02 — Framework & Language Survey for Agent-First CLIs
+# Framework & Language Survey for Agent-First CLIs
 
 **Date:** 2026-08-13
 **Question this answers:** Is a particular language or framework genuinely better suited to building robust agent-first CLIs, or is this purely a methodology problem that follows you across languages?

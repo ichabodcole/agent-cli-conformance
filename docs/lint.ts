@@ -60,6 +60,19 @@ const OPTIONAL = new Set(["description", "tags", "supersedes", "stale_after"]);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TAG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+/**
+ * `YYYY-MM-DD-slug.md`. The date is when the document was FIRST published, which is why it is
+ * not required to equal `generated.at`: OKF defines that as the last meaningful change, so an
+ * amended document moves it, and tying the filename to it would force a rename that breaks
+ * every link into the file. The one relation that must hold is ordering — a document cannot
+ * have been created after it was last changed.
+ *
+ * Two conventions were in use before this: `NN-slug.md` for the first four research notes and
+ * `YYYY-MM-DD-slug.md` everywhere else. A sequence also implies a finite planned series, which
+ * is the wrong shape for a corpus that only accumulates.
+ */
+const FILENAME_RE = /^(\d{4}-\d{2}-\d{2})-[a-z0-9]+(-[a-z0-9]+)*\.md$/;
+
 /** Collapse a tag to a key that ignores the ways a near-duplicate usually differs. Two distinct
  *  tags that collide here are almost always one tag and a typo — `exit-code` beside
  *  `exit-codes`, or `machineMode` beside `machine-mode`. A shared vocabulary is not enforced
@@ -80,6 +93,10 @@ export function artifactProblems(): string[] {
     for (const file of walkMarkdown(dir)) {
       const rel = relative(REPO_ROOT, file);
       if (rel.endsWith("README.md")) continue;
+
+      const name = rel.replace(/^.*\//, "");
+      const nameMatch = FILENAME_RE.exec(name);
+      if (!nameMatch) problems.push(`BAD FILENAME  ${rel}  (expected YYYY-MM-DD-kebab-slug.md)`);
 
       const raw = readFileSync(file, "utf8");
       const m = /^---\n([\s\S]*?)\n---/.exec(raw);
@@ -116,6 +133,10 @@ export function artifactProblems(): string[] {
         } else if (!DATE_RE.test(g[2] as string)) {
           problems.push(
             `BAD GENERATED at  ${rel}: "${g[2]}"  (YYYY-MM-DD; when the content was PRODUCED)`,
+          );
+        } else if (nameMatch && (nameMatch[1] as string) > (g[2] as string)) {
+          problems.push(
+            `FILENAME AFTER generated.at  ${rel}: published ${nameMatch[1]}, last changed ${g[2]}`,
           );
         }
       }

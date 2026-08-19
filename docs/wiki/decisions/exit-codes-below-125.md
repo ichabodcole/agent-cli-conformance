@@ -66,7 +66,7 @@ portability claim on this page came to be overstated. They are separated here de
 **The signal rule is one-way.** POSIX obliges a shell to report a signal termination as a status
 greater than 128. It does not license the inference backwards, and an ordinary program may choose
 a status in that range for its own reasons — `git` returns `129` for an unrecognised flag, which
-is measured in [`research/01-case-studies.md`](../../research/01-case-studies.md) and quoted on
+is measured in [`research/2026-08-13-case-studies.md`](../../research/2026-08-13-case-studies.md) and quoted on
 the [exit-codes concept page](../concepts/exit-codes.md#there-is-no-industry-standard) as evidence
 that `sysexits.h` never caught on. It is not safe to read a status above `128` as "the process
 was signalled", and the exact `128+n` spelling — `143` for SIGTERM, `137` for SIGKILL — is a
@@ -200,7 +200,7 @@ Primary, for the reserved band:
 
 Supporting:
 
-- [`research/01-case-studies.md`](../../research/01-case-studies.md) — measured exit-code
+- [`research/2026-08-13-case-studies.md`](../../research/2026-08-13-case-studies.md) — measured exit-code
   behaviour across `git`, `docker`, `kubectl`, `gh`, `cargo`
 - [KEP-2551](https://github.com/kubernetes/enhancements/tree/master/keps/sig-cli/2551-return-code-normalization)
 - `sysexits.h` — the 1987 BSD attempt, `EX_USAGE=64` … `EX_CONFIG=78`

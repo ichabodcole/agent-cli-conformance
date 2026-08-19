@@ -25,12 +25,24 @@ what the existing reports already do.
 3. **Scope bounded.** Say what you deliberately did not look at.
 4. **Claims labelled by confidence.** Measured, read, and unverified are different things and
    must be distinguishable per claim. Declare your notation in the header —
-   `01-case-studies.md` marks unverified claims **unconfirmed**, `02` uses ✅ / 📖 / ❓, `03`
-   uses `[MEASURED]` / `[VENDOR]`.
+   `2026-08-13-case-studies.md` marks unverified claims **unconfirmed**,
+   `2026-08-13-frameworks-languages.md` uses ✅ / 📖 / ❓, and `2026-08-13-cli-vs-mcp.md` uses
+   `[MEASURED]` / `[VENDOR]`.
 5. **Written to be cited.** Addressed to a stranger who will depend on it, not to the person
    who asked the question.
 
 Fail any of them and it is working material, not research.
+
+## Filenames
+
+`YYYY-MM-DD-kebab-slug.md`, checked by the lint.
+
+The date is when the document was **first published**, and it is deliberately not required to
+equal `generated.at`. The first four notes here were once `01-`..`04-`; a sequence implies a
+finite planned series, which is the wrong shape for a corpus that only accumulates. OKF defines that as the last meaningful change, so an amended document
+moves it — and tying the filename to it would force a rename that breaks every link into the
+file. The one relation enforced is ordering: a document cannot have been created after it was
+last changed.
 
 ## Frontmatter
 
@@ -43,7 +55,7 @@ generated: { by: unknown, at: 2026-08-13 }
 status: stable               # OKF: draft | stable | deprecated
 description: One sentence; the question and what answered it.
 tags: [exit-codes, parsing]
-supersedes: 01-case-studies.md   # optional; a later report answering the same question
+supersedes: 2026-08-13-case-studies.md   # optional; a later report answering the same question
 ---
 ```
 

@@ -130,4 +130,4 @@ because ambiguity can be misread as confirmation of success.
 None of the five CLIs surveyed auto-executes a correction. `git` suggests and, in its default
 configuration, does not run the suggestion.
 
-Full survey: [`research/01-case-studies.md`](../../../research/01-case-studies.md).
+Full survey: [`research/2026-08-13-case-studies.md`](../../../research/2026-08-13-case-studies.md).

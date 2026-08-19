@@ -46,6 +46,16 @@ framework.
 Work that fits none of these goes in `.scratch/`, untracked — see
 [`../research/README.md`](../research/README.md#where-work-goes-before-it-gets-here).
 
+## Filenames
+
+`YYYY-MM-DD-kebab-slug.md`, checked by the lint.
+
+The date is when the document was **first published**, and it is deliberately not required to
+equal `generated.at`. OKF defines that as the last meaningful change, so an amended document
+moves it — and tying the filename to it would force a rename that breaks every link into the
+file. The one relation enforced is ordering: a document cannot have been created after it was
+last changed.
+
 ## Frontmatter
 
 Every file here carries frontmatter, checked by `bun run docs:lint:artifacts`.

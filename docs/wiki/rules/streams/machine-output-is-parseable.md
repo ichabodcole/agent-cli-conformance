@@ -131,10 +131,10 @@ results.
 
 The Docker shape inconsistency and the maintainer's compatibility response were both recorded
 during the case-study survey — see
-[`research/01-case-studies.md`](../../../research/01-case-studies.md).
+[`research/2026-08-13-case-studies.md`](../../../research/2026-08-13-case-studies.md).
 
 The whole-stream technique comes from the enforcement research, which classified it as a
 distinct tier: not "impossible to express" and not merely "caught by a test you remembered to
 write", but **self-detecting** — a defect that trips the existing check automatically, wherever
 in the codebase it originates. See
-[`research/04-testing-enforcement.md`](../../../research/04-testing-enforcement.md).
+[`research/2026-08-13-testing-enforcement.md`](../../../research/2026-08-13-testing-enforcement.md).

@@ -169,5 +169,5 @@ They disagree on the number — which is what the
 [exit-code taxonomy](../../concepts/exit-codes.md#the-taxonomy) exists to settle — but not on
 non-zero, empty stdout, or naming the flag.
 
-Full survey: [`research/01-case-studies.md`](../../../research/01-case-studies.md) and
-[`research/02-frameworks-languages.md`](../../../research/02-frameworks-languages.md).
+Full survey: [`research/2026-08-13-case-studies.md`](../../../research/2026-08-13-case-studies.md) and
+[`research/2026-08-13-frameworks-languages.md`](../../../research/2026-08-13-frameworks-languages.md).
