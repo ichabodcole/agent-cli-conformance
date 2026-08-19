@@ -7,3 +7,7 @@ docs/dist/
 *.log
 .superpowers/
 .operator
+# Working material an inquiry produced that has not earned a durable home. Untracked on
+# purpose: nothing can depend on it, so deleting it — or never touching it again — costs
+# nothing and owes no one a decision. See docs/research/README.md.
+.scratch/
