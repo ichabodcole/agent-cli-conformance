@@ -50,7 +50,7 @@ answers `404` for a private repository whatever token is in the environment
 if and when this one opens up.
 
 Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
-commit or a release tag after the `#` — `…agent-cli-conformance.git#agent-cli-conformance-v0.1.0`.
+commit or a release tag after the `#` — `…agent-cli-conformance.git#v0.1.0`.
 
 One caveat, because it is indistinguishable from a tag that does not exist: Bun keeps a bare
 clone of each git dependency in its cache and does not re-fetch it, so **a tag pushed after your
@@ -97,7 +97,7 @@ back into `develop`, and open a pull request from `develop` into `main` to cut a
 version and the changelog from the commit messages
 ([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)). It writes the version
 to `package.json`, which is what `src/acc/version.ts` reads — so `acc --version`, the git tag and
-the changelog cannot disagree. Releases are tagged `agent-cli-conformance-v<version>`. Nothing is
+the changelog cannot disagree. Releases are tagged `v<version>`. Nothing is
 published to npm.
 
 [The gate](.github/workflows/check.yml) runs on every push and every pull request, on both
