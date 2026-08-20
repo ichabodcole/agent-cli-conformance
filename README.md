@@ -35,12 +35,19 @@ those and is deliberately reported as two separate booleans (see
 
 ## Getting started
 
-You need [Bun](https://bun.sh) 1.3 or later. `acc` is not published to npm — install it from
-this repository into the project whose CLI you want to check:
+You need [Bun](https://bun.sh) 1.3 or later. `acc` is not published to npm, and this repository
+is **private** while the first few projects are run through it — so install it over SSH, into
+the project whose CLI you want to check:
 
 ```bash
-bun add -d github:ichabodcole/agent-cli-conformance
+bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 ```
+
+That needs GitHub access to this repository. The shorter
+`bun add -d github:ichabodcole/agent-cli-conformance` goes through GitHub's tarball API, which
+answers `404` for a private repository; it becomes the install line if and when this one opens
+up. Either form pins a commit in your lockfile, and a git ref pins a release:
+`…agent-cli-conformance.git#v0.1.0`.
 
 Then point it at your CLI:
 

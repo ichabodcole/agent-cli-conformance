@@ -34,9 +34,12 @@ ceiling is.
 version your gate runs is pinned in your lockfile like any other dev dependency:
 
 ```
-bun add -d github:ichabodcole/agent-cli-conformance
+bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 bunx acc check ./your-cli
 ```
+
+The repository is private today, which is why that is an SSH URL rather than
+`github:ichabodcole/agent-cli-conformance` — see [the README](../../../README.md#getting-started).
 
 Record the verdict line. Everything below is triage of what follows it.
 
