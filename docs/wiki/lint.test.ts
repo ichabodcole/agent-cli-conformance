@@ -27,6 +27,7 @@ import {
   MATRIX_HEADING,
   matrixChecks,
   normalizeBlock,
+  normativeLanguageChecks,
   readPages,
   requiredSectionsFromSchema,
   ruleChecks,
@@ -993,5 +994,29 @@ test("an unlisted section is allowed and does not disturb the order", () => {
     "## The rule\n## How to comply\n## Notes\n## Why\n## The probe\n## Current checker coverage\n## Evidence\n";
   expect(
     sectionChecks([{ rel: "r.md", fields, body: withExtra } as LintPage], SCHEMA_TEXT),
+  ).toEqual([]);
+});
+
+test("only a rule page may state a requirement", () => {
+  // review DTX-6: `archetypes/delegator.md` carried three MUSTs and a SHOULD that no rule id
+  // backed and no checker could fail. SCHEMA had forbidden that since the wiki began; nothing
+  // checked it.
+  const page = (type: string, body: string, rel = "p.md"): LintPage =>
+    ({ rel, fields: new Map([["type", type]]), body }) as LintPage;
+
+  expect(
+    normativeLanguageChecks([page("archetype", "A delegator **MUST** pass it through.")])[0],
+  ).toContain("NORMATIVE LANGUAGE");
+  expect(normativeLanguageChecks([page("rule", "A CLI **MUST** reject it.")])).toEqual([]);
+
+  // A page may quote a spec that uses the words, and a fenced example is not a requirement.
+  expect(normativeLanguageChecks([page("concept", "> POSIX says it **MUST** be 127.")])).toEqual(
+    [],
+  );
+  expect(normativeLanguageChecks([page("concept", "```\nstatus: **MUST**\n```")])).toEqual([]);
+
+  // The two contracts about the wiki itself are a different normative domain.
+  expect(
+    normativeLanguageChecks([page("index", "`complete` **MUST** carry none.", "SCHEMA.md")]),
   ).toEqual([]);
 });

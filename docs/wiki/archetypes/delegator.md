@@ -47,10 +47,18 @@ error text names a program the caller did not know was involved.
 
 ## Rules that apply differently
 
+**Design guidance, except where it names a rule.** Nothing on this page mints an obligation of its
+own: no checker measures "is this a delegator", so a claim about delegators cannot fail a run.
+Where the catalogue already has a rule, this page says how it binds for the shape and how to make
+that binding real — as configuration a project adopts, which `acc check` reads. Everything else is
+advice, and stays advice until
+[profiles](../../roadmap.md#5-profiles-and-the-outcome-algebra) give delegators rule ids of their
+own. RFC 2119 keywords are reserved for `rule` pages for exactly this reason.
+
 ### Exit codes: pass through verbatim
 
-A delegator **MUST** return the child's exit code unmodified, and use `125` when the _wrapper
-itself_ failed. `126` (found but not executable) and `127` (not found) are POSIX; `125` is
+A delegator returns the child's exit code unmodified, and uses `125` when the _wrapper itself_
+failed. `126` (found but not executable) and `127` (not found) are POSIX; `125` is
 `timeout`'s and Docker's convention, which delegators follow because they are delegators, not
 because any shell assigns it a meaning. See
 [the reserved band](../decisions/exit-codes-below-125.md#decision) for the split.
@@ -63,15 +71,28 @@ than KEP-2551's `255`-means-"child returned ≥201", which discards which code i
 itself exits `125`, `126` or `127` — likely, since delegators frequently wrap other delegators
 — verbatim passthrough makes the wrapper's own failure indistinguishable from the child's
 report of the same number. The exit code has no room left to carry the attribution. A delegator
-that needs the distinction **SHOULD** report the child's exit code as a field in its
+that needs the distinction can report the child's exit code as a field in its
 [machine-mode envelope](../concepts/error-envelope.md) alongside the passthrough status, which
 helps exactly those callers that read it.
 
 ### `--` stops being optional
 
-[Honouring `--`](../rules/parsing/double-dash-terminator.md) is `diagnostic` for CLIs generally.
-For a delegator it is **required**: it is the only unambiguous way to say "everything after this
-belongs to the child."
+[A6](../rules/parsing/double-dash-terminator.md) is `diagnostic` for CLIs generally, because a
+tool that never needs to pass a hyphen-leading value through is inconvenienced rather than broken
+by ignoring `--`. A delegator is the shape where that stops being true: the terminator is its only
+unambiguous way to say "everything after this belongs to the child."
+
+That difference is not prose here — it is a line a delegator puts in its own
+[`acc.config.json`](../concepts/conformance.md#waivers-a-rule-that-does-not-apply-to-this-tool),
+which raises the rule for that project and makes the claim gate its own build:
+
+```json
+{
+  "rules": {
+    "A6": { "severity": "core", "reason": "delegator: `--` is the only child boundary" }
+  }
+}
+```
 
 `gh`'s Copilot shim documents exactly this: _"To prevent `gh` from interpreting flags intended
 for Copilot, use `--` before Copilot flags and args."_
@@ -79,8 +100,8 @@ for Copilot, use `--` before Copilot flags and args."_
 ### Unknown flags: the boundary must be declared
 
 [Rejecting unknown flags](../rules/parsing/unknown-flag-exits-nonzero.md) appears to conflict
-with forwarding arbitrary arguments to a child. It does not — but the resolution must be
-explicit, and a delegator **MUST** declare which discipline it follows:
+with forwarding arbitrary arguments to a child. It does not — but the resolution has to be
+explicit, and a delegator declares which of two disciplines it follows:
 
 - **Bounded** — the delegator owns all flags before `--` and rejects unknown ones there;
   everything after `--` is forwarded unexamined. Preferred: the caller gets strict checking on

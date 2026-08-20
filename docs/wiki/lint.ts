@@ -16,6 +16,7 @@ import {
   type LintPage,
   parseFrontmatter,
   runDocsLint,
+  stripCode,
   walkMarkdown,
   yamlList,
 } from "../../scripts/docs-lint/index.ts";
@@ -287,6 +288,47 @@ export function sectionChecks(pages: LintPage[], schema: string): string[] {
       problems.push(
         `SECTION ORDER  ${page.rel}: ${want.filter((_, i) => positions[i] !== sorted[i]).join(", ")}` +
           `  (SCHEMA.md orders them: ${want.join(" · ")})`,
+      );
+  }
+  return problems;
+}
+
+/** RFC 2119 keywords, in the bold spelling this wiki uses for them. */
+const NORMATIVE = /\*\*(MUST NOT|MUST|SHOULD NOT|SHOULD|MAY)\*\*/g;
+
+/**
+ * Only a `rule` page states requirements.
+ *
+ * SCHEMA has said this since the wiki began — "Nothing else is normative" — and nothing checked
+ * it, so `archetypes/delegator.md` accumulated three **MUST**s and a **SHOULD** that no
+ * `rule_id` backs and no checker can fail (review DTX-6). An obligation nothing can measure is
+ * the shape this project exists to report, and it is worse on a page a reader takes for spec.
+ *
+ * The fix for an archetype is not softer prose: where the catalogue already has a rule, say how
+ * it binds for that shape and express the binding as the `acc.config.json` a project adopts,
+ * which `acc check` actually reads. Where it does not, it is guidance until a rule id exists.
+ *
+ * Code and quotes are stripped first: a page may quote a spec that uses the words, and a rule
+ * page's own examples are not the thing being counted.
+ */
+export function normativeLanguageChecks(pages: LintPage[]): string[] {
+  const problems: string[] = [];
+  for (const page of pages) {
+    if (page.fields.get("type") === "rule") continue;
+    // The two contracts ABOUT the wiki, rather than about a CLI. Their requirements bind whoever
+    // edits a page, are enforced by this file, and are a different normative domain from the
+    // spec's — SCHEMA.md is already exempt from the frontmatter and orphan checks for the same
+    // reason it is exempt here: it is not a page.
+    if (page.rel === "SCHEMA.md" || page.rel === "STYLE.md") continue;
+    const prose = stripCode(page.body)
+      .split("\n")
+      .filter((l) => !l.trimStart().startsWith(">"))
+      .join("\n");
+    const found = [...new Set([...prose.matchAll(NORMATIVE)].map((m) => m[1] as string))];
+    if (found.length)
+      problems.push(
+        `NORMATIVE LANGUAGE ${page.rel}: ${found.join(", ")}  ` +
+          `(only \`rule\` pages state requirements — see SCHEMA.md)`,
       );
   }
   return problems;
@@ -682,6 +724,7 @@ if (import.meta.main) {
       allowDateOnly: true,
       extraChecks: (pages) => [
         ...sectionChecks(pages, readFileSync(join(WIKI_ROOT, "SCHEMA.md"), "utf8")),
+        ...normativeLanguageChecks(pages),
         ...ruleChecks(pages),
         ...slugChecks(pages),
         ...matrixChecks(pages),

@@ -243,8 +243,16 @@ a learning goal rather than a task. Explanation belongs in neither; both link ou
 pages instead of restating them.
 
 Normative language in `rule` pages follows RFC 2119: **MUST**, **MUST NOT**, **SHOULD**,
-**MAY**. Nothing else is normative — if a `concept` page seems to state a requirement, the
+**MAY**, and `lint.ts` rejects those keywords anywhere else — this file and STYLE.md excepted,
+being contracts about the wiki rather than about a CLI. Nothing else is normative — if a `concept` page seems to state a requirement, the
 requirement lives in a rule and the concept should link to it.
+
+An `archetype` is the page type most tempted to break this, since its subject IS how obligations
+differ by shape. It has two honest moves. Where the catalogue already has a rule, say how that
+rule binds for the shape and express the binding as the `acc.config.json` a project of that shape
+adopts — `severity: core` on a rule the catalogue calls `diagnostic` is a claim that gates a real
+build, which prose never does. Where the catalogue has no rule, it is guidance, and says so, until
+[profiles](../roadmap.md#5-profiles-and-the-outcome-algebra) mint the ids.
 
 ## How we'll know this worked
 
