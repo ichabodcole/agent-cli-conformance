@@ -10,12 +10,11 @@ description:
 
 # release — develop → main → published
 
-**Scope: the release only.** Landing work on `develop` needs none of this — commit it and move on.
-This skill starts when `develop` is ready to promote.
+**Scope: the release only.** Landing work on `develop` needs none of this. This skill starts when
+`develop` is ready to promote.
 
 **The policy lives in [`AGENTS.md`](../../../AGENTS.md) § Branches and releases**, including which
-commit types cut a version. This skill follows it and does not restate it; two copies of a rule is
-the drift this repo exists to catch.
+commit types cut a version. Follow it; do not restate it here.
 
 **The agent does not merge to `main`.** That is the human's call, and merging is what publishes.
 
@@ -30,9 +29,9 @@ git checkout develop && git merge --ff-only origin/develop
 bun run check > /tmp/gate.log 2>&1; echo $?  # must be 0
 ```
 
-> **⚠ Run the gate UNPIPED.** `bun run check | tail` reports **`tail`'s** status, which is always
-> `0`. **Measured here 2026-08-20, zsh:** `sh -c 'exit 7' | tail -5; echo $?` → `0`, against `7`
-> when redirected. A false green on the release gate is the worst possible place for this.
+> **⚠ Run the gate UNPIPED.** `bun run check | tail` reports **`tail`'s** status, not the gate's —
+> `sh -c 'exit 7' | tail -5; echo $?` prints `0`. Redirect and read `$?`. A false green matters most
+> here, where nothing downstream re-checks it.
 
 Then look at what is actually going to `main`, because it decides whether there is a release at all:
 
@@ -40,8 +39,8 @@ Then look at what is actually going to `main`, because it decides whether there 
 git log main..develop --format='%h %s'
 ```
 
-If nothing in that range is `feat`, `fix` or a breaking change, **merging produces no
-version and no release PR** — which is correct, not broken. Say so before anyone waits for one.
+If nothing in that range is `feat`, `fix` or a breaking change, **merging produces no version and no
+release PR** — which is correct, not broken. Say so before anyone waits for one.
 
 ## 1 · The release note — a FRESH agent, reading the tree
 
@@ -49,9 +48,10 @@ version and no release PR** — which is correct, not broken. Say so before anyo
 falsified. It does not reliably know what was _delivered_, and it will write the retro instead of
 the release note.
 
-Dispatch a subagent with the range and nothing else: no session summary, no hand-off. Reconstructing
-from `git log main..develop`, the diff and the docs is the point — it is what a future reader will
-do. **If it cannot write a good note from the artifacts, that is a finding about the artifacts.**
+Dispatch a subagent with the commit range and nothing else: no session summary, no hand-off.
+Reconstructing from `git log main..develop`, the diff and the docs is the point — it is what a
+future reader will do. **If it cannot write a good note from the artifacts, that is a finding about
+the artifacts.**
 
 Ask it to return, kept separate from the prose:
 
@@ -59,11 +59,11 @@ Ask it to return, kept separate from the prose:
 2. where documents **contradicted** each other or the code;
 3. anything that reads as shipped but is a **limitation**, or the reverse.
 
-**The sourcing rail applies to release notes.** This repo does not publish claims it has not
-measured — a note saying a checker "now catches X" when the checker reports `unverified` for X is
-the same defect the catalogue exists to report, shipped under the project's own name.
+**The sourcing rail applies to release notes.** Do not publish a claim nothing measured. A note
+saying a checker "now catches X" while that checker reports `unverified` for X is this project's own
+defect class, shipped under its own name.
 
-Build **one file**, subject on line 1, blank line, then body.
+Build **one file**: subject on line 1, blank line, then body.
 
 ## 2 · Cold-read it
 
@@ -92,7 +92,7 @@ gh pr edit <n> --title "$(head -1 note.md)" --body-file <(tail -n +3 note.md)   
 ```
 
 > **⚠ `gh` splits title and body; `git` does not.** `tail -n +3` assumes exactly one subject line and
-> one blank line — check with `awk 'NR<=3'` first or the body silently loses its first line.
+> one blank line — check with `awk 'NR<=3'` first, or the body silently loses its first line.
 
 ## 4 · Hand the human the merge command — with BOTH flags
 
@@ -111,8 +111,8 @@ that is not a Conventional Commit leaves release-please with no version signal.
 > clone, `git bisect` and anyone offline never see it.
 
 > **⛔ NEVER `-m "subject" -F body` with `git merge`.** git concatenates them **with no blank line**,
-> so the whole first paragraph becomes the subject. **Measured here 2026-08-20:** subject came back
-> as `subject: short This is the body paragraph and it is long.`
+> so the whole first paragraph becomes the subject — `subject: short This is the body paragraph and
+it is long.`
 
 ## 5 · The release-please PR
 
@@ -131,8 +131,8 @@ is built from **commit subjects only**, which is why the next step exists.
 
 ## 6 · The published Release — the step that is easy to skip
 
-The GitHub Release body is the changelog: a list of conventional-commit subjects. **Everything §1
-and §2 produced is absent from it**, and it is the one artifact a consumer actually reads.
+The GitHub Release body is the changelog: a list of commit subjects. **Everything §1 and §2 produced
+is absent from it**, and it is the one artifact a consumer actually reads.
 
 So after the release PR merges, put the note there:
 
@@ -140,10 +140,6 @@ So after the release PR merges, put the note there:
 gh release view v<version>
 gh release edit v<version> --title "<version> — <what a reader got>" --notes-file note.md
 ```
-
-Tags here are plain `v<version>` — no component prefix
-([`release-please-config.json`](../../../release-please-config.json) sets
-`include-component-in-tag: false`).
 
 **Keep the generated changelog.** Put the note above it rather than replacing it: the changelog is
 the complete list, the note is what it meant. Deleting the list to make room for prose loses the
@@ -157,38 +153,19 @@ The release PR commits the version bump to `main`, so `develop` is now behind:
 git checkout main && git pull && git checkout develop && git merge main && git push
 ```
 
-Then confirm the release is what you wrote, from a clean read:
+Then confirm the release is what you wrote:
 
 ```bash
-git log -1 --format='%s' main       # your subject, not "Merge pull request …"
-git log -1 --format='%b' main | wc -c   # ~subject length means --body-file was dropped
+git log -1 --format='%s' main            # your subject, not "Merge pull request …"
+git log -1 --format='%b' main | wc -c    # ~subject length means --body-file was dropped
 gh release view v<version>
 ```
 
-## 8 · What is measured here, and what is borrowed
+## 8 · Feedback
 
-This skill is adapted from `spellbook`'s and `anthill`'s `land` skills. Their own guidance is that a
-borrowed claim comes in three kinds, and only one of them ports:
+**Close the run by reporting on this file**, in a line or two: any step that misfired, was
+ambiguous, did not apply, or was missing. Raise it with the human as a proposed change — do not work
+around it silently, and do not edit this skill unprompted.
 
-| kind          | example                                           | treatment                         |
-| ------------- | ------------------------------------------------- | --------------------------------- |
-| **mechanism** | `-m` + `-F` concatenates with no blank line       | **ports** — it is git's behaviour |
-| **topology**  | which `git log` view reads back as releases       | **re-measure here**               |
-| **audience**  | whether the narrative belongs in git or in GitHub | **re-decide** — a human's call    |
-
-Both mechanisms above were **re-run in this repo on 2026-08-20** rather than carried, and both
-reproduced.
-
-**The topology is unmeasured, because this repo has never cut a release.** As of 2026-08-20 `main`
-sits at `4638293` with **no GitHub Release and no promotion merge** — its one merge commit,
-`07221f5`, predates the branch model and arrived by fast-forward, so `--first-parent main` is still
-154 of 157 commits rather than a list of releases. Nothing here yet says how that view reads once
-promotions start, or whether a back-merge fast-forwards `develop` onto `main`'s spine and buries its
-own history — true in spellbook, false in anthill, and exactly the kind of claim that stays silent
-when it fails to port.
-
-**At the first release, measure it and write the answer into §7.** Until then, treat §7's verify
-step as the thing that establishes the topology rather than as a formality.
-
-_A borrowed scar that never fires here is worse than no scar: it teaches a hazard this repo does not
-have. If a step misfires, correct it in place and say what you measured._
+A step that failed is worth more than a step that passed. The failure is the only evidence this file
+is wrong.
