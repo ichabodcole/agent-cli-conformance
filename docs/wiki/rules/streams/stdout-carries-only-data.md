@@ -39,10 +39,35 @@ text, so it goes to stdout with exit `0`. See
 
 ## How to comply
 
-Route every write through a single emitter that knows which stream it is addressing, rather
-than calling `console.log` / `println!` ad hoc. Two benefits: the discipline holds by
-construction, and it makes
-[whole-stream JSON validation](./machine-output-is-parseable.md) possible — which turns a
+**First, check where your parser writes usage errors — do not assume stderr.** The survey's
+finding is that stream discipline is not standardized, and two entries fail this rule before you
+write a line: `clipanion` v4 answers an unknown option (`Unknown Syntax Error: Unsupported option
+name`) and an extraneous positional **on stdout**, and `plumbum.cli` writes usage errors to
+**stdout**, leaving stderr empty — the research disqualifies it on exactly that ground. A third,
+`cac` 7, never routes the diagnostic at all: it throws an uncaught `CACError`, so the caller
+receives a Bun-rendered stack trace carrying library source lines instead of a message you placed
+on a stream deliberately. If you build on any of these, catching the parse error yourself and
+writing the message to stderr — `process.stderr.write` in TS, `sys.stderr` in Python — is the
+whole fix, and it is not optional.
+
+**If you use `commander`, take both streams with `configureOutput({ writeOut, writeErr })`; in
+`cobra` the equivalent is `SetOut` / `SetErr` on the root command.** Both are verified working.
+That single chokepoint is what lets a test assert that nothing diagnostic ever reached `writeOut`,
+rather than leaving it to code review.
+
+**If you use `cobra`, set `Args` on every command node — including groups you never run.** This is
+the worst case found anywhere in the survey, and it is this rule's exact failure mode: a
+non-runnable nested group invoked with an unknown subcommand (`./cli grp2 bogus`) returns
+`flag.ErrHelp`, which cobra converts into "print help, return `nil`" (`command.go:1152–1155`) —
+**exit 0, with a wall of help text on stdout.** A consumer piping that into a parser gets garbage
+where it asked for data. Cobra's `Args` defaults to nil, which is also why it accepts an unknown
+subcommand at exit 0 at all; a non-nil `Args` on every node is what turns the invocation back into
+an error.
+
+**No framework empties stdout for you on a late failure — that half is yours in every language.**
+Route every write through a single emitter that knows which stream it is addressing, rather than
+calling `console.log` / `println!` ad hoc. Two benefits: the discipline holds by construction, and
+it makes [whole-stream JSON validation](./machine-output-is-parseable.md) possible — which turns a
 stray debug print anywhere in the codebase into a hard test failure rather than a code-review
 question.
 

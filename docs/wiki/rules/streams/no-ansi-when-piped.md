@@ -38,14 +38,64 @@ and **SHOULD** treat `TERM=dumb` the same way.
 
 ## How to comply
 
-Nearly every colour library detects TTY automatically — the common failure is bypassing it with
-a hand-written escape in one code path, typically an error message or a banner.
+**No framework table here, because the survey did not produce one.** It covered argument parsers,
+not colour libraries, so this page cannot tell you whether your ecosystem's colour package
+auto-detects a pipe — verify that yourself with one piped run. What the research does establish is
+a stream-level discipline, two measured framework traps, and where the overrides are convention
+rather than measurement.
 
-Two specifics:
+**Guard each stream separately, with the standard-library check.** `process.stdout.isTTY` /
+`process.stderr.isTTY` in Node (both are `undefined`, not `false`, when redirected),
+`sys.stdout.isatty()` / `sys.stderr.isatty()` in Python, `std::io::IsTerminal::is_terminal` on each
+handle in Rust, `os.Stdout.Stat()` tested for `os.ModeCharDevice` in Go. One check reused for both
+streams is the usual half-fixed state: colour stripped from the data, kept on the diagnostics that
+get captured alongside it. The same guard has to cover spinners and progress bars, not only SGR
+colour — the [agent-CLI convention is a `--quiet` that suppresses
+spinners](../../../research/2026-08-13-frameworks-languages.md), on the stated grounds that the
+animation "is noise that consumes context window tokens", and a flag the caller must remember is
+weaker than a guard that fires on its own.
 
-- Check the stream you are writing to. `stdout.isTTY` says nothing about stderr, and a tool
-  writing coloured diagnostics while stdout is piped is the usual half-fixed state.
-- Suppress animation, not just colour. Spinners and progress bars need the same guard.
+**If you use Typer, set `TYPER_USE_RICH=0`.** Typer's error output is Rich-formatted and emits
+Unicode box-drawing **even when stderr is not a TTY** — measured at ~160 characters of box to carry
+a 24-character message, on every error ([frameworks
+§2.9b](../../../research/2026-08-13-frameworks-languages.md)). The switch is an environment
+variable, not a TTY check: `typer/core.py:26` reads the `TYPER_USE_RICH` env var through
+`parse_boolean_env_var`, defaulting to `True`. Turning it off also takes ~47 ms off every
+`--help`. Two honest limits: box-drawing characters are not CSI escapes, so this particular defect passes this
+rule's probe while still costing an agent its context window; and the survey did not record whether
+that same path also emits colour, so the ANSI question for Typer is open. Plain Click does not do
+this.
+
+**If you wrap cobra in `charmbracelet/fang`, you have added ANSI styling to output agents parse.**
+`fang.Execute` is a wrapper, not a parser — it changes nothing about argument handling and adds
+styled help and errors ([frameworks
+§2.5c](../../../research/2026-08-13-frameworks-languages.md)). The survey did not establish whether
+fang suppresses that styling on a non-TTY, so treat it as unverified and check a piped run before
+shipping.
+
+**Do not route output through a pager.** `aws` v2 pipes everything through `less`/`more` by default
+and needs one of `--no-cli-pager`, `AWS_PAGER=`, or `cli_pager=` to stop — the notorious CI trap
+([case studies §2.4](../../../research/2026-08-13-case-studies.md)). `gh` is the shape to copy: its
+own agent skill states that in non-TTY contexts it skips the pager, strips colour, and fails fast,
+and tells callers they need not defensively set `GH_PAGER` ([case studies
+§4.2](../../../research/2026-08-13-case-studies.md)). Correct by default beats an opt-out the caller
+has to know about.
+
+**Do not stop at `isatty`, for two reasons.** Agent harnesses commonly allocate a PTY, so an
+inference-only tool hands an agent the human rendering; `gh` has `GH_FORCE_TTY` to force human mode
+_on_ and nothing to force it off except not being a terminal ([case studies §2.1,
+§3.9](../../../research/2026-08-13-case-studies.md)), which is why [machine
+mode](../../concepts/machine-mode.md#how-machine-mode-is-selected) must be selectable explicitly.
+And machine output should ignore colour _configuration_, not merely the TTY: git's porcelain
+guarantee is stability across versions **or user configuration**, and porcelain explicitly ignores
+`color.status` ([case studies §2.6](../../../research/2026-08-13-case-studies.md)).
+
+**The TTY-present clauses are conventions, and this page claims no implementation of them.**
+[`NO_COLOR`](https://no-color.org) is the published convention — the variable present and non-empty
+suppresses colour _regardless of its value_, so `NO_COLOR=0` means colour off, which is the common
+bug — alongside a `--no-color` flag and `TERM=dumb`. No surveyed library's handling of any of the
+three was measured here, so implement them from the convention rather than assuming your colour
+package already does.
 
 ## Why
 

@@ -44,13 +44,68 @@ it between commands under the same flag.
 
 ## How to comply
 
+No surveyed framework serializes your payload for you, so there is no library switch that
+delivers this rule. The one machine-output setting in the survey is `oclif`'s per-command
+`enableJsonFlag`, serialized into the published `oclif.manifest.json` — and it declares only
+that the command accepts `--json`, not what the command writes. The work is therefore in two
+halves: stop everything that is not the payload from reaching stdout, and pin one shape per
+command.
+
 Route all stdout writes through one emitter (see
 [stdout carries only data](./stdout-carries-only-data.md)) and give it the declared kind. Then
 `data` commands physically cannot emit two documents, because there is one place that writes.
+Below that, the contamination paths and shape hazards the survey actually measured.
 
-For `stream`, flush per record. A stream that buffers until completion is indistinguishable
-from a slow `data` command, and defeats the purpose for a caller that wanted incremental
-results.
+**If you use `cobra`, set `Args` on every node — root, group and leaf.** `Args` defaults to
+`nil`, which means "accept anything", and a non-runnable group with a nil `Args` answers a
+mistyped subcommand by **printing help text to stdout and exiting 0**. `cobra.NoArgs` on each
+node closes it; there is no global strict switch, so a node added later reopens the hole. Do
+not enable `FParseErrWhitelist.UnknownFlags`, which additionally swallows the unknown flag's
+value.
+
+**If you use `clipanion` v4 or `plumbum.cli`, the parser writes usage errors to stdout.**
+Both were measured doing it — `plumbum.cli` leaves stderr empty entirely. A usage error on
+stdout is not a diagnostic a caller can ignore; it is a byte in the document the caller is
+parsing. Intercept the parser's error path and re-emit on stderr before it reaches the caller,
+or pick a different parser. (Neither was measured with a machine-output mode, so what they do
+under one is unestablished.)
+
+**Capture the stdout of anything you shell out to.** Cargo publishes the honest caveat here:
+`--message-format=json` "only controls Cargo and Rustc's output. This cannot control the
+output of other tools", and its suggested workaround pushes the repair onto the consumer —
+"only interpret a line as JSON if it starts with `{`". Do not ship that burden. Pipe the
+child's stdout, and re-emit it on stderr or as a field in your own payload.
+
+**Gate machine mode on the mode flag, never on `isatty()`.** `gh` prints its "no results"
+explanation only when stdout is a TTY, and agent harnesses commonly allocate a PTY — so the
+TTY test selects the human branch for exactly the caller this rule protects. Terraform is the
+shape to copy: `terraform plan -json` implies `-input=false`, so selecting machine output
+switches off the interactive path rather than inferring it from the terminal.
+
+**One command, one shape; one shape, one spelling.** Docker is the measured counter-example
+twice over: `docker ps -a --format json` and `--format '{{json .}}'` return _different values_
+for the same key, and `--format json` emits NDJSON for list commands but a single object for
+scalar ones, so a caller needs different parsing rules per command. Every spelling of your
+machine flag must reach one code path, and a command's kind must not depend on how many
+results it found.
+
+**For `stream`, flush per record and end with a terminal record.** A stream that buffers until
+completion is indistinguishable from a slow `data` command, and defeats the purpose for a
+caller that wanted incremental results. Cargo's `--message-format=json` closes with
+`{"reason": "build-finished", "success": true|false}`, so a streaming consumer learns the
+outcome from the stream and not only from the exit code. Terraform's `-json` gives each line
+a fixed envelope — `@level`, `@message`, `@timestamp`, and a `type` discriminator for the
+rest of the keys — which lets a consumer route a line before it understands the line.
+
+**Carry the format version in the payload.** Terraform's `format_version`, and
+`cargo metadata`'s `--format-version=1` echoed back as `"version": 1`, are the two surveyed
+mechanisms; cargo additionally warns when the consumer has not pinned. Either way the version
+is a field in the document this rule requires to parse whole, which is why it belongs here
+rather than in release notes.
+
+For `opaque`, the requirement is only that you declare `media_type` and write nothing else to
+stdout — no surveyed tool declares a media type for its machine output, so there is no prior
+art to copy.
 
 ## Why
 

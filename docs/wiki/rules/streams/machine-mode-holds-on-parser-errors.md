@@ -47,16 +47,41 @@ defect reported once by each rule that governs half of it.
 
 ## How to comply
 
-Resolve the mode **before** the parser can fail, from the raw argv, and hand the resolved mode to
-one emitter that every exit path goes through. The fix that only patches the parser's error
-handler leaves the next parser error — a missing value, an out-of-set value, an arity violation —
-to be found separately.
+The defect is one of **ordering**: the parser fails before the output layer is configured, so
+there is nothing to emit into. Resolve the mode from the **raw argv** before the parser runs, and
+hand it to one emitter that every exit path goes through. A fix that only patches the parser's
+error handler leaves the next parser error — a missing value, an out-of-set value, an arity
+violation — to be found separately.
+
+**If you use `commander`, the hooks are `exitOverride()` and `configureOutput()`** — the pair the
+survey verified as its in-process error path
+([§2.2](../../../research/2026-08-13-frameworks-languages.md)). `exitOverride()` makes a parse
+failure **throw** a `CommanderError` carrying `code` (`commander.unknownOption`) and `exitCode`
+rather than exiting the process; `configureOutput({ writeErr })` **captures** the diagnostic
+commander would otherwise have printed (`error: unknown option '--bogus'`), so it becomes the
+envelope's `message` instead of prose beside it. [`acc` uses exactly this
+pair](../../../../src/acc/cli.ts) — with one trap worth copying: `exitOverride()` also throws for
+`--help` and `--version`, which are requests that **succeeded**, so classify
+`commander.helpDisplayed` and `commander.version` before treating a throw as failure.
+
+**Same shape, other hooks.** `clap`: `try_parse_from` returns a `Result` instead of printing and
+exiting, so you render the `Error` yourself. `kong`: inject a `kong.Exit` function. `node:util
+parseArgs`: it throws a raw `TypeError` (`ERR_PARSE_ARGS_UNKNOWN_OPTION`) and does no exit
+handling at all, so the whole error path is already yours.
+
+**No surveyed framework emits an error envelope**, and `--json` in `gh`, `docker` and `kubectl`
+formats only the _success_ payload — only `cargo`, `terraform`, `oclif`/`sf` and `vercel`
+structure errors at all
+([case studies §3.4](../../../research/2026-08-13-case-studies.md)). Whichever parser you use,
+the emitter is yours to write; the work is routing the parser's own errors through it.
 
 Do **not** resolve machine mode by matching the literal string `json` in the argv the parser
 accepted. The archaeology's eight-cell matrix showed parser errors not participating in format
 resolution **at all**, so a literal-match repair fixes the explicit-flag row and leaves the
-piped-default row exactly as broken as before. `acc`'s own early-mode resolution reads the whole
-argv plus the TTY state before any parsing happens, which is the shape that works.
+piped-default row exactly as broken as before. `acc`'s `earlyMode` reads the whole argv — both
+`--format=json` and `--format json`, since matching only the separated spelling silently dropped
+a format the caller had stated — then falls through to the env var and the TTY, all before
+commander sees a token.
 
 A repeated `--format` must resolve **last wins**, or the same argv yields two verdicts depending
 on which code path saw it.

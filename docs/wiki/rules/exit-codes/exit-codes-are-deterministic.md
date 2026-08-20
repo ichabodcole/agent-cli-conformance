@@ -36,17 +36,61 @@ code sometimes meaning success.
 
 ## How to comply
 
-Almost always satisfied for free. When it isn't, the usual causes are:
+No framework has a setting for this, and none needs one: the status a parser emits on a usage
+error is a constant it never varies — `1` in `commander`, `cac` and `clipanion`, `2` in `clap`,
+`80` in `kong`, `252` in `@stricli/core`. Every mechanism below is in code you wrote, so the
+remedies are structural rather than configuration.
 
-- exit status derived from a value that depends on iteration order over a hash map or a set
-- a timeout or deadline short enough to be marginal on a loaded machine, so the same command
-  sometimes completes and sometimes times out
-- a cleanup path that races the exit and occasionally changes the status
-- signal handling that lets the process exit with `128+n` under conditions the caller did not
-  cause
+**If a code can arrive from a crash, it is not a code you chose.** `kubectl` allocates exactly
+one failure constant (`DefaultErrorExitCode = 1` in `pkg/cmd/util/helpers.go`), yet
+`kubectl api-resources` against an unreachable cluster exits `2` through an unhandled Go panic —
+so cluster reachability, not argv, picks the status. Catch panics and uncaught exceptions at the
+top of `main` and map them onto your allocated internal code. Crashing on an inert invocation is
+[G1](../lifecycle/inert-invocations-do-not-crash.md)'s violation as well as this one.
 
-The timeout case is the common one and the most misleading, because it makes a
-performance problem present as a correctness problem.
+**If you execute work the caller supplied, reserve a band for your own failures.** `docker`
+passes a container's status through verbatim (container `exit(42)` → `42`) and keeps `125` for
+"docker itself failed", `126` for found-but-not-invokable, `127` for not-found. `cargo run` also
+passes the child's code through verbatim but reserves nothing, which is why `cargo run` exiting
+`101` is ambiguous between "cargo failed" and "your program panicked" — one code, two meanings,
+selected by which side failed. `gh` passes extension exit codes through unchanged. Passthrough is
+fine; passthrough into a range you also use is the second clause of this rule broken.
+
+**If a signal can end the process, decide the status instead of inheriting it.** Everything above
+`128` is where a signal death gets _reported_, not a code you allocated — `aws` documents `130`
+precisely as `128 + SIGINT`. The case that bites without any caller involvement is a closed
+downstream pipe: `gh` handles it and exits `0` when its pager pipe closes, on the reasoning that
+piping to `head` is not a failure. Install a `SIGPIPE` disposition and pick the code deliberately.
+
+**If the status is computed, stop computing it.** A count of failures, a hash of a message, the
+first element of an unordered set, or whatever the last operation happened to return are all
+statuses that vary with input volume or iteration order rather than with the outcome. Select the
+code from the [taxonomy](../../concepts/exit-codes.md#the-taxonomy) by what the caller should do
+next. A computed status also escapes the allocated range as soon as the count exceeds nine, and
+past `125` it collides with the reserved band — see
+[exit codes stay below 125](../../decisions/exit-codes-below-125.md).
+
+**If a deadline is marginal, the status becomes a report on machine load.** The taxonomy reserves
+`124` for a timeout following `timeout(1)`'s convention; a deadline short enough to be marginal
+makes the same command return `0` on an idle machine and `124` on a loaded one, presenting a
+performance problem as a correctness problem. The same applies to a cleanup path that races the
+exit — do the cleanup before you choose the status, not after.
+
+**If the failure is genuinely intermittent, allocate it a code and mark it `retryable: true`,**
+as the taxonomy does for `7` (rate limited). The alternative is what `stripe` does — a single
+`os.Exit(1)` in `pkg/cmd/root.go` for every failure path — where a caller cannot separate "you
+typo'd" from "the card declined", so an intermittent cause is indistinguishable from a permanent
+one and no retry policy is correct. `deno` collapses the same way: every non-zero status is `1`.
+
+**Keep ambient config and TTY detection out of the exit path.** `gh` is the model: its
+`NoResultsError` prints its explanation only when stdout is a TTY, but exits `0` either way — the
+terminal changes the prose, never the code. `git`'s `help.autoCorrect` is the counter-example,
+flipping an identical mistyped invocation between exit `1` and exit `0` depending on the
+configured value; [A5](../parsing/no-fuzzy-auto-correction.md) covers why to pin it to `0`.
+
+Not established by the research: no surveyed tool was measured exhibiting a nondeterministic exit
+code, so the mechanisms above are named from their observable structure rather than from a
+recorded flake, and their relative frequency is not claimed.
 
 ## Why
 
