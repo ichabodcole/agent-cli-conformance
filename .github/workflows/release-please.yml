@@ -1,0 +1,30 @@
+# Versioning and the changelog, derived from the commit log rather than maintained by hand.
+#
+# `release-type: node` makes package.json the version of record, which is already what
+# src/acc/version.ts reads — so `acc --version` follows a release with no second edit and no way
+# to disagree with the tag. Nothing here publishes to npm; the package is private and installed
+# from git.
+on:
+  push:
+    branches:
+      - main
+  # Manual trigger. The push trigger cannot recover a missed release: if a run is blocked — repo
+  # Workflow permissions set to read-only is the usual cause — then fixing the cause fires
+  # nothing, and the only other way to re-run release-please is to push a commit to main, which
+  # is a bad recovery path for a release tool.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+name: release-please
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
