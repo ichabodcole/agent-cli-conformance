@@ -39,17 +39,28 @@ hostile-HOME probe exits non-zero, without ever comparing it to the plain run. A
 `--version` at all** exits identically both ways and is accused of a HOME dependency it does not
 have.
 
-- [ ] Change the predicate to fire only on a **difference**:
+- [x] Predicate now fires only when the plain run reported a version and the hostile one did not — narrower than a plain **difference**:
       `hostile.exitCode !== plain.exitCode || hostile.stderr !== plain.stderr`.
-- [ ] Collapse the redundancy this exposes: when `--version` does not exist, one clause should say
+- [x] Collapse the redundancy this exposes: when `--version` does not exist, one clause should say
       so rather than three restating "it died".
-- [ ] Fixture: a CLI with no `--version` that exits non-zero cleanly. The existing guard is
+- [x] Fixture: a CLI with no `--version` that exits non-zero cleanly — `broken/no-version-flag.ts`. The existing guard is
       `crashedUnverified()`, which only fires for a crash — a clean exit `2` walks straight past it,
       which is exactly why this shipped.
-- [ ] Check the same shape in every other checker that compares a hostile probe to a plain one.
+- [x] Checked: D1 is the only checker that compares a hostile probe to a plain one. D4 names the pattern in a comment but does not use it.
 
 **Why first.** A checker that invents a cause is the only class of defect that destroys the premise.
 Internal review never found it because every target we ever pointed at had a `--version`.
+
+**Landed** on `fix/d1-hostile-home-predicate`. The predicate is deliberately narrower than the
+adopter proposed. They suggested firing on any difference between the two runs; "differing" is not
+the claim the clause makes. The claim is that configuration is **required**, which is established
+only when the plain run reported a version and the hostile one did not. Two runs that fail
+differently for some third reason are not evidence about configuration — and under this predicate a
+target with no `--version` cannot reach the clause at all.
+
+The redundancy collapse had to extend one step further than expected: `--version --json` against a
+CLI with no `--version` also fails, so the machine-mode clause restated the same fact a third time.
+It is now skipped whenever the plain run reported no version.
 
 ### 2. EXT-4 — let a CLI declare machine mode · P0
 
