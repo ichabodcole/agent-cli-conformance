@@ -157,9 +157,23 @@ all.
 
 ## Evidence
 
-`gh` mentions its structured surface in help and ships an agent-facing skill documenting
-invocation patterns, which its own changelogs point users toward. `hf` documents `--json` and
-`-q` for composition directly in help.
+**Measured across ten installed CLIs, and the result is worse than this page used to claim**
+([2026-08-19](../../../research/2026-08-19-help-advertises-machine-mode.md)). Two of ten name a machine-readable path as a flag in root help: `rg`
+(`--json`) and `jq`, where the tool _is_ the JSON path. **Not one of the ten names a query or
+composition flag** — no `-q`, `--jq`, `--template` anywhere at the root. Seven do point at a
+reference or docs surface, so the pointer is the common part and the flag is what goes
+unadvertised.
+
+This page previously cited `gh` and `hf` as tools that get it right. Neither claim survived
+measurement. `gh`'s root help names a `formatting` help topic — "Formatting options for JSON data
+exported from gh" — so it advertises that a structured surface _exists_, but its entire `FLAGS`
+block is `--help` and `--version`, and `--json`, `-q`, `--jq` and `--template` appear nowhere.
+**`gh` would fail this rule's own probe**, which scans a recognised options block. `hf` 0.35.3 is
+a flatter refutation: no occurrence of `json` in any case, in 1,022 bytes of root help.
+
+That `gh` is elsewhere the model for pager and TTY behaviour and still fails here is the useful
+part — a tool can be exemplary on one axis and absent on another, which is why the rule is
+measured rather than assumed from reputation.
 
 The underlying economics come from the CLI-versus-MCP research: a **known** command surface
 substantially outperforms one discovered at runtime, and the cheapest arrangement is a compact
