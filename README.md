@@ -45,13 +45,20 @@ bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 
 That needs GitHub access to this repository. The shorter
 `bun add -d github:ichabodcole/agent-cli-conformance` goes through GitHub's tarball API, which
-answers `404` for a private repository; it becomes the install line if and when this one opens
-up.
+answers `404` for a private repository whatever token is in the environment
+([oven-sh/bun#19618](https://github.com/oven-sh/bun/issues/19618)); it becomes the install line
+if and when this one opens up.
 
-Either form records the resolved commit in your lockfile. To pin explicitly, name a **commit**
-after the `#` — `…agent-cli-conformance.git#4638293`. Not a tag: Bun 1.3.14 resolves a branch or
-a commit there but not a tag, so a release tag after the `#` fails with `no commit matching`
-however it is spelled.
+Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
+commit or a release tag after the `#` — `…agent-cli-conformance.git#agent-cli-conformance-v0.1.0`.
+
+One caveat, because it is indistinguishable from a tag that does not exist: Bun keeps a bare
+clone of each git dependency in its cache and does not re-fetch it, so **a tag pushed after your
+first install of this package is invisible** and the install fails with
+`no commit matching "…" found (but repository exists)`. `bun pm cache rm` fixes it
+([oven-sh/bun#18947](https://github.com/oven-sh/bun/issues/18947)). A `#semver:` range is a
+different matter — Bun does not support one
+([oven-sh/bun#4978](https://github.com/oven-sh/bun/issues/4978)).
 
 Then point it at your CLI:
 
