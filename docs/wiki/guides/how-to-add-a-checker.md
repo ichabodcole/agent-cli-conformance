@@ -202,7 +202,7 @@ That runs the typecheck, the linter, both docs lints and the suite. Specifically
 
 - the rule page and the checker agree on `tier`, `probe_level`, `coverage`, `coverage_gaps` and
   `coverage_established`, in both directions;
-- every `rule_id` has a checker file and every checker has a rule page;
+- every `implemented` rule has a checker file and every checker has a rule page;
 - the page carries its required sections, in the order SCHEMA declares.
 
 Then run the kit against its own fixtures and confirm the new rule fails the broken one and

@@ -702,15 +702,21 @@ describe("schema", () => {
     expect(data.errors.map((e: { kind: string }) => e.kind)).toContain("not_found");
   });
 
-  test("every declared error kind maps to a distinct, declared exit code", async () => {
+  test("every declared error kind maps to a distinct code below the reserved band", async () => {
     const r = await run(["schema"]);
     const { data } = JSON.parse(r.stdout);
-    for (const e of data.errors as Array<{ kind: string; exit_code: number }>) {
+    const kinds = data.errors as Array<{ kind: string; exit_code: number }>;
+    for (const e of kinds) {
       // 124, not 125: `timeout` claimed 124 for "the time limit was reached", so it is spoken
       // for by an external convention and is not ours to allocate — the same argument that
       // reserves 125, 126, 127 and the signal band above them.
       expect(e.exit_code).toBeLessThan(124); // the reserved passthrough band
     }
+    // The word "distinct" was in this test's name for months while nothing asserted it. Two
+    // kinds sharing a code would make the code unreadable as a category, which is the property
+    // C2 requires of every CLI this kit checks — so the reference implementation owes it too.
+    const codes = kinds.map((e) => e.exit_code);
+    expect(new Set(codes).size).toBe(codes.length);
   });
 });
 
@@ -719,7 +725,7 @@ describe("schema", () => {
 // This is the POSITIVE CONTROL, and it is now self-referential: the checker checks itself. If
 // acc ever stops conforming, or a checker breaks in a way that stops detecting, this goes red.
 // This suite is ADDED alongside the hand-written probes above, not a replacement for them: the
-// kit only re-implements what the 20 rule pages cover, and does not check the `choices` field's
+// kit only re-implements what the rule pages cover, and does not check the `choices` field's
 // contents, `next` command templates, machine-mode precedence, or schema completeness — those
 // stay covered by the tests above.
 const ACC: TargetInfo = { path: CLI, argv0: ["bun", CLI] };

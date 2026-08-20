@@ -466,6 +466,48 @@ probe-plan dry run, which belongs with step 3 — it is a safety mitigation, not
 
 ---
 
+## The installed package is never the thing under test
+
+**What it is.** A gate step that installs `acc` the way an adopter does — from a git ref into an
+empty project — and runs the linked binary by name against a conforming fixture and a broken one,
+asserting `0` and `9`.
+
+**Why it matters.** Everything the gate runs today runs from a source checkout, so the whole
+packaging surface is unmeasured: `commander` sat in `devDependencies` while `cli.ts` imported it
+at runtime, and `prepare` ran `husky` unguarded. Both worked perfectly in this repository and
+would have failed on the consumer's first import. Both were found by hand, once, on the day the
+package was first installed anywhere — which is not a mechanism.
+
+**Also here.** A git install currently prints `Blocked 1 postinstall`, because the `prepare`
+script that sets up this repository's own hooks is shipped inside the consumer's artifact. It is
+harmless and it is noise a consumer should not have to interpret.
+
+**Blocked on** nothing. The cost is one CI job and a fixture; the reason it is not done is that
+the release story is a day old.
+
+## A ratchet the tool does not turn
+
+**What it is.** An outcome code, and the report algebra behind it, for a run whose target
+conforms but whose `acc.config.json` no longer describes it — today that is a `knownFailures`
+entry the target has started passing, reported as a **stale expectation**.
+
+**Why it matters.** `knownFailures` is documented as debt that only shrinks, and borrows the
+word ratchet from Web Platform Tests, where the list failing on a newly-passing entry is the
+mechanism. Here nothing turns: the run names the stale line and exits `0`, so a project that
+ignores the reminder keeps a suppression that will silently excuse the same rule when it
+regresses. The distinction between debt and a waiver — the thing the two config keys exist to
+keep apart — quietly stops being enforced by anything.
+
+**Why it is not a small fix.** Exit `9` is wrong for it. A target with a stale expectation _is_
+conformant, and a `9` would assert the opposite — a CLI reporting a false outcome, which is the
+defect this catalogue exists to report. It needs its own code in the `9`–`123` outcome band, and
+those are append-only once published, so the shape has to be right the first time: whether
+configuration staleness is one outcome or a family, whether it composes with a non-conformant
+verdict on the same run, and whether a project can decline it the way it declines a rule.
+
+**Blocked on** [step 5](#5-profiles-and-the-outcome-algebra), which is where the outcome algebra
+is designed rather than extended one code at a time.
+
 ## An evidence audit nobody has run
 
 **What it is.** A pass over every rule page's `## Evidence` section, checking that each measured

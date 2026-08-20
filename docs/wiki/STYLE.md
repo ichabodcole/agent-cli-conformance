@@ -9,8 +9,9 @@ page is right and the output style needs updating.
 
 ## This wiki uses Diátaxis
 
-The five page types — `concept`, `archetype`, `rule`, `decision`, `guide` — are
-[Diátaxis](https://diataxis.fr) with local names. That has never been stated anywhere, which left
+The six page types — `concept`, `archetype`, `rule`, `decision`, `guide`, `tutorial` — are
+[Diátaxis](https://diataxis.fr) with local names. A `tutorial` lives in `guides/` beside the
+guides; the directory groups by reader task, the `type` distinguishes the two shapes. That has never been stated anywhere, which left
 contributors following a shape whose reasoning was invisible.
 
 Diátaxis sorts documentation on two axes: **acquisition** (studying) against **application**

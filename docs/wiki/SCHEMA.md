@@ -69,7 +69,7 @@ folders organise them. `decisions` / `guides` are **atomic and cross-cutting** �
 
    ```yaml
    ---
-   type: concept | archetype | rule | decision | guide # OKF's one REQUIRED field
+   type: concept | archetype | rule | decision | guide | tutorial # OKF's one REQUIRED field
    title: Exit codes # the H1 and the nav name
    description: One sentence; doubles as the catalog hook in index.md.
    tags: [exit-codes, errors] # OKF convention; primary relation for atomic pages
@@ -123,8 +123,9 @@ frame: see
 ### Two fields, two questions
 
 `checker_status` and `coverage` are routinely confused, and the confusion runs one way: a
-reader takes `implemented` for "the rule is enforced". Every rule in the catalogue is
-`implemented` and every one is `partial`, so that reading is wrong for all of them.
+reader takes `implemented` for "the rule is enforced". Every rule in the catalogue that has a
+checker is `partial`, so that reading is wrong for all of them — and one rule
+([B4](./rules/streams/output-is-delivered-whole.md)) is `planned`, with no checker at all.
 
 | Field            | The question it answers                                         |
 | ---------------- | --------------------------------------------------------------- |
@@ -204,8 +205,9 @@ Two properties this buys, and the reason rules are pages rather than sections:
 
 - **Conformance failures cite the page.** The kit emits the rule's path, so whoever hit the
   failure lands on one atomic page explaining the rule and how to fix it.
-- **The lint is bidirectional.** Every `rule_id` must have its declared checker file, and
-  every checker must have a rule page. `tier`, `probe_level`, `coverage`, `coverage_gaps` and
+- **The lint is bidirectional.** Every `checker_status: implemented` rule must have its declared
+  checker file, and every checker must have a rule page. A `planned` rule may name the path its
+  checker will take without the file existing — that is what `planned` is for. `tier`, `probe_level`, `coverage`, `coverage_gaps` and
   `coverage_established` must be identical on both sides. Documentation drift fails the gate.
 
 `rule_id` values are **append-only**. They appear in conformance reports that outlive any

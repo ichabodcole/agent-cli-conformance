@@ -92,19 +92,26 @@ Splitting the two claims is a correctness fix, not a softening.
 
 Conflating them — treating an unverified core rule as disqualifying — makes the verdict say
 something false. `git` is the illustration, and it is a good one precisely because it is not a
-clean sheet. `acc check $(which git)`, against git 2.55.0, with the thirteen passing rules
-elided:
+clean sheet. One capture, with the thirteen passing rules elided:
 
 ```
-NOT CONFORMANT (L0) — 2 core violated, 1 core unverified, 13 core partially covered
+NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered
 
+  UNVR  A7  root help advertises no closed value set for any flag, so this target has made no declaration to falsify
   UNVR  B3  no machine-mode flag was advertised in help, so there is nothing to parse
-  FAIL  C2  the same error class produced different codes (129,1)
+  UNVR  B5  no machine-mode flag this probe can select was advertised in help, so there is no declared mode to hold
+  FAIL  C2  the same error class produced different codes (129,1,1)
   FAIL  D2  bare invocation wrote 2290 bytes to stdout
   FAIL  D3  help names no machine-mode flag or schema command; B3 will be unverified as a result
 
-  core 13/16 · violations 2 · unverified 1 (all tiers; 1 core) · partial coverage 13 core · diagnostics 1
+  core 13/18 · violations 2 · unverified 3 (all tiers; 3 core) · partial coverage 13 core · diagnostics 1
 ```
+
+_Captured 2026-08-20 from Homebrew's `git` 2.55.0 on macOS/arm64, against this catalogue at 23
+rules._ Read it as one observation with coordinates, not as the result. Every number in it moves:
+the totals with the catalogue, the byte count and the exit codes with the build — a different
+2.55.0 build on the same machine reports a different `D2` size. What the example is for is the
+_shape_ of the answer, and that has been stable while the numbers have not.
 
 D3 is `diagnostic`, so it is reported and binds nothing. Of the two that do bind, both are real
 violations and `git` is non-conformant for them, on their own merits:
@@ -115,9 +122,10 @@ its usage text to stdout, where a consumer reads it as output, rather than to st
 
 B3's line is not a violation of anything. `git` advertises no machine-mode flag, so
 [B3](../rules/streams/machine-output-is-parseable.md) has nothing to parse and says so —
-"could not establish it", not "broke it". Counted as a failure it would have told git's
-maintainers they had broken three rules, one of which names nothing they did wrong, mixed in
-with two they can act on today. The first thing a maintainer does with a gate that cannot tell
+"could not establish it", not "broke it". The same is true of the other two: `A7` found no
+advertised value set to falsify, and `B5` no machine mode it could select. Counted as failures,
+those three would have told git's maintainers they had broken five rules — three of which name
+nothing they did wrong — mixed in with two they can act on today. The first thing a maintainer does with a gate that cannot tell
 those apart is turn it off.
 
 The opposite error is worse, and it is the one this whole catalogue exists to prevent: letting
@@ -241,9 +249,16 @@ and a conformance tool that cannot be tuned gets switched off entirely, after wh
 other rules help either. That is the shallow argument; [the frame](#the-frame-a-verdict-was-reached-in)
 is the real one.
 
-**A waived rule still RUNS.** Probes are shared across checkers, so running a waived rule costs
-no extra process, and the result is strictly more informative than skipping it: the report says
-what the verdict _would_ have been. A waiver sitting at `pass` is one the project can delete; a
+**A waived rule still RUNS, and it may still cost a spawn.** Waiving changes how a finding is
+reported; it does not remove the checker from the recorder, which collects every checker's probes
+before any waiver is applied. Where the invocation is one another checker also asked for, sharing
+makes it free — but a checker whose probe is its own sends it regardless.
+[A6](../rules/parsing/double-dash-terminator.md) is the case to have in mind: nothing else
+requests a `--` invocation, so a waived A6 still puts `-- --<sentinel>-value` in front of the
+target, and A6's own page explains why that positional is not nothing for a free-form-input CLI.
+
+What waiving buys is information rather than quiet: the report says what the verdict _would_ have
+been. A waiver sitting at `pass` is one the project can delete; a
 waiver sitting at `fail` is one still doing work. This is deliberately better than the ESLint
 model it borrows from, where a disabled rule produces no information at all.
 
@@ -336,15 +351,16 @@ would have violated is true and unreadable on its own. The clause is omitted ent
 has no waivers.
 
 The summary line at the foot of the report counts `unverified` across **every** tier, so the
-two lines can legitimately disagree — a target with one diagnostic gap and no core one shows
-`0` above and `1` below. Both scopes are named rather than left to the reader to reconcile:
+two lines can legitimately disagree — a target whose only gap is on a diagnostic rule shows `0`
+above and `1` below. In the capture above they happen to agree, which is why both scopes are
+named on the line rather than left to the reader to reconcile:
 
 ```
-  core 13/16 · violations 2 · unverified 1 (all tiers; 1 core) · partial coverage 13 core · diagnostics 1
+  core 13/18 · violations 2 · unverified 3 (all tiers; 3 core) · partial coverage 13 core · diagnostics 1
 ```
 
 A rule counted under `partial coverage` is also a rule that **passed**, so it appears in
-`core 13/16` as well. The two are not alternatives: the probe ran and found no violation, and
+`core 13/18` as well. The two are not alternatives: the probe ran and found no violation, and
 the scope of that probe was narrower than the page.
 
 The level is named because it bounds the claim: at `L0`,

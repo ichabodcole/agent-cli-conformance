@@ -6,8 +6,10 @@ and framework maintainers make ordinary command-line tools predictable, machine-
 safely operable by autonomous agents, using an executable specification and black-box evidence
 rather than documentation alone.
 
-> **Status: early.** The research is complete; the spec is being written. Nothing here is
-> stable yet.
+> **Status: pre-1.0.** Usable today and installable — 23 rules, 22 of them enforced by a
+> checker, run against your CLI as black-box evidence. Not yet settled: rule ids are
+> append-only but the report and schema shapes may still change before 1.0, every checker
+> covers only part of its rule, and only the `L0` probe level exists.
 
 **For** — CLI authors, framework and scaffold maintainers, and platform/tooling teams;
 agent-harness authors second. It is a conformance suite for _ordinary CLIs consumed by agents_,
@@ -35,7 +37,7 @@ those and is deliberately reported as two separate booleans (see
 
 ## Getting started
 
-You need [Bun](https://bun.sh) 1.3 or later. `acc` is not published to npm, and this repository
+You need [Bun](https://bun.sh) 1.4 or later, on **macOS or Linux**. `acc` is not published to npm, and this repository
 is **private** while the first few projects are run through it — so install it over SSH, into
 the project whose CLI you want to check:
 
@@ -80,6 +82,12 @@ the whole CI step one line with no flags.
 **Read the safety note before pointing it at your own work.** `acc check` **executes** the
 target — see [what L0 does not prevent](#the-conformance-kit) below.
 
+**Platform.** macOS and Linux are supported and tested; CI runs the gate on Ubuntu. Windows is
+untested and one safety guarantee is weaker there: a probe that outruns its deadline is bounded
+by terminating the target's whole **process group**, which is POSIX-only, so on Windows a
+descendant the target spawned may outlive the run. The deadline still resolves the probe either
+way. Details in [probing](docs/wiki/concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed).
+
 Where to go next:
 
 - **[Check your first CLI](docs/wiki/guides/check-your-first-cli.md)** — ten minutes, learning
@@ -90,8 +98,15 @@ Where to go next:
 
 ## Branches and releases
 
-`develop` is where work lands; `main` is what has been released. Branch off `develop`, merge
-back into `develop`, and open a pull request from `develop` into `main` to cut a release.
+`develop` is where work lands; `main` is what is released from. Branch off `develop`, merge
+back into `develop`, and open a pull request from `develop` into `main` to begin a release.
+
+**Releasing takes two merges, not one.** Merging `develop` into `main` publishes nothing: it
+makes release-please open a _second_ pull request carrying the version bump and the changelog
+entry, and merging **that** creates the tag and the GitHub Release. So between the two merges
+`main` holds the next release rather than the last one. Merge the promotion PR with a merge or
+rebase merge — a squash takes its headline from the PR title, and a title that is not a
+Conventional Commit leaves release-please with no version signal.
 
 [release-please](.github/workflows/release-please.yml) watches `main` only, and derives the
 version and the changelog from the commit messages
@@ -197,8 +212,12 @@ Two keys, two different statements, kept apart on purpose:
 }
 ```
 
-`knownFailures` is **debt**: "this is broken, I know, I will fix it." It only ever shrinks, and
-a rule that starts passing is reported as a **stale expectation** so the line gets deleted.
+`knownFailures` is **debt**: "this is broken, I know, I will fix it." It is meant only to
+shrink, and a rule that starts passing is reported as a **stale expectation** — the line to
+delete. That report is a reminder, not a gate: `acc` still exits `0`, because a target with a
+stale expectation is conformant and an exit code that said otherwise would be lying. Enforcing
+removal needs an outcome code of its own and is
+[on the roadmap](docs/roadmap.md#a-ratchet-the-tool-does-not-turn), not in the tool today.
 
 `rules` is a **declaration**: "this rule binds differently for my tool, by design."
 `severity` is `core`, `diagnostic` or `off` — a project may raise a rule as well as lower one —
