@@ -60,6 +60,21 @@ The second finding is an audience split. Each rule page serves two readers at on
 making their CLI conform, and someone building or maintaining the kit — and by word count the
 second reader is winning on a page whose stated purpose is to serve the first.
 
+## Disposition, as of 2026-08-19
+
+| Finding | State        | Where it landed                                                                                                                                             |
+| ------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DTX-1   | **actioned** | `guides/check-your-first-cli.md` (tutorial), `guides/how-to-reach-l0-in-your-project.md`, `guides/how-to-add-a-checker.md`; `tutorial` added as a page type |
+| DTX-2   | **actioned** | `How to comply` moved second on all 23 rule pages; section order now read from SCHEMA's table and linted                                                    |
+| DTX-3   | **actioned** | `concepts/probing.md` and the checker guide created; contributor material extracted from all 23 `## The probe` sections                                     |
+| DTX-4   | open         | largely absorbed by DTX-3 — worth re-measuring before acting                                                                                                |
+| DTX-5   | open         | `## The details` on concept pages still carries reference, decision and explanation                                                                         |
+| DTX-6   | open         | `archetypes/delegator.md` still states three unenforceable RFC-2119 obligations                                                                             |
+| DTX-7   | open         | `index.md` still catalogues by type only; the guides it would route to now exist                                                                            |
+| DTX-8   | **actioned** | `coverage_established` prose is linted, and per-type section presence and order with it                                                                     |
+
+This report stays `lifecycle: live` while DTX-4 through DTX-7 are unresolved.
+
 ## Priorities
 
 | Priority | Finding                                                    | Recommended outcome                                        |
