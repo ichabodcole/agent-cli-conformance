@@ -13,7 +13,7 @@ import { VERSION } from "../version.ts";
  * Works with no configuration, no credentials, and no network, so it is safe as a first probe
  * against an unknown build.
  */
-export function schemaCommand(mode: OutputMode, startedAt: number): void {
+export function schemaCommand(mode: OutputMode): void {
   const data = {
     name: "acc",
     version: VERSION,
@@ -44,7 +44,11 @@ export function schemaCommand(mode: OutputMode, startedAt: number): void {
   emit({
     mode,
     command: "schema",
-    startedAt,
+    // No `startedAt`. In machine mode this document IS `acc --help`, and D4 forbids help from
+    // carrying a duration — `meta.durationMs` flipped between 0 and 1 depending on how loaded
+    // the machine was, so two runs differed by one byte and `acc` failed its own core rule.
+    // Caught by CI on a slower runner after passing locally for months, which is the whole
+    // argument for the rule: a duration in a description of the tool measures the machine.
     data,
     next: [{ command: "acc rules --tier core", when: "to see what a conforming CLI must satisfy" }],
     // Text mode still emits JSON here: the schema IS structured data, and pretty-printing it

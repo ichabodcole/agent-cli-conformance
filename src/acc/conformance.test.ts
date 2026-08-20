@@ -330,6 +330,21 @@ describe("D — discoverability", () => {
     const [a, b] = await Promise.all([run(["--help"]), run(["--help"])]);
     expect(a?.stdout).toBe(b?.stdout as string);
   });
+
+  // The byte-identity test above catches a DURATION only by luck: it fails when two adjacent
+  // runs happen to land on different milliseconds. `meta.durationMs` sat in machine-mode help
+  // for months on that coin flip, passing locally and failing on a slower CI runner — `acc`
+  // violating a core rule of its own catalogue, which names "a duration" as forbidden content.
+  // This one fails every time the field comes back.
+  test("D4 no description of the tool carries a duration", async () => {
+    for (const args of [["--help"], ["--version"], ["schema"]]) {
+      const meta = (JSON.parse((await run(args)).stdout) as { meta: unknown }).meta;
+      expect({ args, meta }).toEqual({
+        args,
+        meta: { command: args[0] === "--version" ? "--version" : "schema" },
+      });
+    }
+  });
 });
 
 describe("E — interactivity", () => {

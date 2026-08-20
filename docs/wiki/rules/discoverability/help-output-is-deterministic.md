@@ -69,6 +69,15 @@ anything captured. The same goes for a temp directory. To catch one you have alr
 Go's `testscript`, which runs with `HOME=/no-home` and a `$WORK`-relative `TMPDIR` for precisely
 this purpose: point `HOME` and `TMPDIR` somewhere hostile, run help, and diff against a normal run.
 
+**If machine mode answers help with an envelope, check the envelope, not only the payload.** The
+forbidden content need not be in the help text at all: a wrapper carrying `elapsed`, `duration` or
+a request id puts a varying byte in help output while every line a human reads stays fixed. `acc`
+shipped exactly that — its machine-mode help is its schema, wrapped in an envelope whose
+`meta.durationMs` read `0` on a fast run and `1` on a slow one. It passed locally for months and
+failed on a slower CI runner, because a duration only breaks byte-identity when two adjacent runs
+straddle a millisecond. Timing belongs on commands that did work; a description of the tool has no
+duration worth reporting.
+
 **Colour is [its own rule](../streams/no-ansi-when-piped.md)**, but know what sits between your
 command tree and stdout. `charmbracelet/fang` wraps `cobra` and restyles its help and errors
 without changing the parser at all, so the bytes you are asserting on come from the styler rather
