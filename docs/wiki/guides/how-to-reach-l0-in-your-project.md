@@ -14,8 +14,8 @@ generated: { by: claude-opus-5, at: 2026-08-17 }
 
 ## Goal
 
-`acc check <your-cli>` exits `0` in CI, with every rule you do not satisfy either fixed, waived
-by design, or named as debt.
+`bunx acc check <your-cli>` exits `0` in CI, with every rule you do not satisfy either fixed,
+waived by design, or named as debt.
 
 This assumes you can already read a report. If you cannot, run
 [Check your first CLI](./check-your-first-cli.md) first — it takes ten minutes.
@@ -28,15 +28,19 @@ ceiling is.
 
 ## Steps
 
-### 1. Get a baseline
+### 1. Install it and get a baseline
+
+`acc` is not on npm. Install it from the repository into the project you are checking, so the
+version your gate runs is pinned in your lockfile like any other dev dependency:
 
 ```
-acc check ./your-cli
+bun add -d github:ichabodcole/agent-cli-conformance
+bunx acc check ./your-cli
 ```
 
 Record the verdict line. Everything below is triage of what follows it.
 
-If your CLI does real work on a bare invocation, read the safety note in `acc check --help`
+If your CLI does real work on a bare invocation, read the safety note in `bunx acc check --help`
 before running this again — the probes execute your target.
 
 ### 2. Fix the failures that unblock other failures first
@@ -121,7 +125,7 @@ yourself to it.
 ### 5. Confirm the gate is green, then wire it in
 
 ```
-acc check ./your-cli
+bunx acc check ./your-cli
 echo $?
 ```
 
@@ -133,7 +137,7 @@ that means "not conformant" (anything else is `acc` itself failing — see
 
 You are done when all of the following hold:
 
-- `acc check ./your-cli` exits `0`.
+- `bunx acc check ./your-cli` exits `0`.
 - The verdict line reads `CONFORMANT (L0)`.
 - Every entry in `knownFailures` corresponds to a failure you intend to fix, and the report
   names no **stale expectations** — those are entries that now pass and should be deleted:

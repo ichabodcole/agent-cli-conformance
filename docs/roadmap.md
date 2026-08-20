@@ -114,8 +114,8 @@ coordinates instead of presenting `conformant` as an unqualified boolean.
 argues for at length, but neither discipline says anything about the shape of the documents
 those IDs travel in. A report stored today says `{ target, level, findings, counts, … }` — the
 probe level is its only coordinate. It does not record which spec it was judged against, which
-checker corpus produced it, or which version of the report shape it is written in, and `acc`'s
-own version is `0.0.0`. A report that outlives a release without those fields cannot be
+checker corpus produced it, which version of the report shape it is written in, or which version
+of `acc` produced it. A report that outlives a release without those fields cannot be
 re-interpreted later; a report format that ships without them acquires a compatibility promise
 by accident, which is the worst way to acquire one.
 

@@ -22,7 +22,10 @@ never established, and where to read the rule we tripped over. We will not fix a
 is a lesson in reading the instrument, not in passing it.
 
 Ten minutes. You need this repository checked out and `bun` installed. Every command below is
-run from the repository root.
+run from the repository root, which is why they read `bun run acc` rather than `bunx acc` — the
+CLIs we are going to check ship with the repository. Installing `acc` into a project of your own
+is the first step of
+[How to reach L0 in your project](./how-to-reach-l0-in-your-project.md).
 
 ## Step 1 — check a CLI that passes
 

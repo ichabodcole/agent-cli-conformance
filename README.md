@@ -14,10 +14,10 @@ agent-harness authors second. It is a conformance suite for _ordinary CLIs consu
 not for agent applications that happen to have a CLI. If a person types your tool and a script
 also runs it, it is in scope.
 
-**Today** — the [wiki](docs/wiki/index.md) (20 rules, each with a checker), the `acc` reference
-CLI, the documentation graph and linter, and an `L0` black-box checker that records argv,
-stdout, stderr, exit status, the terminating signal and timing per probe. Every one of the 20
-checkers declares `coverage: partial` — see
+**Today** — the [wiki](docs/wiki/index.md) (23 rules, 22 of them with a checker; the 23rd is
+`planned`), the `acc` reference CLI, the documentation graph and linter, and an `L0` black-box
+checker that records argv, stdout, stderr, exit status, the terminating signal and timing per
+probe. Every one of the 22 checkers declares `coverage: partial` — see
 [the matrix](docs/wiki/index.md#coverage-at-a-glance) for what each one leaves unestablished.
 
 **Planned** — filesystem hashing and snapshot diffing, the `L1` and `L2` levels that falsify a
@@ -32,6 +32,43 @@ domain-level correctness, and at `L0` does **not** prove a target is harmless to
 proves that no core rule the kit could apply was violated, which is a narrower claim than any of
 those and is deliberately reported as two separate booleans (see
 [conformance](docs/wiki/concepts/conformance.md)).
+
+## Getting started
+
+You need [Bun](https://bun.sh) 1.3 or later. `acc` is not published to npm — install it from
+this repository into the project whose CLI you want to check:
+
+```bash
+bun add -d github:ichabodcole/agent-cli-conformance
+```
+
+Then point it at your CLI:
+
+```bash
+bunx acc check ./your-cli
+```
+
+The first line is the verdict, and the exit code is the gate:
+
+```
+NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered  /opt/homebrew/bin/git
+```
+
+`0` means conformant and `9` means it is not. Any other code is `acc` itself failing rather
+than a verdict about your tool — the distinction is
+[outcomes are not errors](docs/wiki/concepts/exit-codes.md#outcomes-are-not-errors). That makes
+the whole CI step one line with no flags.
+
+**Read the safety note before pointing it at your own work.** `acc check` **executes** the
+target — see [what L0 does not prevent](#the-conformance-kit) below.
+
+Where to go next:
+
+- **[Check your first CLI](docs/wiki/guides/check-your-first-cli.md)** — ten minutes, learning
+  to read a report against CLIs that pass and fail on purpose. It uses the fixtures that ship
+  with this repository, so clone it for that one.
+- **[How to reach L0 in your project](docs/wiki/guides/how-to-reach-l0-in-your-project.md)** —
+  taking your own CLI from a first failing check to a green gate.
 
 ## The problem
 
