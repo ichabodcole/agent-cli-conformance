@@ -39,11 +39,27 @@ A CLI **MUST NOT** prompt interactively to confirm a guess. See
 
 ## How to comply
 
-Turn off fuzzy execution; keep fuzzy suggestion.
+Keep the suggestion; drop the execution. Two things count as executing a guess — running a
+near-match, and silently binding an abbreviation to the flag it prefixes.
 
-Most parsers separate these already. The risk is in hand-written dispatch code that reaches
-for a nearest-match helper to be forgiving, and in shells or wrappers that add
-correct-and-retry behaviour around a compliant binary.
+| Framework               | Guessing behaviour                                       | What to do                                        |
+| ----------------------- | -------------------------------------------------------- | ------------------------------------------------- |
+| `git` (as a dependency) | `help.autoCorrect` can **run** the guess                 | pin `help.autoCorrect=0`                          |
+| `argparse` (Py)         | `allow_abbrev=True` binds `--verb` → `--verbose`, exit 0 | set `allow_abbrev=False`                          |
+| `docopt-ng` (Py)        | accepts prefix abbreviations                             | migrate off — upstream dead since 2014            |
+| `clap` (Rust)           | suggests, exit 2; inference off by default               | never set `infer_long_args` / `infer_subcommands` |
+| `cobra` (Go)            | suggests, exit 1                                         | —                                                 |
+
+Measured on `git`: `immediate` and a positive deciseconds value both run the guess and **exit
+0**, even with stdin at `/dev/null`. `never` and `prompt` (non-TTY) reject but throw the
+suggestion away — `0` is the only value that rejects _and_ still prints the near match.
+
+In hand-written dispatch, never route an unrecognised verb to a default subcommand: `deno rn`
+is read as a file path (`Module not found`) because `deno <file>` means `deno run <file>`, so
+the command position forfeits the typo recovery deno's flag parser still performs.
+
+The research measures no did-you-mean behaviour for `commander`, `citty`, `yargs`, `cac`,
+`clipanion`, `@stricli/core`, `oclif`, `kong` or Click/Typer; nothing is claimed for them here.
 
 ## Why
 

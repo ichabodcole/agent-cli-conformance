@@ -37,12 +37,29 @@ append `--help` to any invocation and receive help rather than execution.
 
 ## How to comply
 
-Universal across parsers — this is the single most consistently implemented behaviour in the
-survey. The failures are in hand-rolled dispatch, where `help` is sometimes routed through the
-same "unknown command" path that exits non-zero.
+The exit-`0`-to-stdout half is near-universal — only Rust's `gumdrop` is recorded as putting
+derived help on the wrong stream. What breaks is the other half: an error path routed through
+the help printer, inheriting help's exit code, its stream, or both.
 
-Verify the _nested_ case explicitly; `<cli> <group> --help` is the one that gets missed when
-groups are dispatched manually.
+| Framework             | Split correct by default?        | What to do                                    |
+| --------------------- | -------------------------------- | --------------------------------------------- |
+| `cobra` (Go)          | **no** — see below               | `Args: cobra.NoArgs` on **every** node        |
+| `gumdrop` (Rust)      | **no** — help goes to stderr     | unmaintained (RUSTSEC-2026-0214); migrate off |
+| `clipanion` v4 (TS)   | **no** — usage errors to stdout  | no setting surveyed; emit errors yourself     |
+| `node:util parseArgs` | n/a — no help generation, at all | you own both paths; write help yourself       |
+
+If you use `cobra`: a group with subcommands and no `Run` returns `flag.ErrHelp` on a bad
+argument, which cobra turns into `HelpFunc(); return cmd, nil` — a nil error, so a usage failure
+exits `0` with help on stdout (measured on cobra 1.10.2: `nested_cli grp2 bogus`). There is no
+global switch; set `Args: cobra.NoArgs` on the root, on every group, and on every leaf.
+
+If you dispatch by hand, split the paths at the top: `--help`, `-h` and a `help` subcommand write
+to stdout and exit `0`; every other path that prints usage writes to stderr and exits non-zero.
+`docker` models that second path — one line naming the problem plus
+`Run 'docker --help' for more information`, exit `1`, not kubectl's whole-help dump.
+
+The survey records help stream and exit code only where a framework deviates, so verify your own
+`<cli> <group> --help` — the nested case is the one hand-rolled dispatch misses.
 
 ## Why
 

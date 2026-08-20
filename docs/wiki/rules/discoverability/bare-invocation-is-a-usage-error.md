@@ -38,12 +38,34 @@ request and therefore succeeds.
 
 ## How to comply
 
-Two lines in most frameworks: on no arguments, print usage to stderr and exit `2`. The trap is
-that many parsers default to printing help to stdout and exiting `0`, so this usually requires
-overriding a default rather than adding behaviour.
+Three things must change together: the code, the stream, and the handler. If your framework
+routes bare invocation through the same handler as `--help`, split them first — they need
+different streams and different codes.
 
-If your framework routes bare invocation through the same handler as `--help`, split them —
-they need different streams and different codes.
+What the survey measured, for the bare case specifically:
+
+| Framework            | Bare invocation                                      | What to do                                                                                   |
+| -------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `kong` (Go)          | errors already — `expected one of "sub","other"`     | nothing, except the code is **80**, not `2`                                                  |
+| `cobra` (Go)         | **exit `0`, help on stdout** for a non-runnable node | set `Args: cobra.NoArgs` on **every** node — root, group and leaf; there is no global switch |
+| `@stricli/core` (TS) | usage errors to stderr, exit **252**                 | remap the code via the injectable `process`                                                  |
+| `clipanion` v4 (TS)  | usage errors to **stdout**                           | redirect via its custom-streams hook                                                         |
+| `cac` (TS)           | throws a raw `CACError` stack trace                  | catch it; print your own usage, exit `2`                                                     |
+| `commander` (TS)     | not measured bare                                    | `exitOverride()` picks the code, `configureOutput()` picks the stream                        |
+
+`cobra` is the case to check first: the `0`-with-help-on-stdout path is a `nil` error returned
+from `HelpFunc()`, so no amount of error handling catches it — only `NoArgs` does.
+
+Not measured for the bare case: `clap`, Click/Typer, `node:util parseArgs`, `citty`, `yargs`,
+`oclif`, Swift ArgumentParser. Verify yours rather than assuming from its unknown-flag strictness
+— they are separate code paths.
+
+**If printing help here is a deliberate product decision**, waive the rule rather than fake it:
+in `acc.config.json`, `"D2": { "severity": "off", "reason": "..." }` — see
+[waivers](../../concepts/conformance.md#waivers-a-rule-that-does-not-apply-to-this-tool) for what
+that costs (a waived core rule blocks `fullyVerified` even when it would have passed) and
+[the triage step](../../guides/how-to-reach-l0-in-your-project.md#3-triage-what-is-left-into-three-buckets)
+for when a waiver is the right bucket.
 
 ## Why
 

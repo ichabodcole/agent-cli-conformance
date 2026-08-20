@@ -39,15 +39,26 @@ as refusal.
 
 ## How to comply
 
-Guard every prompt with an `isatty(stdin)` check, and make the non-TTY branch a structured
-refusal rather than a default answer.
+Guard every prompt with a terminal check on stdin — Rust `std::io::IsTerminal`, Node
+`process.stdin.isTTY`, Python `sys.stdin.isatty()`, Go `term.IsTerminal(int(os.Stdin.Fd()))`.
+The check is a one-liner everywhere; the work is all in what the non-TTY branch then does.
 
-The tempting shortcut — "no TTY, so assume no" — is precisely the Docker failure. Declining is
-a decision, and a decision the caller did not make must not be reported as success. If you
+**Make that branch a required flag, not a default.** `gh repo delete` is the shape to copy: with
+no TTY the prompt becomes the error `--yes required when not running interactively`, and the
+message names the flag that supplies the answer. The convention is `--yes` (`gh`, `vercel`) or
+`--confirm` (`stripe`). If you are renaming an existing one, bind both spellings to the same
+variable — that is how `gh` deprecated `--confirm` to `--yes` without breaking callers.
+
+**Do not "assume no".** That is the `docker container prune` failure described [below](#why):
+declining is a decision the caller did not make, and it must not be reported as success. If you
 default at all, the exit code must still say that nothing happened.
 
-Provide the bypass flag (`--yes`, `--confirm`) and name it in the error, so the remediation is
-mechanical rather than a search through help.
+**A bypass flag is consent to skip the prompt, not consent to guess the argument.** `gh` ignores
+`--yes` when the repository would be inferred from the working directory; `vercel` applies no
+default scope non-interactively and returns `action_required` naming the flag that resolves it.
+
+**If you already have a machine-output mode, couple it to this.** `terraform plan -json` implies
+`-input=false`; `vercel` makes `--non-interactive` the default when it detects an agent.
 
 ## Why
 

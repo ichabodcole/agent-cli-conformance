@@ -42,11 +42,33 @@ Where the valid alternatives form a closed set, the CLI **SHOULD** enumerate the
 
 ## How to comply
 
-Nearly free — most parsers already include the token in their default message. The work is
-usually in _not losing it_: a handler that catches a parse error and re-raises its own
-`invalid arguments` message discards exactly the information this rule requires.
+Nearly free on the prose half — every framework surveyed that rejects a token names it in its
+default message: `commander` (`error: unknown option '--nonexistent-flag'`), `clap`
+(`unexpected argument '--bogus' found`), `cobra` (`unknown flag: --bogus`), `kong`
+(`unknown flag --nonexistent`), `click` (`No such option '--bogus'.`), `argparse`
+(`unrecognized arguments: --nonexistent`), Swift ArgumentParser (`Unknown option '--form'.
+Did you mean '--format'?`). The work is in the three things the parser does not do for you.
 
-If you wrap or rewrite parser errors, carry the token through.
+**Print the framework's message, or interpolate the token into your own.** A handler that
+catches a parse error and re-raises `invalid arguments` discards exactly what this rule
+requires. Two measured near-misses: `cac` throws an uncaught `CACError` whose Bun-rendered
+stack trace buries the token among library source lines, and `clipanion` v4 answers an unknown
+option with `Unknown Syntax Error: Unsupported option name` — the captured message names no
+token — written to **stdout**, which is not where this rule's probe reads. (`plumbum.cli`
+writes usage errors to stdout too.)
+
+**Declare closed sets to the parser and `choices` comes free.** `clap`'s `value_enum` prints
+`[possible values: json, text]`; Swift ArgumentParser prints `Please provide one of 'json',
+'text' or 'yaml'`; `kong`'s `enum` tag prints `--mode must be one of "fast","slow"`. If you
+validate a set by hand — `commander`'s `.choices([...])`, `click.Choice`, or post-parse
+checks over `node:util parseArgs` — write the enumeration into the message yourself. `gh` is
+the case study to copy: `gh pr list --json` with no field list answers by listing every legal
+field.
+
+**The machine-mode field is yours in every framework.** No surveyed parser emits an error
+envelope; `oclif`'s `toErrorJson` / `CLIError` is the closest, and it carries `code`,
+`suggestions` and `ref` but no token field. Add one, and keep it a field rather than a
+substring of `message`.
 
 ## Why
 

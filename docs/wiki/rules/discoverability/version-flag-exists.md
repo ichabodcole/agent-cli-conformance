@@ -39,14 +39,36 @@ structured payload, not a bare string requiring a regex to extract.
 
 ## How to comply
 
-Free in every framework surveyed. The two ways it goes wrong:
+Free in every framework surveyed. What is not free is _where the framework's own `--version`
+answers_ relative to your output layer.
 
-- **Version reads from a config or a network call.** Usually accidental — a global
-  initialisation step runs before argument dispatch, so _every_ invocation requires config,
-  including `--version`. Dispatch `--version` before initialising anything.
-- **Machine mode still emits a bare string.** `--version --json` returning `1.4.2` rather than
-  a payload forces the caller back to string handling for the one value most likely to be
-  compared, sorted, or range-checked.
+**Assume the built-in short-circuits.** `clap` v4 injects `version` alongside `help` as an
+argument you did not declare — visible once `Command::build()` runs, where the auto-injected pair
+"must be filtered" ([frameworks §2.6a](../../../research/2026-08-13-frameworks-languages.md)) —
+and `charmbracelet/fang` adds an auto `--version` to any cobra root it wraps ([§2.5c](../../../research/2026-08-13-frameworks-languages.md)).
+A handler injected by the parser cannot know your machine mode exists, so it prints a bare string
+and exits before your envelope is constructed. This is the `acc` regression: commander's built-in
+wrote `0.0.0` at exit `0` under `--version --json`, `--json --version` and `--format json
+--version` alike, for months (fixed in `cf759ed`; see
+[how to add a checker](../../guides/how-to-add-a-checker.md)).
+
+**If you emit a machine mode, take `--version` before the parser does.** `acc` reads `--version`
+and `-V` off `argv` ahead of `new Command()` and routes them through the same success envelope as
+every other command, so the version leaves as a field. Disabling the built-in works equally well
+where the parser allows it; in `commander`, `exitOverride()` and `configureOutput()` are the hooks
+that take back the exit and the stream ([§2.2, §1](../../../research/2026-08-13-frameworks-languages.md)).
+
+**Keep the bare string in text mode.** A shell comparing `acc --version` should not start
+receiving JSON because this rule was fixed. Structured is the machine-mode obligation only.
+
+**Give machine mode exactly one spelling.** Docker is the cautionary case: `--format json` and
+`--format '{{json .}}'` disagree on both values and key names — hence the standing rule that
+machine output must not vary by invocation spelling
+([case studies §5.2](../../../research/2026-08-13-case-studies.md)).
+
+**Treat a config or credential requirement as an ordering bug, not a `--version` bug.** A global
+initialisation step that runs before dispatch makes _every_ invocation need config. Move it into
+the command body so `--version` never reaches it.
 
 ## Why
 
