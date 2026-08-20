@@ -76,6 +76,10 @@ changes and paper-cuts can go straight to `develop`.
 open a second PR carrying the version bump and changelog, and merging _that_ creates the tag and the
 GitHub Release. Between the two, `main` holds the next release rather than the last one.
 
+Cutting a release runs the [`release` skill](.claude/skills/release/SKILL.md) — the note is written
+by a fresh agent from the tree, cold-read, and carried through to the published GitHub Release,
+which otherwise shows only a list of commit subjects.
+
 **Most commit types do not release.** With `release-type: node` and no `changelog-sections`
 override, `feat` bumps the minor, `fix` bumps the patch and a breaking change bumps the major;
 `docs`, `chore`, `ci`, `test` and `refactor` produce no version and no release PR at all. A
