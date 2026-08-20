@@ -90,12 +90,27 @@ And machine output should ignore colour _configuration_, not merely the TTY: git
 guarantee is stability across versions **or user configuration**, and porcelain explicitly ignores
 `color.status` ([case studies §2.6](../../../research/2026-08-13-case-studies.md)).
 
-**The TTY-present clauses are conventions, and this page claims no implementation of them.**
-[`NO_COLOR`](https://no-color.org) is the published convention — the variable present and non-empty
-suppresses colour _regardless of its value_, so `NO_COLOR=0` means colour off, which is the common
-bug — alongside a `--no-color` flag and `TERM=dumb`. No surveyed library's handling of any of the
-three was measured here, so implement them from the convention rather than assuming your colour
-package already does.
+**Implement the three suppression standards precisely — they are published specifications, not
+folklore.** ([testing & enforcement §2.3](../../../research/2026-08-13-testing-enforcement.md))
+
+- [`NO_COLOR`](https://no-color.org) is normative and its rule is easy to get backwards: suppress
+  when the variable is **present and not an empty string, regardless of its value**. `NO_COLOR=0`
+  therefore means colour **off**. Treating it as "colours on" is named as the common bug.
+- `CLICOLOR=0` suppresses ANSI; `CLICOLOR_FORCE` set to anything non-zero emits colour **regardless
+  of the TTY**, which is how you exercise the coloured path deterministically in a test.
+- `TERM=dumb` is the third gate, and the one most libraries honour.
+
+Their precedence relative to each other is **contested**, and getting it wrong is not hypothetical:
+[cli/cli#13335](https://github.com/cli/cli/issues/13335) is a real bug in which `CLICOLOR=0` and
+`NO_COLOR=1` were **both ignored** ([§2.2](../../../research/2026-08-13-testing-enforcement.md)) — in the same tool this page recommends copying for
+its pager and TTY behaviour. Handle each independently rather than deriving one from another.
+
+**Then assert it, on both streams, by looking for the escape byte.** The recipe the research uses is
+`NO_COLOR=1`, `TERM=dumb`, no TTY, then a regex for `\x1b\[` over stdout **and** stderr expecting
+zero matches ([§6](../../../research/2026-08-13-testing-enforcement.md)). Test for the byte rather than for "colour": real leak bugs exist where
+**SGR reset sequences survived `NO_COLOR=1`** ([§4](../../../research/2026-08-13-testing-enforcement.md)) — the trailing `\x1b[0m` that nobody
+thinks of as colour because it does not add any, and that corrupts a string comparison exactly as
+much as one that does.
 
 ## Why
 
