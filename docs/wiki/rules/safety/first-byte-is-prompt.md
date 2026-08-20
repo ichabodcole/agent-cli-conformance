@@ -41,14 +41,48 @@ never polluting [stdout](../streams/stdout-carries-only-data.md), and without
 
 Do nothing before dispatch. The usual cause of a slow `--help` is initialisation that runs
 unconditionally — reading config, opening a database, resolving credentials, importing the
-whole command tree — before the parser has looked at argv.
+whole command tree — before the parser has looked at argv. Dispatch first, initialise inside
+the handler. [`--version`](../discoverability/version-flag-exists.md) is the useful check: if it
+needs config, work is running too early.
 
-Dispatch first, initialise inside the handler. This also happens to be what
-[`--version` requires](../discoverability/version-flag-exists.md), which is a useful check: if
-`--version` needs config, work is running too early.
+Everything after that is what you load. The figures below are from this project's framework
+survey, measured with one harness on one machine in one sitting — comparable to each other, not
+portable as absolutes.
 
-For a heavier tool, lazy-load subcommand modules so that invoking one command does not pay for
-importing all of them.
+**If you use Typer, set `TYPER_USE_RICH=0`.** Measured `--help`: **84.11 ms** with Rich against
+**36.75 ms** without — ~47 ms per help call, on the command agents run most. Typer reads the
+variable at `typer/core.py:26`; it is not an import check, and typer 0.27.1 loads Rich lazily, so
+a normal command is unaffected (35.28 vs 35.42 ms, noise). It also replaces the Unicode
+box-drawing with plain text, which is what
+[no ANSI when piped](../streams/no-ansi-when-piped.md) wants regardless.
+
+**If you are on Python, the import graph is the budget.** Interpreter floor 14.85 ms; `argparse`
+19.19 ms; `click` 27.70 ms; `typer` 36.21 ms, of which `import typer` alone is 16.6 ms under
+`-X importtime`; `pydantic-settings` `CliApp` 87.07 ms. Import the heavy modules inside the
+handler that needs them rather than at module top level.
+
+**If you are on a JS runtime, dependency weight dominates.** `yargs` at 33.24 ms against `cac` at
+13.12 ms is a 20 ms spread — larger than the entire gap between Bun and a native Go binary's
+floor — with installed sizes running cac 52 K, citty 52 K, commander 232 K, yargs 376 K,
+clipanion 428 K. Do not expect `bun build --compile` to recover it: measured, it saved ~1.3 ms
+(20.53 ms against 21.86 ms from source) for a 63 MB artifact. It buys distribution without a
+runtime, not native startup.
+
+**If you ship a native binary, do not swap parsers for speed.** An independent 250-run Go
+measurement put a do-nothing baseline binary at 2.963 ms, `kong` at 2.958 ms and `cobra` at
+3.360 ms — parser overhead ≤0.4 ms, inside the noise band. Choose the parser on enforcement and
+schema fidelity instead, because it costs nothing here. Below ~2.5 ms what remains is fork/exec,
+so the fix for a hot loop is a persistent process or batching, not a lighter parser.
+
+**If you ship a native binary to macOS, warm it once after install.** First exec of a newly
+created inode measured 137.4 ms for a 1.0 MB `clap` binary and 142.5 ms for a 423 KB binary with
+no parser at all, against 1.78 ms for the already-signed `/bin/echo`; the second exec at the same
+path was 2.6 ms. That is AMFI/Gatekeeper validating an ad-hoc linker signature, independent of
+size and of parser. Notarising, or one warm-up exec, keeps it out of the agent loop. Linux does
+not have this.
+
+For a heavier tool in any language, lazy-load subcommand modules so that invoking one command
+does not pay for importing all of them.
 
 ## Why
 

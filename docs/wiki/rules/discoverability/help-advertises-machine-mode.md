@@ -34,16 +34,57 @@ first — which is `--help`, not documentation.
 
 ## How to comply
 
-One line in the root help. Two things worth doing beyond the minimum:
+One row in the root help — `--json  Output JSON`, or a command row
+`schema  Print this CLI's command schema as JSON`. What varies is why the row is missing.
 
-- **Make the flag teach its own vocabulary.** `gh` runs `--json` with _no_ field list and
-  prints the full set of available fields. The caller who misuses the flag is handed exactly
-  the information needed to use it correctly — discovery delivered at the moment of need,
-  paid for only on the mistake. This is the same shape as
-  [`choices` in an error](../../concepts/error-envelope.md#choices-is-just-in-time-discovery).
-- **Point at the generated reference, not just the flag.** Where the tool ships an agent skill
-  or compact reference derived from its schema, naming it in help routes callers to the cheap
-  path rather than the expensive one.
+**If your parser derives help from declarations, declaring the flag is the whole job.** Every
+framework in the
+[survey matrix](../../../research/2026-08-13-frameworks-languages.md#1-big-comparison-matrix)
+derives help automatically except three — `node:util parseArgs` (no help generation at all),
+`pico-args`/`lexopt` (hand-written), and Go's stdlib `flag` (minimal) — with `xflags` generating
+it at build time. Declare the flag at the **root**, as a global or persistent option (cobra's
+persistent flags, clap's global args, both of which the survey saw survive into schema dumps as a
+global/local split), not on one leaf subcommand, or root help will not carry it. The survey
+measured help _derivation_ and schema export, not each library's registration call — check your
+parser's docs for its global-option spelling.
+
+**`oclif` is the one surveyed framework with a switch for this.** `enableJsonFlag` on a command
+registers the flag; the published `oclif.manifest.json` for `@oclif/plugin-plugins` carries it as
+`"json": { "type": "boolean", "description": "Format output as json.", "helpGroup": "GLOBAL" }` —
+described, grouped as global, and with no `hidden` marker (the same manifest marks its `jit` flag
+`"hidden": true`). That manifest is what was read; the rendered help screen was not.
+
+**If your machine path is a hidden command, help advertises nothing.** cobra's `__complete` is
+hidden by construction, and it is exactly the endpoint kubectl's machine-readable introspection
+rides on — real, useful, and invisible to this rule and to any reader of `--help`. Every schema
+format surveyed carries a hidden bit (oclif's `hidden`, clap's dump, Click's `to_info_dict()`,
+urfave's `json:` tags), so the check is mechanical: whatever declares your machine path, make sure
+it is not marked hidden, or add a visible `schema` command alongside the hidden one.
+
+**A curated root help drops whatever you did not curate.** `docker --help` lists 64 commands and
+36 with `DOCKER_HIDE_LEGACY_COMMANDS` set — the hidden ones still run — and Docker 23.0
+reorganised root help around a "Common Commands" shortlist. If your root help curates its command
+list the same way, a `schema` command has to be put in the visible group on purpose; the options
+block is the safer home, because no shortlist decides what appears there.
+
+**Where nothing derives the help, write the row by hand** — and put it inside the `Options:` /
+`Flags:` block. The probe scopes its flag scan to a recognised options block and falls back to the
+whole help text only when it recognises none, so a `--json` that appears solely inside a piped
+example can satisfy the checker while telling a reader nothing. The schema alternative is read as
+a command-table row: an indented line whose first token is `schema`.
+
+**Make the flag teach its own vocabulary.** `gh --json` with no field list exits 1 and prints the
+full set of available fields — discovery delivered at the moment of need, paid for only on the
+mistake, though it is reached through an error path rather than help. Same shape as
+[`choices` in an error](../../concepts/error-envelope.md#choices-is-just-in-time-discovery). If
+you also ship a generated reference or agent skill, name it in help: `cli/cli` ships one for `gh`
+itself, and it is the cheap path a caller would otherwise have to find by searching.
+
+**Not established here.** Whether Swift ArgumentParser's `--experimental-dump-help` shows up in
+rendered help was not measured, and no surveyed CLI's root help _text_ was captured, so which of
+`git`, `docker`, `kubectl` or `gh` names its machine-mode flag at the root is unknown from this
+research. `--json` as the spelling to advertise is a published convention — clig.dev's "Display
+output as formatted JSON if `--json` is passed" — not a measured library behaviour.
 
 ## Why
 

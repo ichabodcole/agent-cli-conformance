@@ -82,7 +82,9 @@ Mostly this rule is satisfied by not having the bug. The recurring ways to acqui
 
 - **A null dereference or an out-of-bounds index in argument handling.** The parser is the code
   every invocation reaches, including the ones nobody tested, and an unknown flag or an empty
-  argv is exactly the input a hand-rolled parser handles least.
+  argv is exactly the input a hand-rolled parser handles least. The change is to stop hand-rolling
+  it — [A1's table](../parsing/unknown-flag-exits-nonzero.md#how-to-comply) names a maintained
+  parser for each ecosystem surveyed.
 - **Re-raising a signal to report it.** The idiom "restore the default handler and re-raise, so
   my exit status looks right to the shell" is correct for `SIGINT`; done on the inert paths it
   turns a clean answer into a signal death. G1 only fails the fault-signal spelling of that
@@ -91,7 +93,8 @@ Mostly this rule is satisfied by not having the bug. The recurring ways to acqui
   way, so both are worth not doing.
 - **A native extension loaded at startup.** A crash in a linked library takes the process with
   it before `--version` gets a chance to answer, so the cheapest possible probe of "is this tool
-  installed and working" is the one that falls over.
+  installed and working" is the one that falls over. The change is to load it on the path that
+  uses it rather than at import, so the inert paths answer without it.
 - **Aborting on an assertion instead of exiting.** `abort()` raises `SIGABRT`; a failed assertion
   is an internal fault and belongs at [exit `1`](../../concepts/exit-codes.md#the-taxonomy) with
   a message, which is a thing the caller can read.

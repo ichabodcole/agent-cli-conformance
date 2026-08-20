@@ -38,23 +38,37 @@ awaiting the flush, is the only form that is correct on every platform and every
 
 ## How to comply
 
-**Do not call `process.exit()` after writing.** Return from the entry point and let the runtime
-flush. Where an exit code must be set, set it (`process.exitCode = 2`) rather than calling the
-function that terminates immediately.
+**If you write to stdout from Node or Bun, do not call `process.exit()` afterwards.** That is the
+runtime the [archaeology](../../../research/2026-08-15-defect-archaeology.md) measures, and there a
+`process.exit(code)` placed immediately after a write discards whatever stdout has not yet handed
+to the pipe. Set `process.exitCode` and return from the entry point instead: the repaired fixture
+in that corpus delivers its whole **114,101** bytes through the pipe that truncated the defective
+one at 65,536.
 
-Where an immediate exit is genuinely required, await the drain first — `await new
-Promise((r) => process.stdout.write(payload, r))` in Node and Bun, `writer.Flush()` before
-`os.Exit` in Go, an explicit `flush()` in Python. The rule is the same in every runtime: the write
-call returning is not the bytes arriving.
+If an immediate exit is genuinely required, await the write callback first — `await new
+Promise((r) => process.stdout.write(payload, r))` — so that what terminates the process runs after
+the bytes are gone. The write call returning is not the bytes arriving.
 
-**Pin the exit sites.** The subject repository ended up pinning **37** of them with a test that
-enumerates every `process.exit` in the tree, because one new call site reintroduces the whole
-class and nothing else notices. A grep-based gate is unglamorous and it is what held.
+**For any other runtime, measure rather than assume.** No source behind this page establishes which
+exit calls in Go, Python or Rust skip a flush, so this page claims nothing about them. The check
+transfers even where the remedy is unknown: compare the same invocation redirected to a file
+against the same invocation piped to a momentarily non-draining consumer, and trust the difference
+over any belief about your runtime's buffering.
 
-**Gate it through a shell pipe with a sleeping consumer**, never through a language-level pipe.
-Their own gate law requires the `sh -c "… | ( sleep 1; cat )"` construction verbatim, for exactly
-the reason [the probe](#the-blocker-is-the-runner-not-the-probe-level) records: a pipe the test
-harness drains is a pipe the defect cannot reach.
+**Pin the exit sites.** The corpus ended up pinning **37** of them with a test that enumerates
+every `process.exit` in the tree, because one new call site reintroduces the whole class and
+nothing else notices. A grep-based gate is unglamorous and it is what held.
+
+**Gate it through a shell pipe with a sleeping consumer**, never through a language-level pipe. Use
+the `sh -c "… | ( sleep 1; cat )"` construction, for exactly the reason
+[the probe](#the-blocker-is-the-runner-not-the-probe-level) records: a pipe the test harness drains
+is a pipe the defect cannot reach. A consumer that merely keeps reading is not enough: with the
+defect present, **10 MB** through a plain `| cat` arrived complete, because every write finishes
+when something is always reading.
+
+**Assert termination in the same gate.** Removing `process.exit()` in bulk is what shipped the
+23-minute hang described below; a drain gate that does not also require the process to exit swaps
+one silent failure for another.
 
 ## Why
 

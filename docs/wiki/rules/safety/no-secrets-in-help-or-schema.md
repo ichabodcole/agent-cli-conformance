@@ -38,12 +38,52 @@ malformed or rejected.
 
 ## How to comply
 
-Default every secret-bearing flag to `null` and resolve it inside the handler. Read from the
-environment or a credential file; never from a default, and never from a flag value the caller
-has to type, since that lands in process listings and shell history.
+**Bind the flag to an environment variable if your framework has that binding.** `click` and
+`typer` take `envvar="ACME_TOKEN"` alongside `default=None`; `kong` takes an `env` tag on the
+struct field; `clap` takes `#[arg(env = "ACME_TOKEN")]` once the `env` feature is enabled
+(`Arg::get_env` is `#[cfg(feature = "env")]`); jdx `usage` has an `env` attribute on a flag node.
+This is the fix rather than a mitigation, because the binding and the default are separate
+fields all the way through introspection — Click's `to_info_dict()` serialises `envvar` and
+`default` side by side, `kong.Flag` carries `Envs` and `Default` side by side — so the schema
+publishes the variable's _name_ where the default would have published the credential. A caller
+learns where to put the secret and never reads one.
 
-When reporting a credential problem, describe the _class_ of fault and never the value: which
-credential was expected, where it is read from, how to supply it.
+**Where there is no such binding, move the read into the handler.** Leave the default `null` or
+absent, and resolve the environment variable or credential file at the point of use. Do not take
+the credential as a flag _value_ the caller types either: that lands in process listings and
+shell history before any of this applies.
+
+**Know which of your own outputs copies a default verbatim**, because the surfaces differ and
+several of them are things you never invoke by hand:
+
+- Swift ArgumentParser's `--experimental-dump-help` (`ToolInfoV0`) serialises defaults.
+- Click and Typer's `to_info_dict()` carries `default`.
+- `clap` has no built-in dump, so this is whatever your exporter reads — `get_default_values()`
+  in a hand-rolled one, and `carapace_spec_clap` emits defaults too.
+- `urfave/cli` v3 tags every field for JSON, so a bare `json.Marshal(cmd)` emits `defaultValue`.
+- `kong.Model` and `citty`'s plain-data definition both carry the default to any walker.
+- A `commander` tree walk reads `option.defaultValue`.
+- `cobra`'s `GenYamlTree`/`GenMarkdownTree`/`GenManTree` emit `default_value` — this is generated
+  _documentation_ rather than a schema, and it leaks identically.
+- `oclif`'s `oclif.manifest.json` and `argh`'s `get_args_info()` both omit defaults, which is the
+  one place the hazard does not reach. Note what oclif's would have cost: the manifest is
+  published to npm, so a leak there reaches everyone who downloads the package without ever
+  running the binary.
+
+**Marking the flag hidden does not remove it.** Swift's dump, `to_info_dict()` and a
+`clap` exporter reading `is_hide_set` all serialise the hidden marker as a _field on an entry
+that is still present_. Hiding a flag from help output leaves its default in the schema.
+
+**For the error-message clause there is no library switch — the change is in your printer.**
+Report the class of fault and never the value: which credential was expected, where it is read
+from, how to supply it. Redacting the value on the way out is weaker than never putting it in
+the message, for the reason sink-redaction is weaker than source-normalisation anywhere else:
+every redaction is a blind spot, and the pattern that misses is the bespoke token.
+
+**One thing the research does not establish**, so check it yourself rather than assuming: no
+surveyed framework offers a "sensitive" or "secret" marking that suppresses a value from
+generated output. The field inventories the survey records — `hidden`, `required`, `default`,
+`env`, `choices`, `deprecated` — contain nothing of the kind.
 
 ## Why
 

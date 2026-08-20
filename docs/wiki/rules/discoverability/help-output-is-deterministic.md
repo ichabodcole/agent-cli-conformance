@@ -37,16 +37,51 @@ diagnostic command such as `doctor` or `info`, not in help.
 
 ## How to comply
 
-Usually satisfied by accident, and broken by accident too. The recurring causes:
+Determinism is rarely a switch a framework gives you or takes away — it is a property of what you
+put in the help string. Four mechanisms produce nearly all of the drift, and each has a fix at the
+point the bytes are emitted. Fix it there rather than scrubbing the capture afterwards: every
+redaction a consumer adds is a region where a real change can hide.
 
-- **A version banner with a build timestamp.** Put the build date in `--version`, where it is
-  data, not in help, where it is noise.
-- **Iterating a hash map to list commands or flags.** Sort explicitly. Insertion-ordered maps
-  make this work by luck until a refactor changes it.
-- **Absolute paths interpolated into examples.** `~/.config/mycli` is stable; a resolved home
-  directory is not, and it also leaks the operator's username into anything captured.
-- **Terminal-width-dependent wrapping.** Wrap to a fixed width when not a TTY. This one is
-  invisible locally and appears only in CI, where the width differs.
+**If help wraps to the terminal, pin the width.** This is the one axis with a genuine library
+switch, and unpinned width is the likeliest cause of help that is stable locally and unstable in
+CI, where the terminal is a different size or absent. `clap` built with the `wrap_help` feature
+wraps to the detected terminal width and falls back to 100 columns; `Command::term_width(N)` pins
+it and `term_width(0)` turns wrapping off — clap's own help tests set it explicitly. Python's
+`argparse` takes a `width` on `HelpFormatter`. Do not reach for `COLUMNS` as the control: it is a
+shell variable, not exported by default, and it does not track resizes. A library-level width
+setter or an explicit `--width` flag is the form that holds.
+
+**If help embeds a build timestamp or a build hash, take it from the source, not the clock.**
+`SOURCE_DATE_EPOCH` — an integer of seconds since the epoch, always UTC — is the
+reproducible-builds convention for exactly this, and a build fed from it emits the same string on
+every rebuild. Better still, put the build date in `--version`, where it is data, and keep it out
+of help, where it is noise.
+
+**If the flag or command list comes from a map, sort it, and sort it by bytes.** Insertion-ordered
+maps make hash iteration look stable until a refactor changes the insertion order. Sorting through
+the locale's collation moves the order with `LC_COLLATE`; byte-value ordering — what `LC_ALL=C`
+gives you — is available everywhere and identical everywhere. Where two entries can compare equal,
+add a tiebreaker key. An unstable sort is a bug in the ordering, not a value to redact.
+
+**If an example contains a resolved path, print the unexpanded form.** `~/.config/mycli` or
+`$XDG_CONFIG_HOME/mycli` is stable; the expansion is not, and it leaks the operator's username into
+anything captured. The same goes for a temp directory. To catch one you have already shipped, copy
+Go's `testscript`, which runs with `HOME=/no-home` and a `$WORK`-relative `TMPDIR` for precisely
+this purpose: point `HOME` and `TMPDIR` somewhere hostile, run help, and diff against a normal run.
+
+**Colour is [its own rule](../streams/no-ansi-when-piped.md)**, but know what sits between your
+command tree and stdout. `charmbracelet/fang` wraps `cobra` and restyles its help and errors
+without changing the parser at all, so the bytes you are asserting on come from the styler rather
+than from cobra's template.
+
+**Then prove it, twice over.** D4 checks the weakest useful form — same argv, same environment,
+adjacent runs. The stronger check is the reproducible-builds one: run the same help invocation
+twice under a _different_ `HOME`, `TMPDIR`, cwd, `TZ` and width, and diff the two captures before
+comparing either against a golden file. A difference found that way is a defect in the CLI, not a
+rotted snapshot, and attributing it correctly is most of the value. Deterministic help is also what
+makes the golden file possible in the first place: clap's help tests are `snapbox` inline
+snapshots, and clap's v3 changelog asks downstream CLIs to add `trycmd` tests for `-h` and `--help`
+at minimum.
 
 ## Why
 
