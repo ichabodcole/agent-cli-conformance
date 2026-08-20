@@ -2,7 +2,7 @@
 type: report
 generated: { by: claude-opus-5, at: 2026-08-14 }
 status: stable
-lifecycle: live
+lifecycle: discharged
 description: Round-1 review of the conformance kit implementation against the rule catalogue; 18 findings fixed, 9 promoted to the roadmap, 3 still open.
 tags: [conformance, remediation, testing]
 subject: src/acc
@@ -10,6 +10,30 @@ examined: feat/conformance-kit @ 2026-08-14
 ---
 
 # Implementation review — 2026-08-14
+
+## Disposition of the three open findings, verified 2026-08-19
+
+The remediation annotation below closed 18 findings and listed three as open. Two are now closed
+by later work that was not aimed at them, and the third is narrower than it was:
+
+- **R3-7 (page shape)** — **closed.** It asked for the pages to be restructured and for repeated
+  material to be relocated, naming the L0 caveat, the dedup behaviour and A6's Bun launcher
+  history. A separate Diátaxis review reached the same conclusion independently, and its DTX-2 and
+  DTX-3 did the work: section order is now read from SCHEMA's own table and linted, the L0 and
+  dedup material lives in `concepts/probing.md`, and A6's launcher history is in
+  `guides/how-to-add-a-checker.md`.
+- **R3-8 (adoption guide)** — **closed.** `guides/how-to-reach-l0-in-your-project.md` exists, with
+  a first-run tutorial and a checker guide beside it.
+- **R3-9 (evidence provenance)** — **partly closed, and still the live one.** It asked that
+  measured claims consistently name tool version, OS, date, exact command, whether the result was
+  measured here or inherited, and a primary-source link. Two research notes dated 2026-08-19 carry
+  exactly that shape, and D3's Evidence section was rewritten against measurement. The audit it
+  asked for — the Evidence sections as a SET — has not been done, and is **promoted** to
+  [the roadmap](../roadmap.md#an-evidence-audit-nobody-has-run) rather than left here. Anything
+  still unsourced there is unfound rather than known-absent.
+
+With that promotion this report is **discharged**: every finding is actioned, promoted, or
+declined, and nothing in it is waiting on a reader of this page.
 
 Status: findings recorded; no implementation changes made by the reviewer.
 

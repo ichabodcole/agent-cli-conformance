@@ -2,7 +2,7 @@
 type: report
 generated: { by: claude-opus-5, at: 2026-08-15 }
 status: stable
-lifecycle: live
+lifecycle: discharged
 description: Verification of the 29 remediation commits answering the round-1 review, and the six findings that survived it.
 tags: [conformance, remediation]
 subject: src/acc
@@ -13,7 +13,8 @@ examined: 90ea2a8..6adc9de
 
 Date: 2026-08-15
 
-Status: six findings remain for follow-up; no implementation changes were made by the reviewer.
+Status: **all six findings resolved.** No implementation changes were made by the reviewer; the
+dispositions below were verified against the code on 2026-08-19, not taken from commit messages.
 
 This report is the current worklist produced by the verification review of the 29 remediation
 commits (`90ea2a8`..`6adc9de`). It intentionally excludes resolved findings and the earlier
@@ -23,6 +24,22 @@ review narrative. The complete history remains in
 The catalogue now contains 20 rules. G1 is accepted as a justified, checker-backed partial
 reversal of remediation decision D2. R3-7, R3-8, and R3-9 are deliberately deferred editorial
 work and are not included below as correctness findings.
+
+## Disposition, verified 2026-08-19
+
+Every finding in this report is closed. Each was checked against the code rather than against the
+commit that claimed it:
+
+| Finding                                  | State     | Verified against                                                                                                                                               |
+| ---------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R6-1 distinct byte streams collapse      | **fixed** | `src/acc/kit/runner.ts` digests the raw bytes, so two streams the decode collapses are two observations                                                        |
+| R6-2 G1 fails signals its scope excludes | **fixed** | `src/acc/kit/signals.ts` splits `FAULT_SIGNALS` from `AMBIGUOUS_SIGNALS`, and `docs/wiki/lint.ts` binds both lists to G1's page                                |
+| R6-3 exit-code docs inconsistent         | **fixed** | `concepts/exit-codes.md` reads ">128" as POSIX with `128+n` marked a shell convention; `decisions/exit-codes-below-125.md` attributes `124` to `timeout`       |
+| R6-4 safety guidance calls probes inert  | **fixed** | `src/acc/spec.ts` says "L0 is RISK-REDUCED, not inert"; `concepts/probing.md` now draws the per-invocation vs per-run distinction the finding was really about |
+| R6-5 coverage gaps omit sampling bounds  | **fixed** | `coverageEstablished` exists on every checker, is required on every rule page, and is compared verbatim in both directions by the lint                         |
+| R6-6 F2 perturbs the environment         | **fixed** | `checkers/safety/first-byte-prompt.ts` uses `Invocation.repeat`; `inert.ts` records that the `ACC_*` probe-identity variables were removed                     |
+
+The table below is the reviewer's original priority list, kept as written.
 
 ## Current priorities
 

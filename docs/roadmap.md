@@ -466,6 +466,23 @@ probe-plan dry run, which belongs with step 3 — it is a safety mitigation, not
 
 ---
 
+## An evidence audit nobody has run
+
+**What it is.** A pass over every rule page's `## Evidence` section, checking that each measured
+claim names its tool version, the OS, the date, the exact command or fixture, whether the result
+was measured in this repository or inherited from a research note, and a primary-source link where
+it quotes external guidance.
+
+**Why it matters.** Review finding R3-9 asked for it and it has never been done as a set.
+Individual sections have been corrected when something else surfaced them, and that is precisely
+the problem: what remains unsourced is unfound rather than known-absent. Two measurements taken on
+2026-08-19 both refuted a wiki claim that had read as settled — that `gh` advertises its
+machine-mode flag in root help, and that Python needs an explicit flush before exit. Neither was
+suspected until someone looked.
+
+**Blocked on** nothing. It is unglamorous reading, and its value is exactly that nobody can
+currently say how much of the Evidence corpus would survive it.
+
 ## A reference shelf the page types do not have
 
 **What it is.** A `type: reference` for the tables a reader consults rather than reads: the
@@ -524,9 +541,9 @@ binding.
 
 ## The coverage debt
 
-All 23 rules declare `coverage: partial`, over **89 named gaps** — see
+All 23 rules declare `coverage: partial`, over **90 named gaps** — see
 [the matrix](./wiki/index.md#coverage-at-a-glance), which is generated from rule frontmatter and
-fails the lint when it drifts. Twenty-two of those rules have an implemented checker carrying 87
+fails the lint when it drifts. Twenty-two of those rules have an implemented checker carrying 88
 of the gaps; `B4` is `checker_status: planned`, so its two gaps live on the page and not yet in
 code. Closing them is roadmap work, and most of it is blocked rather than merely unwritten. The
 groups below are not disjoint: several gaps need two things, and a gap blocked on two blockers
@@ -679,10 +696,11 @@ beside it, and no item here proposes to make it mean more.
 
 Recorded so the review is not read as a list of pending work. Four remediation phases closed
 Rounds 1, 2 and 5, the mechanical half of Round 3, and every item under the review's additional
-hardening recommendations. Two Round 3 findings remain and are placed above rather than here: the
-normative-scope question is settled at
-[design guidance](#design-guidance-that-is-not-yet-normative), and the adoption guide sits at
-[step 9](#9-adoption-surfaces).
+hardening recommendations. One Round 3 finding remains and is placed above rather than here: the normative-scope question
+is settled at [design guidance](#design-guidance-that-is-not-yet-normative). The adoption guide
+(R3-8) and the page-shape restructure (R3-7) are both written; what is left of Round 3 is R3-9,
+the Evidence-provenance audit, at
+[an evidence audit nobody has run](#an-evidence-audit-nobody-has-run).
 
 - the front page now separates **For**, **Today**, **Planned** and **Non-goals** — the review's
   own step 1, and its "separate current capability from roadmap language" recommendation;
@@ -801,8 +819,9 @@ number.
 
 Five findings are cited above by name rather than by number, because a number resolves to nothing
 a reader can open: the **normative-scope** finding (R3-1) at
-[design guidance](#design-guidance-that-is-not-yet-normative), the **adoption guide** (R3-8) at
-[step 9](#9-adoption-surfaces), the **false-positive sweep** (R6-5) and the bidirectional
+[design guidance](#design-guidance-that-is-not-yet-normative), the **Evidence-provenance audit** (R3-9) at
+[an evidence audit nobody has run](#an-evidence-audit-nobody-has-run), the **false-positive
+sweep** (R6-5) and the bidirectional
 `coverage_established` lint (DTX-8, from `docs/reports/2026-08-15-wiki-diataxis-review.md`) at
 [step 8](#8-test-the-checker-as-a-measurement-instrument), and the **probe nonce** in F2's timing
 runs (R6-6) in [the coverage debt](#the-coverage-debt).
