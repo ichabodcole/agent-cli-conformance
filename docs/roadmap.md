@@ -21,8 +21,7 @@ because the distance between "not started" and "two thirds of the data model is 
 is the most useful thing a roadmap can record.
 
 The evidence is the Round 4 findings of an implementation review conducted in six numbered rounds
-— `docs/reports/2026-08-14-implementation-review.md`, untracked and local to the maintainer's
-checkout — plus the scope decisions taken during Phases 1 to 4, the four remediation phases that
+— `docs/reports/2026-08-14-implementation-review.md` — plus the scope decisions taken during Phases 1 to 4, the four remediation phases that
 preceded this page. The order is argued here on its own terms rather than transcribed from that
 review; the two disagree in five places, reconciled in
 [the appendix](#appendix-where-this-departs-from-the-review) for the reader who has the review
@@ -454,8 +453,10 @@ lifecycle adds a family. Sweeping first means sweeping twice.
 
 ## 9. Adoption surfaces
 
-**What it is.** `acc init`, CI integration beyond this repository's own gate, SARIF or JUnit
-report exports, and an adoption guide — the largest remaining navigation gap.
+**What it is.** `acc init`, CI integration beyond this repository's own gate, and SARIF or JUnit
+report exports. The adoption guide this group used to name is written —
+[how to reach L0](./wiki/guides/how-to-reach-l0-in-your-project.md), with a first-run tutorial and
+a checker guide beside it — so what remains here is tooling rather than navigation.
 
 **Why last.** An export format is a consumer, and it pins to the report shape. Shipping SARIF
 before step 2 creates precisely the accidental compatibility promise that step exists to prevent.
@@ -464,6 +465,32 @@ before step 2 creates precisely the accidental compatibility promise that step e
 probe-plan dry run, which belongs with step 3 — it is a safety mitigation, not an ergonomic one.
 
 ---
+
+## A reference shelf the page types do not have
+
+**What it is.** A `type: reference` for the tables a reader consults rather than reads: the
+exit-code taxonomy, the error-envelope shape, the output kinds, the probe levels and inertness
+classes. Concept pages would explain and link them instead of containing them.
+
+**Why it matters.** `## The details` is the largest section in the wiki — 185 lines on
+`conformance.md`, 157 on `exit-codes.md` — and on several pages it holds three kinds of content
+at once. `exit-codes.md` is the clearest: `The taxonomy` is reference, `Exit codes are
+append-only` is a policy, and `There is no industry standard` is explanation, all under one
+heading (review DTX-5). The canonical exit-code table, plausibly the most looked-up artifact
+here, sits three levels down inside explanatory prose.
+
+`probing.md` is the same shape and is evidence the gap is structural rather than historical: it
+was written recently, carries a probe-level table and an inertness-class table, and put them in
+`## The details` because `concept` was the only type on offer.
+
+**Why not yet.** The cost of DTX-5 is discoverability, not correctness, and the cheap half of that
+is already paid — the index's "Start here" table links the taxonomy and the envelope shape
+directly. Nobody has yet failed to find them. A new page type is a SCHEMA row, a lint vocabulary
+entry, a section contract and surgery on four pages that are individually good, which is a poor
+trade against an inferred need.
+
+**Blocked on** evidence of the need rather than on another item: a reader who could not find a
+table, or a guide that wants to link one and finds no anchor worth linking.
 
 ## Design guidance that is not yet normative
 

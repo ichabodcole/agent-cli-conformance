@@ -2,7 +2,7 @@
 type: report
 generated: { by: claude-opus-5, at: 2026-08-15 }
 status: stable
-lifecycle: live
+lifecycle: discharged
 description: The wiki read against the Diataxis framework; the application half of the map was empty and the rule page's proportions invert its own stated purpose.
 tags: [documentation, guide]
 subject: docs/wiki
@@ -62,18 +62,20 @@ second reader is winning on a page whose stated purpose is to serve the first.
 
 ## Disposition, as of 2026-08-19
 
-| Finding | State        | Where it landed                                                                                                                                             |
-| ------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DTX-1   | **actioned** | `guides/check-your-first-cli.md` (tutorial), `guides/how-to-reach-l0-in-your-project.md`, `guides/how-to-add-a-checker.md`; `tutorial` added as a page type |
-| DTX-2   | **actioned** | `How to comply` moved second on all 23 rule pages; section order now read from SCHEMA's table and linted                                                    |
-| DTX-3   | **actioned** | `concepts/probing.md` and the checker guide created; contributor material extracted from all 23 `## The probe` sections                                     |
-| DTX-4   | open         | largely absorbed by DTX-3 — worth re-measuring before acting                                                                                                |
-| DTX-5   | open         | `## The details` on concept pages still carries reference, decision and explanation                                                                         |
-| DTX-6   | open         | `archetypes/delegator.md` still states three unenforceable RFC-2119 obligations                                                                             |
-| DTX-7   | open         | `index.md` still catalogues by type only; the guides it would route to now exist                                                                            |
-| DTX-8   | **actioned** | `coverage_established` prose is linted, and per-type section presence and order with it                                                                     |
+| Finding | State             | Where it landed                                                                                                                                                                                                                 |
+| ------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| DTX-1   | **actioned**      | `guides/check-your-first-cli.md` (tutorial), `guides/how-to-reach-l0-in-your-project.md`, `guides/how-to-add-a-checker.md`; `tutorial` added as a page type                                                                     |
+| DTX-2   | **actioned**      | `How to comply` moved second on all 23 rule pages; section order now read from SCHEMA's table and linted                                                                                                                        |
+| DTX-3   | **actioned**      | `concepts/probing.md` and the checker guide created; contributor material extracted from all 23 `## The probe` sections                                                                                                         |
+| DTX-4   | **actioned**      | absorbed by DTX-3 and measured rather than assumed, against `57d18ad`: `###` subsections in probe sections 6 → 2, justification markers 22 → 8, verdict-labelled lines 4 → 47                                                   |
+| DTX-5   | **part actioned** | the navigational half is done — the index's "Start here" table links the taxonomy and the envelope shape directly. A `type: reference` is deferred to [the roadmap](../roadmap.md#a-reference-shelf-the-page-types-do-not-have) |
+| DTX-6   | **actioned**      | delegator states bindings as `acc.config.json` where a rule exists and as guidance where none does; `normativeLanguageChecks` keeps RFC 2119 keywords on rule pages                                                             |
+| DTX-7   | **actioned**      | `index.md` opens with a "Start here" table routing by what the reader is doing                                                                                                                                                  |
+| DTX-8   | **actioned**      | `coverage_established` prose is linted, and per-type section presence and order with it                                                                                                                                         |
 
-This report stays `lifecycle: live` while DTX-4 through DTX-7 are unresolved.
+Every finding is now actioned or promoted, so this report is **discharged**. What remains of
+DTX-5 lives on the roadmap, where anyone looking for outstanding work will find it; nothing here
+is waiting on a reader of this page.
 
 ## Priorities
 
