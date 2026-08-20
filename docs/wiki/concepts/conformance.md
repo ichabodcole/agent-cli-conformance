@@ -181,13 +181,46 @@ tool can honestly do.
 
 ## The details
 
-Two mechanisms live in `acc.config.json`, and they make **different statements**. Keeping them
-apart is load-bearing: fold one into the other and the ratchet stops meaning anything.
+Two mechanisms live in `acc.config.json` that make **different statements about rules**. Keeping
+them apart is load-bearing: fold one into the other and the ratchet stops meaning anything.
 
 | Key             | The statement                                                | Goes stale?         |
 | --------------- | ------------------------------------------------------------ | ------------------- |
 | `knownFailures` | **debt** — "this is broken, I know, I will fix it"           | yes, once it passes |
 | `rules`         | **declaration** — "this binds differently for me, by design" | **never**           |
+
+A third key says nothing about any rule. `machineMode: "default"` is a statement about **the
+tool** — that structured output is what it emits unless asked for prose — and it is the first of
+its kind here.
+
+That difference is why it sits at the top level rather than inside `rules`. It excuses nothing and
+suppresses no failure; what it changes is which probe the kit is able to send. The only other route
+to machine mode is reading help for a flag that selects it, and a machine-first CLI has none to
+find — there is no mode to switch into. Undeclared, such a target is **failed** by
+[D3](../rules/discoverability/help-advertises-machine-mode.md) for advertising nothing, and the
+rules that would check its envelope report [`unverified`](#what-it-is) for want of a
+selector to send — probed, and inconclusive.
+
+**The declaration is falsifiable, and it is worth being exact about by which rule.**
+[B5](../rules/streams/machine-mode-holds-on-parser-errors.md) is the falsifier: it provokes a
+parser error, sends no selector, and requires one of the two streams to be exactly one JSON
+document. Declare the default and answer in prose and B5 fails — the declaration was tested and
+found false.
+
+**D3 does not test it; D3 accepts it.** That asymmetry is deliberate rather than an oversight. D3's
+subject is whether a caller can _find out_ how to get machine output, and a key committed in the
+project's own config is a discoverable answer — more durable than a line of help text. So D3 takes
+the declaration at its word, and B5 is what makes taking it at its word safe. A target that lies
+here gains a `pass` on D3 and buys a `fail` on B5, which is a worse trade than saying nothing.
+
+That division is the same one [the roadmap](../../roadmap.md#6-the-portable-declaration-ir) argues
+for at `L1`, arriving early and in miniature: something declares, something else tries to falsify
+it, and a declaration nothing can falsify is a comment that lies.
+
+It does not reach everything. [B3](../rules/streams/machine-output-is-parseable.md) reads the
+output of a **data command**, and selecting one inertly needs to know it is side-effect-free,
+which is `L1`'s job. So B3 stays `unverified` under the declaration and says so in those terms
+rather than claiming nothing was advertised.
 
 ### The excuse ratchet
 

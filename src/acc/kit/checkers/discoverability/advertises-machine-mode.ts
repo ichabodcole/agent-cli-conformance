@@ -79,7 +79,7 @@ export const advertisesMachineModeChecker: Checker = {
     "a pass establishes only that help names the flag and never that the flag is accepted",
   ],
   coverageEstablished: [
-    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row",
+    "the target declared machine mode its default or the human root help surface names one of the flags --json or --format or --output or carries a schema command row",
   ],
 
   probes: (d): Invocation[] => [
@@ -123,6 +123,26 @@ export const advertisesMachineModeChecker: Checker = {
       if (crashed) return crashed;
     }
 
+    // A DECLARED default satisfies the rule before help is read at all — and it has to be
+    // decided HERE, above everything below.
+    //
+    // D3 asks that machine mode be discoverable. Reading help for a `--json`-shaped flag is how
+    // the kit discovers it when nothing was said; a declaration IS discovery, and a more durable
+    // form of it. A machine-first CLI has nothing to advertise because there is no mode to switch
+    // into, and failing it for that was the finding this branch answers.
+    //
+    // Placed below, it was unreachable for the exact population it is for: a CLI that emits JSON
+    // to a pipe answers `--help` with a document, and the machine-document branch returns
+    // `unverified` before any declaration is consulted. That left the guide promising a pass the
+    // code could not give.
+    if (h.discovery.machineModeDefault) {
+      return finding(
+        "pass",
+        "machine mode is declared the default, so there is no selector to advertise",
+        plain ? [plain.id] : [],
+      );
+    }
+
     // The HUMAN surface is what this rule names, so plain help is preferred and the forced-text
     // probe is consulted only when plain help came back as a machine document.
     const plainText = textOf(plain);
@@ -145,7 +165,11 @@ export const advertisesMachineModeChecker: Checker = {
       }
       help = forcedText;
       evidence = forced ? [forced.id] : [];
-      surface = { ...parseHelp(forcedText), helpReadable: true };
+      surface = {
+        ...parseHelp(forcedText),
+        machineModeDefault: h.discovery.machineModeDefault,
+        helpReadable: true,
+      };
     }
 
     const advertisesSchema =

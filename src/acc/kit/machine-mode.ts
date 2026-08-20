@@ -42,6 +42,36 @@ export function machineErrorArgs(selector: string): string[] {
   return [`--${SENTINEL}-flag`, selector];
 }
 
+/**
+ * The parser-error probe for a target however its machine mode is reached — or `null` when it
+ * cannot be reached at all.
+ *
+ * A DECLARED default sends no selector, and that is the point rather than a shortcut. B5's first
+ * coverage gap has always been that selecting machine mode explicitly "never exercises the
+ * piped-default resolution path that the same defect most often breaks" — the row the archaeology
+ * calls the one that matters most, because a tool's own emitted commands pass no format flag. A
+ * declared default IS that row, so the declaration closes the gap rather than widening the rule.
+ *
+ * The invocation is byte-identical to A1's unknown-flag probe, so the recorder deduplicates them
+ * and this costs no extra spawn — two rules reading one observation for different reasons, which
+ * is the normal case here.
+ */
+export function machineErrorProbesFor(d: Discovery): { args: string[]; how: string }[] {
+  const out: { args: string[]; how: string }[] = [];
+  // BOTH, when both exist, and the reason is the defect B5 is named for.
+  //
+  // A CLI that emits JSON to a pipe very often ALSO ships `--json`, and the classic failure is a
+  // format resolved only from the tokens the parser managed to read before it stopped: the bare
+  // error comes back as a document and the SAME error under `--json` comes back as prose. Probing
+  // only the declared path would take the target's word for the half it got right and never look
+  // at the half it got wrong — a declaration turning a real failure into a pass, which is the
+  // exact shape this catalogue exists to report.
+  if (d.machineModeDefault) out.push({ args: [`--${SENTINEL}-flag`], how: "the declared default" });
+  const selector = machineSelector(d);
+  if (selector) out.push({ args: machineErrorArgs(selector), how: selector });
+  return out;
+}
+
 /** A successful command in machine mode — the smallest one every CLI is expected to have. */
 export function machineVersionArgs(selector: string): string[] {
   return ["--version", selector];

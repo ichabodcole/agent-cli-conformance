@@ -199,7 +199,7 @@ rather than passing today.
 
 ### Per-project rules — `acc.config.json`
 
-Two keys, two different statements, kept apart on purpose:
+Two keys, two different statements about **rules**, kept apart on purpose:
 
 ```json
 {
@@ -231,6 +231,33 @@ blocks the evidence claim even when it would have passed, because a rule you cho
 measured against was not established. Waived rules are still **probed**, so the report shows
 what the verdict would have been. The full argument, including why an unwaivable spec is worse
 than a waived one, is in [conformance](docs/wiki/concepts/conformance.md#the-frame-a-verdict-was-reached-in).
+
+### Declaring that your tool is machine-first
+
+A third key in the same file says nothing about any rule. It describes **your tool**:
+
+```json
+{ "machineMode": "default" }
+```
+
+It means: **structured output is what your CLI writes to a pipe**, and prose is the thing a caller
+opts into. That covers the tool with no `--json` flag because it never needed one — and it also
+covers the far more common shape, **a CLI that emits JSON when stdout is not a terminal and prose
+when it is.** Every probe runs against a pipe, never a terminal, so if your tool would answer a
+script in JSON, this key is describing you.
+
+Without it, the kit reads your help looking for a machine-mode flag. Finding none, it reports that
+machine mode is undiscoverable — and
+[B5](docs/wiki/rules/streams/machine-mode-holds-on-parser-errors.md), the rule that checks the
+shape of your errors, has no way to ask for a mode and reports `unverified`. With it, B5 provokes a
+parser error and requires that **one of your two streams contains exactly one JSON document**.
+
+**Declaring it commits you to it.** Answer a parser error in prose and B5 fails you. That is what
+makes it a declaration rather than a guess the kit makes on your behalf: a guess cannot be wrong in
+a way anything notices.
+
+It does not excuse a rule and it does not suppress a failure — the only thing it changes is which
+probe the kit is able to send.
 
 ```bash
 acc check ./mycli --config-dir .    # look for acc.config.json in this directory

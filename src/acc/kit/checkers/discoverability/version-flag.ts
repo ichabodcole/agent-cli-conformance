@@ -177,7 +177,7 @@ export const versionFlagChecker: Checker = {
           "pass",
           machine
             ? "version reported with an unusable HOME and XDG_CONFIG_HOME, and as a structured document in machine mode"
-            : "version reported with an unusable HOME and XDG_CONFIG_HOME; no machine mode was advertised so the payload clause was not reached",
+            : "version reported with an unusable HOME and XDG_CONFIG_HOME; no machine mode was reachable at L0 so the payload clause was not reached",
           evidence,
         );
   },
