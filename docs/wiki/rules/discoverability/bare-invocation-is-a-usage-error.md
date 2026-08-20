@@ -89,6 +89,14 @@ waiting (a hang is reported as a failure, not a pass with missing evidence). The
 requires only non-zero, not exactly `2` — an undeclared tool never agreed to the taxonomy — but
 records the observed code in the finding either way.
 
+**Reports `unverified`** when the probe was never recorded, and when it died on a signal. The
+second is the asymmetry worth knowing: this rule owns hangs but **not** crashes. A crash is
+non-zero-ish and a bare invocation should be a usage error, so the two look like they line up —
+they do not. This rule asks whether the tool TOLD its caller the invocation was wrong, and a
+target that died told them nothing; `exitCode` is `null` rather than any code at all. See
+[probing](../../concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed). A capture cut short by the output ceiling is `unverified` only when stdout was
+empty — bytes already on stdout prove the violation whatever happened next.
+
 ## Current checker coverage
 
 [`bare-invocation.ts`](../../../../src/acc/kit/checkers/discoverability/bare-invocation.ts) — `L0`,

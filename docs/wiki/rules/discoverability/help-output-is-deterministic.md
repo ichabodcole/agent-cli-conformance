@@ -101,6 +101,12 @@ changed". D4 never varies the environment, so it cannot see that difference eith
 reacts to a hostile environment is [D1](./version-flag-exists.md)'s subject, where `--version` is
 run with an unusable `HOME` and `XDG_CONFIG_HOME` on purpose.
 
+**Reports `unverified`** when either capture was cut short by the output ceiling, or either run
+died on a signal — but only after the comparison above. Two prefixes that agree as far as they
+go are not two identical help outputs, and two crashes that wrote nothing are not either: `"" ===
+""` is the same trap the byte comparison exists to avoid. Bytes that did differ before the target
+fell over really did differ, so a `fail` established that way stands; see [probing](../../concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed).
+
 ## Current checker coverage
 
 [`help-deterministic.ts`](../../../../src/acc/kit/checkers/discoverability/help-deterministic.ts) — `L0`,

@@ -83,6 +83,11 @@ establishes nothing about it. Building that probe means putting a real subcomman
 sentinel, which is [the shape `L0` cannot send](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe);
 the checker verifies the root case only until `L1` makes the nested probe safe to run.
 
+**Reports `unverified`** when the probe was never recorded, and when it died on a signal — a
+target that fell over rejected nothing, so the evidence is void whoever ended it; see
+[probing](../../concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed). A capture cut short by the output ceiling is `unverified` too, unless the
+prefix already shows the violation.
+
 ## Current checker coverage
 
 [`unknown-command.ts`](../../../../src/acc/kit/checkers/parsing/unknown-command.ts) — `L0`,

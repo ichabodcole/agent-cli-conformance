@@ -90,6 +90,10 @@ for its own JSON, which is a violation no pipe-only probe can reach.
 TTY **is** present, and every probe captures to a pipe, so they are unreachable rather than
 unimplemented — a pass here says nothing about them.
 
+**Reports `unverified`** when no probe was recorded, when a capture hit the output ceiling
+without an escape appearing in the prefix, and when a probe died on a signal — output a target
+never finished writing is not output shown to be escape-free; see [probing](../../concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed).
+
 ## Current checker coverage
 
 [`no-ansi-when-piped.ts`](../../../../src/acc/kit/checkers/streams/no-ansi-when-piped.ts) — `L0`,

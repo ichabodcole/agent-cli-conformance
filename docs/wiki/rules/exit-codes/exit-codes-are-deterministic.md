@@ -93,6 +93,10 @@ Deliberately excluded: any invocation that performs work. Repeating a real comma
 is the opposite of inert, and belongs to `L2` — where running twice is precisely how
 [idempotence](../../concepts/output-kind.md) claims get falsified.
 
+**Reports `unverified`** when fewer than three runs were recorded, when a capture was cut short
+by the output ceiling, and when a run died on a signal. A process the kit killed, or one that
+faulted, never chose the exit code this rule compares; see [probing](../../concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed).
+
 ## Current checker coverage
 
 [`deterministic.ts`](../../../../src/acc/kit/checkers/exit-codes/deterministic.ts) — `L0`,
