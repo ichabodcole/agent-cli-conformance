@@ -160,7 +160,7 @@ const noCommandGiven = () =>
 // answered with the schema rather than prose. An agent asking what the tool can do gets
 // something it can branch on; a human asking gets the human rendering below.
 if (mode === "json" && (argv.includes("--help") || argv.includes("-h"))) {
-  schemaCommand(mode, startedAt);
+  schemaCommand(mode);
   process.exit(ExitCode.Success);
 }
 
@@ -170,7 +170,7 @@ if (mode === "json" && (argv.includes("--help") || argv.includes("-h"))) {
 // string at exit 0, violating D1's structured-payload requirement. Help is checked first so
 // `acc --help --version` keeps answering the broader question.
 if (mode === "json" && (argv.includes("--version") || argv.includes("-V"))) {
-  versionCommand(mode, startedAt);
+  versionCommand(mode);
   process.exit(ExitCode.Success);
 }
 
@@ -272,7 +272,7 @@ for (const spec of COMMANDS) {
       case "tags":
         return tagsCommand(resolved, startedAt);
       case "schema":
-        return schemaCommand(resolved, startedAt);
+        return schemaCommand(resolved);
       case "check":
         return checkCommand(
           positionals[0] as string,

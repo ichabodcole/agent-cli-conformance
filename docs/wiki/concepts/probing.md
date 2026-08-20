@@ -19,8 +19,11 @@ invocation it sends — argv, environment, stdin — and an **observation** is w
 streams, the exit code, the terminating signal if there was one, and the timing.
 
 Checkers never spawn anything. They are pure functions over observations the runner already
-collected, which is why a new rule is a new reading of evidence already on disk rather than a new
-thing done to the target.
+collected, which is why a new rule is a new reading of evidence this run already gathered rather
+than a new thing done to the target. _Already gathered, not already stored_ — the history lives in
+memory and dies with the process, so re-checking an old run against a rule written later is a
+property of the architecture and not yet a thing you can do
+([roadmap](../../roadmap.md#4-durable-observation-and-replay)).
 
 **`probe_level` bounds what may be sent**, and it is the field that decides whether a rule is
 applicable to a run at all:

@@ -6,8 +6,11 @@ and framework maintainers make ordinary command-line tools predictable, machine-
 safely operable by autonomous agents, using an executable specification and black-box evidence
 rather than documentation alone.
 
-> **Status: early.** The research is complete; the spec is being written. Nothing here is
-> stable yet.
+> **Status: pre-1.0.** Usable today and installable — 23 rules, 22 of them with a registered
+> checker, run against your CLI as black-box evidence. Not yet settled: rule ids are
+> append-only but the report and schema shapes may still change before 1.0, every checker
+> covers only part of its rule, one of the 22 ([A4](docs/wiki/rules/parsing/unexpected-positionals-rejected.md))
+> can only report `unverified` until `L1` exists, and `L0` is the only probe level there is.
 
 **For** — CLI authors, framework and scaffold maintainers, and platform/tooling teams;
 agent-harness authors second. It is a conformance suite for _ordinary CLIs consumed by agents_,
@@ -35,7 +38,7 @@ those and is deliberately reported as two separate booleans (see
 
 ## Getting started
 
-You need [Bun](https://bun.sh) 1.3 or later. `acc` is not published to npm, and this repository
+You need [Bun](https://bun.sh) 1.4 or later, on **macOS or Linux**. `acc` is not published to npm, and this repository
 is **private** while the first few projects are run through it — so install it over SSH, into
 the project whose CLI you want to check:
 
@@ -45,9 +48,20 @@ bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 
 That needs GitHub access to this repository. The shorter
 `bun add -d github:ichabodcole/agent-cli-conformance` goes through GitHub's tarball API, which
-answers `404` for a private repository; it becomes the install line if and when this one opens
-up. Either form pins a commit in your lockfile, and a git ref pins a release:
-`…agent-cli-conformance.git#v0.1.0`.
+answers `404` for a private repository whatever token is in the environment
+([oven-sh/bun#19618](https://github.com/oven-sh/bun/issues/19618)); it becomes the install line
+if and when this one opens up.
+
+Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
+commit or a release tag after the `#` — `…agent-cli-conformance.git#v0.1.0`.
+
+One caveat, because it is indistinguishable from a tag that does not exist: Bun keeps a bare
+clone of each git dependency in its cache and does not re-fetch it, so **a tag pushed after your
+first install of this package is invisible** and the install fails with
+`no commit matching "…" found (but repository exists)`. `bun pm cache rm` fixes it
+([oven-sh/bun#18947](https://github.com/oven-sh/bun/issues/18947)). A `#semver:` range is a
+different matter — Bun does not support one
+([oven-sh/bun#4978](https://github.com/oven-sh/bun/issues/4978)).
 
 Then point it at your CLI:
 
@@ -69,6 +83,12 @@ the whole CI step one line with no flags.
 **Read the safety note before pointing it at your own work.** `acc check` **executes** the
 target — see [what L0 does not prevent](#the-conformance-kit) below.
 
+**Platform.** macOS and Linux are supported and tested; CI runs the gate on Ubuntu. Windows is
+untested and one safety guarantee is weaker there: a probe that outruns its deadline is bounded
+by terminating the target's whole **process group**, which is POSIX-only, so on Windows a
+descendant the target spawned may outlive the run. The deadline still resolves the probe either
+way. Details in [probing](docs/wiki/concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed).
+
 Where to go next:
 
 - **[Check your first CLI](docs/wiki/guides/check-your-first-cli.md)** — ten minutes, learning
@@ -76,6 +96,28 @@ Where to go next:
   with this repository, so clone it for that one.
 - **[How to reach L0 in your project](docs/wiki/guides/how-to-reach-l0-in-your-project.md)** —
   taking your own CLI from a first failing check to a green gate.
+
+## Branches and releases
+
+`develop` is where work lands; `main` is what is released from. Branch off `develop`, merge
+back into `develop`, and open a pull request from `develop` into `main` to begin a release.
+
+**Releasing takes two merges, not one.** Merging `develop` into `main` publishes nothing: it
+makes release-please open a _second_ pull request carrying the version bump and the changelog
+entry, and merging **that** creates the tag and the GitHub Release. So between the two merges
+`main` holds the next release rather than the last one. Merge the promotion PR with a merge or
+rebase merge — a squash takes its headline from the PR title, and a title that is not a
+Conventional Commit leaves release-please with no version signal.
+
+[release-please](.github/workflows/release-please.yml) watches `main` only, and derives the
+version and the changelog from the commit messages
+([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)). It writes the version
+to `package.json`, which is what `src/acc/version.ts` reads — so `acc --version`, the git tag and
+the changelog cannot disagree. Releases are tagged `v<version>`. Nothing is
+published to npm.
+
+[The gate](.github/workflows/check.yml) runs on every push and every pull request, on both
+branches.
 
 ## The problem
 
@@ -171,8 +213,12 @@ Two keys, two different statements, kept apart on purpose:
 }
 ```
 
-`knownFailures` is **debt**: "this is broken, I know, I will fix it." It only ever shrinks, and
-a rule that starts passing is reported as a **stale expectation** so the line gets deleted.
+`knownFailures` is **debt**: "this is broken, I know, I will fix it." It is meant only to
+shrink, and a rule that starts passing is reported as a **stale expectation** — the line to
+delete. That report is a reminder, not a gate: `acc` still exits `0`, because a target with a
+stale expectation is conformant and an exit code that said otherwise would be lying. Enforcing
+removal needs an outcome code of its own and is
+[on the roadmap](docs/roadmap.md#a-ratchet-the-tool-does-not-turn), not in the tool today.
 
 `rules` is a **declaration**: "this rule binds differently for my tool, by design."
 `severity` is `core`, `diagnostic` or `off` — a project may raise a rule as well as lower one —
@@ -252,9 +298,11 @@ bun run docs:build             # render the wiki to docs/dist/ — open index.ht
 page show the one thing the markdown cannot: the backlinks, which SCHEMA.md says are computed and
 never authored. The output is gitignored and needs no network — it reads from `file://`.
 
-`bun run check` is the whole gate and the only definition of it — the pre-commit hook and
-[the CI workflow](.github/workflows/check.yml) both run exactly that line, so neither can
-enforce something the other does not.
+`bun run check` is the whole gate and the only definition of it. [The CI
+workflow](.github/workflows/check.yml) runs that line and nothing else; the pre-commit hook runs
+it too, behind a `lint-staged` pass that applies the same rules to the staged files first for
+speed. Nothing the hook enforces is absent from `bun run check`, so a `--no-verify` commit cannot
+land something CI would have caught.
 
 The wiki lint is not optional decoration. It verifies that every rule page declares a checker
 that exists, that every checker has a rule page, and that each page's `tier`, `probe_level`,

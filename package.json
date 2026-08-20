@@ -23,7 +23,8 @@
     "lint:fix": "biome check --write --error-on-warnings .",
     "format": "biome format --write .",
     "format:md": "prettier --write '**/*.md'",
-    "check": "bun run typecheck && biome check --error-on-warnings . && bun run docs:lint && bun run docs:lint:artifacts && bun run test",
+    "format:md:check": "prettier --check '**/*.md'",
+    "check": "bun run typecheck && biome check --error-on-warnings . && bun run format:md:check && bun run docs:lint && bun run docs:lint:artifacts && bun run test",
     "acc": "bun src/acc/cli.ts"
   },
   "lint-staged": {

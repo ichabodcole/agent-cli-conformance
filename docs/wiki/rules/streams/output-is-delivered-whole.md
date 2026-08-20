@@ -52,11 +52,11 @@ the bytes are gone. The write call returning is not the bytes arriving.
 **Other runtimes fail differently, and two of them do not fail at all** — measured across Go, Rust,
 Python, Node and Bun, five runs each ([2026-08-19](../../../research/2026-08-19-flush-on-exit-by-runtime.md)).
 
-| Runtime                                | Abrupt exit after a large write to a pipe                            |
-| -------------------------------------- | -------------------------------------------------------------------- |
-| Node, Bun                              | **truncated at one pipe buffer** — 65,536 of 524,288 bytes, exit `0` |
-| Go `bufio`, Rust `BufWriter`           | **whole buffer lost**, to a file as readily as to a pipe             |
-| Go unbuffered, Rust unbuffered, Python | nothing lost                                                         |
+| Runtime                                | Abrupt exit after a large write to a pipe                                      |
+| -------------------------------------- | ------------------------------------------------------------------------------ |
+| Node, Bun                              | **truncated at a pipe buffer boundary** — most of 524,288 bytes lost, exit `0` |
+| Go `bufio`, Rust `BufWriter`           | **whole buffer lost**, to a file as readily as to a pipe                       |
+| Go unbuffered, Rust unbuffered, Python | nothing lost                                                                   |
 
 Only the first row is this rule's defect: pipe-specific, silent, a prefix rather than nothing. The
 second is a buffering bug that a file redirect reproduces, so the probe here would not catch it and
@@ -96,9 +96,17 @@ also the only class in that corpus that produced a false _rule_: a team publishe
 too big to read" and worked under it for six messages.
 
 The mechanism is small and the consequence is not. A write to a pipe is buffered by the kernel;
-`process.exit()` runs immediately and discards whatever the runtime has not yet handed over. The
-payload stops at **exactly 65,536 bytes** on Linux and macOS — one pipe buffer — and the exit code
-is **`0`**.
+`process.exit()` runs immediately and discards whatever the runtime has not yet handed over. What
+arrives is what the kernel had already accepted — a whole number of pipe buffers, three quarters
+of a 512 KiB payload gone — and the exit code is **`0`**.
+
+**Do not read a constant into that count.** It depends on the runtime version and on how promptly
+the consumer was draining: Bun 1.3.14 delivered 65,536 bytes to a draining consumer and Bun 1.4.0
+delivers 131,072 through the same pipe
+([2026-08-20](../../../research/2026-08-20-flush-on-exit-after-the-rust-rewrite.md)). The defect is
+identical in both; only the size of the surviving prefix moved. What holds across every runtime
+and consumer measured is the part that matters: bytes are lost, the loss is silent, and the status
+is success.
 
 Every property that normally makes a failure noticeable is absent:
 
@@ -153,6 +161,9 @@ bun drained-conforming.ts list | ( sleep 1; cat ) | wc -c ->   65,536 bytes, exi
 bun drained-conforming.ts list | cat | wc -c              ->   65,536 bytes, exit 0
 acc's runner (Bun.spawn, stdout: "pipe")                  ->  195,837 bytes, parses whole
 ```
+
+Those byte counts are Bun 1.3.14. Under 1.4.0 the draining consumer receives 131,072 rather than
+65,536 — still a truncation, still exit `0`, still unparseable.
 
 A shell pipe loses **67% of the payload**, and the cut lands mid-string — `…"title":"a bounty card
 with a title long e` — so what arrives is unparseable rather than merely short. The runner's own

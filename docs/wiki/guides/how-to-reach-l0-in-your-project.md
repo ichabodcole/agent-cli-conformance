@@ -52,10 +52,19 @@ Three findings are worth clearing before the rest, because each one closes other
 
 **Advertise machine mode in help ([D3](../rules/discoverability/help-advertises-machine-mode.md)).**
 D3 is only `diagnostic`, so it never blocks the gate — fix it first anyway. The kit discovers
-machine mode by reading your help text, so while help names no `--json` or `schema` command,
-[B3](../rules/streams/machine-output-is-parseable.md) and
-[B5](../rules/streams/machine-mode-holds-on-parser-errors.md) have nothing to select and both
-report `unverified`. The report says so out loud:
+machine mode by reading your help text, and what help names decides what two other rules can
+probe at all. The three do not accept the same spellings:
+
+| Rule                                                           | Satisfied by                                          |
+| -------------------------------------------------------------- | ----------------------------------------------------- |
+| [D3](../rules/discoverability/help-advertises-machine-mode.md) | `--json`, `--format`, `--output`, or a schema command |
+| [B5](../rules/streams/machine-mode-holds-on-parser-errors.md)  | `--json` or `--format` — never `--output`             |
+| [B3](../rules/streams/machine-output-is-parseable.md)          | `--json` only                                         |
+
+So **`--json` is the one spelling that moves all three**; anything else leaves at least one of
+them with nothing to select, reporting `unverified`. `--output` is refused deliberately — it
+names an output _file_ at least as often as a format, and a probe whose meaning depends on which
+sense your tool implements is not a probe. The report says so out loud:
 
 ```
 FAIL  D3  help names no machine-mode flag or schema command; B3 will be unverified as a result
@@ -74,7 +83,7 @@ CLI.
 [D2](../rules/discoverability/bare-invocation-is-a-usage-error.md)).** Usage text on stdout is
 the single most common finding on real tools, and it is usually one stream argument.
 
-Re-run the check. Most projects lose over half their findings here.
+Re-run the check before triaging what is left; these three fixes tend to clear findings well beyond the rules they name.
 
 ### 3. Triage what is left into three buckets
 

@@ -12,11 +12,14 @@ import { VERSION } from "../version.ts";
  * Text mode keeps the bare string on purpose: `acc --version` in a shell should be pipeable
  * into a comparison, and wrapping it would break every script that reads it.
  */
-export function versionCommand(mode: OutputMode, startedAt: number): void {
+/*
+ * No `startedAt`, deliberately — see schemaCommand for the argument. `--version` is answered
+ * from a constant; a duration beside it measures the runtime's startup, not the answer.
+ */
+export function versionCommand(mode: OutputMode): void {
   emit({
     mode,
     command: "--version",
-    startedAt,
     data: { name: "acc", version: VERSION },
     next: [{ command: "acc schema", when: "to see the surface this version implements" }],
     renderText: (d) => d.version,

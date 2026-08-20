@@ -91,8 +91,8 @@ FAIL  A1  the valueless flag exited 0; the valueless flag left 14 bytes on stdou
           valueless rejection did not name the offending flag; ...
 ```
 
-Every clause is a separate observation. The fixture did not merely fail A1 — it failed it four
-different ways, and the report says which. This is the shape of every finding: a rule id, a
+Every clause is a separate observation. The fixture did not merely fail A1 — it failed it six
+different ways, two probe shapes with three clauses each, and the report says which. This is the shape of every finding: a rule id, a
 verdict, and the specific thing that was seen.
 
 ## Step 3 — read the four verdicts
