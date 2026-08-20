@@ -108,6 +108,13 @@ Four things no measurement detects, which reading must catch:
 - **A promise the page does not keep** — the heading announces one thing, the body delivers another.
 - **A scaffold taught and then abandoned** — once a reader learns a section shape, every departure
   costs a re-derivation.
+- **An example the reader cannot look up** — a tool named as precedent that they have no way to
+  examine. It creeps in because the writer knows the system and forgets the reader does not: this
+  wiki cited a private project twice, once for a credential error class and once as a launcher
+  archetype, and neither was checkable by anyone outside the maintainer's machine. Cite something
+  public, cite the research that measured it, or make the point in your own voice — the reasoning
+  usually stands without the attribution, and an unverifiable name adds authority the reader
+  cannot audit.
 
 ## Satellites
 

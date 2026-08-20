@@ -124,7 +124,8 @@ The seed's manifest warning above is the direct source. The wider pattern is sta
 clig.dev states that secrets must never be accepted as flag values because they leak into
 process lists and shell history, and recommends credential files or pipes instead.
 
-`operator` handles the error-message half deliberately — its credential error class carries an
-explicit note never to include the key in the message, on the reasoning that its threat model is
-"leak equals access emergency" rather than "rotate for hygiene". The same reasoning applies to
-anything a schema publishes, which is read far more widely than an error.
+The error-message half deserves the same care, on a threat model worth stating plainly: for a
+credential, a leak is an access emergency rather than something to rotate for hygiene. An error
+that echoes the key it rejected has published it to every log that captured the run. The
+reasoning applies with more force to anything a schema publishes, which is read far more widely
+than any one error.

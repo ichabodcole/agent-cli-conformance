@@ -17,8 +17,8 @@ generated: { by: claude-opus-5, at: 2026-08-14 }
 A thin CLI that resolves some other program and runs it, forwarding arguments and returning its
 result. Three common variants:
 
-- **Launcher** — puts a name on `PATH` and re-execs the real implementation elsewhere (this
-  project's `anthill-cli` is one: a pointer, not a copy).
+- **Launcher** — puts a name on `PATH` and re-execs the real implementation elsewhere: a
+  pointer, not a copy.
 - **Wrapper** — adds behaviour around a third-party binary: auth, config resolution, a nicer
   default.
 - **Runner** — executes arbitrary caller-supplied commands in some context (`kubectl exec`,
@@ -125,8 +125,6 @@ wrapper rather than the child.
 
 ## Examples
 
-- **`anthill-cli`** — a launcher that resolves an installed plugin's CLI and delegates to it. Its
-  own description calls it "a pointer, not a copy", which is the right framing.
 - **`gh copilot`** — a shim that downloads and executes a separate binary, forwarding any
   arguments `gh` does not recognise, and documenting the `--` boundary.
 - **`timeout` / `env`** — the canonical minimal delegators. `timeout` is where `124` and `125`
