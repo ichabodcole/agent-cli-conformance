@@ -261,16 +261,82 @@ reach a green gate.
 This is the balance we asked for and did not get to enforce: one fix that stands on its own merits,
 one refusal on principle.
 
+## Follow-up answers
+
+Five questions were put back to the adopter on what the report left open. The answers moved the
+priority order, so they are recorded before the disposition rather than after it.
+
+**On what would have made the trial clearly positive** — not more rules. _"The two rules you
+already have, reaching my CLI."_ D1 was a real defect, but they would have hit it themselves the
+next time they wanted to know which version they were holding: **the report pulled it forward by
+weeks, it did not produce it.** What would have justified the run outright is B3/B5 executing
+against the JSON envelope on an **error** path — does the envelope hold its shape when the parse
+fails, not only when it succeeds. That is the contract their callers depend on and the one they have
+no independent check on.
+
+This reframes EXT-4. It is not a coverage gap on an unusual target; **it is the value proposition
+for the class of CLI this project is aimed at**, and its absence is why the run came out
+break-even.
+
+**On catching the stale install: they did not detect it, they got lucky.** They cloned the repo to
+read the README before installing, so they were already holding a second source of truth when they
+ran `acc --version` as a routine post-install smoke test. Their words: _"Someone who followed the
+README's install line without cloning first sees `0.1.0`, which is a perfectly plausible version
+number, and has nothing to compare it against."_ That is the argument for putting the kit's version
+in the report header — it makes the comparison available to someone who has not accidentally armed
+themselves for it.
+
+**On EXT-3, a design constraint worth more than the three mechanisms originally offered.** Asked
+what JSON they would have committed, they gave the waiver they had already written and added: _"I
+didn't want a second entry, a C2-specific escape, or anything that named the coupling — if I have to
+describe the coupling in config, the config has become a model of your internals rather than a
+statement about my CLI."_
+
+That rules out two of their own three suggestions and points at the third: **a waiver propagates
+along the evidence it waives, automatically, with nothing in the config naming the relationship.**
+
+**On EXT-4, they argue for a config key over inference using this project's own roadmap.** L1/L2
+rests on the CLI declaring what its commands do and the kit trying to falsify the declaration — _"a
+declaration that cannot be falsified is a comment that lies."_ Machine-mode-by-default is exactly
+such a declaration, and falsifiable at the lowest possible cost: run a plain data invocation and see
+whether stdout parses. _"An inference can't be falsified, because the inference **is** the guess."_
+
+Their evidential objection is the sharper half: the kit already infers machine mode from help text,
+and that inference is what got grapevine wrong. A `--human` inverse is a better signal than prose
+but still a guess, **and the most machine-first CLI possible has no inverse flag at all** — nothing
+to infer from, read as "no machine mode", the same wrong answer on the target where being wrong
+costs most. Proposed shape: `"machineMode": "default"` at the top level of `acc.config.json`,
+beside `rules` rather than inside it, because it describes the target rather than binding a rule.
+
+**On whether they nearly stopped: yes, once, at install step 3.** Fifteen minutes in, having
+cleared the stale clone, reinstalled, and watched `acc --version` still report the old number, the
+live question had stopped being "what will this find" and become "is this installable at all." Two
+more minutes and it would have been written up as "could not install" and abandoned.
+
+What saved it was that running from a clone was available, because they had already cloned to read
+the README. _"If the repo had been one I couldn't clone — which the README's own framing describes,
+a private repo you install from over ssh without ever reading the source — I would have had no
+fallback and would have stopped there. **The trial survived on a workaround that the documented path
+doesn't leave you.**"_
+
+**EXT-8 was withdrawn by its author**, who re-checked and confirmed the narrowing here. They
+replaced it with a better observation: piping silently changes the output shape, and it caught them
+twice in one session without their noticing it was the same surprise both times. EXT-6 and EXT-8 are
+**two symptoms of one root cause**, and the fix belongs at the cause.
+
 ## Disposition
 
-Nothing is discharged. Proposed order, by what the answer costs:
+Nothing is discharged. Order revised after the follow-up:
 
-1. **EXT-2** — a checker that invents a cause. Fix first; it is the only finding that damages the
-   premise.
-2. **EXT-3** — the waiver model. Blocking for the next adoption, and a design question rather than a
-   patch.
-3. **EXT-1** — document the silent install arm; put the kit's version in the report header.
-4. **EXT-4** — machine-mode-by-default discovery, which also unblocks B3/B5 on the target class the
-   project is aimed at.
-5. **EXT-6** — README pipe caveat and `--format text` in getting-started. Cheap.
-6. **EXT-5, EXT-7, EXT-8** — roadmap candidates rather than pre-adoption work.
+1. **EXT-2** — a checker that invents a cause. The only finding that damages the premise.
+2. **EXT-4** — machine-mode-by-default as a declared, falsifiable config key. Promoted from P1: the
+   adopter names its absence as the reason the trial was break-even rather than positive, and it is
+   what makes B3/B5 reach the target class this project is for.
+3. **EXT-3** — waiver propagation along shared evidence, with the constraint that the config must
+   not have to name the coupling.
+4. **EXT-1** — document the silent install arm, and put the kit's version in the report header.
+   Severity raised: the documented path leaves no recovery, and this trial only survived because the
+   adopter had deviated from it.
+5. **EXT-6** (with EXT-8 folded in) — one fix at the root: piping changes the output shape, and
+   nothing says so.
+6. **EXT-5, EXT-7** — roadmap candidates rather than pre-adoption work.
