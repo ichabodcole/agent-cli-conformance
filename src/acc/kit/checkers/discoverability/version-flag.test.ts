@@ -47,6 +47,46 @@ describe("D1 — a version is reportable without side effects", () => {
     expect(f.ruleId).toBe("D1");
   });
 
+  // THE REGRESSION. A target with no `--version` at all fails D1 for one reason, and the checker
+  // used to report it as three — the third of which, "requires configuration", was an accusation
+  // nothing in the evidence supported. Found by the first outside adopter, not by us.
+  test("FAILS a CLI with no --version, and says NOTHING about configuration", async () => {
+    const h = await record(fixture("broken/no-version-flag.ts"), [versionFlagChecker]);
+    const f = versionFlagChecker.check(h);
+    expect(f.verdict).toBe("fail");
+    expect(f.detail).not.toContain("configuration");
+    expect(f.detail).not.toContain("HOME");
+    expect(f.ruleId).toBe("D1");
+  });
+
+  // ...and the same fact from the other side: one clause, not a restatement of one failure in
+  // three voices. `exited 2` and `wrote nothing to stdout` are the same finding about a target
+  // that has no version to report.
+  test("collapses a missing --version into a single clause", async () => {
+    const h = await record(fixture("broken/no-version-flag.ts"), [versionFlagChecker]);
+    const f = versionFlagChecker.check(h);
+    expect(f.detail.split(";").length).toBe(1);
+    expect(f.detail).toContain("reported no version");
+  });
+
+  // The guard that let it through: `crashedUnverified()` only fires for a target that DIED, and
+  // this one exits 2 under its own control. Proving the fixture's shape is what keeps the
+  // regression honest — a fixture that crashed would pass the test for the wrong reason.
+  test("the regression fixture fails cleanly rather than crashing", async () => {
+    const h = await record(fixture("broken/no-version-flag.ts"), [versionFlagChecker]);
+    const runs = h.observations.filter((o) => o.purposes.some((p) => p.startsWith("D1:")));
+    expect(runs.length).toBe(2);
+    for (const o of runs) {
+      expect(o.exitCode).toBe(2);
+      expect(o.signal).toBe(null);
+    }
+    // The two probes differ only by env, and this target ignores env — so they must be identical
+    // on every axis the checker reads. This is the property the old predicate ignored.
+    const [plain, hostile] = runs;
+    expect(hostile?.exitCode).toBe(plain?.exitCode as number);
+    expect(hostile?.stderr).toBe(plain?.stderr as string);
+  });
+
   test("reports unverified when the plain probe was not recorded", () => {
     const f = versionFlagChecker.check(emptyHistory());
     expect(f.verdict).toBe("unverified");
