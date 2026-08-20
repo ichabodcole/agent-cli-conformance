@@ -56,10 +56,20 @@ export function machineErrorArgs(selector: string): string[] {
  * and this costs no extra spawn — two rules reading one observation for different reasons, which
  * is the normal case here.
  */
-export function machineErrorArgsFor(d: Discovery): string[] | null {
-  if (d.machineModeDefault) return [`--${SENTINEL}-flag`];
+export function machineErrorProbesFor(d: Discovery): { args: string[]; how: string }[] {
+  const out: { args: string[]; how: string }[] = [];
+  // BOTH, when both exist, and the reason is the defect B5 is named for.
+  //
+  // A CLI that emits JSON to a pipe very often ALSO ships `--json`, and the classic failure is a
+  // format resolved only from the tokens the parser managed to read before it stopped: the bare
+  // error comes back as a document and the SAME error under `--json` comes back as prose. Probing
+  // only the declared path would take the target's word for the half it got right and never look
+  // at the half it got wrong — a declaration turning a real failure into a pass, which is the
+  // exact shape this catalogue exists to report.
+  if (d.machineModeDefault) out.push({ args: [`--${SENTINEL}-flag`], how: "the declared default" });
   const selector = machineSelector(d);
-  return selector ? machineErrorArgs(selector) : null;
+  if (selector) out.push({ args: machineErrorArgs(selector), how: selector });
+  return out;
 }
 
 /** A successful command in machine mode — the smallest one every CLI is expected to have. */

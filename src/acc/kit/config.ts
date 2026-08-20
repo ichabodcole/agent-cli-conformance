@@ -144,10 +144,16 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> =>
  * or an unknown key inside a rule entry. The vocabulary is deliberately one word wide: there is
  * no `"flag"` value, because that case is what reading help already covers.
  */
+/** Every key this file accepts. Anything else is a typo, and a typo is an error here. */
+const TOP_LEVEL_KEYS = ["rules", "knownFailures", "machineMode"];
+
 function parseMachineMode(path: string, raw: unknown): { machineMode?: "default" } {
   if (raw === undefined) return {};
   if (raw !== "default") {
-    throw new ConfigError(path, `machineMode must be "default" if present, found ${describe(raw)}`);
+    throw new ConfigError(
+      path,
+      `machineMode must be "default" if present, found ${JSON.stringify(raw) ?? describe(raw)}`,
+    );
   }
   return { machineMode: "default" };
 }
@@ -181,6 +187,20 @@ export function loadConfig(
 
   if (!isPlainObject(parsed)) {
     throw new ConfigError(path, `must contain a JSON object, found ${describe(parsed)}`);
+  }
+
+  // AN UNKNOWN TOP-LEVEL KEY IS AN ERROR, for the reason a mistyped rule id already is: a
+  // declaration that silently does nothing leaves a project believing it declared something it
+  // did not. `{"machinemode": "default"}` used to run clean with the declaration quietly off —
+  // and since the declaration is what lets B5 reach a machine-first target, the typo switched off
+  // the falsification too. Found by an independent review.
+  for (const key of Object.keys(parsed)) {
+    if (!TOP_LEVEL_KEYS.includes(key)) {
+      throw new ConfigError(
+        path,
+        `has an unknown key "${key}" (known: ${TOP_LEVEL_KEYS.join(", ")})`,
+      );
+    }
   }
 
   const known = new Set(knownRuleIds);

@@ -123,6 +123,26 @@ export const advertisesMachineModeChecker: Checker = {
       if (crashed) return crashed;
     }
 
+    // A DECLARED default satisfies the rule before help is read at all — and it has to be
+    // decided HERE, above everything below.
+    //
+    // D3 asks that machine mode be discoverable. Reading help for a `--json`-shaped flag is how
+    // the kit discovers it when nothing was said; a declaration IS discovery, and a more durable
+    // form of it. A machine-first CLI has nothing to advertise because there is no mode to switch
+    // into, and failing it for that was the finding this branch answers.
+    //
+    // Placed below, it was unreachable for the exact population it is for: a CLI that emits JSON
+    // to a pipe answers `--help` with a document, and the machine-document branch returns
+    // `unverified` before any declaration is consulted. That left the guide promising a pass the
+    // code could not give.
+    if (h.discovery.machineModeDefault) {
+      return finding(
+        "pass",
+        "machine mode is declared the default, so there is no selector to advertise",
+        plain ? [plain.id] : [],
+      );
+    }
+
     // The HUMAN surface is what this rule names, so plain help is preferred and the forced-text
     // probe is consulted only when plain help came back as a machine document.
     const plainText = textOf(plain);
@@ -156,21 +176,6 @@ export const advertisesMachineModeChecker: Checker = {
       surface.subcommands.includes("schema") ||
       surface.flags.includes("--schema") ||
       SCHEMA_COMMAND_ROW.test(help);
-
-    // A DECLARED default satisfies the rule before help is consulted at all.
-    //
-    // D3 asks that machine mode be discoverable. Reading help for a `--json`-shaped flag is how
-    // the kit discovers it when nothing was said; a declaration IS discovery, and a stronger form
-    // of it — the rule's own subject is that a caller can find out, not that a particular token
-    // exists. A machine-first CLI has nothing to advertise, because there is no mode to switch
-    // into, and failing it for that was the finding this branch exists to answer.
-    if (h.discovery.machineModeDefault) {
-      return finding(
-        "pass",
-        "machine mode is declared the default, so there is no selector to advertise",
-        evidence,
-      );
-    }
 
     if (surface.machineModeFlag !== null || advertisesSchema) {
       return finding(

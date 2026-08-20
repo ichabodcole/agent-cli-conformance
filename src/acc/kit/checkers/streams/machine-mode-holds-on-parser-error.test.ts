@@ -12,7 +12,7 @@ const fixture = (rel: string): TargetInfo => {
   return { path: p, argv0: ["bun", p] };
 };
 
-const PURPOSE = "B5: a parser error under --json must still be a machine document";
+const PURPOSE = "B5 via --json: a parser error must still be a machine document";
 
 /** One recorded probe, with the three fields the verdict reads and nothing else varying. */
 function historyWith(exitCode: number | null, stdout: string, stderr: string): History {
@@ -112,14 +112,13 @@ describe("B5 — machine mode holds on the parser-error path", () => {
   // A target that claims machine mode by default and answers a parser error in prose must FAIL.
   // If this passed, the declaration would be a comment that lies — the exact thing the roadmap
   // argues L1 exists to prevent.
-  //
-  // `no-machine-mode.ts` is NOT the fixture for this, and finding that out was worth the detour:
-  // it has no machine-mode FLAG but its errors are already JSON envelopes, so under a declared
-  // default it passes — correctly. `broken/no-version-flag.ts` answers in prose, which is the
-  // shape a false declaration actually has.
+  // FALSIFIABILITY, pinned to the declared path and nothing else. The fixture advertises no
+  // machine-mode flag at all, so the ONLY way the kit reaches its error path is the declaration —
+  // delete the declared branch and this test cannot fail through some other route, which is what
+  // an earlier version of it did.
   test("FAILS a target that declares the default and answers in prose", async () => {
     const h = await record(
-      fixture("broken/no-version-flag.ts"),
+      fixture("broken/declares-machine-mode-answers-prose.ts"),
       [machineModeHoldsOnParserErrorChecker],
       true,
     );
@@ -140,6 +139,39 @@ describe("B5 — machine mode holds on the parser-error path", () => {
       helpReadable: true,
     });
     expect(probe?.args).toEqual(["--acc-probe-xyzzy-flag"]);
+  });
+
+  // A DECLARATION MUST NOT EXCUSE THE PATH IT DOES NOT COVER. A CLI that emits JSON to a pipe
+  // very often also ships `--json`, and the defect B5 is named for is a format resolved only from
+  // the tokens parsed before the parser stopped — bare error fine, `--json` error prose. Probing
+  // only the declared path took the target's word for the half it got right.
+  //
+  // Found by an independent review, which built this target and watched a real FAIL become a
+  // PASS on one line of config.
+  test("FAILS when the declared path holds but the advertised flag does not", async () => {
+    const h = await record(
+      fixture("broken/machine-mode-drops-under-flag.ts"),
+      [machineModeHoldsOnParserErrorChecker],
+      true,
+    );
+    const f = machineModeHoldsOnParserErrorChecker.check(h);
+    expect(f.verdict).toBe("fail");
+    expect(f.detail).toContain("--json");
+  });
+
+  test("probes BOTH ways in when a target declares the default and advertises a flag", () => {
+    const probes = machineModeHoldsOnParserErrorChecker.probes({
+      subcommands: [],
+      flags: ["--json"],
+      machineModeFlag: "--json",
+      machineModeDefault: true,
+      valueSets: {},
+      helpReadable: true,
+    });
+    expect(probes.map((p) => p.args)).toEqual([
+      ["--acc-probe-xyzzy-flag"],
+      ["--acc-probe-xyzzy-flag", "--json"],
+    ]);
   });
 
   test("declares no probe when no selectable machine mode was discovered", () => {

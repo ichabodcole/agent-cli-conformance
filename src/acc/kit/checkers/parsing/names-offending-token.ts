@@ -146,7 +146,7 @@ export const namesOffendingTokenChecker: Checker = {
       "pass",
       machine
         ? "the unknown-flag and unknown-verb rejections both named the offending token, and the machine-mode document carries it in a field"
-        : "the unknown-flag and unknown-verb rejections both named the offending token; no machine mode was advertised so the envelope clause was not reached",
+        : "the unknown-flag and unknown-verb rejections both named the offending token; no machine mode was reachable at L0 so the envelope clause was not reached",
       evidence,
     );
   },

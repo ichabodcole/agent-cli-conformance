@@ -90,8 +90,11 @@ you commit the key:
 bunx acc check ./your-cli --config-dir .
 ```
 
-B3 stays `unverified` either way — it reads a data command's output, and choosing one to run
-safely is above `L0`. `--output` is refused deliberately — it
+If your help also names `--json`, **both paths are probed** and both must hold: the defect this
+rule is named for is a format resolved only from the tokens your parser read before it stopped,
+which shows up as a bare error that is fine and the same error under `--json` that is not. B3
+stays `unverified` for a target with no flag — it reads a data command's output, and choosing one
+to run safely is above `L0` — but a target that advertises `--json` is probed by B3 as usual. `--output` is refused deliberately — it
 names an output _file_ at least as often as a format, and a probe whose meaning depends on which
 sense your tool implements is not a probe. The report says so out loud:
 

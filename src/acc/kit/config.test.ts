@@ -37,6 +37,15 @@ describe("loadConfig", () => {
   // A mistyped declaration must be an ERROR, not an ignored key — the same rule this file already
   // applies to a mistyped rule id. Silently doing nothing leaves a project believing it declared
   // something it did not, which is the silent no-op the whole catalogue exists to catch.
+  // A near-miss key is the failure this guards: the declaration is what lets B5 reach a
+  // machine-first target, so a typo silently switches off the check as well as the declaration.
+  test("REJECTS an unknown top-level key rather than ignoring it", () => {
+    for (const bad of ["machinemode", "machine_mode", "Rules", "knownfailures"]) {
+      write(`{ "${bad}": {} }`);
+      expect(() => loadConfig(dir, IDS)).toThrow(/unknown key/);
+    }
+  });
+
   test("REJECTS any other machineMode value", () => {
     for (const bad of ['"flag"', '"json"', "true", "1", "null", "{}"]) {
       write(`{ "machineMode": ${bad} }`);
