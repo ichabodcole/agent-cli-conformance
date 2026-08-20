@@ -10,7 +10,12 @@
 name: check
 
 on:
+  # `branches` rather than a bare `push:` so a tag push does not run the gate a second time on a
+  # commit it has already passed on. release-please tags every release, so the bare form doubled
+  # every release's CI.
   push:
+    branches:
+      - "**"
   pull_request:
 
 # A superseded run reports on code nobody has any more. (A PR branch is built twice — once for

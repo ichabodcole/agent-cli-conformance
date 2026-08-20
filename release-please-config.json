@@ -3,6 +3,8 @@
   "release-type": "node",
   "bootstrap-sha": "fda2be7971405af677aef9c126163dd8af536972",
   "packages": {
-    ".": {}
+    ".": {
+      "component": "agent-cli-conformance"
+    }
   }
 }

@@ -50,7 +50,8 @@ up.
 
 Either form records the resolved commit in your lockfile. To pin explicitly, name a **commit**
 after the `#` — `…agent-cli-conformance.git#4638293`. Not a tag: Bun 1.3.14 resolves a branch or
-a commit there but not a tag, so `#v0.1.0` fails with `no commit matching "v0.1.0" found`.
+a commit there but not a tag, so a release tag after the `#` fails with `no commit matching`
+however it is spelled.
 
 Then point it at your CLI:
 
@@ -89,7 +90,8 @@ back into `develop`, and open a pull request from `develop` into `main` to cut a
 version and the changelog from the commit messages
 ([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)). It writes the version
 to `package.json`, which is what `src/acc/version.ts` reads — so `acc --version`, the git tag and
-the changelog cannot disagree. Nothing is published to npm.
+the changelog cannot disagree. Releases are tagged `agent-cli-conformance-v<version>`. Nothing is
+published to npm.
 
 [The gate](.github/workflows/check.yml) runs on every push and every pull request, on both
 branches.
