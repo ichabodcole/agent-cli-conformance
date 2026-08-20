@@ -42,6 +42,26 @@ export function machineErrorArgs(selector: string): string[] {
   return [`--${SENTINEL}-flag`, selector];
 }
 
+/**
+ * The parser-error probe for a target however its machine mode is reached — or `null` when it
+ * cannot be reached at all.
+ *
+ * A DECLARED default sends no selector, and that is the point rather than a shortcut. B5's first
+ * coverage gap has always been that selecting machine mode explicitly "never exercises the
+ * piped-default resolution path that the same defect most often breaks" — the row the archaeology
+ * calls the one that matters most, because a tool's own emitted commands pass no format flag. A
+ * declared default IS that row, so the declaration closes the gap rather than widening the rule.
+ *
+ * The invocation is byte-identical to A1's unknown-flag probe, so the recorder deduplicates them
+ * and this costs no extra spawn — two rules reading one observation for different reasons, which
+ * is the normal case here.
+ */
+export function machineErrorArgsFor(d: Discovery): string[] | null {
+  if (d.machineModeDefault) return [`--${SENTINEL}-flag`];
+  const selector = machineSelector(d);
+  return selector ? machineErrorArgs(selector) : null;
+}
+
 /** A successful command in machine mode — the smallest one every CLI is expected to have. */
 export function machineVersionArgs(selector: string): string[] {
   return ["--version", selector];

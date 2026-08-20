@@ -73,6 +73,7 @@ function historyWithOneTimedOutProbe(): History {
       subcommands: [],
       flags: [],
       machineModeFlag: null,
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: false,
     },

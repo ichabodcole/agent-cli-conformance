@@ -39,6 +39,7 @@ describe("F1 — help and schema never contain secrets", () => {
         subcommands: [],
         flags: [],
         machineModeFlag: null,
+        machineModeDefault: false,
         valueSets: {},
         helpReadable: false,
       },

@@ -15,14 +15,14 @@ checker: src/acc/kit/checkers/streams/machine-mode-holds-on-parser-error.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - machine mode is selected explicitly so the piped-default resolution path that the same defect most often breaks is never exercised
+  - machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
   - only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not
   - only the --json and --format=json selectors are probed so a machine mode advertised through --output is not
   - the answer is only required to parse and is never checked against a declared envelope shape
   - that the invocation failed to PARSE is inferred from a non-zero exit rather than observed
   - NDJSON is reported unverified rather than failed because no output kind is declared at L0
 coverage_established:
-  - for a target whose root help advertises --json or --format an unrecognised flag sent alongside an explicit machine-mode selector leaves at least one stream whose whole content parses as exactly one JSON document
+  - for a target whose root help advertises --json or --format or which declares machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document
 ---
 
 # Machine mode holds on the parser-error path
@@ -124,6 +124,27 @@ carries the sentinel, so the invocation is admissible twice over under the
 output format, so a target advertising machine mode only that way is never probed here — the third
 [gap](#current-checker-coverage) below.
 
+**A target that is machine-first sends no selector at all**, and that path is the more important
+one. A CLI whose data commands emit JSON unless asked for prose declares
+`"machineMode": "default"` in [`acc.config.json`](../../concepts/conformance.md), and the probe
+becomes the bare unrecognised flag:
+
+```
+<cli> --acc-probe-xyzzy-flag                 # machine mode declared the default
+```
+
+That is the same invocation [A1](../parsing/unknown-flag-exits-nonzero.md) already sends, so the
+recorder deduplicates them and the declaration costs no extra spawn.
+
+It also closes this rule's first gap rather than widening the rule. Selecting machine mode
+explicitly never exercises the **piped-default resolution path** — the row where a tool's own
+emitted commands pass no format flag at all, and the row the archaeology says the same defect most
+often breaks. A declared default _is_ that row.
+
+The declaration is falsifiable, which is why it is a declaration and not an inference: a target
+that claims machine mode by default and answers a parser error in prose fails here. That is the
+rule working, not a mis-declaration being punished.
+
 **Passes** when at least one non-empty stream parses **whole** as exactly one JSON document.
 **Fails** when the failure comes back as prose, or with nothing on either stream — silence is not
 a shape.
@@ -152,14 +173,11 @@ are the rest of this page, unexamined.
 
 **Established**
 
-- for a target whose root help advertises --json or --format an unrecognised flag sent alongside
-  an explicit machine-mode selector leaves at least one stream whose whole content parses as
-  exactly one JSON document
+- for a target whose root help advertises --json or --format or which declares machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document
 
 **Gaps**
 
-- machine mode is selected explicitly so the piped-default resolution path that the same defect
-  most often breaks is never exercised
+- machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
 - only an unrecognised flag provokes the error so a missing value or a missing required argument
   or an out-of-set value is not
 - only the --json and --format=json selectors are probed so a machine mode advertised through

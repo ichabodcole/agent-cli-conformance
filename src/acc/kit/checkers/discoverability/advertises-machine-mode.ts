@@ -79,7 +79,7 @@ export const advertisesMachineModeChecker: Checker = {
     "a pass establishes only that help names the flag and never that the flag is accepted",
   ],
   coverageEstablished: [
-    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row",
+    "the target declared machine mode its default or the human root help surface names one of the flags --json or --format or --output or carries a schema command row",
   ],
 
   probes: (d): Invocation[] => [
@@ -145,13 +145,32 @@ export const advertisesMachineModeChecker: Checker = {
       }
       help = forcedText;
       evidence = forced ? [forced.id] : [];
-      surface = { ...parseHelp(forcedText), helpReadable: true };
+      surface = {
+        ...parseHelp(forcedText),
+        machineModeDefault: h.discovery.machineModeDefault,
+        helpReadable: true,
+      };
     }
 
     const advertisesSchema =
       surface.subcommands.includes("schema") ||
       surface.flags.includes("--schema") ||
       SCHEMA_COMMAND_ROW.test(help);
+
+    // A DECLARED default satisfies the rule before help is consulted at all.
+    //
+    // D3 asks that machine mode be discoverable. Reading help for a `--json`-shaped flag is how
+    // the kit discovers it when nothing was said; a declaration IS discovery, and a stronger form
+    // of it — the rule's own subject is that a caller can find out, not that a particular token
+    // exists. A machine-first CLI has nothing to advertise, because there is no mode to switch
+    // into, and failing it for that was the finding this branch exists to answer.
+    if (h.discovery.machineModeDefault) {
+      return finding(
+        "pass",
+        "machine mode is declared the default, so there is no selector to advertise",
+        evidence,
+      );
+    }
 
     if (surface.machineModeFlag !== null || advertisesSchema) {
       return finding(

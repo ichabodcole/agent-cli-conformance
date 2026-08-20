@@ -5,7 +5,7 @@ import {
   truncatedUnverified,
 } from "../../finding.ts";
 import {
-  machineErrorArgs,
+  machineErrorArgsFor,
   machineSelector,
   parsesAsNdjson,
   parsesWhole,
@@ -46,7 +46,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
   // not the same rule twice.
   coverage: "partial",
   coverageGaps: [
-    "machine mode is selected explicitly so the piped-default resolution path that the same defect most often breaks is never exercised",
+    "machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised",
     "only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not",
     "only the --json and --format=json selectors are probed so a machine mode advertised through --output is not",
     "the answer is only required to parse and is never checked against a declared envelope shape",
@@ -54,26 +54,28 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
     "NDJSON is reported unverified rather than failed because no output kind is declared at L0",
   ],
   coverageEstablished: [
-    "for a target whose root help advertises --json or --format an unrecognised flag sent alongside an explicit machine-mode selector leaves at least one stream whose whole content parses as exactly one JSON document",
+    "for a target whose root help advertises --json or --format or which declares machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document",
   ],
 
   probes: (d: Discovery): Invocation[] => {
-    const selector = machineSelector(d);
-    if (!selector) return [];
+    const args = machineErrorArgsFor(d);
+    if (!args) return [];
     return [
       {
-        args: machineErrorArgs(selector),
+        args,
         inertness: "sentinel",
-        purpose: `B5: a parser error under ${selector} must still be a machine document`,
+        purpose: d.machineModeDefault
+          ? "B5: a parser error must still be a machine document, machine mode being the declared default"
+          : `B5: a parser error under ${machineSelector(d)} must still be a machine document`,
       },
     ];
   },
 
   check: (h: History): Finding => {
-    if (machineSelector(h.discovery) === null) {
+    if (machineErrorArgsFor(h.discovery) === null) {
       return finding(
         "unverified",
-        "no machine-mode flag this probe can select was advertised in help, so there is no declared mode to hold",
+        "no machine mode this probe can reach was advertised in help or declared, so there is no mode to hold",
         [],
       );
     }
@@ -107,7 +109,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
     if (streams.length === 0) {
       return finding(
         "fail",
-        `machine mode was selected and the failure was reported with nothing on either stream (exit ${o.exitCode})`,
+        `machine mode was ${h.discovery.machineModeDefault ? "the declared default" : "selected"} and the failure was reported with nothing on either stream (exit ${o.exitCode})`,
         [o.id],
       );
     }

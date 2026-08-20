@@ -49,6 +49,7 @@ function historyWith(exitCode: number | null, stdout: string, stderr: string): H
       subcommands: [],
       flags: ["--json"],
       machineModeFlag: "--json",
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: true,
     },
@@ -81,7 +82,64 @@ describe("B5 — machine mode holds on the parser-error path", () => {
     const h = await record(fixture("no-machine-mode.ts"), [machineModeHoldsOnParserErrorChecker]);
     const f = machineModeHoldsOnParserErrorChecker.check(h);
     expect(f.verdict).toBe("unverified");
-    expect(f.detail).toContain("no machine-mode flag");
+    expect(f.detail).toContain("no machine mode this probe can reach");
+  });
+
+  // THE DECLARED-DEFAULT PATH. A machine-first CLI has no selector to send, and until it could
+  // be declared this rule reported `unverified` on exactly the targets whose envelope matters
+  // most. Reported by the first outside adopter (EXT-4).
+  test("PASSES a machine-first fixture when machine mode is declared the default", async () => {
+    const h = await record(
+      fixture("machine-first.ts"),
+      [machineModeHoldsOnParserErrorChecker],
+      true,
+    );
+    const f = machineModeHoldsOnParserErrorChecker.check(h);
+    expect(f.verdict).toBe("pass");
+    expect(f.ruleId).toBe("B5");
+  });
+
+  // ...and the same fixture WITHOUT the declaration is the before-picture: nothing to select, so
+  // nothing established. This is the pair that shows the declaration is what changed the verdict,
+  // not the fixture.
+  test("reports unverified on the same fixture when nothing is declared", async () => {
+    const h = await record(fixture("machine-first.ts"), [machineModeHoldsOnParserErrorChecker]);
+    const f = machineModeHoldsOnParserErrorChecker.check(h);
+    expect(f.verdict).toBe("unverified");
+  });
+
+  // FALSIFIABILITY, which is the whole reason this is a declaration rather than an inference.
+  // A target that claims machine mode by default and answers a parser error in prose must FAIL.
+  // If this passed, the declaration would be a comment that lies — the exact thing the roadmap
+  // argues L1 exists to prevent.
+  //
+  // `no-machine-mode.ts` is NOT the fixture for this, and finding that out was worth the detour:
+  // it has no machine-mode FLAG but its errors are already JSON envelopes, so under a declared
+  // default it passes — correctly. `broken/no-version-flag.ts` answers in prose, which is the
+  // shape a false declaration actually has.
+  test("FAILS a target that declares the default and answers in prose", async () => {
+    const h = await record(
+      fixture("broken/no-version-flag.ts"),
+      [machineModeHoldsOnParserErrorChecker],
+      true,
+    );
+    const f = machineModeHoldsOnParserErrorChecker.check(h);
+    expect(f.verdict).toBe("fail");
+  });
+
+  // The declared probe is byte-identical to A1's unknown-flag probe, so the recorder dedups them
+  // and the declaration costs no extra spawn. If this drifts, a machine-first target pays for a
+  // second execution to learn what one observation already held.
+  test("the declared-default probe sends no selector", () => {
+    const [probe] = machineModeHoldsOnParserErrorChecker.probes({
+      subcommands: [],
+      flags: [],
+      machineModeFlag: null,
+      machineModeDefault: true,
+      valueSets: {},
+      helpReadable: true,
+    });
+    expect(probe?.args).toEqual(["--acc-probe-xyzzy-flag"]);
   });
 
   test("declares no probe when no selectable machine mode was discovered", () => {
@@ -91,6 +149,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
           subcommands: ["list"],
           flags: ["--output"],
           machineModeFlag,
+          machineModeDefault: false,
           valueSets: {},
           helpReadable: true,
         }),
@@ -104,6 +163,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
       subcommands: [],
       flags: ["--format"],
       machineModeFlag: "--format",
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: true,
     });

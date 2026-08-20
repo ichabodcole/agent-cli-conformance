@@ -77,6 +77,7 @@ describe("A6 — the `--` terminator", () => {
         subcommands: [],
         flags: [],
         machineModeFlag: null,
+        machineModeDefault: false,
         valueSets: {},
         helpReadable: false,
       },

@@ -60,6 +60,7 @@ function historyWith(attached: Outcome, detached: Outcome = attached): History {
       subcommands: [],
       flags: ["--format"],
       machineModeFlag: null,
+      machineModeDefault: false,
       valueSets: { "--format": ["text", "json"] },
       helpReadable: true,
     },
@@ -103,6 +104,7 @@ describe("A7 — an advertised value set is enforced", () => {
         subcommands: ["list"],
         flags: ["--json"],
         machineModeFlag: "--json",
+        machineModeDefault: false,
         valueSets: {},
         helpReadable: true,
       }),
@@ -119,6 +121,7 @@ describe("A7 — an advertised value set is enforced", () => {
       subcommands: [],
       flags: ["--format"],
       machineModeFlag: null,
+      machineModeDefault: false,
       valueSets: { "--format": ["text", "json"] },
       helpReadable: true,
     });

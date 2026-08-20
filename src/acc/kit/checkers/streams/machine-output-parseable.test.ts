@@ -44,6 +44,7 @@ describe("B3 — machine output parses as its declared kind", () => {
       subcommands: ["list"],
       flags: ["--help"],
       machineModeFlag: null,
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: true,
     });

@@ -153,6 +153,7 @@ const DISCOVERY: Discovery = {
   subcommands: ["list"],
   flags: ["--json", "--verbose"],
   machineModeFlag: "--json",
+  machineModeDefault: false,
   valueSets: { "--format": ["text", "json"] },
   helpReadable: true,
 };

@@ -64,6 +64,21 @@ export const machineOutputParseableChecker: Checker = {
       : [],
 
   check: (h: History): Finding => {
+    // Declared machine-first, and still out of reach — for a reason worth stating precisely
+    // rather than reporting as "no machine mode was advertised", which would be false.
+    //
+    // B3 is about the output of a DATA command, and `--help` is not one: a machine-first CLI may
+    // legitimately answer help in prose while every data command emits JSON, which is exactly the
+    // shape that prompted the declaration. Selecting a data command needs to know one is
+    // side-effect-free, and nothing at L0 knows that. B5 does reach this target, because a parser
+    // error can be provoked inertly.
+    if (h.discovery.machineModeDefault && h.discovery.machineModeFlag === null) {
+      return finding(
+        "unverified",
+        "machine mode is declared the default, but no data command can be selected inertly at L0 to read its output; the error path is covered by B5",
+        [],
+      );
+    }
     if (h.discovery.machineModeFlag === null) {
       return finding(
         "unverified",

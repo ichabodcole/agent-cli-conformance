@@ -20,6 +20,7 @@ function emptyHistory(): History {
       subcommands: [],
       flags: [],
       machineModeFlag: null,
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: false,
     },

@@ -35,8 +35,12 @@ export class TargetNotExecutableError extends Error {
  * re-checked against rules written later; and `check` stays a pure function, which is the only
  * reason the checker tests can be fast and deterministic.
  */
-export async function record(target: TargetInfo, checkers: Checker[]): Promise<History> {
-  const discovery = await discover(target);
+export async function record(
+  target: TargetInfo,
+  checkers: Checker[],
+  declaredMachineDefault = false,
+): Promise<History> {
+  const discovery = await discover(target, declaredMachineDefault);
 
   // Multiple checkers legitimately request the same invocation (e.g. plain `--help`) for
   // different reasons. Keeping only the first requester's `purpose` would make every other

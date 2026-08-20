@@ -9,6 +9,7 @@ const H: History = {
     subcommands: [],
     flags: [],
     machineModeFlag: null,
+    machineModeDefault: false,
     valueSets: {},
     helpReadable: true,
   },
