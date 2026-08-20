@@ -68,13 +68,13 @@ The kit infers machine mode from help text and therefore cannot see a CLI that i
 default**. On such a target D3 fails and B3/B5 report `unverified` — so the two rules that would
 validate the target's envelope are skipped on precisely the class of CLI this project is aimed at.
 
-- [ ] `"machineMode": "default"` at the **top level** of `acc.config.json`, beside `rules` rather
+- [x] `"machineMode": "default"` at the **top level** of `acc.config.json`, beside `rules` rather
       than inside it: it describes the target, it does not bind a rule.
-- [ ] With it set, B3 and B5 probe a **plain** data invocation rather than a flag-selected one.
-- [ ] D3 satisfied by the declaration — the rule asks that machine mode be discoverable, and a
+- [x] B5 probes a **plain** invocation. **B3 does not and cannot at `L0`** — it reads a data command's output, `--help` is not one (a machine-first CLI may answer help in prose), and selecting a data verb inertly needs knowledge `L1` has and `L0` does not. It now says that instead of claiming nothing was advertised.
+- [x] D3 satisfied by the declaration — the rule asks that machine mode be discoverable, and a
       declaration is discovery.
-- [ ] Rule pages updated on both sides of the lint.
-- [ ] The declaration must be **falsifiable**, and cheaply: run a plain invocation and see whether
+- [x] Rule pages updated on both sides of the lint — three copies each, and the lint caught all three.
+- [x] The declaration is **falsifiable**, and cheaply: run a plain invocation and see whether
       stdout parses. A declaration that cannot be falsified is a comment that lies.
 
 **Not inference.** The adopter argued this against us using our own roadmap: L1/L2 rests on a CLI
@@ -86,6 +86,17 @@ possible has no inverse flag at all.**
 
 **Why this is the headline.** Asked what would have made the trial clearly positive, the adopter
 did not ask for more rules: _"the two rules you already have, reaching my CLI."_
+
+**Landed** on `feat/declare-machine-mode`, after an independent review found the first version
+shipping the defect this catalogue is about. Probing only the declared path meant a CLI that
+advertises `--json` AND declares the default was taken at its word about the half it got right: a
+bare error that parses and a `--json` error in prose went from **B5 fail to B5 pass on one line of
+config**. Every reachable way in is probed now, and the worst answer decides.
+
+Two more from the same review, both about tests rather than code: the falsifiability test used a
+fixture whose help advertises `--json`, so it stayed green with the entire declared branch deleted;
+and B3's new branch had no test at all. Both were caught by reverting the behaviour and watching
+the suite, which is the only way that class of hole shows up.
 
 ### 3. EXT-3 — a waiver must reach the evidence it waives · P0, needs design first
 
