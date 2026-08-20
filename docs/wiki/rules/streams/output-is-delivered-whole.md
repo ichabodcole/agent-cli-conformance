@@ -49,11 +49,28 @@ If an immediate exit is genuinely required, await the write callback first — `
 Promise((r) => process.stdout.write(payload, r))` — so that what terminates the process runs after
 the bytes are gone. The write call returning is not the bytes arriving.
 
-**For any other runtime, measure rather than assume.** No source behind this page establishes which
-exit calls in Go, Python or Rust skip a flush, so this page claims nothing about them. The check
-transfers even where the remedy is unknown: compare the same invocation redirected to a file
-against the same invocation piped to a momentarily non-draining consumer, and trust the difference
-over any belief about your runtime's buffering.
+**Other runtimes fail differently, and two of them do not fail at all** — measured across Go, Rust,
+Python, Node and Bun, five runs each ([2026-08-19](../../../research/2026-08-19-flush-on-exit-by-runtime.md)).
+
+| Runtime                                | Abrupt exit after a large write to a pipe                            |
+| -------------------------------------- | -------------------------------------------------------------------- |
+| Node, Bun                              | **truncated at one pipe buffer** — 65,536 of 524,288 bytes, exit `0` |
+| Go `bufio`, Rust `BufWriter`           | **whole buffer lost**, to a file as readily as to a pipe             |
+| Go unbuffered, Rust unbuffered, Python | nothing lost                                                         |
+
+Only the first row is this rule's defect: pipe-specific, silent, a prefix rather than nothing. The
+second is a buffering bug that a file redirect reproduces, so the probe here would not catch it and
+neither would a reader following this page — flush your writer, and note that a write larger than
+the free buffer space bypasses the buffer entirely, which is why a 512 KiB test can hide the
+problem that a 100-byte test exposes.
+
+**Python needs no remedy**, and this page previously implied it did. `sys.exit(0)` flushes at every
+size measured, to pipes and files alike; only `os._exit(0)` loses buffered output, which is that
+call's documented job. An explicit `flush()` before `sys.exit` has nothing behind it.
+
+Where your runtime is not in that table, the check still transfers: compare the same invocation
+redirected to a file against the same invocation piped to a momentarily non-draining consumer, and
+trust the difference over any belief about your buffering.
 
 **Pin the exit sites.** The corpus ended up pinning **37** of them with a test that enumerates
 every `process.exit` in the tree, because one new call site reintroduces the whole class and
