@@ -46,8 +46,11 @@ bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 That needs GitHub access to this repository. The shorter
 `bun add -d github:ichabodcole/agent-cli-conformance` goes through GitHub's tarball API, which
 answers `404` for a private repository; it becomes the install line if and when this one opens
-up. Either form pins a commit in your lockfile, and a git ref pins a release:
-`…agent-cli-conformance.git#v0.1.0`.
+up.
+
+Either form records the resolved commit in your lockfile. To pin explicitly, name a **commit**
+after the `#` — `…agent-cli-conformance.git#4638293`. Not a tag: Bun 1.3.14 resolves a branch or
+a commit there but not a tag, so `#v0.1.0` fails with `no commit matching "v0.1.0" found`.
 
 Then point it at your CLI:
 
@@ -76,6 +79,20 @@ Where to go next:
   with this repository, so clone it for that one.
 - **[How to reach L0 in your project](docs/wiki/guides/how-to-reach-l0-in-your-project.md)** —
   taking your own CLI from a first failing check to a green gate.
+
+## Branches and releases
+
+`develop` is where work lands; `main` is what has been released. Branch off `develop`, merge
+back into `develop`, and open a pull request from `develop` into `main` to cut a release.
+
+[release-please](.github/workflows/release-please.yml) watches `main` only, and derives the
+version and the changelog from the commit messages
+([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)). It writes the version
+to `package.json`, which is what `src/acc/version.ts` reads — so `acc --version`, the git tag and
+the changelog cannot disagree. Nothing is published to npm.
+
+[The gate](.github/workflows/check.yml) runs on every push and every pull request, on both
+branches.
 
 ## The problem
 
