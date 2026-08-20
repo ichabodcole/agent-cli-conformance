@@ -60,9 +60,11 @@ preference. Read the one you are writing into. `docs/wiki/` uses `SCHEMA.md` for
   defects this wiki has actually shipped; `.claude/skills/prose-cold-read/` is the review pass for
   finding them. Density is fine where it carries evidence and is not fine as decoration.
 
-- **Markdown must already be Prettier-clean when you commit.** The pre-commit hook runs
-  `prettier --check`, not `--write`, so a new `.md` file that has never been formatted fails the
-  commit and reverts it. Run `bunx prettier --write` on anything you author.
+- **Markdown must already be Prettier-clean.** The check is `--check`, never `--write`, in both
+  the hook and the gate — so a `.md` file that has never been formatted fails the commit and
+  reverts it. Run `bunx prettier --write` on anything you author. The formatter is configured to
+  leave fenced specimens alone, because half this wiki's evidence is deliberately malformed
+  output that a formatter would silently repair.
 
 ## Branches and releases
 
@@ -83,6 +85,9 @@ Conventional Commit leaves release-please with no signal at all.
 
 ## Commands
 
-`bun run check` is **the** gate — typecheck, Biome, both docs lints, the suite — and it is the only
-definition of one. The pre-commit hook and CI each run exactly that line, so neither can enforce
-something the other does not. Everything else is in `package.json`.
+`bun run check` is **the** gate — typecheck, Biome, Markdown formatting, both docs lints, the
+suite — and it is the only definition of one. CI runs that line and nothing else; the pre-commit
+hook runs it behind a `lint-staged` pass that applies the same rules to staged files first, for
+speed. Nothing the hook enforces is missing from `bun run check`, which is what makes a
+`--no-verify` commit unable to land something CI would have caught. Everything else is in
+`package.json`.

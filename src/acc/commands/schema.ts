@@ -36,8 +36,16 @@ export function schemaCommand(mode: OutputMode): void {
       // exactly the caller this whole tool is built for.
       ...(c.notes?.length ? { notes: c.notes } : {}),
     })),
-    // Every declared kind, its code, and whether a blind retry is meaningful. A conformance
-    // run provokes each one and verifies the code matches what is promised here.
+    // Every declared kind, its code, and whether a blind retry is meaningful.
+    //
+    // This is the reference TAXONOMY, not a list of outcomes this CLI has been seen to produce.
+    // The suite provokes the three `acc` can currently reach — `usage`, `not_found` and
+    // `internal` — and asserts that every declared code is distinct and below the reserved
+    // passthrough band. `auth`, `permission`, `conflict`, `rate_limit` and
+    // `confirmation_required` are declared for consumers to implement against and no command
+    // here emits one, so nothing verifies their codes at runtime. The serialisation is derived
+    // from ERROR_KINDS, so the schema cannot drift from the source; it can only outrun what has
+    // been exercised.
     errors: Object.entries(ERROR_KINDS).map(([kind, spec]) => ({ kind, ...spec })),
   };
 

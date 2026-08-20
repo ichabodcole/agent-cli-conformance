@@ -6,10 +6,11 @@ and framework maintainers make ordinary command-line tools predictable, machine-
 safely operable by autonomous agents, using an executable specification and black-box evidence
 rather than documentation alone.
 
-> **Status: pre-1.0.** Usable today and installable — 23 rules, 22 of them enforced by a
+> **Status: pre-1.0.** Usable today and installable — 23 rules, 22 of them with a registered
 > checker, run against your CLI as black-box evidence. Not yet settled: rule ids are
 > append-only but the report and schema shapes may still change before 1.0, every checker
-> covers only part of its rule, and only the `L0` probe level exists.
+> covers only part of its rule, one of the 22 ([A4](docs/wiki/rules/parsing/unexpected-positionals-rejected.md))
+> can only report `unverified` until `L1` exists, and `L0` is the only probe level there is.
 
 **For** — CLI authors, framework and scaffold maintainers, and platform/tooling teams;
 agent-harness authors second. It is a conformance suite for _ordinary CLIs consumed by agents_,
@@ -297,9 +298,11 @@ bun run docs:build             # render the wiki to docs/dist/ — open index.ht
 page show the one thing the markdown cannot: the backlinks, which SCHEMA.md says are computed and
 never authored. The output is gitignored and needs no network — it reads from `file://`.
 
-`bun run check` is the whole gate and the only definition of it — the pre-commit hook and
-[the CI workflow](.github/workflows/check.yml) both run exactly that line, so neither can
-enforce something the other does not.
+`bun run check` is the whole gate and the only definition of it. [The CI
+workflow](.github/workflows/check.yml) runs that line and nothing else; the pre-commit hook runs
+it too, behind a `lint-staged` pass that applies the same rules to the staged files first for
+speed. Nothing the hook enforces is absent from `bun run check`, so a `--no-verify` commit cannot
+land something CI would have caught.
 
 The wiki lint is not optional decoration. It verifies that every rule page declares a checker
 that exists, that every checker has a rule page, and that each page's `tier`, `probe_level`,
