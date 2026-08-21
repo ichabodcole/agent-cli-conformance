@@ -58,11 +58,19 @@ export interface AccConfig {
   /**
    * DECLARED MACHINE MODE — "structured output is what my tool emits by default."
    *
-   * The kit otherwise learns machine mode by reading help for a `--json`-shaped flag, and that
-   * inference cannot represent a CLI that is machine-first: one whose data commands emit JSON
-   * unless asked for prose. Against such a target D3 reported "help names no machine-mode flag",
-   * which is false, and B5 had nothing to select and reported `unverified` — so the rules that
-   * would have checked the envelope were skipped on exactly the class of tool this kit is for.
+   * The kit does not infer machine mode at all — a flag matched out of help by SPELLING is not a
+   * selector, and seven attempts to make that guess safe each failed in a new direction. Without
+   * this key the machine-mode rules report `unverified` and name it as the remedy, which is the
+   * `L0` boundary working rather than a gap: see
+   * [the admission test](../../../docs/wiki/concepts/probing.md#what-l0-may-assume--the-admission-test).
+   *
+   * It is worth most to the CLI an inference could never see: one whose data commands emit JSON
+   * unless asked for prose, with no flag to notice. This key does not touch D3, and measuring
+   * that is cheaper than reasoning about it: against `fixtures/machine-first.ts` D3 reports
+   * `unverified` — "help appears to CLAIM structured output is the default … a claim matched in
+   * prose rather than a token this kit can verify" — identically with and without the
+   * declaration. D3's subject is the help text a caller reads, and this key is a statement to the
+   * kit, which is the asymmetry that rule page argues for.
    *
    * A declaration rather than a sharper inference, and the argument is the one the roadmap
    * already makes for L1: a declaration can be FALSIFIED and an inference cannot, because the
@@ -70,8 +78,7 @@ export interface AccConfig {
    * with no selector at all and see whether the answer is a document. A target that declares
    * this and answers in prose fails B5, which is the rule doing its job.
    *
-   * The most machine-first CLI possible is also the one an inference cannot see: it emits JSON
-   * and has no inverse flag to notice.
+
    *
    * `undefined` means undeclared, which is not the same as "not machine-first" — it means the
    * kit was told nothing and falls back to reading help.

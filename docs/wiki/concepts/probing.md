@@ -133,7 +133,8 @@ it as input rather than rejecting it, which is exactly the shape of `claude`, `l
 
 The same limit applies to a flag that takes a value: without knowing that flag's arity, the
 runner cannot tell its value from a verb, so it cannot send one inertly. That is why a machine
-mode advertised only as `--format json` goes unprobed where `--json` does not — and, per B5, why a
+mode advertised only as `--format json` goes unprobed where `--json` does not — which now bears
+on probe SELECTION only, since no rule reaches a verdict from a spelling. It is also why a
 probe whose meaning depends on which sense the target implements is not a probe.
 
 This is also why a probe omits a verb wherever it can. Prefixing one — `<verb> -- <sentinel>` —

@@ -121,9 +121,13 @@ violations and `git` is non-conformant for them, on their own merits:
 its usage text to stdout, where a consumer reads it as output, rather than to stderr.
 
 B3's line is not a violation of anything. `git` advertises no machine-mode flag, so
-[B3](../rules/streams/machine-output-is-parseable.md) has nothing to parse and says so —
-"could not establish it", not "broke it". The same is true of the other two: `A7` found no
-advertised value set to falsify, and `B5` no machine mode it could select. Counted as failures,
+[B3](../rules/streams/machine-output-is-parseable.md) had nothing to parse and said so — "could
+not establish it", not "broke it". The same is true of the other two: `A7` found no advertised
+value set to falsify, and `B5` no machine mode it could select. (The capture is from 2026-08-19.
+B3 has since moved to `L1` and reports not-applicable for every target at `L0`, and `B5` now
+answers only to a declaration — the reasoning is
+[the `L0` admission test](./probing.md#what-l0-may-assume--the-admission-test). The point the
+capture makes about `unverified` is unchanged.) Counted as failures,
 those three would have told git's maintainers they had broken five rules — three of which name
 nothing they did wrong — mixed in with two they can act on today. The first thing a maintainer does with a gate that cannot tell
 those apart is turn it off.
@@ -465,6 +469,7 @@ adopter.
   and also the rule most often `unverified`, because its probe cannot be delivered through
   every launcher.
 - [B3 — Machine output parses as its declared kind](../rules/streams/machine-output-is-parseable.md)
-  — core, and `unverified` for any tool that advertises no machine-mode path.
+  — core at `L1`, and reported not-applicable at `L0`, where nothing can safely select a data
+  command to read.
 - [C2 — Usage errors are distinguishable](../rules/exit-codes/usage-errors-are-distinguishable.md)
   — core, and `unverified` for a tool whose usage errors are consistent but not `2`.
