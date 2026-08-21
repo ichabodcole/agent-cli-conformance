@@ -15,6 +15,7 @@ checker: src/acc/kit/checkers/discoverability/version-flag.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
+  - a flag spelled like a machine-mode selector is only treated as one once some observation came back structured under it so a target whose advertised selector emits prose everywhere is reported unverified rather than failed
   - the machine-mode payload is only required to be a structured document because no declaration exists at L0 to name the field the version belongs in
   - no network and no credentials and no side effects cannot be observed at L0
   - the SHOULD to support -V is not probed
@@ -111,6 +112,28 @@ That second invocation establishes exactly one of the rule's four "no work" clau
 configuration. A pass says nothing about no network, no credentials or no side effects, none of
 which are observable at `L0`; they are named under [gaps](#current-checker-coverage) below.
 
+**A flag spelled like a selector is not yet a selector.** Discovery finds `--json` by reading it
+out of help, and the name does not tell it the meaning: `--json <file>   Treat the input file as
+JSON` is a real and common help entry, and so are `--format` for a source-code formatter and
+`--output` for a destination path. A CLI shaped that way is text-only, answers every probe in
+prose, and has broken nothing — so before this rule may condemn anything under a selector, some
+observation has to have come back **structured** under it. `<cli> --version <selector>` is the
+corroborating probe, declared by this checker rather than borrowed from another so the rule holds
+identically under a single-checker run, and deduplicated against the other checkers that send it.
+
+Uncorroborated, the verdict is `unverified` with that reason, never `pass` and never `fail`. The
+cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose `--json` is
+meant as a selector but emits prose on every path is no longer failed here, because from outside
+it is indistinguishable from the innocent one. That is the trade this kit takes everywhere —
+inference may decide what to look at, only observation may condemn.
+
+On this rule the corroborating invocation and the judged one are the same invocation, which
+needs care: `--version --json` answering `1.4.2` is both the classic defect and, on its own, no
+evidence the flag selects anything. It is still **failed** when some other observation — the
+machine-mode help [B3](../streams/machine-output-is-parseable.md) sends — came back structured
+under the same selector, because then the selector is established and this answer is the wrong
+shape. It is `unverified` only when nothing anywhere parsed under the flag.
+
 **Fails in machine mode** when the whole of stdout does not parse as one JSON **object**. The
 common shape is a bare string — `--version --json` printing `1.4.2` — and an array is refused for
 the same reason, because the version is a value inside a document rather than the document itself.
@@ -143,6 +166,9 @@ the rest of this page, unexamined.
 
 **Gaps**
 
+- a flag spelled like a machine-mode selector is only treated as one once some observation came
+  back structured under it so a target whose advertised selector emits prose everywhere is
+  reported unverified rather than failed
 - the machine-mode payload is only required to be a structured document because no declaration
   exists at L0 to name the field the version belongs in
 - no network and no credentials and no side effects cannot be observed at L0

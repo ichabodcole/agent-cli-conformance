@@ -4,6 +4,11 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
+import {
+  machineSelector,
+  selectorCorroborationProbes,
+  selectorObserved,
+} from "../../machine-mode.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -46,6 +51,7 @@ export const machineOutputParseableChecker: Checker = {
   // entry names, reached from the other side.
   coverage: "partial",
   coverageGaps: [
+    "a flag spelled like a machine-mode selector is only treated as one once some observation came back structured under it so a target whose advertised selector emits prose everywhere is reported unverified rather than failed",
     "the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed",
     "only machine-mode help is parsed and never a data command",
     "shape stability across invocations and across commands is not compared",
@@ -60,7 +66,10 @@ export const machineOutputParseableChecker: Checker = {
     // FORMAT_TOKENS): it takes a value, and a bare value token is indistinguishable from a
     // verb, so only the `--json` pairing with `--help` is L0-safe.
     d.machineModeFlag === "--json"
-      ? [{ args: ["--help", "--json"], inertness: "help-path", purpose: "B3: machine-mode help" }]
+      ? [
+          { args: ["--help", "--json"], inertness: "help-path", purpose: "B3: machine-mode help" },
+          ...selectorCorroborationProbes(d),
+        ]
       : [],
 
   check: (h: History): Finding => {
@@ -120,6 +129,17 @@ export const machineOutputParseableChecker: Checker = {
       return finding(
         "unverified",
         "stdout is NDJSON, not one document; no output_kind declared to check against",
+        [o.id],
+      );
+    }
+    // A FLAG NAME IS NOT A SELECTOR. `--json` is matched from help by spelling, so a CLI whose
+    // `--json` names an input format was being convicted of breaking a contract it never entered.
+    // If nothing this target produced under the selector ever parsed, we never saw the flag select
+    // anything, and the honest verdict is that nothing was established.
+    if (!selectorObserved(h)) {
+      return finding(
+        "unverified",
+        `nothing this target produced under ${machineSelector(h.discovery)} parsed as a document, so that flag was not established as a machine-mode selector`,
         [o.id],
       );
     }

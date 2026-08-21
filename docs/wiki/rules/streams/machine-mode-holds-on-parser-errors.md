@@ -15,6 +15,7 @@ checker: src/acc/kit/checkers/streams/machine-mode-holds-on-parser-error.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
+  - a flag spelled like a machine-mode selector is only treated as one once some observation came back structured under it so a target whose advertised selector emits prose everywhere is reported unverified rather than failed
   - machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
   - only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not
   - only the --json and --format=json selectors are probed so a machine mode advertised through --output is not
@@ -145,6 +146,21 @@ The declaration is falsifiable, which is why it is a declaration and not an infe
 that claims machine mode by default and answers a parser error in prose fails here. That is the
 rule working, not a mis-declaration being punished.
 
+**A flag spelled like a selector is not yet a selector.** Discovery finds `--json` by reading it
+out of help, and the name does not tell it the meaning: `--json <file>   Treat the input file as
+JSON` is a real and common help entry, and so are `--format` for a source-code formatter and
+`--output` for a destination path. A CLI shaped that way is text-only, answers every probe in
+prose, and has broken nothing — so before this rule may condemn anything under a selector, some
+observation has to have come back **structured** under it. `<cli> --version <selector>` is the
+corroborating probe, declared by this checker rather than borrowed from another so the rule holds
+identically under a single-checker run, and deduplicated against the other checkers that send it.
+
+Uncorroborated, the verdict is `unverified` with that reason, never `pass` and never `fail`. The
+cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose `--json` is
+meant as a selector but emits prose on every path is no longer failed here, because from outside
+it is indistinguishable from the innocent one. That is the trade this kit takes everywhere —
+inference may decide what to look at, only observation may condemn.
+
 **Passes** when at least one non-empty stream parses **whole** as exactly one JSON document.
 **Fails** when the failure comes back as prose, or with nothing on either stream — silence is not
 a shape.
@@ -177,6 +193,9 @@ are the rest of this page, unexamined.
 
 **Gaps**
 
+- a flag spelled like a machine-mode selector is only treated as one once some observation came
+  back structured under it so a target whose advertised selector emits prose everywhere is
+  reported unverified rather than failed
 - machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
 - only an unrecognised flag provokes the error so a missing value or a missing required argument
   or an out-of-set value is not

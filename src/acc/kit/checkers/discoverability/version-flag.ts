@@ -4,7 +4,12 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
-import { machineSelector, machineVersionArgs, parsesWhole } from "../../machine-mode.ts";
+import {
+  machineSelector,
+  machineVersionArgs,
+  parsesWhole,
+  selectorObserved,
+} from "../../machine-mode.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -40,6 +45,7 @@ export const versionFlagChecker: Checker = {
   // the machine-mode probe does not fix that either: it requires a document, not a version.
   coverage: "partial",
   coverageGaps: [
+    "a flag spelled like a machine-mode selector is only treated as one once some observation came back structured under it so a target whose advertised selector emits prose everywhere is reported unverified rather than failed",
     "the machine-mode payload is only required to be a structured document because no declaration exists at L0 to name the field the version belongs in",
     "no network and no credentials and no side effects cannot be observed at L0",
     "the SHOULD to support -V is not probed",
@@ -158,6 +164,15 @@ export const versionFlagChecker: Checker = {
       if (machine.exitCode !== 0) {
         problems.push(`--version in machine mode exited ${machine.exitCode}`);
       } else if (!parsesWhole(machine.stdout)) {
+        // A flag name is not a selector: if nothing under it ever parsed, the flag was never
+        // established as one and this clause has no premise. Reported as a gap, not a violation.
+        if (!selectorObserved(h)) {
+          return finding(
+            "unverified",
+            `nothing this target produced under ${machineSelector(h.discovery)} parsed as a document, so that flag was not established as a machine-mode selector`,
+            evidence,
+          );
+        }
         problems.push(
           `--version in machine mode did not emit a JSON document (${JSON.stringify(machine.stdout.trim().slice(0, 40))})`,
         );

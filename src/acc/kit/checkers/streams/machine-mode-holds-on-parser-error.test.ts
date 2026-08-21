@@ -177,6 +177,13 @@ describe("B5 — machine mode holds on the parser-error path", () => {
     expect(probes.map((p) => p.args)).toEqual([
       ["--acc-probe-xyzzy-flag"],
       ["--acc-probe-xyzzy-flag", "--json"],
+      // Third: the corroboration probe. B5 condemns a target for answering a parser error in
+      // prose WHILE IN machine mode, so it has to establish that `--json` puts it in one — a
+      // flag whose help entry reads `--json <file>  Treat the input file as JSON` is spelled
+      // like a selector and is not one. B5 asks for that evidence itself rather than reading it
+      // out of another checker's recordings, which would hold here and invert under a
+      // single-checker run.
+      ["--version", "--json"],
     ]);
   });
 

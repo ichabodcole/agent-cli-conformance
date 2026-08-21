@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { helpStatesMachineDefault } from "./machine-mode.ts";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { helpStatesMachineDefault, selectorObserved } from "./machine-mode.ts";
+import { record } from "./record.ts";
+import { CHECKERS } from "./registry.ts";
+import type { TargetInfo } from "./types.ts";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 // The corpus an outside adopter built to attack this, plus the family it missed.
 //
@@ -131,4 +138,40 @@ describe("a help statement that structured output is the default", () => {
       });
     });
   }
+});
+
+describe("selectorObserved — a flag spelled like a selector is not one", () => {
+  const fixture = (rel: string): TargetInfo => {
+    const p = join(HERE, "fixtures", rel);
+    return { path: p, argv0: ["bun", p] };
+  };
+
+  // The false positive that motivated the rule. Before corroboration this target was NOT
+  // CONFORMANT on three core rules, all of them for answering in prose a question it was never
+  // asked in machine mode.
+  test("a --json that names an input file is not established as a selector", async () => {
+    const h = await record(fixture("json-flag-is-an-input.ts"), CHECKERS);
+    expect(h.discovery.machineModeFlag).toBe("--json");
+    expect(selectorObserved(h)).toBe(false);
+
+    for (const ruleId of ["B3", "B5", "D1"]) {
+      const checker = CHECKERS.find((c) => c.ruleId === ruleId);
+      if (!checker) throw new Error(`no checker for ${ruleId}`);
+      const f = checker.check(h);
+      expect([ruleId, f.verdict]).toEqual([ruleId, "unverified"]);
+      expect(f.detail).toContain("not established as a machine-mode selector");
+    }
+  }, 60_000);
+
+  // The other direction, and the one that keeps this from being a blanket amnesty: a target
+  // whose `--json` demonstrably works is corroborated by that observation, and B3 still FAILS it
+  // for the path where the flag is ignored.
+  test("a --json that returns a document IS established, and B3 still fails on it", async () => {
+    const h = await record(fixture("broken/machine-mode-help-not-json.ts"), CHECKERS);
+    expect(selectorObserved(h)).toBe(true);
+
+    const b3 = CHECKERS.find((c) => c.ruleId === "B3");
+    if (!b3) throw new Error("no checker for B3");
+    expect(b3.check(h).verdict).toBe("fail");
+  }, 60_000);
 });

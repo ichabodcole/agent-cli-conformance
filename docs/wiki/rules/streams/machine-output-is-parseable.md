@@ -15,6 +15,7 @@ checker: src/acc/kit/checkers/streams/machine-output-parseable.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
+  - a flag spelled like a machine-mode selector is only treated as one once some observation came back structured under it so a target whose advertised selector emits prose everywhere is reported unverified rather than failed
   - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed
   - only machine-mode help is parsed and never a data command
   - shape stability across invocations and across commands is not compared
@@ -142,6 +143,21 @@ Inert (`L0`) — help output in machine mode, where such a path exists.
 because it takes a value: only the `--json` pairing with `--help` is `L0`-safe, so a tool whose
 only machine mode is `--format json` is not probed here.
 
+**A flag spelled like a selector is not yet a selector.** Discovery finds `--json` by reading it
+out of help, and the name does not tell it the meaning: `--json <file>   Treat the input file as
+JSON` is a real and common help entry, and so are `--format` for a source-code formatter and
+`--output` for a destination path. A CLI shaped that way is text-only, answers every probe in
+prose, and has broken nothing — so before this rule may condemn anything under a selector, some
+observation has to have come back **structured** under it. `<cli> --version <selector>` is the
+corroborating probe, declared by this checker rather than borrowed from another so the rule holds
+identically under a single-checker run, and deduplicated against the other checkers that send it.
+
+Uncorroborated, the verdict is `unverified` with that reason, never `pass` and never `fail`. The
+cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose `--json` is
+meant as a selector but emits prose on every path is no longer failed here, because from outside
+it is indistinguishable from the innocent one. That is the trade this kit takes everywhere —
+inference may decide what to look at, only observation may condemn.
+
 **Passes** when the captured stdout parses whole, as the declared kind.
 
 **Reports `unverified`** where no machine-mode flag can be discovered, and raises
@@ -174,6 +190,9 @@ the rest of this page, unexamined.
 
 **Gaps**
 
+- a flag spelled like a machine-mode selector is only treated as one once some observation came
+  back structured under it so a target whose advertised selector emits prose everywhere is
+  reported unverified rather than failed
 - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified
   rather than failed
 - only machine-mode help is parsed and never a data command

@@ -4,7 +4,14 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
-import { machineErrorProbesFor, parsesAsNdjson, parsesWhole } from "../../machine-mode.ts";
+import {
+  machineErrorProbesFor,
+  machineSelector,
+  parsesAsNdjson,
+  parsesWhole,
+  selectorCorroborationProbes,
+  selectorObserved,
+} from "../../machine-mode.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -41,6 +48,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
   // not the same rule twice.
   coverage: "partial",
   coverageGaps: [
+    "a flag spelled like a machine-mode selector is only treated as one once some observation came back structured under it so a target whose advertised selector emits prose everywhere is reported unverified rather than failed",
     "machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised",
     "only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not",
     "only the --json and --format=json selectors are probed so a machine mode advertised through --output is not",
@@ -52,12 +60,14 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
     "for a target whose root help advertises --json or --format or which declares machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document",
   ],
 
-  probes: (d: Discovery): Invocation[] =>
-    machineErrorProbesFor(d).map(({ args, how }) => ({
+  probes: (d: Discovery): Invocation[] => [
+    ...machineErrorProbesFor(d).map(({ args, how }) => ({
       args,
       inertness: "sentinel" as const,
       purpose: `B5 via ${how}: a parser error must still be a machine document`,
     })),
+    ...selectorCorroborationProbes(d),
+  ],
 
   check: (h: History): Finding => {
     const ways = machineErrorProbesFor(h.discovery);
@@ -136,6 +146,19 @@ function one(h: History, purpose: string, how: string): Finding {
       return finding(
         "unverified",
         `the parser error arrived on ${ndjson.stream} as NDJSON rather than one document; no output_kind declared to check against`,
+        [o.id],
+      );
+    }
+    // A FLAG NAME IS NOT A SELECTOR. Only the flag route can be misread this way; a declared
+    // default has no flag to have misread.
+    if (
+      h.discovery.machineModeFlag !== null &&
+      !h.discovery.machineModeDefault &&
+      !selectorObserved(h)
+    ) {
+      return finding(
+        "unverified",
+        `nothing this target produced under ${machineSelector(h.discovery)} parsed as a document, so that flag was not established as a machine-mode selector`,
         [o.id],
       );
     }
