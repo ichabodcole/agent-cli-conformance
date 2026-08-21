@@ -89,6 +89,38 @@ When you widen a condition to catch a case, ask what else it now catches.
 what the rule says. The narrow version could not fire on the population that produced the bug; the
 wide one would have found new ways to be wrong.
 
+## Fix the premise, not the branch
+
+A fix that adds a **precondition** — a guard, a corroboration check, an applicability test — does
+not belong to the branch where the symptom was reported. It belongs to every path that reads the
+same premise. Find those before editing, by grepping the symbol rather than the symptom, and write
+down what each one decides.
+
+Skipped twice here, at a cost both times:
+
+- A prose matcher was argued safe on the grounds that it was diagnostic and "gates nothing". Nobody
+  checked its call sites. It ran for every target and gated a **core** rule, and three correct
+  human-first CLIs were failed because of one unrelated sentence in their help.
+- A corroboration guard meant to stop three core rules condemning innocent CLIs was added at the
+  three places the symptom had been reported. An outside review found four more: one branch of the
+  same clause still condemned, one of the three rules never asked for the evidence it was reading,
+  the guard swallowed problems that rule had already measured, and the predicate underneath
+  admitted `1.4` as a structured document.
+
+Both times the governing principle was already written down and correct. What was missing was the
+step between the principle and the edit — **the list of places the principle has to hold.** Three
+questions produce it:
+
+- **Who reads this premise?** Grep the symbol. Every consumer, tests included.
+- **What does the predicate actually admit?** Run it on the edges instead of reading its name.
+  `parsesWhole` is `JSON.parse`, and `JSON.parse("1.4")` succeeds.
+- **What else is behind the gate?** A guard suppresses. Whatever it suppresses that is not the
+  target of the fix is a regression being shipped with the repair — here, a directly measured core
+  violation silenced because the target's help happened to spell a flag `--json`.
+
+The third question is the one that gets skipped, because the first two are about the bug and the
+third is about everything else.
+
 ## Watch the pipe
 
 `cmd | tail` reports **`tail`'s** exit status, which is `0` whatever `cmd` did. Redirect and read
