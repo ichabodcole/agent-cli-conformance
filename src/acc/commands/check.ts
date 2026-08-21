@@ -7,6 +7,7 @@ import {
   readSync,
   statSync,
 } from "node:fs";
+
 import { basename, resolve } from "node:path";
 import { emit, type OutputMode, useColor } from "../envelope.ts";
 import { notFoundError, usageError } from "../errors.ts";
@@ -16,6 +17,7 @@ import { record, TargetNotExecutableError } from "../kit/record.ts";
 import { CHECKERS } from "../kit/registry.ts";
 import { buildReport, primaryProblem, type ReportedFinding, runCheckers } from "../kit/report.ts";
 import type { History, TargetInfo } from "../kit/types.ts";
+import { VERSION } from "../version.ts";
 
 export interface CheckOptions {
   configDir?: string;
@@ -176,7 +178,7 @@ export async function checkCommand(
   // missing file in the cwd is normal) from "the caller named a path" (a missing one is their
   // mistake, and continuing with an empty set would fail rules they believed were excused).
   // The registry goes in so a mistyped id is rejected rather than silently excusing nothing.
-  const report = buildReport(history, findings, CHECKERS, config, "L0");
+  const report = buildReport(history, findings, CHECKERS, config, "L0", VERSION);
 
   // The rule that actually explains the report's headline — see primaryProblem, which owns the
   // ranking (violations before gaps, and the rule that owns a failure mode before whatever
@@ -287,7 +289,10 @@ export async function checkCommand(
         ? ` · ${r.counts.waived} waiver${r.counts.waived === 1 ? "" : "s"}`
         : "";
       return [
-        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}  ${r.target}`,
+        // The kit's own version rides on the headline, not in a footer. A stale install reports
+        // success and puts an older commit on disk, and this is the only line every reader
+        // certainly sees — the alternative was `acc --version`, which nobody thinks to check.
+        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}  ${r.target}  [acc ${r.kitVersion}]`,
         "",
         ...lines,
         "",

@@ -21,6 +21,11 @@ By the end we will be able to look at a report and say which rules were broken, 
 never established, and where to read the rule we tripped over. We will not fix anything: this
 is a lesson in reading the instrument, not in passing it.
 
+**One thing to know before the first command:** `acc` writes JSON when its output is piped and the
+human report when it is not — the same contract it asks of every CLI it checks. Everything below
+assumes a terminal. If you pipe, redirect, or run any of this in CI, add `--format text` to get the
+report shown here.
+
 Ten minutes. You need this repository checked out and `bun` installed. Every command below is
 run from the repository root, which is why they read `bun run acc` rather than `bunx acc` — the
 CLIs we are going to check ship with the repository. Installing `acc` into a project of your own
