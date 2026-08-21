@@ -68,6 +68,13 @@ preference. Read the one you are writing into. `docs/wiki/` uses `SCHEMA.md` for
   never met. [`docs/techniques.md`](docs/techniques.md) collects the ones that have caught
   something here, each with what it caught.
 
+- **When you write a rule here, write the reason, not a number.** A cap like "at most two
+  attempts" is easy to write and easy to follow off a cliff: the day there is a good reason for a
+  third, the number is what gets obeyed. Give the condition instead — what you are looking for,
+  and what tells you it has stopped arriving — so the next reader can recognise the case you did
+  not think of. This is a standing preference of the repo owner's, and it applies to skills,
+  guides and checker comments alike.
+
 - **Markdown must already be Prettier-clean.** The check is `--check`, never `--write`, in both
   the hook and the gate — so a `.md` file that has never been formatted fails the commit and
   reverts it. Run `bunx prettier --write` on anything you author. The formatter is configured to
