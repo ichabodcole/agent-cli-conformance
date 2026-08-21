@@ -66,7 +66,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
       inertness: "sentinel" as const,
       purpose: `B5 via ${how}: a parser error must still be a machine document`,
     })),
-    ...selectorCorroborationProbes(d),
+    ...selectorCorroborationProbes(d, ["help", "version"]),
   ],
 
   check: (h: History): Finding => {
@@ -95,6 +95,31 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
 /** One way in, evaluated on its own. `how` names it, so a report says which path answered. */
 function one(h: History, purpose: string, how: string): Finding {
   {
+    // THE PRECONDITION FOR THE SELECTOR ROUTE, and it belongs FIRST.
+    //
+    // This rule condemns a target for answering in prose WHILE IN machine mode, so the flag has
+    // to have been shown to select one. `--json <file>   Treat the input file as JSON` is an
+    // ordinary help entry and the CLI behind it is text-only: every probe comes back as prose
+    // because prose is all it emits, and it has broken nothing.
+    //
+    // Placed at the top because every route out of this function below is a verdict about a mode
+    // that may not exist. The first cut of this guard sat further down, after the empty-streams
+    // branch, so a target that rejected the sentinel silently was still failed with the words
+    // "machine mode via --json" on a selector the same run reported as unestablished.
+    //
+    // Only the flag route can be misread this way — a declared default has no flag to have
+    // misread, and its premise is a declaration rather than an inference.
+    if (
+      how !== "the declared default" &&
+      h.discovery.machineModeFlag !== null &&
+      !selectorObserved(h, ["help", "version"])
+    ) {
+      return finding(
+        "unverified",
+        `nothing this target produced under ${machineSelector(h.discovery)} parsed as a document, so that flag was not established as a machine-mode selector`,
+        [],
+      );
+    }
     const [o] = findByPurpose(h, purpose);
     if (!o) return finding("unverified", `probe was not recorded (${how})`, []);
     // A target still thinking about the flag has emitted no outcome at all, in any shape.
@@ -146,19 +171,6 @@ function one(h: History, purpose: string, how: string): Finding {
       return finding(
         "unverified",
         `the parser error arrived on ${ndjson.stream} as NDJSON rather than one document; no output_kind declared to check against`,
-        [o.id],
-      );
-    }
-    // A FLAG NAME IS NOT A SELECTOR. Only the flag route can be misread this way; a declared
-    // default has no flag to have misread.
-    if (
-      h.discovery.machineModeFlag !== null &&
-      !h.discovery.machineModeDefault &&
-      !selectorObserved(h)
-    ) {
-      return finding(
-        "unverified",
-        `nothing this target produced under ${machineSelector(h.discovery)} parsed as a document, so that flag was not established as a machine-mode selector`,
         [o.id],
       );
     }

@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { helpStatesMachineDefault, selectorObserved } from "./machine-mode.ts";
+import { helpStatesMachineDefault, parsesAsDocument, selectorObserved } from "./machine-mode.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import type { TargetInfo } from "./types.ts";
@@ -152,15 +154,31 @@ describe("selectorObserved — a flag spelled like a selector is not one", () =>
   test("a --json that names an input file is not established as a selector", async () => {
     const h = await record(fixture("json-flag-is-an-input.ts"), CHECKERS);
     expect(h.discovery.machineModeFlag).toBe("--json");
-    expect(selectorObserved(h)).toBe(false);
+    expect(selectorObserved(h, ["help", "version"])).toBe(false);
 
-    for (const ruleId of ["B3", "B5", "D1"]) {
+    // B3 and B5 have nothing left to say: their whole subject is output under the selector.
+    for (const ruleId of ["B3", "B5"]) {
       const checker = CHECKERS.find((c) => c.ruleId === ruleId);
       if (!checker) throw new Error(`no checker for ${ruleId}`);
       const f = checker.check(h);
       expect([ruleId, f.verdict]).toEqual([ruleId, "unverified"]);
       expect(f.detail).toContain("not established as a machine-mode selector");
     }
+
+    // D1 PASSES, and that difference is the point rather than an inconsistency. Its other
+    // clauses — a version is reported, and still reported with an unusable HOME — are about
+    // plain `--version` and were measured directly. An uncorroborated selector silences the
+    // payload clause only, exactly as an unadvertised machine mode does.
+    //
+    // The first cut returned `unverified` for the whole rule from inside that clause, which
+    // discarded the problems the earlier clauses had already collected: a target that genuinely
+    // required a usable HOME went from `fail` to `unverified` because its help spelled a flag
+    // `--json`. A guard on one clause may not answer for the others.
+    const d1 = CHECKERS.find((c) => c.ruleId === "D1");
+    if (!d1) throw new Error("no checker for D1");
+    const f = d1.check(h);
+    expect(f.verdict).toBe("pass");
+    expect(f.detail).toContain("not established as a machine-mode selector");
   }, 60_000);
 
   // The other direction, and the one that keeps this from being a blanket amnesty: a target
@@ -168,10 +186,87 @@ describe("selectorObserved — a flag spelled like a selector is not one", () =>
   // for the path where the flag is ignored.
   test("a --json that returns a document IS established, and B3 still fails on it", async () => {
     const h = await record(fixture("broken/machine-mode-help-not-json.ts"), CHECKERS);
-    expect(selectorObserved(h)).toBe(true);
+    expect(selectorObserved(h, ["help", "version"])).toBe(true);
 
     const b3 = CHECKERS.find((c) => c.ruleId === "B3");
     if (!b3) throw new Error("no checker for B3");
     expect(b3.check(h).verdict).toBe("fail");
+  }, 60_000);
+});
+
+describe("corroboration is evidence, and it has to be evidence of the right thing", () => {
+  // `JSON.parse` accepts bare scalars, so `parsesWhole` — the predicate this guard first shipped
+  // with — called `1.4` a document. The false-positive fixture escaped only because `1.0.0`
+  // happens not to be valid JSON, which is an accident of the version string. Two digits instead
+  // of three restored all three core failures against a CLI that had broken nothing.
+  test("a bare JSON scalar is not corroboration", () => {
+    for (const scalar of ["1.4", "7", '"1.0.0"', "true", "null"]) {
+      expect([scalar, parsesAsDocument(scalar)]).toEqual([scalar, false]);
+    }
+    for (const doc of ['{"a":1}', "[1,2]", '{"a":1}\n{"a":2}']) {
+      expect([doc, parsesAsDocument(doc)]).toEqual([doc, true]);
+    }
+  });
+
+  // The same fixture with its version string changed and nothing else. This is the regression
+  // test for the accident above: it must stay CONFORMANT whatever the version happens to spell.
+  test("the innocent CLI stays innocent whatever its version number parses as", async () => {
+    const source = readFileSync(join(HERE, "fixtures/json-flag-is-an-input.ts"), "utf8");
+    const dir = mkdtempSync(join(tmpdir(), "acc-scalar-"));
+    try {
+      for (const version of ["1.4", "7", "1.0.0"]) {
+        const p = join(dir, `v${version}.ts`);
+        writeFileSync(p, source.replace('"1.0.0\\n"', JSON.stringify(`${version}\n`)));
+        const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+        for (const ruleId of ["B3", "B5"]) {
+          const checker = CHECKERS.find((c) => c.ruleId === ruleId);
+          if (!checker) throw new Error(`no checker for ${ruleId}`);
+          const f = checker.check(h);
+          expect([version, ruleId, f.verdict]).toEqual([version, ruleId, "unverified"]);
+        }
+        const d1 = CHECKERS.find((c) => c.ruleId === "D1");
+        if (!d1) throw new Error("no checker for D1");
+        expect([version, d1.check(h).verdict]).toEqual([version, "pass"]);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 120_000);
+
+  // The regression the guard itself introduced. A directly measured core violation — `--version`
+  // works normally and fails with an unusable HOME — was silenced because the same target's help
+  // spelled a flag `--json`. The guard belongs to the payload clause and may not answer for the
+  // rest of the rule.
+  test("an uncorroborated selector does not silence a violation measured elsewhere", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-home-"));
+    try {
+      const p = join(dir, "needs-home.sh");
+      writeFileSync(
+        p,
+        [
+          "#!/bin/sh",
+          `HELP='v — thing`,
+          "",
+          "Options:",
+          "  --json <file>   Treat the input file as JSON.",
+          "  --help          Show help.",
+          "'",
+          'case "$1" in',
+          "  --help|-h) printf '%s' \"$HELP\"; exit 0 ;;",
+          "  --version|-V) [ -d \"$HOME\" ] || { printf 'no home\\n' >&2; exit 1; }; printf '1.0.0\\n'; exit 0 ;;",
+          "esac",
+          "printf 'v: unknown option: %s\\n' \"$1\" >&2; exit 2",
+        ].join("\n"),
+      );
+      chmodSync(p, 0o755);
+      const h = await record({ path: p, argv0: [p] }, CHECKERS);
+      const d1 = CHECKERS.find((c) => c.ruleId === "D1");
+      if (!d1) throw new Error("no checker for D1");
+      const f = d1.check(h);
+      expect(f.verdict).toBe("fail");
+      expect(f.detail).toContain("requires configuration");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   }, 60_000);
 });

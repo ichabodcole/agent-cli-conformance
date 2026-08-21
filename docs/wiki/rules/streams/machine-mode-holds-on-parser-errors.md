@@ -150,16 +150,27 @@ rule working, not a mis-declaration being punished.
 out of help, and the name does not tell it the meaning: `--json <file>   Treat the input file as
 JSON` is a real and common help entry, and so are `--format` for a source-code formatter and
 `--output` for a destination path. A CLI shaped that way is text-only, answers every probe in
-prose, and has broken nothing — so before this rule may condemn anything under a selector, some
-observation has to have come back **structured** under it. `<cli> --version <selector>` is the
-corroborating probe, declared by this checker rather than borrowed from another so the rule holds
-identically under a single-checker run, and deduplicated against the other checkers that send it.
+prose, and has broken nothing — so before this rule may condemn anything under a selector, a
+**document** has to have come back under it. Not merely something that parses: `JSON.parse`
+accepts bare scalars, so a plain-text `--version` printing `1.4` would otherwise corroborate its
+own selector.
 
-Uncorroborated, the verdict is `unverified` with that reason, never `pass` and never `fail`. The
-cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose `--json` is
-meant as a selector but emits prose on every path is no longer failed here, because from outside
-it is indistinguishable from the innocent one. That is the trade this kit takes everywhere —
-inference may decide what to look at, only observation may condemn.
+The corroborating invocation is `<cli> --help <selector>` or `<cli> --version <selector>`, and it is deliberately not the sentinel probe — the invocation this
+rule judges. Establishing the premise out of the same evidence the clause then condemns is
+question-begging rather than a probe. This checker declares that invocation itself rather than
+reading it out of another checker's recordings, which would hold in a full run and invert under a
+single-checker one; recordings deduplicate, so it costs no extra spawn.
+
+This rule judges neither of those, so it takes both routes. Uncorroborated, the **selector**
+route reports `unverified`; a declared default is untouched, because a declaration is not an
+inference and there is no flag to have misread. The check runs before any other verdict on the
+selector route, so a target that rejects the sentinel silently is not failed with the words
+"machine mode via `--json`" on a selector the same run reports as unestablished.
+
+The cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose
+`--json` is meant as a selector but emits prose on every path is no longer condemned here,
+because from outside it is indistinguishable from the innocent one. That is the trade this kit
+takes everywhere — inference may decide what to look at, only observation may condemn.
 
 **Passes** when at least one non-empty stream parses **whole** as exactly one JSON document.
 **Fails** when the failure comes back as prose, or with nothing on either stream — silence is not

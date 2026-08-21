@@ -15,7 +15,7 @@ checker: src/acc/kit/checkers/discoverability/version-flag.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - a flag spelled like a machine-mode selector is only treated as one once some observation came back structured under it so a target whose advertised selector emits prose everywhere is reported unverified rather than failed
+  - a flag spelled like a machine-mode selector is only treated as one once a document came back under it on the help path so for a target whose advertised selector emits prose everywhere the machine-mode clause is not reached and the rule is decided by its other clauses
   - the machine-mode payload is only required to be a structured document because no declaration exists at L0 to name the field the version belongs in
   - no network and no credentials and no side effects cannot be observed at L0
   - the SHOULD to support -V is not probed
@@ -116,23 +116,28 @@ which are observable at `L0`; they are named under [gaps](#current-checker-cover
 out of help, and the name does not tell it the meaning: `--json <file>   Treat the input file as
 JSON` is a real and common help entry, and so are `--format` for a source-code formatter and
 `--output` for a destination path. A CLI shaped that way is text-only, answers every probe in
-prose, and has broken nothing — so before this rule may condemn anything under a selector, some
-observation has to have come back **structured** under it. `<cli> --version <selector>` is the
-corroborating probe, declared by this checker rather than borrowed from another so the rule holds
-identically under a single-checker run, and deduplicated against the other checkers that send it.
+prose, and has broken nothing — so before this rule may condemn anything under a selector, a
+**document** has to have come back under it. Not merely something that parses: `JSON.parse`
+accepts bare scalars, so a plain-text `--version` printing `1.4` would otherwise corroborate its
+own selector.
 
-Uncorroborated, the verdict is `unverified` with that reason, never `pass` and never `fail`. The
-cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose `--json` is
-meant as a selector but emits prose on every path is no longer failed here, because from outside
-it is indistinguishable from the innocent one. That is the trade this kit takes everywhere —
-inference may decide what to look at, only observation may condemn.
+The corroborating invocation is `<cli> --help <selector>`, and it is deliberately not `--version <selector>` — the invocation this
+rule judges. Establishing the premise out of the same evidence the clause then condemns is
+question-begging rather than a probe. This checker declares that invocation itself rather than
+reading it out of another checker's recordings, which would hold in a full run and invert under a
+single-checker one; recordings deduplicate, so it costs no extra spawn.
 
-On this rule the corroborating invocation and the judged one are the same invocation, which
-needs care: `--version --json` answering `1.4.2` is both the classic defect and, on its own, no
-evidence the flag selects anything. It is still **failed** when some other observation — the
-machine-mode help [B3](../streams/machine-output-is-parseable.md) sends — came back structured
-under the same selector, because then the selector is established and this answer is the wrong
-shape. It is `unverified` only when nothing anywhere parsed under the flag.
+Uncorroborated, this clause behaves **exactly as an unadvertised machine mode does**: it is not
+reached, and the clauses above still decide the rule. That matters more than it sounds. An
+earlier cut returned `unverified` from inside the clause, which discarded what the earlier ones
+had already measured — a target whose `--version` genuinely required a usable `HOME` went from
+`fail` to `unverified` because its help happened to spell a flag `--json`. A guard on one clause
+may not answer for the others.
+
+The cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose
+`--json` is meant as a selector but emits prose on every path is no longer condemned here,
+because from outside it is indistinguishable from the innocent one. That is the trade this kit
+takes everywhere — inference may decide what to look at, only observation may condemn.
 
 **Fails in machine mode** when the whole of stdout does not parse as one JSON **object**. The
 common shape is a bare string — `--version --json` printing `1.4.2` — and an array is refused for
@@ -166,9 +171,9 @@ the rest of this page, unexamined.
 
 **Gaps**
 
-- a flag spelled like a machine-mode selector is only treated as one once some observation came
-  back structured under it so a target whose advertised selector emits prose everywhere is
-  reported unverified rather than failed
+- a flag spelled like a machine-mode selector is only treated as one once a document came back
+  under it on the help path so for a target whose advertised selector emits prose everywhere the
+  machine-mode clause is not reached and the rule is decided by its other clauses
 - the machine-mode payload is only required to be a structured document because no declaration
   exists at L0 to name the field the version belongs in
 - no network and no credentials and no side effects cannot be observed at L0

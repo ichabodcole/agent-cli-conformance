@@ -216,80 +216,114 @@ const MACHINE_DEFAULT_PHRASES: readonly { re: RegExp; gated: boolean }[] = [
   },
 ];
 
-/**
- * Did anything this target produced UNDER the selector actually parse as a document?
- *
- * A flag named `--json` is evidence that a machine mode exists. It is not proof, and the kit was
- * treating it as proof: `machineModeFlag` is matched from help by spelling alone, so a CLI whose
- * `--json` means "treat the INPUT FILE as json" was read as advertising a machine mode. It then
- * failed B3, B5 and D1 — three core rules — for answering in prose, which is to say it was
- * convicted of breaking a contract it never entered. Verified against a fixture, and the line
- * responsible predates every rule that depends on it.
- *
- * The premise those clauses need is "this flag selects machine output". That is observable, and
- * the observations already exist: D1 sends `--version <selector>`, B3 sends `--help --json`. If
- * one of them came back as a document, the flag demonstrably does something structured and a
- * contrary result elsewhere is the target's defect. If NOTHING taken under the selector ever
- * parsed, the honest verdict is `unverified` — the kit cannot tell a broken machine mode from a
- * flag that was never a selector, and saying so is what that verdict is for.
- *
- * Not circular: the gate only matters for a clause whose own observation failed to parse, so the
- * corroboration always comes from a different invocation than the one being judged.
- *
- * The cost is real and worth stating: a genuinely broken CLI whose `--json` produces prose
- * everywhere drops from `fail` to `unverified`. That is the honest reading of the evidence — we
- * never once saw the flag work — and it is the direction this catalogue prefers to be wrong in.
- */
-/**
- * The probe a checker runs to CORROBORATE its selector before condemning anything under it.
- *
- * `selectorObserved` asks whether any recording came back structured under the selector, and the
- * answer has to come from a probe the checker itself declared. Reading it out of some other
- * checker's recordings works only when the whole registry runs, so the rule would hold in `acc
- * check` and quietly invert under a single-checker run — the shape a unit test takes, and the
- * shape a future `--only B5` would take. Corroboration is evidence, and a checker that needs
- * evidence asks for it.
- *
- * `--version <selector>` is the one pairing available at L0: it is inert on the same grounds as
- * plain `--version`, it needs no data command, and a machine mode that is real answers it as a
- * document. Recordings dedup on args and env, so declaring it from three checkers costs one spawn.
- */
-/** The purpose prefix that marks a probe as supporting evidence rather than a subject of the rule. */
+/** The purpose prefix marking a probe as supporting evidence rather than a subject of the rule. */
 const CORROBORATION = "corroboration:";
+
+/**
+ * The two invocations that can corroborate a selector at `L0`.
+ *
+ * Both are inert on the same grounds as plain `--help` and `--version`, and neither needs a data
+ * command — which is what makes them the only routes available before anything is declared.
+ */
+export type CorroborationRoute = "help" | "version";
+
+function corroborationArgs(selector: string, route: CorroborationRoute): string[] {
+  return route === "help" ? ["--help", selector] : machineVersionArgs(selector);
+}
+
+/**
+ * True when the text is one structured document, or a stream of them.
+ *
+ * Deliberately NARROWER than `parsesWhole`, which is the predicate this rule first shipped with
+ * and which `JSON.parse` makes far weaker than it looks: `1.4` is valid JSON, so a text-only CLI
+ * printing a two-component version number under `--version --json` "produced a document" and
+ * corroborated its own selector. The kit's own false-positive fixture only escaped because
+ * `1.0.0` happens not to parse — an accident of the version string, not a property of the check.
+ *
+ * A bare scalar is exactly what a plain-text CLI emits. It cannot be evidence that a flag selected
+ * anything, so corroboration requires the shape a machine mode actually produces.
+ */
+export function parsesAsDocument(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed === "") return false;
+  try {
+    const value: unknown = JSON.parse(trimmed);
+    return typeof value === "object" && value !== null;
+  } catch {
+    return parsesAsNdjson(trimmed) && trimmed.includes("{");
+  }
+}
+
+/**
+ * The probes a checker declares to CORROBORATE its selector before condemning anything under it.
+ *
+ * Two properties matter, and both were got wrong first time.
+ *
+ * **The checker asks for its own evidence.** Reading corroboration out of whatever the shared
+ * recording happens to hold works while the whole registry runs and inverts the moment it does
+ * not — a single-checker unit test, or a future `--only B5`. A verdict that changes depending on
+ * which OTHER rules ran is not a measurement.
+ *
+ * **The route must not be the invocation the checker judges.** D1 judges `--version <selector>`;
+ * corroborating from that same observation would let it establish the premise out of the evidence
+ * it then condemns, which is question-begging rather than a probe. So D1 corroborates via `help`
+ * and B3, which judges `--help <selector>`, corroborates via `version`. B5 judges neither and
+ * takes both.
+ *
+ * Recordings deduplicate on args and env, and both routes are invocations other checkers already
+ * send, so all of this costs no additional spawn.
+ */
+export function selectorCorroborationProbes(
+  d: Discovery,
+  routes: readonly CorroborationRoute[],
+): Invocation[] {
+  const selector = machineSelector(d);
+  if (!selector) return [];
+  return routes.map((route) => ({
+    args: corroborationArgs(selector, route),
+    inertness: "help-path" as const,
+    purpose: `${CORROBORATION} does ${selector} select a machine mode on the ${route} path`,
+  }));
+}
 
 /**
  * True for a probe that exists to corroborate the selector, not to be judged by the rule.
  *
  * The distinction matters to the incomplete-evidence sweeps. Losing a probe the rule is ABOUT
- * means the rule cannot reach a verdict; losing this one means only that this route to
- * corroboration closed — and if a substantive probe already came back as a document, the selector
- * is corroborated by the stronger evidence and the verdict stands. Uncorroborated is not a silent
- * pass either way: `selectorObserved` returns false and the checker reports `unverified`.
+ * means the rule cannot reach a verdict; losing this one closes one route to corroboration, and
+ * if another route already answered, the verdict stands on that. Uncorroborated is never a silent
+ * pass: the checker reports `unverified`, or falls back to the no-selector behaviour its own rule
+ * page states.
  */
 export function isCorroborationProbe(inv: Invocation): boolean {
   return inv.purpose.startsWith(CORROBORATION);
 }
 
-export function selectorCorroborationProbes(d: Discovery): Invocation[] {
-  const selector = machineSelector(d);
-  return selector
-    ? [
-        {
-          args: machineVersionArgs(selector),
-          inertness: "help-path" as const,
-          purpose: `${CORROBORATION} does ${selector} select a machine mode at all`,
-        },
-      ]
-    : [];
-}
-
-export function selectorObserved(h: History): boolean {
+/**
+ * Was this target's advertised selector established as a machine-mode selector at all?
+ *
+ * `machineModeFlag` is matched out of help by SPELLING. `--json <file>   Treat the input file as
+ * JSON` is an ordinary help entry, and a CLI shaped that way was failed on three core rules — B3,
+ * B5 and D1 — for answering their probes in prose. It had entered no contract to break.
+ *
+ * So the premise those clauses rest on is checked before any of them may condemn: did a document
+ * come back on one of the declared corroboration routes? Only those recordings are consulted,
+ * because only those did the checker ask for.
+ *
+ * The cost is stated on all three rule pages: a CLI whose `--json` genuinely IS a selector but
+ * emits prose on every path is no longer failed, because from outside it cannot be told apart
+ * from the innocent one. That is the direction this catalogue prefers to be wrong in.
+ */
+export function selectorObserved(h: History, routes: readonly CorroborationRoute[]): boolean {
   const selector = machineSelector(h.discovery);
   if (!selector) return false;
-  const token = selector.split("=")[0] as string;
-  return h.observations.some(
-    (o) =>
-      o.invocation.args.some((a) => a === selector || a === token || a.startsWith(`${token}=`)) &&
-      (parsesWhole(o.stdout) || parsesWhole(o.stderr)),
-  );
+  return routes.some((route) => {
+    const want = corroborationArgs(selector, route);
+    return h.observations.some(
+      (o) =>
+        o.invocation.args.length === want.length &&
+        o.invocation.args.every((a, i) => a === want[i]) &&
+        (parsesAsDocument(o.stdout) || parsesAsDocument(o.stderr)),
+    );
+  });
 }

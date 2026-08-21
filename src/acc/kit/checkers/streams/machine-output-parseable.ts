@@ -68,7 +68,7 @@ export const machineOutputParseableChecker: Checker = {
     d.machineModeFlag === "--json"
       ? [
           { args: ["--help", "--json"], inertness: "help-path", purpose: "B3: machine-mode help" },
-          ...selectorCorroborationProbes(d),
+          ...selectorCorroborationProbes(d, ["version"]),
         ]
       : [],
 
@@ -136,7 +136,7 @@ export const machineOutputParseableChecker: Checker = {
     // `--json` names an input format was being convicted of breaking a contract it never entered.
     // If nothing this target produced under the selector ever parsed, we never saw the flag select
     // anything, and the honest verdict is that nothing was established.
-    if (!selectorObserved(h)) {
+    if (!selectorObserved(h, ["version"])) {
       return finding(
         "unverified",
         `nothing this target produced under ${machineSelector(h.discovery)} parsed as a document, so that flag was not established as a machine-mode selector`,

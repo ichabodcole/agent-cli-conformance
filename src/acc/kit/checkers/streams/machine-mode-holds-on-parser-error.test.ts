@@ -15,8 +15,61 @@ const fixture = (rel: string): TargetInfo => {
 const PURPOSE = "B5 via --json: a parser error must still be a machine document";
 
 /** One recorded probe, with the three fields the verdict reads and nothing else varying. */
+/**
+ * One synthetic observation. `id` doubles as the recording key, so two of these can coexist.
+ */
+function observation(
+  id: string,
+  args: string[],
+  purpose: string,
+  exitCode: number | null,
+  stdout: string,
+  stderr: string,
+) {
+  return {
+    id,
+    invocation: { args, inertness: "sentinel" as const, purpose },
+    purposes: [purpose],
+    stdout,
+    stderr,
+    stdoutBytes: stdout.length,
+    stderrBytes: stderr.length,
+    stdoutDigest: digestOfText(stdout),
+    stderrDigest: digestOfText(stderr),
+    stdoutLossy: false,
+    stderrLossy: false,
+    truncated: false,
+    exitCode,
+    signal: null,
+    crashed: false,
+    timedOut: false,
+    spawnFailed: false,
+    durationMs: 5,
+    timeToFirstByteMs: 1,
+  };
+}
+
+/**
+ * A CORROBORATING recording, and every case below needs one.
+ *
+ * B5 condemns a target for answering in prose while in machine mode, so it first requires that
+ * the flag was shown to select one — `--json` is matched out of help by spelling, and
+ * `--json <file>   Treat the input file as JSON` is an ordinary help entry belonging to a
+ * text-only CLI. Without this observation every case here would describe a target whose machine
+ * mode was never established, and would correctly report that instead of whatever it is testing.
+ */
+const CORROBORATING = observation(
+  "corroborate",
+  ["--help", "--json"],
+  "corroboration: does --json select a machine mode on the help path",
+  0,
+  '{"ok":true,"data":{"usage":"x"}}\n',
+  "",
+);
+
 function historyWith(exitCode: number | null, stdout: string, stderr: string): History {
   const observations = [
+    CORROBORATING,
     {
       id: "probe",
       invocation: {
@@ -177,12 +230,14 @@ describe("B5 — machine mode holds on the parser-error path", () => {
     expect(probes.map((p) => p.args)).toEqual([
       ["--acc-probe-xyzzy-flag"],
       ["--acc-probe-xyzzy-flag", "--json"],
-      // Third: the corroboration probe. B5 condemns a target for answering a parser error in
+      ["--help", "--json"],
+      // The last two are corroboration. B5 condemns a target for answering a parser error in
       // prose WHILE IN machine mode, so it has to establish that `--json` puts it in one — a
       // flag whose help entry reads `--json <file>  Treat the input file as JSON` is spelled
       // like a selector and is not one. B5 asks for that evidence itself rather than reading it
       // out of another checker's recordings, which would hold here and invert under a
-      // single-checker run.
+      // single-checker run. It takes BOTH routes because it judges neither of them; B3 and D1
+      // each judge one, so each corroborates from the other.
       ["--version", "--json"],
     ]);
   });

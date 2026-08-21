@@ -8,6 +8,7 @@ import {
   machineSelector,
   machineVersionArgs,
   parsesWhole,
+  selectorCorroborationProbes,
   selectorObserved,
 } from "../../machine-mode.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
@@ -45,7 +46,7 @@ export const versionFlagChecker: Checker = {
   // the machine-mode probe does not fix that either: it requires a document, not a version.
   coverage: "partial",
   coverageGaps: [
-    "a flag spelled like a machine-mode selector is only treated as one once some observation came back structured under it so a target whose advertised selector emits prose everywhere is reported unverified rather than failed",
+    "a flag spelled like a machine-mode selector is only treated as one once a document came back under it on the help path so for a target whose advertised selector emits prose everywhere the machine-mode clause is not reached and the rule is decided by its other clauses",
     "the machine-mode payload is only required to be a structured document because no declaration exists at L0 to name the field the version belongs in",
     "no network and no credentials and no side effects cannot be observed at L0",
     "the SHOULD to support -V is not probed",
@@ -81,6 +82,9 @@ export const versionFlagChecker: Checker = {
             },
           ]
         : []),
+      // Corroboration, and it has to be the OTHER route: the probe above is the one this rule
+      // condemns, so it cannot also be what establishes that the flag selects anything.
+      ...selectorCorroborationProbes(d, ["help"]),
     ];
   },
 
@@ -160,19 +164,25 @@ export const versionFlagChecker: Checker = {
     // Skipped entirely when the plain run reported no version: `--version --json` against a CLI
     // with no `--version` fails for the one reason already stated, and a second clause saying so
     // is the same restatement this checker was reported for.
-    if (machine && !noVersionAtAll) {
+    //
+    // A FLAG NAME IS NOT A SELECTOR, and this whole half is skipped when the name is all there
+    // is. `--json <file>   Treat the input file as JSON` is an ordinary help entry; a CLI shaped
+    // that way answers `--version --json` in prose because prose is all it emits, and has broken
+    // nothing. Corroboration comes from the `help` route rather than this observation: taking it
+    // from the invocation the clause then condemns would establish the premise out of the
+    // evidence, which is question-begging rather than a probe.
+    //
+    // Uncorroborated behaves EXACTLY as an unadvertised machine mode does — the clause is not
+    // reached, and the clauses above still decide the rule. The first cut of this returned
+    // `unverified` from here instead, which threw away the `problems` already collected and
+    // silenced a directly measured core violation: a target whose `--version` genuinely required
+    // a usable HOME went from `fail` to `unverified` because its help happened to spell a flag
+    // `--json`. A guard on one clause may not answer for the others.
+    const machineEstablished = machine !== undefined && selectorObserved(h, ["help"]);
+    if (machine && machineEstablished && !noVersionAtAll) {
       if (machine.exitCode !== 0) {
         problems.push(`--version in machine mode exited ${machine.exitCode}`);
       } else if (!parsesWhole(machine.stdout)) {
-        // A flag name is not a selector: if nothing under it ever parsed, the flag was never
-        // established as one and this clause has no premise. Reported as a gap, not a violation.
-        if (!selectorObserved(h)) {
-          return finding(
-            "unverified",
-            `nothing this target produced under ${machineSelector(h.discovery)} parsed as a document, so that flag was not established as a machine-mode selector`,
-            evidence,
-          );
-        }
         problems.push(
           `--version in machine mode did not emit a JSON document (${JSON.stringify(machine.stdout.trim().slice(0, 40))})`,
         );
@@ -190,9 +200,11 @@ export const versionFlagChecker: Checker = {
       ? finding("fail", problems.join("; "), evidence)
       : finding(
           "pass",
-          machine
+          machineEstablished
             ? "version reported with an unusable HOME and XDG_CONFIG_HOME, and as a structured document in machine mode"
-            : "version reported with an unusable HOME and XDG_CONFIG_HOME; no machine mode was reachable at L0 so the payload clause was not reached",
+            : machine
+              ? `version reported with an unusable HOME and XDG_CONFIG_HOME; nothing came back as a document under ${machineSelector(h.discovery)}, so it was not established as a machine-mode selector and the payload clause was not reached`
+              : "version reported with an unusable HOME and XDG_CONFIG_HOME; no machine mode was reachable at L0 so the payload clause was not reached",
           evidence,
         );
   },

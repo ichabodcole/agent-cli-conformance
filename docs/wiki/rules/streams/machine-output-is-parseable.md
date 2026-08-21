@@ -147,16 +147,25 @@ only machine mode is `--format json` is not probed here.
 out of help, and the name does not tell it the meaning: `--json <file>   Treat the input file as
 JSON` is a real and common help entry, and so are `--format` for a source-code formatter and
 `--output` for a destination path. A CLI shaped that way is text-only, answers every probe in
-prose, and has broken nothing — so before this rule may condemn anything under a selector, some
-observation has to have come back **structured** under it. `<cli> --version <selector>` is the
-corroborating probe, declared by this checker rather than borrowed from another so the rule holds
-identically under a single-checker run, and deduplicated against the other checkers that send it.
+prose, and has broken nothing — so before this rule may condemn anything under a selector, a
+**document** has to have come back under it. Not merely something that parses: `JSON.parse`
+accepts bare scalars, so a plain-text `--version` printing `1.4` would otherwise corroborate its
+own selector.
 
-Uncorroborated, the verdict is `unverified` with that reason, never `pass` and never `fail`. The
-cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose `--json` is
-meant as a selector but emits prose on every path is no longer failed here, because from outside
-it is indistinguishable from the innocent one. That is the trade this kit takes everywhere —
-inference may decide what to look at, only observation may condemn.
+The corroborating invocation is `<cli> --version <selector>`, and it is deliberately not `--help <selector>` — the invocation this
+rule judges. Establishing the premise out of the same evidence the clause then condemns is
+question-begging rather than a probe. This checker declares that invocation itself rather than
+reading it out of another checker's recordings, which would hold in a full run and invert under a
+single-checker one; recordings deduplicate, so it costs no extra spawn.
+
+Uncorroborated, the verdict is `unverified` with that reason — the same verdict this rule
+reports when no machine-mode flag is discovered at all, because that is the same state of
+knowledge.
+
+The cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose
+`--json` is meant as a selector but emits prose on every path is no longer condemned here,
+because from outside it is indistinguishable from the innocent one. That is the trade this kit
+takes everywhere — inference may decide what to look at, only observation may condemn.
 
 **Passes** when the captured stdout parses whole, as the declared kind.
 
