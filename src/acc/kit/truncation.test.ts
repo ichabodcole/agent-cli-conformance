@@ -25,6 +25,7 @@ const DISCOVERY: Discovery = {
   subcommands: ["list"],
   flags: ["--json", "--verbose"],
   machineModeFlag: "--json",
+  machineModeDefault: false,
   valueSets: { "--format": ["text", "json"] },
   helpReadable: true,
 };
@@ -86,6 +87,7 @@ function everyProbeTruncated(): History {
     target: { path: "/flooding-target", argv0: ["/flooding-target"] },
     discovery: DISCOVERY,
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }
@@ -149,6 +151,7 @@ describe("a violation already visible in the prefix still fails", () => {
     target: { path: "/flooding-target", argv0: ["/flooding-target"] },
     discovery: DISCOVERY,
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   });
 

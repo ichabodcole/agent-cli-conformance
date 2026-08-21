@@ -49,8 +49,16 @@ function historyWithHelp(text: string, subcommands: string[] = []): History {
   const o = observation("fake-help", ["--help"], "D3: help mentions machine mode", text);
   return {
     target: { path: "x", argv0: ["x"] },
-    discovery: { subcommands, flags: [], machineModeFlag: null, valueSets: {}, helpReadable: true },
+    discovery: {
+      subcommands,
+      flags: [],
+      machineModeFlag: null,
+      machineModeDefault: false,
+      valueSets: {},
+      helpReadable: true,
+    },
     observations: [o],
+    waived: new Set<string>(),
     byId: new Map([[o.id, o]]),
   };
 }
@@ -84,10 +92,12 @@ function historyWithAutoMachineHelp(machineHelp: string, forcedHelp: string | nu
       subcommands: ["schema"],
       flags: ["--json", "--format"],
       machineModeFlag: "--json",
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: true,
     },
     observations: [plain, forced],
+    waived: new Set<string>(),
     byId: new Map([
       [plain.id, plain],
       [forced.id, forced],
@@ -96,6 +106,29 @@ function historyWithAutoMachineHelp(machineHelp: string, forcedHelp: string | nu
 }
 
 describe("D3 — help advertises the machine-readable path", () => {
+  // A DECLARED default satisfies D3 before help is consulted. A machine-first CLI has nothing to
+  // advertise because there is no mode to switch into, and reporting "help names no machine-mode
+  // flag" against one was the finding this branch answers (EXT-4).
+  test("PASSES when machine mode is declared the default, whatever help says", () => {
+    const h = historyWithHelp("fixture — a tool\n\nUsage:\n  fixture list\n");
+    const declared: History = {
+      ...h,
+      discovery: { ...h.discovery, machineModeDefault: true },
+    };
+    const f = advertisesMachineModeChecker.check(declared);
+    expect(f.verdict).toBe("pass");
+    expect(f.detail).toContain("declared");
+  });
+
+  // The same help WITHOUT the declaration still fails — otherwise the pass above would be the
+  // fixture's doing rather than the declaration's.
+  test("FAILS the same help when nothing is declared", () => {
+    const f = advertisesMachineModeChecker.check(
+      historyWithHelp("fixture — a tool\n\nUsage:\n  fixture list\n"),
+    );
+    expect(f.verdict).toBe("fail");
+  });
+
   test("PASSES the conforming fixture", async () => {
     const h = await record(fixture("conforming.ts"), [advertisesMachineModeChecker]);
     const f = advertisesMachineModeChecker.check(h);
@@ -121,10 +154,12 @@ describe("D3 — help advertises the machine-readable path", () => {
         subcommands: [],
         flags: [],
         machineModeFlag: null,
+        machineModeDefault: false,
         valueSets: {},
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     const f = advertisesMachineModeChecker.check(h);

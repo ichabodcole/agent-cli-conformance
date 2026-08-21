@@ -41,10 +41,12 @@ describe("E1 — never block on input without a TTY", () => {
         subcommands: [],
         flags: [],
         machineModeFlag: null,
+        machineModeDefault: false,
         valueSets: {},
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     const f = neverBlockChecker.check(h);

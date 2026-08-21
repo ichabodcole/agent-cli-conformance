@@ -12,7 +12,7 @@ const fixture = (rel: string): TargetInfo => {
   return { path: p, argv0: ["bun", p] };
 };
 
-const PURPOSE = "B5: a parser error under --json must still be a machine document";
+const PURPOSE = "B5 via --json: a parser error must still be a machine document";
 
 /** One recorded probe, with the three fields the verdict reads and nothing else varying. */
 function historyWith(exitCode: number | null, stdout: string, stderr: string): History {
@@ -49,10 +49,12 @@ function historyWith(exitCode: number | null, stdout: string, stderr: string): H
       subcommands: [],
       flags: ["--json"],
       machineModeFlag: "--json",
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: true,
     },
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }
@@ -81,7 +83,96 @@ describe("B5 — machine mode holds on the parser-error path", () => {
     const h = await record(fixture("no-machine-mode.ts"), [machineModeHoldsOnParserErrorChecker]);
     const f = machineModeHoldsOnParserErrorChecker.check(h);
     expect(f.verdict).toBe("unverified");
-    expect(f.detail).toContain("no machine-mode flag");
+    expect(f.detail).toContain("no machine mode this probe can reach");
+  });
+
+  // THE DECLARED-DEFAULT PATH. A machine-first CLI has no selector to send, and until it could
+  // be declared this rule reported `unverified` on exactly the targets whose envelope matters
+  // most. Reported by the first outside adopter (EXT-4).
+  test("PASSES a machine-first fixture when machine mode is declared the default", async () => {
+    const h = await record(
+      fixture("machine-first.ts"),
+      [machineModeHoldsOnParserErrorChecker],
+      true,
+    );
+    const f = machineModeHoldsOnParserErrorChecker.check(h);
+    expect(f.verdict).toBe("pass");
+    expect(f.ruleId).toBe("B5");
+  });
+
+  // ...and the same fixture WITHOUT the declaration is the before-picture: nothing to select, so
+  // nothing established. This is the pair that shows the declaration is what changed the verdict,
+  // not the fixture.
+  test("reports unverified on the same fixture when nothing is declared", async () => {
+    const h = await record(fixture("machine-first.ts"), [machineModeHoldsOnParserErrorChecker]);
+    const f = machineModeHoldsOnParserErrorChecker.check(h);
+    expect(f.verdict).toBe("unverified");
+  });
+
+  // FALSIFIABILITY, which is the whole reason this is a declaration rather than an inference.
+  // A target that claims machine mode by default and answers a parser error in prose must FAIL.
+  // If this passed, the declaration would be a comment that lies — the exact thing the roadmap
+  // argues L1 exists to prevent.
+  // FALSIFIABILITY, pinned to the declared path and nothing else. The fixture advertises no
+  // machine-mode flag at all, so the ONLY way the kit reaches its error path is the declaration —
+  // delete the declared branch and this test cannot fail through some other route, which is what
+  // an earlier version of it did.
+  test("FAILS a target that declares the default and answers in prose", async () => {
+    const h = await record(
+      fixture("broken/declares-machine-mode-answers-prose.ts"),
+      [machineModeHoldsOnParserErrorChecker],
+      true,
+    );
+    const f = machineModeHoldsOnParserErrorChecker.check(h);
+    expect(f.verdict).toBe("fail");
+  });
+
+  // The declared probe is byte-identical to A1's unknown-flag probe, so the recorder dedups them
+  // and the declaration costs no extra spawn. If this drifts, a machine-first target pays for a
+  // second execution to learn what one observation already held.
+  test("the declared-default probe sends no selector", () => {
+    const [probe] = machineModeHoldsOnParserErrorChecker.probes({
+      subcommands: [],
+      flags: [],
+      machineModeFlag: null,
+      machineModeDefault: true,
+      valueSets: {},
+      helpReadable: true,
+    });
+    expect(probe?.args).toEqual(["--acc-probe-xyzzy-flag"]);
+  });
+
+  // A DECLARATION MUST NOT EXCUSE THE PATH IT DOES NOT COVER. A CLI that emits JSON to a pipe
+  // very often also ships `--json`, and the defect B5 is named for is a format resolved only from
+  // the tokens parsed before the parser stopped — bare error fine, `--json` error prose. Probing
+  // only the declared path took the target's word for the half it got right.
+  //
+  // Found by an independent review, which built this target and watched a real FAIL become a
+  // PASS on one line of config.
+  test("FAILS when the declared path holds but the advertised flag does not", async () => {
+    const h = await record(
+      fixture("broken/machine-mode-drops-under-flag.ts"),
+      [machineModeHoldsOnParserErrorChecker],
+      true,
+    );
+    const f = machineModeHoldsOnParserErrorChecker.check(h);
+    expect(f.verdict).toBe("fail");
+    expect(f.detail).toContain("--json");
+  });
+
+  test("probes BOTH ways in when a target declares the default and advertises a flag", () => {
+    const probes = machineModeHoldsOnParserErrorChecker.probes({
+      subcommands: [],
+      flags: ["--json"],
+      machineModeFlag: "--json",
+      machineModeDefault: true,
+      valueSets: {},
+      helpReadable: true,
+    });
+    expect(probes.map((p) => p.args)).toEqual([
+      ["--acc-probe-xyzzy-flag"],
+      ["--acc-probe-xyzzy-flag", "--json"],
+    ]);
   });
 
   test("declares no probe when no selectable machine mode was discovered", () => {
@@ -91,6 +182,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
           subcommands: ["list"],
           flags: ["--output"],
           machineModeFlag,
+          machineModeDefault: false,
           valueSets: {},
           helpReadable: true,
         }),
@@ -104,6 +196,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
       subcommands: [],
       flags: ["--format"],
       machineModeFlag: "--format",
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: true,
     });

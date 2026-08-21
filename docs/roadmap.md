@@ -485,6 +485,40 @@ harmless and it is noise a consumer should not have to interpret.
 **Blocked on** nothing. The cost is one CI job and a fixture; the reason it is not done is that
 the release story is a day old.
 
+## One run per CLI, for a family that shares one contract
+
+**What it is.** `acc check ./a ./b ./c`, reporting the **intersection** separately from the
+per-target deltas.
+
+**Why it matters.** The first outside adopter ran the kit against a second CLI in the same
+repository and got a byte-identical finding set: C2, D1, D2, D3 failing, A6, A7, B3, B5
+unverified. Zero new information. The two CLIs share a scaffold, so they share the contract shape
+and its gaps, and the correct unit of work was "fix the scaffold once" rather than "run the kit
+seven times".
+
+That is precisely the audience the README names — "framework and scaffold maintainers" — and for
+them **the shared row is the finding**. Running seven times to discover one is backwards, and the
+second run's entire value was establishing that it was a duplicate.
+
+**Blocked on** nothing, though it wants [step 2](#2-version-the-contract-not-only-the-rules)
+first if the multi-target result is ever stored: a report about several targets is a different
+document shape from a report about one.
+
+## The report says everything twice
+
+**What it is.** The JSON report carries each finding's full `coverageGaps` array, and repeats the
+same arrays wholesale under a top-level `evidenceGaps`. The first outside adopter measured roughly
+40% duplication and reported that `jq` is mandatory to read anything.
+
+**Why it matters.** The duplication is deliberate — `evidenceGaps` answers "why is
+`fullyVerified` false" in one place, per rule, rather than making a reader assemble it — but
+nobody checked what it costs the consumer of the document, and the answer came from outside.
+
+**Why it is not just a trim.** Whichever copy goes, something that reads reports today breaks, so
+this wants the report-shape versioning in
+[step 2](#2-version-the-contract-not-only-the-rules) to land first. Dropping a field from an
+unversioned document is how a format acquires a compatibility promise by accident.
+
 ## A ratchet the tool does not turn
 
 **What it is.** An outcome code, and the report algebra behind it, for a run whose target

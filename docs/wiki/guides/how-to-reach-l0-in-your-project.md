@@ -35,8 +35,14 @@ version your gate runs is pinned in your lockfile like any other dev dependency:
 
 ```
 bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
-bunx acc check ./your-cli
+bunx acc check ./your-cli --format text
 ```
+
+`--format text` is worth the habit. Without it you get JSON whenever output is piped or redirected
+— correct, and what CI wants — but the human report is the one with the aligned verdict table and
+the per-rule list of what each check did **not** establish. Its first line also carries
+`[acc <version>]` — the place a stale install is hardest to miss, though `acc --version` and the
+JSON report's `kitVersion` say the same thing.
 
 The repository is private today, which is why that is an SSH URL rather than
 `github:ichabodcole/agent-cli-conformance` — see [the README](../../../README.md#getting-started).
@@ -62,7 +68,39 @@ probe at all. The three do not accept the same spellings:
 | [B3](../rules/streams/machine-output-is-parseable.md)          | `--json` only                                         |
 
 So **`--json` is the one spelling that moves all three**; anything else leaves at least one of
-them with nothing to select, reporting `unverified`. `--output` is refused deliberately — it
+them with nothing to select, reporting `unverified`.
+
+**Unless machine mode is what your tool already does.** Rather than inventing a flag to satisfy a
+checker, declare it:
+
+```json
+{ "machineMode": "default" }
+```
+
+Two shapes qualify, and the second is the common one:
+
+- **No machine-mode flag, because there was never a mode to switch into** — the tool emits
+  structured output and `--human` is the opt-out.
+- **The tool switches on the stream** — JSON when stdout is not a terminal, prose when it is.
+  **Every probe runs against a pipe, never a terminal**, so if your tool would answer a script in
+  JSON, this describes you.
+
+D3 then passes on the declaration, and B5 probes your error path with no selector — the path your
+callers actually take. What B5 requires is concrete: provoke a parser error and **one of your two
+streams must be exactly one JSON document**.
+
+**Declaring it commits you to it.** Answer a parser error in prose and B5 fails you. Check before
+you commit the key:
+
+```
+bunx acc check ./your-cli --config-dir .
+```
+
+If your help also names `--json`, **both paths are probed** and both must hold: the defect this
+rule is named for is a format resolved only from the tokens your parser read before it stopped,
+which shows up as a bare error that is fine and the same error under `--json` that is not. B3
+stays `unverified` for a target with no flag — it reads a data command's output, and choosing one
+to run safely is above `L0` — but a target that advertises `--json` is probed by B3 as usual. `--output` is refused deliberately — it
 names an output _file_ at least as often as a format, and a probe whose meaning depends on which
 sense your tool implements is not a probe. The report says so out loud:
 

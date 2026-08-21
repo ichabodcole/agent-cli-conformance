@@ -1,11 +1,27 @@
 import { crashedUnverified, findingFor, truncatedUnverified } from "../../finding.ts";
 import { SENTINEL } from "../../inert.ts";
-import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
+import type { Checker, Discovery, Finding, History, Invocation, Observation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
 const RULE_ID = "C2";
 
 const finding = findingFor(RULE_ID);
+
+/**
+ * Which rule classifies each of this checker's shapes as a usage error.
+ *
+ * The table exists so a waiver can withdraw a shape. It is the one place the coupling between
+ * these rules is written down, and it belongs in the kit rather than in a project's config.
+ */
+const OWNERS: readonly (readonly [string, string])[] = [
+  ["C2: usage error via flag", "A1"],
+  ["C2: usage error via verb", "A2"],
+  ["C2: usage error via the bare invocation", "D2"],
+  ["C2: usage error via a value outside", "A7"],
+] as const;
+
+const hasPurpose = (o: Observation, mark: string): boolean =>
+  o.purposes.some((p) => p.startsWith(mark));
 
 /** C2 — docs/wiki/rules/exit-codes/usage-errors-are-distinguishable.md */
 export const usageDistinguishableChecker: Checker = {
@@ -70,9 +86,47 @@ export const usageDistinguishableChecker: Checker = {
     // findByPurpose, not an `invocation.purpose` scan: these probes are byte-identical to A1's,
     // A3's and B1's, so dedup in record() merges all four checkers' requests into one recording
     // per args, and `invocation.purpose` only ever holds the FIRST requester's reason.
-    const recorded = findByPurpose(h, "C2:");
+    const all = findByPurpose(h, "C2:");
+
+    // A WAIVER WITHDRAWS A PREMISE, and three of these four shapes rest on one.
+    //
+    // This rule does not discover that these invocations are usage errors — it inherits that from
+    // the rules that say so. Waive D2 and the project has declared that a bare invocation is a
+    // help path for this tool, not an error; leaving it in the population means reporting
+    // disagreement across a set whose membership the project has just corrected. That was the
+    // first outside adopter's blocker: waiving D2 left C2 failing on the same byte, so no config
+    // could express "bare help is deliberate" and reach a green gate, and the only route to exit
+    // 0 was to record a permanent design decision as debt.
+    //
+    // The coupling is named HERE rather than in `acc.config.json`, deliberately. A project should
+    // describe its own CLI, not our internals.
+    // TWO CONDITIONS, not one. The waiver alone is not enough.
+    //
+    // A waiver of D2 declares the bare invocation a HELP PATH — and a help path exits 0. If it
+    // exits non-zero it is still an error, and its code still has to agree with the other errors,
+    // so the shape stays and the disagreement is reported. Excluding on the waiver alone made a
+    // bare invocation exiting 64 vanish from the entire run: C2 passed over `(2,2)` while D2's
+    // own waived verdict happened to fail on a different clause, so no line anywhere said the
+    // target answers one error class with two codes. Found by an independent review.
+    //
+    // Also filtered to shapes actually RECORDED. A7's probe exists only for a target whose help
+    // advertises a closed value set, so counting a waiver of A7 as an exclusion told the reader
+    // config had dropped a shape that was never in the population.
+    const excluded = OWNERS.filter(
+      ([mark, rule]) =>
+        h.waived.has(rule) && all.some((o) => hasPurpose(o, mark) && o.exitCode === 0),
+    );
+    const recorded = all.filter((o) => !excluded.some(([mark]) => hasPurpose(o, mark)));
+    const excusedBy = excluded.map(([, rule]) => rule).join(", ");
+
     if (recorded.length < 2) {
-      return finding("unverified", "probes were not recorded", []);
+      return finding(
+        "unverified",
+        excluded.length
+          ? `fewer than two usage-error shapes remain to compare once ${excusedBy} ${excluded.length === 1 ? "is" : "are"} waived`
+          : "probes were not recorded",
+        recorded.map((o) => o.id),
+      );
     }
 
     // Every verdict below compares exit codes, and a probe killed at the output limit has none
@@ -119,6 +173,12 @@ export const usageDistinguishableChecker: Checker = {
       );
     }
 
+    // A narrowed pass is not the same claim as a full one, so it says what it left out. A report
+    // that quietly compared three shapes where the page promises four would be a checker
+    // overstating its own reach — which is the defect this catalogue exists to report.
+    const narrowed = excluded.length
+      ? `; the ${excusedBy} ${excluded.length === 1 ? "shape was" : "shapes were"} excluded, waived by config`
+      : "";
     // Distinguishability from an INTERNAL fault cannot be established black-box: there is no
     // safe general way to provoke one in an arbitrary binary. Say so rather than implying the
     // full rule was checked — a `pass` that silently overclaims is the defect this project
@@ -126,12 +186,12 @@ export const usageDistinguishableChecker: Checker = {
     return codes[0] === 2
       ? finding(
           "pass",
-          `${codes.length} usage-error shapes all use exit 2; internal-fault contrast unverified at L0`,
+          `${codes.length} usage-error shapes all use exit 2; internal-fault contrast unverified at L0${narrowed}`,
           evidence,
         )
       : finding(
           "unverified",
-          `usage errors are consistent at exit ${codes[0]}, but not the declared 2, and no taxonomy was declared`,
+          `usage errors are consistent at exit ${codes[0]}, but not the declared 2, and no taxonomy was declared${narrowed}`,
           evidence,
         );
   },

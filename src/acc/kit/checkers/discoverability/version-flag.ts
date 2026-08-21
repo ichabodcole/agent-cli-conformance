@@ -110,18 +110,51 @@ export const versionFlagChecker: Checker = {
 
     const evidence = runs.map((o) => o.id);
     const problems: string[] = [];
-    if (plain.exitCode !== 0) problems.push(`--version exited ${plain.exitCode}`);
-    if (plain.stdout.trim() === "") problems.push("--version wrote nothing to stdout");
-    // Guarded: if the hostile probe wasn't recorded for some reason, the plain result still
-    // stands on its own rather than silently failing open.
-    if (hostile && hostile.exitCode !== 0) {
-      problems.push("--version requires configuration (failed with an unusable HOME)");
+
+    // Did the PLAIN run satisfy the clause at all? Everything below turns on this, because a
+    // target with no `--version` fails every sub-clause for one reason, and saying it three
+    // times is not three findings.
+    const plainReported = plain.exitCode === 0 && plain.stdout.trim() !== "";
+
+    // Nothing was reported in EITHER mode, and every clause below would restate that.
+    const noVersionAtAll = plain.exitCode !== 0 && plain.stdout.trim() === "";
+
+    if (noVersionAtAll) {
+      // One clause, not two. A target that has no `--version` at all trips both — non-zero exit
+      // AND empty stdout — and "exited 2; wrote nothing to stdout" is one fact stated twice.
+      problems.push(`--version reported no version: exited ${plain.exitCode}, stdout empty`);
+    } else {
+      if (plain.exitCode !== 0) problems.push(`--version exited ${plain.exitCode}`);
+      if (plain.stdout.trim() === "") problems.push("--version wrote nothing to stdout");
+    }
+
+    // THE CLAUSE THAT HAS TO COMPARE.
+    //
+    // It reads `hostile.exitCode !== 0` alone until 2026-08-20, which made it an accusation the
+    // evidence could not support: a target with NO `--version` exits non-zero identically with a
+    // usable HOME and without one, and was told it "requires configuration". Reported by the
+    // first outside adopter against a CLI whose `--version` falls through to `unknown command`
+    // and never reads HOME at all — measured byte-identical on stderr both ways.
+    //
+    // The predicate is narrower than "the two runs differ", deliberately. Differing is not the
+    // claim; the claim is that configuration is REQUIRED, and that is only established when the
+    // plain run reported a version and the hostile one did not. Two runs that fail differently
+    // for some third reason are not evidence about configuration, and a target with no
+    // `--version` cannot reach this clause at all now.
+    if (hostile && plainReported && (hostile.exitCode !== 0 || hostile.stdout.trim() === "")) {
+      problems.push(
+        `--version requires configuration: it reported a version normally, but with an unusable HOME it exited ${hostile.exitCode} with ${hostile.stdout.trim() === "" ? "stdout empty" : "stdout non-empty"}`,
+      );
     }
     // THE MACHINE-MODE HALF. A bare string is the violation this clause exists for: the reference
     // CLI emitted `0.0.0` under every machine-mode spelling for months, so a caller that asked
     // for structured output got something it had to regex. An ARRAY is refused for the same
     // reason a string is — the version is a value in a document, not the document.
-    if (machine) {
+    //
+    // Skipped entirely when the plain run reported no version: `--version --json` against a CLI
+    // with no `--version` fails for the one reason already stated, and a second clause saying so
+    // is the same restatement this checker was reported for.
+    if (machine && !noVersionAtAll) {
       if (machine.exitCode !== 0) {
         problems.push(`--version in machine mode exited ${machine.exitCode}`);
       } else if (!parsesWhole(machine.stdout)) {
@@ -144,7 +177,7 @@ export const versionFlagChecker: Checker = {
           "pass",
           machine
             ? "version reported with an unusable HOME and XDG_CONFIG_HOME, and as a structured document in machine mode"
-            : "version reported with an unusable HOME and XDG_CONFIG_HOME; no machine mode was advertised so the payload clause was not reached",
+            : "version reported with an unusable HOME and XDG_CONFIG_HOME; no machine mode was reachable at L0 so the payload clause was not reached",
           evidence,
         );
   },

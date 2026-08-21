@@ -25,6 +25,7 @@ const DISCOVERY: Discovery = {
   subcommands: ["list"],
   flags: ["--json", "--verbose"],
   machineModeFlag: "--json",
+  machineModeDefault: false,
   valueSets: { "--format": ["text", "json"] },
   helpReadable: true,
 };
@@ -78,6 +79,7 @@ function everyProbeTimedOut(): History {
     target: { path: "/hung-target", argv0: ["/hung-target"] },
     discovery: DISCOVERY,
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }

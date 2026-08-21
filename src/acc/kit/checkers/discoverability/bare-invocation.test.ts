@@ -47,10 +47,12 @@ function historyWithHang(): History {
       subcommands: [],
       flags: [],
       machineModeFlag: null,
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: false,
     },
     observations: [o],
+    waived: new Set<string>(),
     byId: new Map([[o.id, o]]),
   };
 }
@@ -88,10 +90,12 @@ describe("D2 — bare invocation is a usage error", () => {
         subcommands: [],
         flags: [],
         machineModeFlag: null,
+        machineModeDefault: false,
         valueSets: {},
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     const f = bareInvocationChecker.check(h);

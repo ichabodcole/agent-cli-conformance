@@ -18,6 +18,7 @@ the same change: a grounding file that lies is worse than one that stays silent.
 | `docs/reports/`      | findings someone is expected to act on; each one completes and discharges         |
 | `docs/plans/`        | work not yet done                                                                 |
 | `docs/roadmap.md`    | what is missing and why, with each gap's evidence                                 |
+| `docs/techniques.md` | verification techniques that have each caught a real defect here                  |
 | `src/acc/kit/`       | the runner, the checkers, the report algebra                                      |
 | `scripts/docs-lint/` | the portable, zero-dependency wiki linter                                         |
 | `.scratch/`          | untracked working material; "never touched again" is a valid end state            |
@@ -59,6 +60,13 @@ preference. Read the one you are writing into. `docs/wiki/` uses `SCHEMA.md` for
 - **Prose is gated too, and by taste rather than by the linter.** `docs/wiki/STYLE.md` names the
   defects this wiki has actually shipped; `.claude/skills/prose-cold-read/` is the review pass for
   finding them. Density is fine where it carries evidence and is not fine as decoration.
+
+- **A check you have not seen fail is not a check.** After writing a regression test, put the
+  defect back and confirm it goes red — three tests here passed both ways, two of them written by
+  someone who thought they were being careful. The instinct generalises: build the adversarial
+  fixture, run the thing rather than tracing it, and ask what happens to the population a rule has
+  never met. [`docs/techniques.md`](docs/techniques.md) collects the ones that have caught
+  something here, each with what it caught.
 
 - **Markdown must already be Prettier-clean.** The check is `--check`, never `--write`, in both
   the hook and the gate — so a `.md` file that has never been formatted fails the commit and

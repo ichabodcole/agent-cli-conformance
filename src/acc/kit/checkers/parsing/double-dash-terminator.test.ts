@@ -77,10 +77,12 @@ describe("A6 — the `--` terminator", () => {
         subcommands: [],
         flags: [],
         machineModeFlag: null,
+        machineModeDefault: false,
         valueSets: {},
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     expect(doubleDashTerminatorChecker.check(empty).verdict).toBe("unverified");

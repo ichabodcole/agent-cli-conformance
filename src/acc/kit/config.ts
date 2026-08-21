@@ -55,6 +55,28 @@ export interface AccConfig {
    * report names a **stale expectation** once the rule starts passing, so the line gets deleted.
    */
   knownFailures: Record<string, string>;
+  /**
+   * DECLARED MACHINE MODE — "structured output is what my tool emits by default."
+   *
+   * The kit otherwise learns machine mode by reading help for a `--json`-shaped flag, and that
+   * inference cannot represent a CLI that is machine-first: one whose data commands emit JSON
+   * unless asked for prose. Against such a target D3 reported "help names no machine-mode flag",
+   * which is false, and B5 had nothing to select and reported `unverified` — so the rules that
+   * would have checked the envelope were skipped on exactly the class of tool this kit is for.
+   *
+   * A declaration rather than a sharper inference, and the argument is the one the roadmap
+   * already makes for L1: a declaration can be FALSIFIED and an inference cannot, because the
+   * inference is the guess. Here the falsification is the cheapest kind — send a parser error
+   * with no selector at all and see whether the answer is a document. A target that declares
+   * this and answers in prose fails B5, which is the rule doing its job.
+   *
+   * The most machine-first CLI possible is also the one an inference cannot see: it emits JSON
+   * and has no inverse flag to notice.
+   *
+   * `undefined` means undeclared, which is not the same as "not machine-first" — it means the
+   * kit was told nothing and falls back to reading help.
+   */
+  machineMode?: "default";
 }
 
 /**
@@ -114,6 +136,28 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> =>
  * empty config would fail a rule the project believed it had waived, which is precisely the
  * silent-failure shape this catalogue exists to catch a CLI doing.
  */
+/**
+ * `"default"` is the only legal value, and anything else is an ERROR rather than an ignored key.
+ *
+ * A mistyped declaration that silently does nothing leaves a project believing it declared
+ * something it did not — the same silent no-op this file already refuses for a mistyped rule id
+ * or an unknown key inside a rule entry. The vocabulary is deliberately one word wide: there is
+ * no `"flag"` value, because that case is what reading help already covers.
+ */
+/** Every key this file accepts. Anything else is a typo, and a typo is an error here. */
+const TOP_LEVEL_KEYS = ["rules", "knownFailures", "machineMode"];
+
+function parseMachineMode(path: string, raw: unknown): { machineMode?: "default" } {
+  if (raw === undefined) return {};
+  if (raw !== "default") {
+    throw new ConfigError(
+      path,
+      `machineMode must be "default" if present, found ${JSON.stringify(raw) ?? describe(raw)}`,
+    );
+  }
+  return { machineMode: "default" };
+}
+
 export function loadConfig(
   dir: string | undefined,
   knownRuleIds: readonly string[] = [],
@@ -123,6 +167,7 @@ export function loadConfig(
 
   if (!existsSync(path)) {
     if (!explicit) return { rules: {}, knownFailures: {} };
+
     throw new ConfigError(
       path,
       existsSync(dir) && statSync(dir).isDirectory()
@@ -144,11 +189,25 @@ export function loadConfig(
     throw new ConfigError(path, `must contain a JSON object, found ${describe(parsed)}`);
   }
 
+  // AN UNKNOWN TOP-LEVEL KEY IS AN ERROR, for the reason a mistyped rule id already is: a
+  // declaration that silently does nothing leaves a project believing it declared something it
+  // did not. `{"machinemode": "default"}` used to run clean with the declaration quietly off —
+  // and since the declaration is what lets B5 reach a machine-first target, the typo switched off
+  // the falsification too. Found by an independent review.
+  for (const key of Object.keys(parsed)) {
+    if (!TOP_LEVEL_KEYS.includes(key)) {
+      throw new ConfigError(
+        path,
+        `has an unknown key "${key}" (known: ${TOP_LEVEL_KEYS.join(", ")})`,
+      );
+    }
+  }
+
   const known = new Set(knownRuleIds);
   const rules = parseRules(path, parsed.rules, known);
   const knownFailures = parseKnownFailures(path, parsed.knownFailures, known);
   requireNoContradiction(path, rules, knownFailures);
-  return { rules, knownFailures };
+  return { rules, knownFailures, ...parseMachineMode(path, parsed.machineMode) };
 }
 
 /** The keys a rule entry may carry. An unrecognised one is a typo doing nothing, silently. */

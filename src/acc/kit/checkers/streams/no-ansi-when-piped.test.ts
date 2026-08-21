@@ -42,10 +42,12 @@ describe("B2 — no ANSI escapes when piped", () => {
         subcommands: [],
         flags: [],
         machineModeFlag: null,
+        machineModeDefault: false,
         valueSets: {},
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     expect(noAnsiWhenPipedChecker.check(empty).verdict).toBe("unverified");

@@ -22,6 +22,37 @@ function write(content: string): void {
 const IDS = ["A1", "A2", "B1"];
 
 describe("loadConfig", () => {
+  // The declaration a machine-first CLI makes about itself (EXT-4). One word wide on purpose:
+  // there is no `"flag"` value, because reading help already covers that case.
+  test("accepts machineMode: default", () => {
+    write(JSON.stringify({ machineMode: "default" }));
+    expect(loadConfig(dir, IDS).machineMode).toBe("default");
+  });
+
+  test("leaves machineMode undefined when it is not declared", () => {
+    write(JSON.stringify({ rules: {} }));
+    expect(loadConfig(dir, IDS).machineMode).toBeUndefined();
+  });
+
+  // A mistyped declaration must be an ERROR, not an ignored key — the same rule this file already
+  // applies to a mistyped rule id. Silently doing nothing leaves a project believing it declared
+  // something it did not, which is the silent no-op the whole catalogue exists to catch.
+  // A near-miss key is the failure this guards: the declaration is what lets B5 reach a
+  // machine-first target, so a typo silently switches off the check as well as the declaration.
+  test("REJECTS an unknown top-level key rather than ignoring it", () => {
+    for (const bad of ["machinemode", "machine_mode", "Rules", "knownfailures"]) {
+      write(`{ "${bad}": {} }`);
+      expect(() => loadConfig(dir, IDS)).toThrow(/unknown key/);
+    }
+  });
+
+  test("REJECTS any other machineMode value", () => {
+    for (const bad of ['"flag"', '"json"', "true", "1", "null", "{}"]) {
+      write(`{ "machineMode": ${bad} }`);
+      expect(() => loadConfig(dir, IDS)).toThrow(/machineMode must be "default"/);
+    }
+  });
+
   test("a present file is parsed", () => {
     write(JSON.stringify({ knownFailures: { A1: "legacy parser" } }));
     expect(loadConfig(dir, IDS)).toEqual({ rules: {}, knownFailures: { A1: "legacy parser" } });

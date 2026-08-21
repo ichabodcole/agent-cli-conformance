@@ -232,3 +232,30 @@ describe("discover", () => {
     expect(d.valueSets).toEqual({});
   });
 });
+
+// THE WIRING. `machineMode` is read from acc.config.json and has to survive all the way into
+// Discovery, because that is where checkers look — and it must survive help that could not be
+// read at all, since a declaration is the one thing the kit knows about a target that does not
+// depend on parsing anything the target printed.
+describe("a declared machine-mode default reaches Discovery", () => {
+  test("is carried through when help parses", async () => {
+    const p = join(HERE, "fixtures/machine-first.ts");
+    const d = await discover({ path: p, argv0: ["bun", p] }, true);
+    expect(d.machineModeDefault).toBe(true);
+    // ...and it is NOT the same fact as an advertised flag. This fixture has none.
+    expect(d.machineModeFlag).toBe(null);
+  });
+
+  test("defaults to false when nothing was declared", async () => {
+    const p = join(HERE, "fixtures/machine-first.ts");
+    const d = await discover({ path: p, argv0: ["bun", p] });
+    expect(d.machineModeDefault).toBe(false);
+  });
+
+  test("survives a target whose help could not be read", async () => {
+    const p = join(HERE, "fixtures/sh/dies-by-signal.sh");
+    const d = await discover({ path: p, argv0: [p] }, true);
+    expect(d.helpReadable).toBe(false);
+    expect(d.machineModeDefault).toBe(true);
+  });
+});

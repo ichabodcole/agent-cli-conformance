@@ -45,10 +45,12 @@ describe("F2 — first byte arrives promptly", () => {
         subcommands: [],
         flags: [],
         machineModeFlag: null,
+        machineModeDefault: false,
         valueSets: {},
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     const f = firstBytePromptChecker.check(h);
@@ -92,10 +94,12 @@ describe("F2 — first byte arrives promptly", () => {
         subcommands: [],
         flags: [],
         machineModeFlag: null,
+        machineModeDefault: false,
         valueSets: {},
         helpReadable: false,
       },
       observations,
+      waived: new Set<string>(),
       byId: new Map(observations.map((o) => [o.id, o])),
     };
     const f = firstBytePromptChecker.check(h);

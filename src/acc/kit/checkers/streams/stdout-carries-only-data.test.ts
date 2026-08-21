@@ -44,10 +44,12 @@ describe("B1 — stdout carries only data on failure", () => {
         subcommands: [],
         flags: [],
         machineModeFlag: null,
+        machineModeDefault: false,
         valueSets: {},
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     expect(stdoutCarriesOnlyDataChecker.check(empty).verdict).toBe("unverified");

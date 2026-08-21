@@ -109,7 +109,7 @@ export const stdoutCarriesOnlyDataChecker: Checker = {
         )
       : finding(
           "pass",
-          `stdout empty across ${failures.length} failing usage-error invocation(s), machine mode included where advertised`,
+          `stdout empty across ${failures.length} failing usage-error invocation(s), machine mode included where reachable`,
           failures.map((o) => o.id),
         );
   },

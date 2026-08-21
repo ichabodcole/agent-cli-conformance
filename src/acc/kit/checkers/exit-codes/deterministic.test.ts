@@ -48,10 +48,12 @@ function historyWithRuns(n: 0 | 1 | 2): History {
       subcommands: [],
       flags: [],
       machineModeFlag: null,
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: false,
     },
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }
@@ -93,10 +95,12 @@ function historyWithTimedOutRuns(): History {
       subcommands: [],
       flags: [],
       machineModeFlag: null,
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: false,
     },
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }

@@ -12,6 +12,19 @@ const fixture = (rel: string): TargetInfo => {
 };
 
 describe("B3 — machine output parses as its declared kind", () => {
+  // The declared-default branch. B3 cannot reach a machine-first target at L0 — reading a DATA
+  // command's output means choosing one to run, which needs to know it is side-effect-free — so
+  // the verdict is unchanged. What changed is the reason: it used to say no machine mode was
+  // advertised, which is untrue of a target that declared one. An independent review found this
+  // branch had no test at all.
+  test("says why it cannot reach a target that declared machine mode its default", async () => {
+    const h = await record(fixture("machine-first.ts"), [machineOutputParseableChecker], true);
+    const f = machineOutputParseableChecker.check(h);
+    expect(f.verdict).toBe("unverified");
+    expect(f.detail).toContain("declared the default");
+    expect(f.detail).not.toContain("advertised");
+  });
+
   test("PASSES the conforming fixture", async () => {
     const h = await record(fixture("conforming.ts"), [machineOutputParseableChecker]);
     const f = machineOutputParseableChecker.check(h);
@@ -44,6 +57,7 @@ describe("B3 — machine output parses as its declared kind", () => {
       subcommands: ["list"],
       flags: ["--help"],
       machineModeFlag: null,
+      machineModeDefault: false,
       valueSets: {},
       helpReadable: true,
     });

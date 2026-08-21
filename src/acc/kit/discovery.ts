@@ -187,7 +187,7 @@ function valueSetsFromJson(text: string): Record<string, string[]> | null {
  * discovery turns dependent probes into `unverified` — an honest "could not check" rather than
  * a vacuous pass.
  */
-export function parseHelp(text: string): Omit<Discovery, "helpReadable"> {
+export function parseHelp(text: string): Omit<Discovery, "helpReadable" | "machineModeDefault"> {
   const lines = text.split("\n");
 
   const subcommands: string[] = [];
@@ -214,7 +214,15 @@ export function parseHelp(text: string): Omit<Discovery, "helpReadable"> {
   return { subcommands, flags, machineModeFlag, valueSets };
 }
 
-export async function discover(target: TargetInfo): Promise<Discovery> {
+export async function discover(
+  target: TargetInfo,
+  /**
+   * From `acc.config.json`. Discovery is where everything the kit knows about a target lives,
+   * inferred or declared, so a checker reads one shape and does not care which it was — and when
+   * L1 lands, its declarations arrive here too.
+   */
+  declaredMachineDefault = false,
+): Promise<Discovery> {
   const inv: Invocation = {
     args: ["--help"],
     inertness: "help-path",
@@ -228,9 +236,12 @@ export async function discover(target: TargetInfo): Promise<Discovery> {
       subcommands: [],
       flags: [],
       machineModeFlag: null,
+      machineModeDefault: declaredMachineDefault,
       valueSets: {},
       helpReadable: false,
     };
   }
-  return { ...parseHelp(text), helpReadable: true };
+  // The declaration survives unreadable help on purpose: it is the one thing the kit knows about
+  // a target that does not depend on parsing anything the target printed.
+  return { ...parseHelp(text), machineModeDefault: declaredMachineDefault, helpReadable: true };
 }

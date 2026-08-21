@@ -4,12 +4,7 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
-import {
-  machineErrorArgs,
-  machineSelector,
-  parsesAsNdjson,
-  parsesWhole,
-} from "../../machine-mode.ts";
+import { machineErrorProbesFor, parsesAsNdjson, parsesWhole } from "../../machine-mode.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -46,7 +41,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
   // not the same rule twice.
   coverage: "partial",
   coverageGaps: [
-    "machine mode is selected explicitly so the piped-default resolution path that the same defect most often breaks is never exercised",
+    "machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised",
     "only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not",
     "only the --json and --format=json selectors are probed so a machine mode advertised through --output is not",
     "the answer is only required to parse and is never checked against a declared envelope shape",
@@ -54,31 +49,44 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
     "NDJSON is reported unverified rather than failed because no output kind is declared at L0",
   ],
   coverageEstablished: [
-    "for a target whose root help advertises --json or --format an unrecognised flag sent alongside an explicit machine-mode selector leaves at least one stream whose whole content parses as exactly one JSON document",
+    "for a target whose root help advertises --json or --format or which declares machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document",
   ],
 
-  probes: (d: Discovery): Invocation[] => {
-    const selector = machineSelector(d);
-    if (!selector) return [];
-    return [
-      {
-        args: machineErrorArgs(selector),
-        inertness: "sentinel",
-        purpose: `B5: a parser error under ${selector} must still be a machine document`,
-      },
-    ];
-  },
+  probes: (d: Discovery): Invocation[] =>
+    machineErrorProbesFor(d).map(({ args, how }) => ({
+      args,
+      inertness: "sentinel" as const,
+      purpose: `B5 via ${how}: a parser error must still be a machine document`,
+    })),
 
   check: (h: History): Finding => {
-    if (machineSelector(h.discovery) === null) {
+    const ways = machineErrorProbesFor(h.discovery);
+    if (ways.length === 0) {
       return finding(
         "unverified",
-        "no machine-mode flag this probe can select was advertised in help, so there is no declared mode to hold",
+        "no machine mode this probe can reach was advertised in help or declared, so there is no mode to hold",
         [],
       );
     }
-    const [o] = findByPurpose(h, "B5:");
-    if (!o) return finding("unverified", "probe was not recorded", []);
+
+    // EVERY way in is checked, and the worst answer decides.
+    //
+    // A target reachable both ways must hold in both. Taking the best of them would let a
+    // declaration excuse the selector path it got wrong, which is a config buying a verdict.
+    const results = ways.map(({ how }) => one(h, `B5 via ${how}:`, how));
+    const failed = results.find((r) => r.verdict === "fail");
+    if (failed) return failed;
+    const unresolved = results.find((r) => r.verdict === "unverified");
+    if (unresolved) return unresolved;
+    return results[0] as Finding;
+  },
+};
+
+/** One way in, evaluated on its own. `how` names it, so a report says which path answered. */
+function one(h: History, purpose: string, how: string): Finding {
+  {
+    const [o] = findByPurpose(h, purpose);
+    if (!o) return finding("unverified", `probe was not recorded (${how})`, []);
     // A target still thinking about the flag has emitted no outcome at all, in any shape.
     const hung = hungUnverified(finding, [o]);
     if (hung) return hung;
@@ -107,7 +115,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
     if (streams.length === 0) {
       return finding(
         "fail",
-        `machine mode was selected and the failure was reported with nothing on either stream (exit ${o.exitCode})`,
+        `machine mode via ${how} and the failure was reported with nothing on either stream (exit ${o.exitCode})`,
         [o.id],
       );
     }
@@ -135,8 +143,8 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
       "fail",
       // The consequence, not just the fact: an agent that branched on a field of the envelope it
       // was promised got `undefined`, and an agent that piped the stream got prose.
-      `machine mode was selected and the parser error came back as prose on ${streams.map((s) => s.stream).join(" and ")} (exit ${o.exitCode}): ${JSON.stringify(streams[0]?.text.slice(0, 60))}`,
+      `machine mode via ${how} and the parser error came back as prose on ${streams.map((s) => s.stream).join(" and ")} (exit ${o.exitCode}): ${JSON.stringify(streams[0]?.text.slice(0, 60))}`,
       [o.id],
     );
-  },
-};
+  }
+}

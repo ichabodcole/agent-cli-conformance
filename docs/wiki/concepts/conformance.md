@@ -181,13 +181,48 @@ tool can honestly do.
 
 ## The details
 
-Two mechanisms live in `acc.config.json`, and they make **different statements**. Keeping them
-apart is load-bearing: fold one into the other and the ratchet stops meaning anything.
+Two mechanisms live in `acc.config.json` that make **different statements about rules**. Keeping
+them apart is load-bearing: fold one into the other and the ratchet stops meaning anything.
 
 | Key             | The statement                                                | Goes stale?         |
 | --------------- | ------------------------------------------------------------ | ------------------- |
 | `knownFailures` | **debt** — "this is broken, I know, I will fix it"           | yes, once it passes |
 | `rules`         | **declaration** — "this binds differently for me, by design" | **never**           |
+
+A third key says nothing about any rule. `machineMode: "default"` is a statement about **the
+tool** — that structured output is what it emits unless asked for prose — and it is the first of
+its kind here.
+
+That difference is why it sits at the top level rather than inside `rules`. It excuses nothing and
+suppresses no failure; what it changes is which probe the kit is able to send. The only other route
+to machine mode is reading help for a flag that selects it, and a machine-first CLI has none to
+find — there is no mode to switch into. Undeclared, such a target is **failed** by
+[D3](../rules/discoverability/help-advertises-machine-mode.md) for advertising nothing — a
+`diagnostic` verdict, so it is reported and gates nothing — and the rules that would check its
+envelope report [`unverified`](#what-it-is) for want of a selector to send: probed, and
+inconclusive, which also gates nothing. The cost is not a red build. It is that the contract those
+rules exist to check went unexamined on the class of tool they matter most to.
+
+**The declaration is falsifiable, and it is worth being exact about by which rule.**
+[B5](../rules/streams/machine-mode-holds-on-parser-errors.md) is the falsifier: it provokes a
+parser error, sends no selector, and requires one of the two streams to be exactly one JSON
+document. Declare the default and answer in prose and B5 fails — the declaration was tested and
+found false.
+
+**D3 does not test it; D3 accepts it.** That asymmetry is deliberate rather than an oversight. D3's
+subject is whether a caller can _find out_ how to get machine output, and a key committed in the
+project's own config is a discoverable answer — more durable than a line of help text. So D3 takes
+the declaration at its word, and B5 is what makes taking it at its word safe. A target that lies
+here gains a `pass` on D3 and buys a `fail` on B5, which is a worse trade than saying nothing.
+
+That division is the same one [the roadmap](../../roadmap.md#6-the-portable-declaration-ir) argues
+for at `L1`, arriving early and in miniature: something declares, something else tries to falsify
+it, and a declaration nothing can falsify is a comment that lies.
+
+It does not reach everything. [B3](../rules/streams/machine-output-is-parseable.md) reads the
+output of a **data command**, and selecting one inertly needs to know it is side-effect-free,
+which is `L1`'s job. So B3 stays `unverified` under the declaration and says so in those terms
+rather than claiming nothing was advertised.
 
 ### The excuse ratchet
 
@@ -261,6 +296,29 @@ What waiving buys is information rather than quiet: the report says what the ver
 been. A waiver sitting at `pass` is one the project can delete; a
 waiver sitting at `fail` is one still doing work. This is deliberately better than the ESLint
 model it borrows from, where a disabled rule produces no information at all.
+
+**A waiver can withdraw a premise another rule was resting on.** Rules share observations, and a
+rule sometimes treats one as an instance of another rule's subject: C2 compares four invocations it
+inherits as usage errors from A1, A2, A7 and D2. Waiving D2 declares the bare invocation a help
+path, so C2 drops it from the contrast rather than reporting disagreement across a population the
+project has just corrected — and says which shape it dropped, because the remaining comparison is a
+narrower claim.
+
+The shape is only dropped if it **behaved like the premise**: a waiver of D2 declares a help path,
+and a help path exits `0`. A bare invocation exiting `64` where every other usage error exits `2`
+stays in the comparison and is still reported. A waiver excuses a rule, it does not blind the kit
+to what the target did.
+
+Only the rules that inherited the premise are affected. E1 and G1 read the same observation for
+reasons that have nothing to do with it being an error, and they keep it. A waiver is not a
+deletion.
+
+**What the config does and does not have to name.** It names a rule — `D2` — as it always has;
+that much is unavoidable, since a waiver has to say what is being waived. What it never has to name
+is the **relationship between rules**: nothing in the file says C2 reads D2's observation, and
+nothing in it would need editing if that stopped being true. The table lives in C2's checker, so a
+project's config stays a statement about its own CLI and does not become a model of this one's
+wiring.
 
 **A waiver never goes stale.** Passing was never the goal, so "this waiver would now pass" is
 offered as information and never as a line to remove. `staleExpectations` is for debt; a

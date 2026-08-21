@@ -7,6 +7,7 @@ import {
   readSync,
   statSync,
 } from "node:fs";
+
 import { basename, resolve } from "node:path";
 import { emit, type OutputMode, useColor } from "../envelope.ts";
 import { notFoundError, usageError } from "../errors.ts";
@@ -16,6 +17,7 @@ import { record, TargetNotExecutableError } from "../kit/record.ts";
 import { CHECKERS } from "../kit/registry.ts";
 import { buildReport, primaryProblem, type ReportedFinding, runCheckers } from "../kit/report.ts";
 import type { History, TargetInfo } from "../kit/types.ts";
+import { VERSION } from "../version.ts";
 
 export interface CheckOptions {
   configDir?: string;
@@ -117,30 +119,14 @@ export async function checkCommand(
     });
   }
 
-  // A target that cannot execute gets an ERROR, never a report. Reporting it would mean
-  // publishing verdicts derived from a process that never ran — see TargetNotExecutableError.
-  // `not_found` is the honest kind: the caller named something that is not a runnable CLI.
-  let history: History;
-  try {
-    history = await record(target, CHECKERS);
-  } catch (err) {
-    if (err instanceof TargetNotExecutableError) {
-      throw notFoundError(`target could not be executed: ${targetPath}`, {
-        hint: "The file exists but could not be spawned. Check the exec bit, the shebang, and the architecture.",
-        details: { argv0: target.argv0 },
-      });
-    }
-    throw err;
-  }
-  const findings = runCheckers(history, CHECKERS);
-  // Run at L0: everything the kit can probe without effect-classifying subcommands first. A
-  // checker whose rule needs a higher level (e.g. A4) is reported not-applicable here rather
-  // than unverified — see buildReport's `level` parameter.
+  // CONFIG BEFORE THE FIRST SPAWN, for two reasons.
   //
-  // `opts.configDir` is passed through UNDEFAULTED: the kit distinguishes "nobody asked" (a
-  // missing file in the cwd is normal) from "the caller named a path" (a missing one is their
-  // mistake, and continuing with an empty set would fail rules they believed were excused).
-  // The registry goes in so a mistyped id is rejected rather than silently excusing nothing.
+  // It carries `machineMode`, which discovery needs — a declaration is something the kit knows
+  // about the target, and everything the kit knows about a target lives in Discovery.
+  //
+  // And it means a malformed `acc.config.json` is reported before the target is executed
+  // eighteen times, rather than after. The old order spent the whole run and then refused to
+  // publish it.
   let config: AccConfig;
   try {
     config = loadConfig(
@@ -158,7 +144,41 @@ export async function checkCommand(
     }
     throw err;
   }
-  const report = buildReport(history, findings, CHECKERS, config, "L0");
+
+  // A target that cannot execute gets an ERROR, never a report. Reporting it would mean
+  // publishing verdicts derived from a process that never ran — see TargetNotExecutableError.
+  // `not_found` is the honest kind: the caller named something that is not a runnable CLI.
+  let history: History;
+  try {
+    history = await record(
+      target,
+      CHECKERS,
+      config.machineMode === "default",
+      // The SAME config object buildReport reads, so the two consumers cannot disagree about what
+      // was waived — one applies it to the verdict, the other to a checker's premise.
+      new Set(
+        Object.entries(config.rules).flatMap(([id, r]) => (r.severity === "off" ? [id] : [])),
+      ),
+    );
+  } catch (err) {
+    if (err instanceof TargetNotExecutableError) {
+      throw notFoundError(`target could not be executed: ${targetPath}`, {
+        hint: "The file exists but could not be spawned. Check the exec bit, the shebang, and the architecture.",
+        details: { argv0: target.argv0 },
+      });
+    }
+    throw err;
+  }
+  const findings = runCheckers(history, CHECKERS);
+  // Run at L0: everything the kit can probe without effect-classifying subcommands first. A
+  // checker whose rule needs a higher level (e.g. A4) is reported not-applicable here rather
+  // than unverified — see buildReport's `level` parameter.
+  //
+  // `opts.configDir` is passed UNDEFAULTED above: the kit distinguishes "nobody asked" (a
+  // missing file in the cwd is normal) from "the caller named a path" (a missing one is their
+  // mistake, and continuing with an empty set would fail rules they believed were excused).
+  // The registry goes in so a mistyped id is rejected rather than silently excusing nothing.
+  const report = buildReport(history, findings, CHECKERS, config, "L0", VERSION);
 
   // The rule that actually explains the report's headline — see primaryProblem, which owns the
   // ranking (violations before gaps, and the rule that owns a failure mode before whatever
@@ -269,7 +289,10 @@ export async function checkCommand(
         ? ` · ${r.counts.waived} waiver${r.counts.waived === 1 ? "" : "s"}`
         : "";
       return [
-        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}  ${r.target}`,
+        // The kit's own version rides on the headline, not in a footer. A stale install reports
+        // success and puts an older commit on disk, and this is the only line every reader
+        // certainly sees — the alternative was `acc --version`, which nobody thinks to check.
+        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}  ${r.target}  [acc ${r.kitVersion}]`,
         "",
         ...lines,
         "",

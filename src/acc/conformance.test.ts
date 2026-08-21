@@ -733,7 +733,14 @@ const ACC: TargetInfo = { path: CLI, argv0: ["bun", CLI] };
 describe("acc checks itself, through the kit", () => {
   test("is conformant", async () => {
     const h = await record(ACC, CHECKERS);
-    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadConfig(undefined), "L0");
+    const r = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      loadConfig(undefined),
+      "L0",
+      VERSION,
+    );
     if (!r.conformant) {
       const failed = r.findings.filter((f) => f.verdict !== "pass" && f.tier === "core");
       throw new Error(
@@ -751,7 +758,14 @@ describe("acc checks itself, through the kit", () => {
   // bun launcher, so it gates neither.)
   test("every applicable core rule is verified, not merely unfailed", async () => {
     const h = await record(ACC, CHECKERS);
-    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadConfig(undefined), "L0");
+    const r = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      loadConfig(undefined),
+      "L0",
+      VERSION,
+    );
     const unverified = r.findings.filter(
       (f) => f.applicable && f.tier === "core" && f.verdict === "unverified",
     );
@@ -771,7 +785,14 @@ describe("acc checks itself, through the kit", () => {
   // any checker to `complete` without the evidence to back it goes red here.
   test("...but NOT fully verified, because every core checker's coverage is partial", async () => {
     const h = await record(ACC, CHECKERS);
-    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, loadConfig(undefined), "L0");
+    const r = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      loadConfig(undefined),
+      "L0",
+      VERSION,
+    );
     expect(r.fullyVerified).toBe(false);
     expect(r.counts.corePartial).toBe(r.counts.core);
     // The withheld claim must arrive with its reasons attached, one entry per blocking rule.
@@ -796,6 +817,7 @@ describe("acc checks itself, through the kit", () => {
       CHECKERS,
       { rules: {}, knownFailures: {} },
       "L0",
+      VERSION,
     );
     expect(r.conformant).toBe(false);
     expect(r.findings.find((f) => f.ruleId === "A1")?.verdict).toBe("fail");
@@ -1133,4 +1155,24 @@ describe("acc check — the outcome exit code", () => {
       rmSync(notABinary, { force: true });
     }
   }, 30_000);
+});
+
+// EXT-1: a stale kit is otherwise invisible. The documented install can put an older commit on
+// disk and still report success — bun prints a SHA it did not install, and the extracted-package
+// cache goes stale independently of the bare clone. The only place that showed was `acc
+// --version`, and the first outside adopter checked it by luck rather than suspicion: they
+// happened to be holding a second version to compare against, having cloned the repo to read the
+// README before installing. In the report, the comparison is free.
+describe("every report names the kit that produced it", () => {
+  const FIXTURE = join(import.meta.dir, "kit/fixtures/conforming.ts");
+
+  test("in the machine report, as a field", async () => {
+    const r = await run(["check", FIXTURE]);
+    expect(JSON.parse(r.stdout).data.kitVersion).toBe(VERSION);
+  });
+
+  test("in the text report, on the headline a reader certainly sees", async () => {
+    const r = await run(["check", FIXTURE, "--format", "text"]);
+    expect(r.stdout.split("\n")[0]).toContain(`[acc ${VERSION}]`);
+  });
 });

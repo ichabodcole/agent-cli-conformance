@@ -55,13 +55,32 @@ if and when this one opens up.
 Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
 commit or a release tag after the `#` — `…agent-cli-conformance.git#v0.1.0`.
 
-One caveat, because it is indistinguishable from a tag that does not exist: Bun keeps a bare
-clone of each git dependency in its cache and does not re-fetch it, so **a tag pushed after your
-first install of this package is invisible** and the install fails with
-`no commit matching "…" found (but repository exists)`. `bun pm cache rm` fixes it
+**Two ways this install goes wrong, and only one of them is loud.**
+
+**The loud one.** Bun keeps a bare clone of each git dependency in its cache and does not
+re-fetch it, so a tag pushed after your first install of this package is invisible and the install
+fails with `no commit matching "…" found (but repository exists)` — indistinguishable from a tag
+that does not exist. `bun pm cache rm` fixes it
 ([oven-sh/bun#18947](https://github.com/oven-sh/bun/issues/18947)). A `#semver:` range is a
 different matter — Bun does not support one
 ([oven-sh/bun#4978](https://github.com/oven-sh/bun/issues/4978)).
+
+**The silent one, which is worse.** The install can succeed at exit `0`, print a commit SHA, and
+put **different bytes on disk** — because the extracted-package cache is stale _independently_ of
+the bare clone, so clearing one does not clear the other. Nothing in the output says so.
+
+Every report carries the kit's own version for this reason: compare it against the release you
+meant to install, and if they disagree run `bun pm cache rm` and reinstall.
+
+**Be clear how far that check reaches.** The version only changes when a release is cut, so it
+catches staleness that spans a release and not staleness within one — pin a **tag** and the check
+is meaningful; pin a branch or nothing and a stale copy reports the same version as a fresh one.
+On an unpinned install, `bun pm cache rm` before installing is the only reliable answer, and it
+costs a re-download.
+
+This is Bun's behaviour, not something this kit can fix. It is documented here because a tool that
+reports success while doing something else is the entire subject of this project, and the install
+path had an arm of exactly that shape with nothing pointing at it.
 
 Then point it at your CLI:
 
@@ -69,11 +88,25 @@ Then point it at your CLI:
 bunx acc check ./your-cli
 ```
 
+**Piped output is JSON, and a terminal gets the text report** — unless `AI_AGENT` is set, which
+selects JSON anywhere. That is the contract this kit asks of everyone else, so it applies to itself — which means the report below is what you see at a
+terminal, and a pipe or a CI step gets one JSON document instead. `--format text` forces the human
+report anywhere:
+
+```bash
+bunx acc check ./your-cli --format text
+```
+
 The first line is the verdict, and the exit code is the gate:
 
 ```
 NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered  /opt/homebrew/bin/git
 ```
+
+That line also ends with the kit's own version — `[acc 0.1.1]` <!-- x-release-please-version -->
+— which appears as `kitVersion` in the JSON report. It is there because an install can silently
+give you an older kit than you asked for; the install notes above explain how, and how far the
+check reaches.
 
 `0` means conformant and `9` means it is not. Any other code is `acc` itself failing rather
 than a verdict about your tool — the distinction is
@@ -199,7 +232,7 @@ rather than passing today.
 
 ### Per-project rules — `acc.config.json`
 
-Two keys, two different statements, kept apart on purpose:
+Two keys, two different statements about **rules**, kept apart on purpose:
 
 ```json
 {
@@ -231,6 +264,37 @@ blocks the evidence claim even when it would have passed, because a rule you cho
 measured against was not established. Waived rules are still **probed**, so the report shows
 what the verdict would have been. The full argument, including why an unwaivable spec is worse
 than a waived one, is in [conformance](docs/wiki/concepts/conformance.md#the-frame-a-verdict-was-reached-in).
+
+### Declaring that your tool is machine-first
+
+A third key in the same file says nothing about any rule. It describes **your tool**:
+
+```json
+{ "machineMode": "default" }
+```
+
+`rules`, `knownFailures` and `machineMode` are the whole vocabulary — **an unrecognised top-level
+key is an error**, not an ignored line, for the same reason a mistyped rule id is: a declaration
+that silently does nothing leaves you believing you declared something you did not.
+
+It means: **your CLI writes JSON to a pipe**, and prose is the thing a caller
+opts into. That covers the tool with no `--json` flag because it never needed one — and it also
+covers the far more common shape, **a CLI that emits JSON when stdout is not a terminal and prose
+when it is.** Every probe runs against a pipe, never a terminal, so if your tool would answer a
+script in JSON, this key is describing you.
+
+Without it, the kit reads your help looking for a machine-mode flag. Finding none, it reports that
+machine mode is undiscoverable — and
+[B5](docs/wiki/rules/streams/machine-mode-holds-on-parser-errors.md), the rule that checks the
+shape of your errors, has no way to ask for a mode and reports `unverified`. With it, B5 provokes a
+parser error and requires that **one of your two streams contains exactly one JSON document**.
+
+**Declaring it commits you to it.** Answer a parser error in prose and B5 fails you. That is what
+makes it a declaration rather than a guess the kit makes on your behalf: a guess cannot be wrong in
+a way anything notices.
+
+It does not excuse a rule and it does not suppress a failure — the only thing it changes is which
+probe the kit is able to send.
 
 ```bash
 acc check ./mycli --config-dir .    # look for acc.config.json in this directory

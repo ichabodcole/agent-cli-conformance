@@ -65,6 +65,13 @@ defect class, shipped under its own name.
 
 Build **one file**: subject on line 1, blank line, then body.
 
+> **⚠ The subject is a version instruction before it is a description.** Its Conventional Commit
+> type is parsed and it decides the released version. Pick the type from **what the range
+> contains**, not from how the release feels — a promotion carrying only fixes is not a `feat`
+> because it happens to be the first one anyone can install. When the range's own commits already
+> carry the signal, `chore(release):` adds none and lets them decide. Check the type against §0's
+> range before writing anything else.
+
 ## 2 · Cold-read it
 
 A second fresh agent, given **only the note text**, forbidden from looking anything up. If it wants
@@ -128,6 +135,32 @@ gh pr list --base main
 is built from **commit subjects only**, which is why the next step exists.
 
 **Do not hand-edit `package.json` or `.release-please-manifest.json`.** release-please owns both.
+
+**Check the release branch is current before trusting its verdict:**
+
+```bash
+git fetch origin
+git merge-base --is-ancestor origin/main origin/<release-branch> && echo current || echo STALE
+gh pr update-branch <n> --rebase    # the fix when it is stale
+```
+
+> **⚠ A change to `main` does not update an already-open release PR.** release-please refreshes it
+> only when the proposed release changes, so a commit that cuts no version — a gate fix, tooling,
+> anything typed `ci` or `chore` — leaves the PR sitting on a stale base. `main` goes green, the
+> release PR stays red, and nothing on screen says why.
+
+> **⚠ The release PR runs the repo's own gate over files the generator wrote.** A generated
+> `CHANGELOG.md` is the usual collision: any formatter or linter asserting over authored Markdown
+> asserts over that one too, and the two will disagree on style. **Exempt the generated artifact;
+> do not format it.** Formatting fixes one release — the generator rewrites the file in its own
+> style on the next one, and the release after that fails identically.
+
+### If something has to land on `main` mid-release
+
+It is a promotion like any other, but **skip §1 and §2** — the note ceremony is for the release,
+not for an unblock. Give it a plain Conventional Commit subject, typed so it adds **no** version
+signal, so the pending release keeps the version it already proposed. Then come back and rebase the
+release PR, which will still be on the stale base.
 
 ## 6 · The published Release — the step that is easy to skip
 
