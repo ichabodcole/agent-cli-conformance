@@ -239,6 +239,25 @@ The rule that came out of it is worth more than the fix: **inference may select 
 only observation may condemn.** A heuristic that picks which probe to send costs a wasted spawn when
 it is wrong. The same heuristic gating a core verdict costs someone their build.
 
+## When the enumeration never ends, you are inferring intent
+
+A fix that keeps needing one more case — or keeps being replaced outright — is telling you something
+about the question, not about your skill at answering it.
+
+One premise here was attempted five times. Counting the conditions in the predicate across attempts
+gives `4 → 6 → 4 → 5`: it was not accumulating cases, it was being rewritten every round, and each
+rewrite was falsified by a population nobody had enumerated. What did accumulate was **exemptions** —
+clauses excusing one target shape, then another, each a carve-out for "what if they meant something
+different here".
+
+That is the tell. A carve-out for intent means the thing being tested is intent, and intent is not
+observable from outside a program. No predicate closes that gap, so the enumeration cannot finish.
+
+**The signal:** when correctness depends on enumerating populations and the enumeration never
+completes, stop patching and check whether the question is answerable with the evidence you can
+get. Often the honest move is to shrink the claim — report a signal rather than a verdict — and get
+the assertion you actually need from whoever owns the intent.
+
 ## When a reading of the source disagrees with a measurement, the measurement wins
 
 Two people read one CLI's dispatch and both concluded its bare invocation would exit non-zero. It
