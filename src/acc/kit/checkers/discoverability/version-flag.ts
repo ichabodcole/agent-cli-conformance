@@ -50,7 +50,7 @@ export const versionFlagChecker: Checker = {
   coverageEstablished: [
     "--version exits 0 with non-empty stdout",
     "--version still does so with HOME and XDG_CONFIG_HOME pointed at a path that does not exist",
-    "for a target that advertises a machine-mode flag --version in that mode exits 0 and its whole stdout parses as one JSON object rather than a bare string",
+    "for a target that DECLARES machine mode its default plain --version emits a structured document rather than a bare value",
   ],
 
   probes: (): Invocation[] => [

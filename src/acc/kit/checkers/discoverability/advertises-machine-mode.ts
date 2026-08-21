@@ -81,7 +81,7 @@ export const advertisesMachineModeChecker: Checker = {
     "a pass establishes only that help names the flag and never that the flag is accepted",
   ],
   coverageEstablished: [
-    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row and a claim matched in help prose downgrades the verdict to unverified rather than establishing it",
+    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row — a claim ABOUT the help text rather than a claim that the flag selects anything",
   ],
 
   probes: (d): Invocation[] => [
@@ -211,11 +211,16 @@ export const advertisesMachineModeChecker: Checker = {
 
     return finding(
       "fail",
-      // The knock-on effect, not just the fact of the miss: B3 (machine output is parseable)
-      // depends on discovery finding a machine-mode flag here, so when this fails B3 also goes
-      // unverified — an undiscoverable feature is, to this kit, indistinguishable from an
-      // absent one.
-      "help names no machine-mode flag or schema command; B3 will be unverified as a result",
+      // NAMES WHAT WAS LOOKED FOR, because "names no machine-mode flag" alone is read as false by
+      // an author whose help plainly contains the word `--json`. A flag documented with a value
+      // slot — `--json <file>` — is a flag that takes a filename, and cannot be the bare switch a
+      // caller flips to change output shape; that is why it is not counted here.
+      //
+      // The old message also promised a knock-on effect it no longer has: it said B3 "will be
+      // unverified as a result", which stopped being true when B3 became an L1 rule reachable
+      // only through a declaration. It is unverified for every undeclared target, whatever this
+      // rule finds.
+      "help names no machine-mode flag a caller could flip and no schema command: --json, --format and --output are looked for as bare switches, and one documented with a value slot is a flag that takes a value rather than one that selects a mode",
       evidence,
     );
   },

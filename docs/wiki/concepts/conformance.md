@@ -134,10 +134,12 @@ So `unverified` is never folded into the pass count, is always reported by name,
 blocks `fullyVerified`. It just no longer masquerades as a violation.
 
 The practical shape: **`conformant` is the gate; `fullyVerified` is the goal.** A project
-adopts the kit by getting to conformant, then works the unverified list down — today by making
-discoverable in help what the kit otherwise has to guess at (advertising `--json` is what moves
-B3 off `unverified`), and eventually by declaring it outright, once there is a declaration
-format to write it in. That is the direction the spec wants a tool to move; the second half of
+adopts the kit by getting to conformant, then works the unverified list down — today by
+DECLARING what the kit is not allowed to guess at (`machineMode` in `acc.config.json` is what
+moves the machine-mode rules off `unverified`), and eventually by declaring the rest of it, once
+there is a portable format to write it in. Advertising `--json` in help does not move them and
+never should have: a flag's spelling is not its meaning, and
+[`L0` may not infer one](./probing.md#what-l0-may-assume--the-admission-test). That is the direction the spec wants a tool to move; the second half of
 it does not exist yet, and is
 [roadmap step 6](../../roadmap.md#6-the-portable-declaration-ir).
 

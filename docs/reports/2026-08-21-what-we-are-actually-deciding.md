@@ -238,13 +238,25 @@ If you want to change course, these are the actual options:
 - **Keep `unverified` for the rules, and add a separate reported line** saying "help advertises
   `--json`, and sending it changed nothing we could observe." This is a claim about the _flag_, not
   about the rule, so it can be made honestly on evidence we have. It gives the Tool B author a
-  visible nudge without accusing the Tool A author of anything. Half of it already exists — the
-  diagnostic rule that reports whether help names a machine-mode flag passes all four of these
-  tools today. **This is the change I would make if you want more from this evidence.**
+  visible nudge without accusing the Tool A author of anything. **This is the change I would make
+  if you want more from this evidence.**
+
+  _Superseded in part, 2026-08-21._ When this was written the diagnostic that reports whether help
+  names a machine-mode flag passed all four tool shapes and so distinguished nothing. It no longer
+  does: a flag documented with a value slot is not counted as a bare switch, so Tool A now fails
+  that diagnostic — correctly, since its help advertises no switch a caller could flip, and the
+  rule gates nothing either way.
+
 - **Ask tools to declare it.** A tool that _states_ its machine mode binds itself, and a
   declaration is a promise rather than our inference — which is why the kit already probes a
   declared machine-first default without needing any contrast. Broadening that means a manifest,
   which means it is not a question the kit can answer unaided any more.
+
+  _This is the option that was taken._ Inference was removed from `L0` entirely rather than made
+  safer: the machine-mode rules now report `unverified` unless the target declares, and the
+  boundary is written down as an admission test in
+  [probing](../wiki/concepts/probing.md#what-l0-may-assume--the-admission-test). The reasoning
+  that led there is [the L0 boundary plan](../plans/2026-08-21-the-l0-boundary.md).
 
 The thing not on the list is a smarter predicate. Tool A and Tool B emit the same bytes. No
 predicate can tell them apart, and the last five commits are what finding that out looked like.

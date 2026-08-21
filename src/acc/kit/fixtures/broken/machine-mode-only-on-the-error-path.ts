@@ -16,7 +16,10 @@
 // `--json` selects machine output, so help and version answering in prose under the same flag are
 // a machine mode that does not reach where it says it does, which is exactly what those two rules
 // are for. An earlier draft of this file asserted it violated nothing; running it said otherwise,
-// and the fixture was moved rather than the claim defended.
+// and the fixture was moved rather than the claim defended.//
+// NOTE: with inference gone, an UNDECLARED target of this shape is no longer condemned by any
+// machine-mode rule — the kit cannot tell a real machine mode from a flag that means something
+// else, and says so. Declare `machineMode` and the parser-error rule reaches it.
 const args = process.argv.slice(2);
 const HELP = `usage: fixture <command>
 

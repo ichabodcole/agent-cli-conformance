@@ -1,26 +1,22 @@
 #!/usr/bin/env bun
-// A HUMAN-FIRST CLI whose `--json` has nothing to do with output mode: it names the input file
-// and says to read it as JSON. The spelling is a machine-mode selector; the meaning is not.
+// A HUMAN-FIRST CLI whose `--json` has nothing to do with output mode: it names the input file and
+// says to read it as JSON. The spelling is a machine-mode selector; the meaning is not. Text-only,
+// breaks nothing.
 //
-// This is the false-positive control for the selector path. Discovery finds `--json` in help by
-// spelling alone, so three CORE rules — B3, B5 and D1 — used to probe this target in a "machine
-// mode" it never had, get prose back because prose is the only thing it emits, and report three
-// core violations against a CLI that breaks no rule. Real CLIs are shaped this way: `--json` for
-// an input format, `--format` for a source-code formatter, `--output` for a destination path.
+// This is the target that started the longest correction in this repo. Discovery once read `--json`
+// out of help by SPELLING and handed it to three core rules as an established machine mode, so this
+// CLI was reported NOT CONFORMANT on three core rules for answering in prose — convicted of
+// breaking a contract it never entered. Seven attempts to make that inference safe each failed on a
+// population nobody had enumerated.
 //
-// The fix is not a longer list of spellings to exclude — it is that a selector has to be
-// CORROBORATED before anything may be condemned under it. Nothing this fixture emits under
-// `--json` ever parses as a document, so the flag is never established as a selector and those
-// three rules report `unverified` with that reason. A CLI whose `--json` genuinely works is
-// unaffected: see broken/machine-mode-help-not-json.ts, which still FAILS B3 because its
-// `--version --json` returns a document and its `--help --json` does not.
+// Nothing infers a machine mode now. It is DECLARED or it is unverified, so this fixture cannot be
+// condemned by any of them, and the `<file>` slot additionally stops the flag being counted as a
+// bare switch at all — which is why D3 reports that help advertises no machine-mode path a caller
+// could flip. That is a claim about the help text, which is D3's subject, and it gates nothing.
 //
-// D3 PASSES this fixture — "help advertises --json" — on exactly the spelling the core rules now
-// refuse to condemn on, and that asymmetry is the design rather than a leftover. D3 is
-// `diagnostic`: it reports, it gates nothing, and its page already says it measures whether a
-// flag is named. Inference is allowed to decide what is worth looking at; only observation may
-// fail a build. So the same evidence that is enough for a reported line is not enough for a core
-// violation, and the fixture is a live demonstration of both halves at once.
+// Its boolean sibling `json-flag-is-a-boolean-input.ts` is the same defect with no value slot to
+// read. Keep both: they are caught by different mechanisms and collapsing them would leave one
+// untested while appearing to test it.
 const args = process.argv.slice(2);
 const HELP = `usage: fixture check <file> [--json]
 

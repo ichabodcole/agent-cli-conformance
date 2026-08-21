@@ -174,11 +174,11 @@ describe("D3 — help advertises the machine-readable path", () => {
   // The negative control: help never mentions --json, --format, --output, or "schema" anywhere.
   // A `fail` here also disables B3, and the detail must say so — an undiscoverable feature is,
   // to this kit, indistinguishable from an absent one.
-  test("FAILS, and names the B3 knock-on, when help advertises no machine-mode path", async () => {
+  test("FAILS, and names what it looked for, when help advertises no machine-mode path", async () => {
     const h = await record(fixture("no-machine-mode.ts"), [advertisesMachineModeChecker]);
     const f = advertisesMachineModeChecker.check(h);
     expect(f.verdict).toBe("fail");
-    expect(f.detail).toContain("B3");
+    expect(f.detail).toContain("no schema command");
     expect(f.ruleId).toBe("D3");
   });
 

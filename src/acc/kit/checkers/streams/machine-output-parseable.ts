@@ -48,7 +48,7 @@ export const machineOutputParseableChecker: Checker = {
     "the stream and opaque output kinds are never exercised because no declaration exists at L0 to select them",
   ],
   coverageEstablished: [
-    "for a target whose root help advertises --json the entire stdout of machine-mode help parses as exactly one JSON document",
+    "nothing at L0 — this rule is L1 and reports not-applicable until a declaration names a command whose output it may read",
   ],
 
   // NOT REACHABLE AT L0 AT ALL, which is a probe-level fact rather than an exception. This rule's subject is the output of a DATA command, and choosing one means

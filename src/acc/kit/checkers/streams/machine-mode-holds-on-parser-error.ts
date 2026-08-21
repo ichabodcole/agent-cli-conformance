@@ -51,7 +51,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
     "NDJSON is reported unverified rather than failed because no output kind is declared at L0",
   ],
   coverageEstablished: [
-    "for a target whose root help advertises --json or --format or which declares machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document",
+    "for a target that DECLARES machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document",
   ],
 
   probes: (d: Discovery): Invocation[] => [

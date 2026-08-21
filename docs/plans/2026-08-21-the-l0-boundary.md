@@ -1,17 +1,52 @@
 ---
 type: plan
 generated: { by: claude-opus-5, at: 2026-08-21 }
-status: draft
-lifecycle: live
+status: stable
+lifecycle: discharged
 description:
   Draw a sharp boundary around what `L0` may assume, on the grounds that falsification needs an
-  assertion and `L0` has been manufacturing its own — demote the three core rules that condemn on
-  an inferred meaning, keep the contrast as a reported signal, and name declaration as what `L1`
-  buys.
+  assertion and `L0` has been manufacturing its own. Discharged by removing inference outright
+  rather than by the demotion proposed here — two independent reviews falsified the plan's central
+  claim and showed the remedy would not have reached the rule that still condemned.
 tags: [conformance, probe-level, machine-mode, scope, falsification]
 ---
 
 # The `L0` boundary — what a kit may assume when nothing has been declared
+
+> **Discharged 2026-08-21, and not as written.** Two independent reviews took this apart before any
+> of it was built. What shipped is stricter and smaller than what is proposed below, and the
+> difference is worth reading, because the plan was wrong in ways that were not obvious to its
+> author.
+>
+> **The central claim was falsified.** This document argues that two tools — one whose `--json`
+> names an input file, one whose `--json` is meant to select JSON and works nowhere — are
+> byte-identical from outside, so no predicate can separate them. They are not: their `--help`
+> differs, and the repo already ships a direction classifier that separated seven test lines
+> correctly. The defensible argument is about the measured FALSE-POSITIVE RATE of reading help
+> prose, which this repo has evidence for, and that is a weaker and different claim.
+>
+> **The remedy would not have worked.** The plan demotes three rules to `diagnostic`. A fourth —
+> the rule that errors must name the offending token — condemns on the same inference and consults
+> no guard at all, so an innocent tool would still have failed a core rule and still broken the
+> build. The measurement in the table below is also arithmetically wrong: nineteen core rules, not
+> eighteen.
+>
+> **Demoting by tier was the wrong instrument anyway.** Tier is a static field compared verbatim
+> against the rule page by the bidirectional lint, in three places, and "tier varies by evidence"
+> is not expressible in that schema. Every implementation route breaks something the plan needs.
+>
+> **What shipped instead:** inference was removed from `L0` outright. A machine mode is DECLARED or
+> it is `unverified` — no spelling reaches any verdict — and the boundary is written down as an
+> admission test in
+> [probing](../wiki/concepts/probing.md#what-l0-may-assume--the-admission-test). That deletes the
+> contrast, the corroboration probes and the route bookkeeping rather than adding a demotion on top
+> of them, and it makes all seven defects unreachable rather than fixed. One rule moved to `L1`,
+> where its subject actually lives.
+>
+> The section below is kept as written. A plan is a record of what was intended, and the parts that
+> survived — falsification needs an assertion; the churn was the boundary announcing itself; a
+> declaration is worth writing before any test reads it — survived because reviewers tried to break
+> them and could not.
 
 **Goal:** `L0` makes a promise it can keep. Every core failure it reports rests on something it
 observed, never on a guess about what a token means. Where it must guess, it says so and gates

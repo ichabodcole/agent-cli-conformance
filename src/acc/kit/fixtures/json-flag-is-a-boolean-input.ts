@@ -2,14 +2,14 @@
 // A HUMAN-FIRST CLI whose `--json` is a BOOLEAN and still has nothing to do with output mode: it
 // asks the tool to check that the input parses as JSON. Text-only, breaks nothing.
 //
-// The sibling fixture `json-flag-is-an-input.ts` is the same defect one step earlier — its `--json`
-// takes a value, so discovery reads the slot and never calls it a machine-mode flag at all. This
-// one has no slot to read. Nothing in its spelling or its arity separates it from a real mode
-// switch, so it is the fixture that exercises the LAST line of defence: the contrast, which
-// compares each invocation with and without the flag and finds the answers identical.
+// Nothing in its spelling, its arity, or anything observable from outside separates it from a real
+// mode switch. That is the point: it is the fixture proving the kit does not try. A machine mode is
+// DECLARED or it is unverified, and this target declares nothing, so no rule may condemn it for
+// one.
 //
-// Keep both. They fail differently and are caught by different mechanisms, and collapsing them
-// would leave whichever mechanism was dropped untested.
+// Its sibling `json-flag-is-an-input.ts` takes a value, so the flag is not even counted as a bare
+// switch. Keep both — they are stopped at different points and collapsing them would leave one of
+// those points untested.
 const args = process.argv.slice(2);
 const HELP = `usage: fixture check <file> [--json]
 

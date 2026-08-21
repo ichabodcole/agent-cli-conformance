@@ -22,7 +22,7 @@ coverage_gaps:
   - shape stability across invocations and across commands is not compared
   - the stream and opaque output kinds are never exercised because no declaration exists at L0 to select them
 coverage_established:
-  - for a target whose root help advertises --json the entire stdout of machine-mode help parses as exactly one JSON document
+  - nothing at L0 — this rule is L1 and reports not-applicable until a declaration names a command whose output it may read
 ---
 
 # Machine output parses as its declared kind
@@ -144,32 +144,22 @@ Inert (`L0`) — help output in machine mode, where such a path exists.
 because it takes a value: only the `--json` pairing with `--help` is `L0`-safe, so a tool whose
 only machine mode is `--format json` is not probed here.
 
-**A flag spelled like a selector is not yet a selector, and the test is a CONTRAST.** Discovery
-finds `--json` by reading it out of help, and the name does not carry the meaning: `--json <file>
-Treat the input file as JSON` is an ordinary help entry, and so are `--format` for a source-code
-formatter and `--output` for a destination path. A CLI shaped that way answers every probe in prose
-and has broken nothing.
+**A flag spelled like a selector is not a selector, and `L0` no longer guesses.** Discovery reads
+`--json` out of help, and the name does not carry the meaning: `--json <file>   Treat the input file
+as JSON` is an ordinary help entry, and so are `--format` for a source-code formatter and `--output`
+for a destination path. Seven successive attempts to infer a machine mode from that spelling each
+failed on a population nobody had enumerated, and the enumeration never closed — the question is not
+answerable from outside the program.
 
-So before this rule may condemn anything under a selector, the flag has to be seen to **change an
-answer**. Three invocations exist in both a bare and a selected form at `L0` — `--help`, `--version`
-and the sentinel parser error — and each is paired: if adding the selector changes whether the
-answer is a structured document, the flag governs output shape. If it changes nothing on any pair,
-it has not been shown to select anything.
+So this rule waits for an assertion. A target that declares `"machineMode": "default"` in
+[`acc.config.json`](../../concepts/conformance.md) has stated something falsifiable, and this rule
+falsifies it. Without a declaration it reports `unverified` and names the one line that turns it on.
+See the [`L0` admission test](../../concepts/probing.md#what-l0-may-assume--the-admission-test) for
+why the boundary sits here.
 
-Asking instead whether a document ever appeared _under_ the flag is the version this shipped with,
-and it was anti-correlated with the defect: a CLI answering the bare parser error as an envelope and
-the same error under `--json` in prose produced no document under the flag at all, so the more
-completely its machine mode collapsed, the less the kit could say about it. The pair sees that
-target; a presence test cannot.
-
-This checker declares both halves of all three pairs itself rather than reading them out of another
-checker's recordings, which would hold in a full run and invert under a single-checker one.
-Recordings deduplicate, so it costs no extra spawn.
-
-The cost is stated in the [gaps](#current-checker-coverage): a CLI whose `--json` is genuinely a
-selector but whose output shape is identical with and without it, on every pair this kit can reach,
-is not condemned — from outside it cannot be told apart from the innocent one. That is the trade
-this kit takes everywhere: inference may decide what to look at, only observation may condemn.
+The cost is stated in the [gaps](#current-checker-coverage): a target with a real machine mode that
+never says so is not checked for one. From outside it cannot be told apart from a target that has
+none — inference may decide what to look at, only observation may condemn.
 
 **Passes** when the captured stdout parses whole, as the declared kind.
 
@@ -198,8 +188,7 @@ the rest of this page, unexamined.
 
 **Established**
 
-- for a target whose root help advertises --json the entire stdout of machine-mode help parses as
-  exactly one JSON document
+- nothing at L0 — this rule is L1 and reports not-applicable until a declaration names a command whose output it may read
 
 **Gaps**
 
