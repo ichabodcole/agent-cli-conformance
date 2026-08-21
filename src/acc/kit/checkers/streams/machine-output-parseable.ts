@@ -51,7 +51,7 @@ export const machineOutputParseableChecker: Checker = {
   // entry names, reached from the other side.
   coverage: "partial",
   coverageGaps: [
-    "a flag spelled like a machine-mode selector is only treated as one once a document came back under it somewhere so a target whose advertised selector emits prose on every path this kit reaches is reported unverified rather than failed",
+    "a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so a target whose advertised selector produces the same output with and without it on every pair this kit can compare is reported unverified rather than failed",
     "the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed",
     "only machine-mode help is parsed and never a data command",
     "shape stability across invocations and across commands is not compared",
@@ -68,7 +68,7 @@ export const machineOutputParseableChecker: Checker = {
     d.machineModeFlag === "--json"
       ? [
           { args: ["--help", "--json"], inertness: "help-path", purpose: "B3: machine-mode help" },
-          ...selectorCorroborationProbes(d, ["version", "error"]),
+          ...selectorCorroborationProbes(d),
         ]
       : [],
 
@@ -139,7 +139,7 @@ export const machineOutputParseableChecker: Checker = {
     if (!selectorObserved(h)) {
       return finding(
         "unverified",
-        `nothing this target produced under ${machineSelector(h.discovery)} parsed as a document, so that flag was not established as a machine-mode selector`,
+        `${machineSelector(h.discovery)} did not change what any probe came back with — the same answers arrive with and without it — so it was not established as a machine-mode selector`,
         [o.id],
       );
     }

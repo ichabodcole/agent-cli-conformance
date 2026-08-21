@@ -15,7 +15,7 @@ checker: src/acc/kit/checkers/discoverability/version-flag.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - a flag spelled like a machine-mode selector is only treated as one once a document came back under it on the help path so for a target whose advertised selector emits prose everywhere the machine-mode clause is not reached and the rule is decided by its other clauses
+  - a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so for a target whose advertised selector produces the same output with and without it the machine-mode clause is not reached and the rule is decided by its other clauses
   - the machine-mode payload is only required to be a structured document because no declaration exists at L0 to name the field the version belongs in
   - no network and no credentials and no side effects cannot be observed at L0
   - the SHOULD to support -V is not probed
@@ -112,38 +112,32 @@ That second invocation establishes exactly one of the rule's four "no work" clau
 configuration. A pass says nothing about no network, no credentials or no side effects, none of
 which are observable at `L0`; they are named under [gaps](#current-checker-coverage) below.
 
-**A flag spelled like a selector is not yet a selector.** Discovery finds `--json` by reading it
-out of help, and the name does not tell it the meaning: `--json <file>   Treat the input file as
-JSON` is a real and common help entry, and so are `--format` for a source-code formatter and
-`--output` for a destination path. A CLI shaped that way is text-only, answers every probe in
-prose, and has broken nothing — so before this rule may condemn anything under a selector, a
-**document** has to have come back under it. Not merely something that parses: `JSON.parse`
-accepts bare scalars, so a plain-text `--version` printing `1.4` would otherwise corroborate its
-own selector.
+**A flag spelled like a selector is not yet a selector, and the test is a CONTRAST.** Discovery
+finds `--json` by reading it out of help, and the name does not carry the meaning: `--json <file>
+Treat the input file as JSON` is an ordinary help entry, and so are `--format` for a source-code
+formatter and `--output` for a destination path. A CLI shaped that way answers every probe in prose
+and has broken nothing.
 
-This checker DECLARES both routes it does not judge — `<cli> --help <selector>` and the sentinel
-parser error under the selector — so its evidence is complete on its own: this
-rule's own machine probe is the one it condemns, so without asking for the other route it could
-report `unverified` standalone and `fail` alongside B3, on one target and one set of evidence.
-Corroboration itself is not route-restricted — any recording under the flag that came back as a
-document answers it, this rule's own included, which is not circular because the guard is only
-consulted where that observation was NOT a document.
+So before this rule may condemn anything under a selector, the flag has to be seen to **change an
+answer**. Three invocations exist in both a bare and a selected form at `L0` — `--help`, `--version`
+and the sentinel parser error — and each is paired: if adding the selector changes whether the
+answer is a structured document, the flag governs output shape. If it changes nothing on any pair,
+it has not been shown to select anything.
 
-There are three routes to a machine mode at `L0` — help, version, and the sentinel parser error
-— and each of these three rules judges exactly one. A rule that asks for only some of the rest
-inverts on a target whose machine mode is reachable only on the route it skipped.
+Asking instead whether a document ever appeared _under_ the flag is the version this shipped with,
+and it was anti-correlated with the defect: a CLI answering the bare parser error as an envelope and
+the same error under `--json` in prose produced no document under the flag at all, so the more
+completely its machine mode collapsed, the less the kit could say about it. The pair sees that
+target; a presence test cannot.
 
-Uncorroborated, this clause behaves **exactly as an unadvertised machine mode does**: it is not
-reached, and the clauses above still decide the rule. That matters more than it sounds. An
-earlier cut returned `unverified` from inside the clause, which discarded what the earlier ones
-had already measured — a target whose `--version` genuinely required a usable `HOME` went from
-`fail` to `unverified` because its help happened to spell a flag `--json`. A guard on one clause
-may not answer for the others.
+This checker declares both halves of all three pairs itself rather than reading them out of another
+checker's recordings, which would hold in a full run and invert under a single-checker one.
+Recordings deduplicate, so it costs no extra spawn.
 
-The cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose
-`--json` is meant as a selector but emits prose on every path is no longer condemned here,
-because from outside it is indistinguishable from the innocent one. That is the trade this kit
-takes everywhere — inference may decide what to look at, only observation may condemn.
+The cost is stated in the [gaps](#current-checker-coverage): a CLI whose `--json` is genuinely a
+selector but whose output shape is identical with and without it, on every pair this kit can reach,
+is not condemned — from outside it cannot be told apart from the innocent one. That is the trade
+this kit takes everywhere: inference may decide what to look at, only observation may condemn.
 
 **Fails in machine mode** when the whole of stdout does not parse as one JSON **object**. The
 common shape is a bare string — `--version --json` printing `1.4.2` — and an array is refused for
@@ -177,9 +171,7 @@ the rest of this page, unexamined.
 
 **Gaps**
 
-- a flag spelled like a machine-mode selector is only treated as one once a document came back
-  under it on the help path so for a target whose advertised selector emits prose everywhere the
-  machine-mode clause is not reached and the rule is decided by its other clauses
+- a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so for a target whose advertised selector produces the same output with and without it the machine-mode clause is not reached and the rule is decided by its other clauses
 - the machine-mode payload is only required to be a structured document because no declaration
   exists at L0 to name the field the version belongs in
 - no network and no credentials and no side effects cannot be observed at L0

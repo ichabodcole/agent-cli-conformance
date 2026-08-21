@@ -15,7 +15,7 @@ checker: src/acc/kit/checkers/streams/machine-output-parseable.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - a flag spelled like a machine-mode selector is only treated as one once a document came back under it somewhere so a target whose advertised selector emits prose on every path this kit reaches is reported unverified rather than failed
+  - a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so a target whose advertised selector produces the same output with and without it on every pair this kit can compare is reported unverified rather than failed
   - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed
   - only machine-mode help is parsed and never a data command
   - shape stability across invocations and across commands is not compared
@@ -143,36 +143,32 @@ Inert (`L0`) — help output in machine mode, where such a path exists.
 because it takes a value: only the `--json` pairing with `--help` is `L0`-safe, so a tool whose
 only machine mode is `--format json` is not probed here.
 
-**A flag spelled like a selector is not yet a selector.** Discovery finds `--json` by reading it
-out of help, and the name does not tell it the meaning: `--json <file>   Treat the input file as
-JSON` is a real and common help entry, and so are `--format` for a source-code formatter and
-`--output` for a destination path. A CLI shaped that way is text-only, answers every probe in
-prose, and has broken nothing — so before this rule may condemn anything under a selector, a
-**document** has to have come back under it. Not merely something that parses: `JSON.parse`
-accepts bare scalars, so a plain-text `--version` printing `1.4` would otherwise corroborate its
-own selector.
+**A flag spelled like a selector is not yet a selector, and the test is a CONTRAST.** Discovery
+finds `--json` by reading it out of help, and the name does not carry the meaning: `--json <file>
+Treat the input file as JSON` is an ordinary help entry, and so are `--format` for a source-code
+formatter and `--output` for a destination path. A CLI shaped that way answers every probe in prose
+and has broken nothing.
 
-This checker DECLARES both routes it does not judge — `<cli> --version <selector>` and the
-sentinel parser error under the selector — so its evidence is complete on its own: reading
-corroboration out of whatever the shared recording happens to hold would make the verdict depend on
-which other rules ran, which is not a measurement. What it does not do is restrict which
-observations may corroborate once taken. Any recording under the flag that came back as a document
-answers the question, including this rule's own — and that is not circular, because the guard is
-only consulted where the judged observation was NOT a document, and an observation cannot both fail
-to parse and be its own corroboration.
+So before this rule may condemn anything under a selector, the flag has to be seen to **change an
+answer**. Three invocations exist in both a bare and a selected form at `L0` — `--help`, `--version`
+and the sentinel parser error — and each is paired: if adding the selector changes whether the
+answer is a structured document, the flag governs output shape. If it changes nothing on any pair,
+it has not been shown to select anything.
 
-There are three routes to a machine mode at `L0` — help, version, and the sentinel parser error
-— and each of these three rules judges exactly one. A rule that asks for only some of the rest
-inverts on a target whose machine mode is reachable only on the route it skipped.
+Asking instead whether a document ever appeared _under_ the flag is the version this shipped with,
+and it was anti-correlated with the defect: a CLI answering the bare parser error as an envelope and
+the same error under `--json` in prose produced no document under the flag at all, so the more
+completely its machine mode collapsed, the less the kit could say about it. The pair sees that
+target; a presence test cannot.
 
-Uncorroborated, the verdict is `unverified` with that reason — the same verdict this rule
-reports when no machine-mode flag is discovered at all, because that is the same state of
-knowledge.
+This checker declares both halves of all three pairs itself rather than reading them out of another
+checker's recordings, which would hold in a full run and invert under a single-checker one.
+Recordings deduplicate, so it costs no extra spawn.
 
-The cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose
-`--json` is meant as a selector but emits prose on every path is no longer condemned here,
-because from outside it is indistinguishable from the innocent one. That is the trade this kit
-takes everywhere — inference may decide what to look at, only observation may condemn.
+The cost is stated in the [gaps](#current-checker-coverage): a CLI whose `--json` is genuinely a
+selector but whose output shape is identical with and without it, on every pair this kit can reach,
+is not condemned — from outside it cannot be told apart from the innocent one. That is the trade
+this kit takes everywhere: inference may decide what to look at, only observation may condemn.
 
 **Passes** when the captured stdout parses whole, as the declared kind.
 
@@ -206,9 +202,7 @@ the rest of this page, unexamined.
 
 **Gaps**
 
-- a flag spelled like a machine-mode selector is only treated as one once a document came back
-  under it somewhere so a target whose advertised selector emits prose on every path this kit
-  reaches is reported unverified rather than failed
+- a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so a target whose advertised selector produces the same output with and without it on every pair this kit can compare is reported unverified rather than failed
 - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified
   rather than failed
 - only machine-mode help is parsed and never a data command

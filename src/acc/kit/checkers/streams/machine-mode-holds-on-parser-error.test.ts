@@ -50,26 +50,38 @@ function observation(
 }
 
 /**
- * A CORROBORATING recording, and every case below needs one.
+ * A CORROBORATING PAIR, and every case below needs one.
  *
  * B5 condemns a target for answering in prose while in machine mode, so it first requires that
  * the flag was shown to select one — `--json` is matched out of help by spelling, and
  * `--json <file>   Treat the input file as JSON` is an ordinary help entry belonging to a
- * text-only CLI. Without this observation every case here would describe a target whose machine
- * mode was never established, and would correctly report that instead of whatever it is testing.
+ * text-only CLI. The question is a contrast, so it takes BOTH halves: `--help` answering in prose
+ * and `--help --json` answering with a document is what shows the flag governs output shape. One
+ * recording alone proves nothing, and without the pair every case here would describe a target
+ * whose machine mode was never established and report that instead of whatever it is testing.
  */
-const CORROBORATING = observation(
-  "corroborate",
-  ["--help", "--json"],
-  "corroboration: does --json select a machine mode on the help path",
-  0,
-  '{"ok":true,"data":{"usage":"x"}}\n',
-  "",
-);
+const CORROBORATING = [
+  observation(
+    "corroborate-bare",
+    ["--help"],
+    "corroboration: does --json change what --help answers with",
+    0,
+    "usage: x\n",
+    "",
+  ),
+  observation(
+    "corroborate-selected",
+    ["--help", "--json"],
+    "corroboration: does --json change what --help answers with",
+    0,
+    '{"ok":true,"data":{"usage":"x"}}\n',
+    "",
+  ),
+];
 
 function historyWith(exitCode: number | null, stdout: string, stderr: string): History {
   const observations = [
-    CORROBORATING,
+    ...CORROBORATING,
     {
       id: "probe",
       invocation: {
@@ -227,18 +239,22 @@ describe("B5 — machine mode holds on the parser-error path", () => {
       valueSets: {},
       helpReadable: true,
     });
+    // The first two are what B5 judges: both ways into machine mode, worst answer deciding.
+    // The rest are corroboration, and there are six because the question is a CONTRAST — each
+    // pair is one invocation with the selector and the same invocation without it. A flag that
+    // changes nothing on any pair was never shown to be a selector, and a flag whose help entry
+    // reads `--json <file>  Treat the input file as JSON` is spelled like one and is not.
+    // B5 asks for all of it itself; borrowing another checker's recordings holds in a full run
+    // and inverts under a single-checker one. Recordings deduplicate, so this costs no spawns.
     expect(probes.map((p) => p.args)).toEqual([
       ["--acc-probe-xyzzy-flag"],
       ["--acc-probe-xyzzy-flag", "--json"],
+      ["--help"],
       ["--help", "--json"],
-      // The last two are corroboration. B5 condemns a target for answering a parser error in
-      // prose WHILE IN machine mode, so it has to establish that `--json` puts it in one — a
-      // flag whose help entry reads `--json <file>  Treat the input file as JSON` is spelled
-      // like a selector and is not one. B5 asks for that evidence itself rather than reading it
-      // out of another checker's recordings, which would hold here and invert under a
-      // single-checker run. It takes BOTH routes because it judges neither of them; B3 and D1
-      // each judge one, so each corroborates from the other.
+      ["--version"],
       ["--version", "--json"],
+      ["--acc-probe-xyzzy-flag"],
+      ["--acc-probe-xyzzy-flag", "--json"],
     ]);
   });
 

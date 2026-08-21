@@ -181,16 +181,35 @@ describe("selectorObserved — a flag spelled like a selector is not one", () =>
     expect(f.detail).toContain("not established as a machine-mode selector");
   }, 60_000);
 
-  // The other direction, and the one that keeps this from being a blanket amnesty: a target
-  // whose `--json` demonstrably works is corroborated by that observation, and B3 still FAILS it
-  // for the path where the flag is ignored.
-  test("a --json that returns a document IS established, and B3 still fails on it", async () => {
-    const h = await record(fixture("broken/machine-mode-help-not-json.ts"), CHECKERS);
+  // The other direction, and the one that keeps this from being a blanket amnesty: a target whose
+  // `--json` demonstrably changes the answer is established, and the paths where it changed it for
+  // the worse are condemned. This fixture answers its parser error as a document under the flag and
+  // in prose without it — the flag governs output shape — while its help under the flag stays prose.
+  test("a --json that changes the answer IS established, and B3 fails on it", async () => {
+    const p = join(HERE, "fixtures/broken/machine-mode-only-on-the-error-path.ts");
+    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
     expect(selectorObserved(h)).toBe(true);
 
     const b3 = CHECKERS.find((c) => c.ruleId === "B3");
     if (!b3) throw new Error("no checker for B3");
     expect(b3.check(h).verdict).toBe("fail");
+  }, 60_000);
+
+  // THE INVERSION THIS PREDICATE SHIPPED WITH, pinned so it cannot come back. Asking "did a
+  // document ever appear UNDER the flag" is anti-correlated with the defect B5 exists to catch:
+  // a CLI answering the bare parser error as an envelope and the same error under `--json` in
+  // prose has no document under the flag at all, so the more completely its machine mode collapsed
+  // the less the kit could say. A contrast sees it; a presence test cannot.
+  test("a machine mode that COLLAPSES under the flag is established, not excused", async () => {
+    const p = join(HERE, "fixtures/broken/machine-mode-drops-under-flag.ts");
+    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+    expect(selectorObserved(h)).toBe(true);
+
+    const b5 = CHECKERS.find((c) => c.ruleId === "B5");
+    if (!b5) throw new Error("no checker for B5");
+    const f = b5.check(h);
+    expect(f.verdict).toBe("fail");
+    expect(f.detail).toContain("came back as prose");
   }, 60_000);
 });
 

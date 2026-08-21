@@ -48,7 +48,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
   // not the same rule twice.
   coverage: "partial",
   coverageGaps: [
-    "a flag spelled like a machine-mode selector is only treated as one once a document came back under it somewhere so a target whose advertised selector emits prose on every path this kit reaches is reported unverified rather than failed",
+    "a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so a target whose advertised selector produces the same output with and without it on every pair this kit can compare is reported unverified rather than failed",
     "machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised",
     "only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not",
     "only the --json and --format=json selectors are probed so a machine mode advertised through --output is not",
@@ -66,7 +66,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
       inertness: "sentinel" as const,
       purpose: `B5 via ${how}: a parser error must still be a machine document`,
     })),
-    ...selectorCorroborationProbes(d, ["help", "version"]),
+    ...selectorCorroborationProbes(d),
   ],
 
   check: (h: History): Finding => {
@@ -148,7 +148,7 @@ function one(h: History, purpose: string, how: string): Finding {
     const unestablished = (): Finding =>
       finding(
         "unverified",
-        `nothing this target produced under ${machineSelector(h.discovery)} parsed as a document, so that flag was not established as a machine-mode selector`,
+        `${machineSelector(h.discovery)} did not change what any probe came back with — the same answers arrive with and without it — so it was not established as a machine-mode selector`,
         [o.id],
       );
 

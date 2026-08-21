@@ -9,7 +9,7 @@
 // talking about the same invocation, or the recorder's dedup silently gives them different ones.
 
 import { SENTINEL } from "./inert.ts";
-import type { Discovery, History, Invocation } from "./types.ts";
+import type { Discovery, History, Invocation, Observation } from "./types.ts";
 
 /**
  * The token that selects machine mode, written so the whole probe stays flag-shaped.
@@ -220,40 +220,27 @@ const MACHINE_DEFAULT_PHRASES: readonly { re: RegExp; gated: boolean }[] = [
 const CORROBORATION = "corroboration:";
 
 /**
- * The two invocations that can corroborate a selector at `L0`.
+ * The three invocations that exist in both a bare and a selected form at `L0`.
  *
- * Both are inert on the same grounds as plain `--help` and `--version`, and neither needs a data
- * command — which is what makes them the only routes available before anything is declared.
+ * Each is inert, needs no data command, and is already sent by some rule — `--help` by D2 and B3,
+ * `--version` by D1, the sentinel by A1 and B5 — so pairing them costs no additional spawn.
  */
-export type CorroborationRoute = "help" | "version" | "error";
-
-function corroborationArgs(selector: string, route: CorroborationRoute): string[] {
-  if (route === "help") return ["--help", selector];
-  if (route === "version") return machineVersionArgs(selector);
-  return machineErrorArgs(selector);
-}
-
-/** The `error` route carries the sentinel, so it is admissible as `sentinel` rather than `help-path`. */
-function corroborationInertness(route: CorroborationRoute): "help-path" | "sentinel" {
-  return route === "error" ? "sentinel" : "help-path";
-}
+const CONTRAST_BASES: readonly (readonly string[])[] = [
+  ["--help"],
+  ["--version"],
+  [`--${SENTINEL}-flag`],
+];
 
 /**
  * True when the text is one structured document, or a stream of them.
  *
- * Deliberately NARROWER than `parsesWhole`, which is the predicate this rule first shipped with
- * and which `JSON.parse` makes far weaker than it looks: `1.4` is valid JSON, so a text-only CLI
- * printing a two-component version number under `--version --json` "produced a document" and
- * corroborated its own selector. The kit's own false-positive fixture only escaped because
- * `1.0.0` happens not to parse — an accident of the version string, not a property of the check.
- *
- * A bare scalar is exactly what a plain-text CLI emits. It cannot be evidence that a flag selected
- * anything, so corroboration requires the shape a machine mode actually produces.
+ * Deliberately NARROWER than `parsesWhole`, which `JSON.parse` makes far weaker than it looks:
+ * `1.4` is valid JSON, so a text-only CLI printing a two-component version number would otherwise
+ * count as having produced a document. A bare scalar is exactly what a plain-text CLI emits.
  *
  * The NDJSON arm asks the same question of every line rather than looking for a `{` in the text.
- * It briefly did the latter, and a substring standing in for a structural claim is the very error
- * this rule exists to remove, one layer down: `["a{b",1]` and `["a",1]` are the same shape, and a
- * brace inside a string value decided two core verdicts between them.
+ * It briefly did the latter, and a substring standing in for a structural claim is the error this
+ * rule exists to remove, one layer down.
  */
 export function parsesAsDocument(text: string): boolean {
   const trimmed = text.trim();
@@ -273,79 +260,86 @@ function isStructured(text: string): boolean {
   }
 }
 
+/** Did EITHER stream of this observation come back as a document? */
+function answeredWithDocument(o: Observation): boolean {
+  return parsesAsDocument(o.stdout) || parsesAsDocument(o.stderr);
+}
+
 /**
- * The probes a checker declares so its evidence about the selector is complete on its own.
+ * Every probe a checker declares so its evidence about the selector is complete on its own.
  *
- * Reading corroboration out of whatever the shared recording happens to hold works while the whole
- * registry runs and inverts the moment it does not — a single-checker unit test, or a future
- * `--only B5`. A verdict that changes depending on which OTHER rules ran is not a measurement. So
- * a checker that needs an observation ASKS for it, and the routes it asks for are EVERY route it
- * does not already judge. There are three at L0 — help, version, and the sentinel parser error —
- * and each of the three rules judges exactly one of them: B3 judges help and asks for the other
- * two, D1 judges version, B5 judges the error. Leave one out and the rule inverts on a target
- * whose machine mode is reachable only there, which is not hypothetical: a CLI that answers only
- * its error path in JSON made B3 and D1 report `unverified` alone and `fail` alongside B5.
- *
- * What this does NOT do is restrict which observations may corroborate once taken. That was the
- * first shape of this fix and it suppressed a correct verdict: a CLI whose machine mode is real
- * only on the ERROR path answered B5's own probe with a JSON document, and B5 reported that
- * nothing had come back under the flag. Asking for evidence and discarding evidence are different
- * things, and only the first one was ever needed.
- *
- * Recordings deduplicate on args and env, and both routes are invocations other checkers already
- * send, so all of this costs no additional spawn.
+ * Both halves of all three pairs. Reading corroboration out of whatever the shared recording
+ * happens to hold works while the whole registry runs and inverts the moment it does not — a
+ * single-checker unit test, or a future `--only B5`. A verdict that changes depending on which
+ * OTHER rules ran is not a measurement, so a checker that needs an observation asks for it.
  */
-export function selectorCorroborationProbes(
-  d: Discovery,
-  routes: readonly CorroborationRoute[],
-): Invocation[] {
+export function selectorCorroborationProbes(d: Discovery): Invocation[] {
   const selector = machineSelector(d);
   if (!selector) return [];
-  return routes.map((route) => ({
-    args: corroborationArgs(selector, route),
-    inertness: corroborationInertness(route),
-    purpose: `${CORROBORATION} does ${selector} select a machine mode on the ${route} path`,
-  }));
+  return CONTRAST_BASES.flatMap((base) =>
+    [base, [...base, selector]].map((args) => ({
+      args: [...args],
+      inertness:
+        args[0] === "--help" || args[0] === "--version"
+          ? ("help-path" as const)
+          : ("sentinel" as const),
+      purpose: `${CORROBORATION} does ${selector} change what ${base.join(" ")} answers with`,
+    })),
+  );
 }
 
 /**
  * True for a probe that exists to corroborate the selector, not to be judged by the rule.
  *
- * The distinction matters to the incomplete-evidence sweeps. Losing a probe the rule is ABOUT
- * means the rule cannot reach a verdict; losing this one closes one route to corroboration, and
- * if another route already answered, the verdict stands on that. Uncorroborated is never a silent
- * pass: the checker reports `unverified`, or falls back to the no-selector behaviour its own rule
- * page states.
+ * The incomplete-evidence sweeps need the distinction. Losing a probe the rule is ABOUT means the
+ * rule cannot reach a verdict; losing one of these closes one pair, and the other two still answer.
  */
 export function isCorroborationProbe(inv: Invocation): boolean {
   return inv.purpose.startsWith(CORROBORATION);
 }
 
 /**
- * Was this target's advertised selector established as a machine-mode selector at all?
+ * Did the selector CHANGE anything? — the premise every rule needs before condemning under it.
  *
  * `machineModeFlag` is matched out of help by SPELLING. `--json <file>   Treat the input file as
- * JSON` is an ordinary help entry, and a CLI shaped that way was failed on three core rules — B3,
- * B5 and D1 — for answering their probes in prose. It had entered no contract to break.
+ * JSON` is an ordinary help entry, and a CLI shaped that way was failed on three core rules for
+ * answering their probes in prose. It had entered no contract to break.
  *
- * So the premise those clauses rest on is checked before any of them may condemn: did a document
- * ever come back under that flag? ANY recording taken with it answers this, including the one the
- * calling rule is about to judge — and that is not circular, because the guard is only consulted
- * on a path where the judged observation was NOT a document. An observation cannot both fail to
- * parse and be its own corroboration.
+ * THE QUESTION IS A CONTRAST, NOT A PRESENCE, and getting that wrong inverted the rule against
+ * exactly the targets it should catch hardest. Asking "did a document ever come back under the
+ * flag" cannot see a machine mode that COLLAPSES under it: a CLI answering the bare parser error
+ * as an envelope and the same error under `--json` in prose — B5's flagship defect — produced no
+ * document under the flag and so could not be condemned, while the worse the collapse the quieter
+ * the kit became. It also cleared a machine-first CLI whose `--json` names an input file, because
+ * JSON was going to happen anyway.
  *
- * The cost is stated on all three rule pages: a CLI whose `--json` genuinely IS a selector but
- * emits prose on every path this kit reaches is no longer condemned, because from outside it
- * cannot be told apart from the innocent one. That is the direction this catalogue prefers to be
- * wrong in.
+ * Pairing answers all four shapes with one question. A flag that changes whether the answer is a
+ * document is doing something to the output; a flag that changes nothing, on any of the three
+ * pairs available at `L0`, has not been shown to be a selector at all — which is the honest
+ * reading of an input-file flag that happens to be spelled `--json`.
+ *
+ * Not circular where the contrast IS the defect. B5 condemning a collapse reads the pair as
+ * evidence that the flag governs output shape; that it governs it WRONGLY is the separate claim,
+ * and the observation cannot establish both at once by accident — a flag doing nothing produces no
+ * contrast and no verdict.
+ *
+ * The cost, stated on all three rule pages: a CLI whose `--json` is genuinely a selector but whose
+ * output shape is identical with and without it, on every pair this kit can reach, is not
+ * condemned. From outside it cannot be told apart from the innocent one.
  */
 export function selectorObserved(h: History): boolean {
   const selector = machineSelector(h.discovery);
   if (!selector) return false;
-  const token = selector.split("=")[0] as string;
-  return h.observations.some(
-    (o) =>
-      o.invocation.args.some((a) => a === selector || a === token || a.startsWith(`${token}=`)) &&
-      (parsesAsDocument(o.stdout) || parsesAsDocument(o.stderr)),
-  );
+  const find = (args: readonly string[]): Observation | undefined =>
+    h.observations.find(
+      (o) =>
+        o.invocation.args.length === args.length &&
+        o.invocation.args.every((a, i) => a === args[i]),
+    );
+  return CONTRAST_BASES.some((base) => {
+    const bare = find(base);
+    const selected = find([...base, selector]);
+    if (!bare || !selected) return false;
+    return answeredWithDocument(bare) !== answeredWithDocument(selected);
+  });
 }

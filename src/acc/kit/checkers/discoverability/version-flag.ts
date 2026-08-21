@@ -46,7 +46,7 @@ export const versionFlagChecker: Checker = {
   // the machine-mode probe does not fix that either: it requires a document, not a version.
   coverage: "partial",
   coverageGaps: [
-    "a flag spelled like a machine-mode selector is only treated as one once a document came back under it on the help path so for a target whose advertised selector emits prose everywhere the machine-mode clause is not reached and the rule is decided by its other clauses",
+    "a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so for a target whose advertised selector produces the same output with and without it the machine-mode clause is not reached and the rule is decided by its other clauses",
     "the machine-mode payload is only required to be a structured document because no declaration exists at L0 to name the field the version belongs in",
     "no network and no credentials and no side effects cannot be observed at L0",
     "the SHOULD to support -V is not probed",
@@ -84,7 +84,7 @@ export const versionFlagChecker: Checker = {
         : []),
       // Corroboration, and it has to be the OTHER route: the probe above is the one this rule
       // condemns, so it cannot also be what establishes that the flag selects anything.
-      ...selectorCorroborationProbes(d, ["help", "error"]),
+      ...selectorCorroborationProbes(d),
     ];
   },
 
@@ -203,7 +203,7 @@ export const versionFlagChecker: Checker = {
           machineEstablished
             ? "version reported with an unusable HOME and XDG_CONFIG_HOME, and as a structured document in machine mode"
             : machine
-              ? `version reported with an unusable HOME and XDG_CONFIG_HOME; nothing this target produced under ${machineSelector(h.discovery)} came back as a document, so it was not established as a machine-mode selector and the payload clause was not reached`
+              ? `version reported with an unusable HOME and XDG_CONFIG_HOME; ${machineSelector(h.discovery)} did not change what any probe came back with, so it was not established as a machine-mode selector and the payload clause was not reached`
               : "version reported with an unusable HOME and XDG_CONFIG_HOME; no machine mode was reachable at L0 so the payload clause was not reached",
           evidence,
         );

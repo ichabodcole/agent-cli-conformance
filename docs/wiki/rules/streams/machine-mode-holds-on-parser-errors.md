@@ -15,7 +15,7 @@ checker: src/acc/kit/checkers/streams/machine-mode-holds-on-parser-error.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - a flag spelled like a machine-mode selector is only treated as one once a document came back under it somewhere so a target whose advertised selector emits prose on every path this kit reaches is reported unverified rather than failed
+  - a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so a target whose advertised selector produces the same output with and without it on every pair this kit can compare is reported unverified rather than failed
   - machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
   - only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not
   - only the --json and --format=json selectors are probed so a machine mode advertised through --output is not
@@ -146,37 +146,32 @@ The declaration is falsifiable, which is why it is a declaration and not an infe
 that claims machine mode by default and answers a parser error in prose fails here. That is the
 rule working, not a mis-declaration being punished.
 
-**A flag spelled like a selector is not yet a selector.** Discovery finds `--json` by reading it
-out of help, and the name does not tell it the meaning: `--json <file>   Treat the input file as
-JSON` is a real and common help entry, and so are `--format` for a source-code formatter and
-`--output` for a destination path. A CLI shaped that way is text-only, answers every probe in
-prose, and has broken nothing — so before this rule may condemn anything under a selector, a
-**document** has to have come back under it. Not merely something that parses: `JSON.parse`
-accepts bare scalars, so a plain-text `--version` printing `1.4` would otherwise corroborate its
-own selector.
+**A flag spelled like a selector is not yet a selector, and the test is a CONTRAST.** Discovery
+finds `--json` by reading it out of help, and the name does not carry the meaning: `--json <file>
+Treat the input file as JSON` is an ordinary help entry, and so are `--format` for a source-code
+formatter and `--output` for a destination path. A CLI shaped that way answers every probe in prose
+and has broken nothing.
 
-This checker DECLARES both `<cli> --help <selector>` and `<cli> --version <selector>` so its
-evidence is complete on its own, and consults the question only on the two paths that CONDEMN —
-never on the pass. Placement is the whole of it and has been wrong in both directions: too late,
-and a target that rejects the sentinel silently is failed with the words "machine mode via
-`--json`" on a selector the same run reports as unestablished; too early, and a CLI whose machine
-mode is real only on the error path answers this rule's own probe with a document and is told
-nothing came back under the flag.
+So before this rule may condemn anything under a selector, the flag has to be seen to **change an
+answer**. Three invocations exist in both a bare and a selected form at `L0` — `--help`, `--version`
+and the sentinel parser error — and each is paired: if adding the selector changes whether the
+answer is a structured document, the flag governs output shape. If it changes nothing on any pair,
+it has not been shown to select anything.
 
-**A declared default is exempt**, and only the flag route is gated. The premise there is a
-declaration rather than an inference about a flag name, and a target that declares machine mode its
-default while advertising `--json` has said the flag is a mode selector.
+Asking instead whether a document ever appeared _under_ the flag is the version this shipped with,
+and it was anti-correlated with the defect: a CLI answering the bare parser error as an envelope and
+the same error under `--json` in prose produced no document under the flag at all, so the more
+completely its machine mode collapsed, the less the kit could say about it. The pair sees that
+target; a presence test cannot.
 
-This rule judges neither of those, so it takes both routes. Uncorroborated, the **selector**
-route reports `unverified`; a declared default is untouched, because a declaration is not an
-inference and there is no flag to have misread. The check runs before any other verdict on the
-selector route, so a target that rejects the sentinel silently is not failed with the words
-"machine mode via `--json`" on a selector the same run reports as unestablished.
+This checker declares both halves of all three pairs itself rather than reading them out of another
+checker's recordings, which would hold in a full run and invert under a single-checker one.
+Recordings deduplicate, so it costs no extra spawn.
 
-The cost is stated in the [gaps](#current-checker-coverage): a genuinely broken CLI whose
-`--json` is meant as a selector but emits prose on every path is no longer condemned here,
-because from outside it is indistinguishable from the innocent one. That is the trade this kit
-takes everywhere — inference may decide what to look at, only observation may condemn.
+The cost is stated in the [gaps](#current-checker-coverage): a CLI whose `--json` is genuinely a
+selector but whose output shape is identical with and without it, on every pair this kit can reach,
+is not condemned — from outside it cannot be told apart from the innocent one. That is the trade
+this kit takes everywhere: inference may decide what to look at, only observation may condemn.
 
 **Passes** when at least one non-empty stream parses **whole** as exactly one JSON document.
 **Fails** when the failure comes back as prose, or with nothing on either stream — silence is not
@@ -210,9 +205,7 @@ are the rest of this page, unexamined.
 
 **Gaps**
 
-- a flag spelled like a machine-mode selector is only treated as one once a document came back
-  under it somewhere so a target whose advertised selector emits prose on every path this kit
-  reaches is reported unverified rather than failed
+- a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so a target whose advertised selector produces the same output with and without it on every pair this kit can compare is reported unverified rather than failed
 - machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
 - only an unrecognised flag provokes the error so a missing value or a missing required argument
   or an out-of-set value is not
