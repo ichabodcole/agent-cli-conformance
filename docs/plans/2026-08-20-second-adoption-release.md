@@ -224,6 +224,15 @@ Two runs, two questions, two instruments:
 the project well, which makes them the best possible judge of whether it improved and useless as a
 test of first contact. Splitting the runs keeps both answers.
 
+## Status — code complete 2026-08-21
+
+All five scope items are merged to `develop`, each on its own branch and each independently
+reviewed before merge. **Three of the five reviews found a real defect in the fix**, which is the
+single most useful fact this plan produced about how to work: twice the defect was the same
+species the trial reported — a mechanism that made a genuine failure disappear.
+
+What remains below is trial #2, which cannot be answered from inside this repository.
+
 ## Done when
 
 - [x] A machine-first CLI reaches `conformant: true` with a config a reader would sign, and **B5**

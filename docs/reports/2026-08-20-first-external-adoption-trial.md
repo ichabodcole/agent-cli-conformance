@@ -2,7 +2,7 @@
 type: report
 generated: { by: claude-opus-5, at: 2026-08-20 }
 status: stable
-lifecycle: live
+lifecycle: discharged
 description:
   The first adoption of the kit by someone outside it — an agent in the Spellbook repo, given no
   help — which found one false positive, one waiver model that cannot express a deliberate design,
@@ -324,9 +324,34 @@ replaced it with a better observation: piping silently changes the output shape,
 twice in one session without their noticing it was the same surprise both times. EXT-6 and EXT-8 are
 **two symptoms of one root cause**, and the fix belongs at the cause.
 
-## Disposition
+## Disposition — closed 2026-08-21
 
-Nothing is discharged. Order revised after the follow-up:
+Every finding actioned, promoted or withdrawn. Each fix was reviewed independently before merge,
+and **three of the five reviews found a real defect in the fix**, twice of the same species the
+report itself is about: a mechanism that made a genuine failure disappear.
+
+| Id    | Outcome                                                                                                                                                                                                                                                                                                                |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EXT-1 | **actioned.** `kitVersion` in the JSON, `[acc <version>]` on the text headline. The review then found the claim overreached — the version only moves when a release is cut, so it catches staleness spanning a release and not within one. The README says so, and says to clear the cache before an unpinned install. |
+| EXT-2 | **actioned.** D1's hostile-HOME clause compares the two runs instead of firing on the hostile exit code alone. Predicate deliberately narrower than proposed: differing is not the claim, "configuration is required" is.                                                                                              |
+| EXT-3 | **actioned.** A waiver withdraws a **premise**, not an observation — and only when the shape behaved like the premise. Waiving D2 no longer leaves C2 failing on the same byte, and E1 and G1 keep evidence they are entitled to.                                                                                      |
+| EXT-4 | **actioned.** `machineMode: "default"`, which closes B5's own first coverage gap: the piped-default resolution path the archaeology says the defect most often breaks. B3 remains out of reach at `L0` and now says why.                                                                                               |
+| EXT-5 | **promoted** — [one run per CLI, for a family that shares one contract](../roadmap.md#one-run-per-cli-for-a-family-that-shares-one-contract).                                                                                                                                                                          |
+| EXT-6 | **actioned.** Piped output is JSON and the verdict line is terminal-only, said in three places; `--format text` is in the first code block.                                                                                                                                                                            |
+| EXT-7 | **promoted** — [the report says everything twice](../roadmap.md#the-report-says-everything-twice), blocked on report-shape versioning.                                                                                                                                                                                 |
+| EXT-8 | **withdrawn by its author** after re-checking, and folded into EXT-6 as one root cause.                                                                                                                                                                                                                                |
+
+What the release did **not** deliver, stated because the plan originally promised it: B3 reaching a
+machine-first target. It reads a data command's output, `--help` is not one, and choosing a data
+verb to run inertly needs what `L1` knows. The criterion was struck from the plan rather than
+quietly ticked.
+
+The remaining open questions are all trial-#2 outcomes and cannot be answered from here.
+
+### Superseded ordering
+
+The order below was written before the work and is kept because the reasoning behind it —
+what each answer costs — is what chose the scope:
 
 1. **EXT-2** — a checker that invents a cause. The only finding that damages the premise.
 2. **EXT-4** — machine-mode-by-default as a declared, falsifiable config key. Promoted from P1: the
