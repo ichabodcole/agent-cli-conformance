@@ -296,6 +296,25 @@ example is executed because it is declared rather than written in prose. What it
 travel. It is TypeScript, imported directly by the kit, so a Go or Rust CLI cannot participate in
 any of it. Directionally right, bound to the reference implementation.
 
+**A naming decision falls due when the second declaration lands, and not before.** Today
+`acc.config.json` carries exactly one declaration, `defaultOutput: "json"`, and internally the kit
+holds the pair `Discovery.machineModeFlag` / `Discovery.machineModeDefault` — one axis, _how is
+machine mode reached_: by a flag, or because it is the default. Concept and key are deliberately
+different words. "Machine mode" is a state a CLI is in and has its own
+[concept page](./wiki/concepts/machine-mode.md); `defaultOutput` is one assertion about how that
+state is reached, and naming the concept after one of its declarations would be the tail wagging
+the dog.
+
+That holds while there is one key. The moment a **flag-selected** machine mode becomes declarable
+— the gap named on
+[B5](./wiki/rules/streams/machine-mode-holds-on-parser-errors.md#current-checker-coverage) and its
+neighbours, where a target with a real machine mode reachable only through a flag is not checked
+at all — there are two config keys on the axis the internal pair is already named for, and they
+have to agree on a vocabulary. `defaultOutput: "json"` beside something like `machineFlag: "--json"`
+would be two spellings of one axis, which is how domain language drifts. **Decide the axis when
+you add the second key**, while the parser and its docs are already open; it is cheap then and
+expensive once adopters have written both.
+
 It is also the largest single unblocker of the [coverage debt](#the-coverage-debt). The biggest
 group of gaps is some variant of "only the root is probed", which is not an L0 limit at all — a
 subcommand's `--help` is exactly as inert as the root's. It is a _discovery_ limit, and discovery
