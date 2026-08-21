@@ -128,10 +128,47 @@ describe("C2 — usage errors are distinguishable", () => {
     expect(f.evidence).not.toContain(bare?.id);
   });
 
-  // A waiver must not manufacture a pass out of a population of one.
-  test("reports unverified when too few shapes survive the waivers", async () => {
+  // A WAIVER IS NOT A BLINDFOLD. Waiving D2 declares the bare invocation a help path, and a help
+  // path exits 0. A bare invocation exiting 64 is still an error, its code still has to agree,
+  // and excluding it on the waiver alone made it vanish from the entire run — C2 passed over
+  // (2,2) while D2's own waived verdict failed on a different clause, so nothing anywhere said
+  // the target answers one error class with two codes. Found by an independent review.
+  test("keeps a waived shape that did NOT behave like the withdrawn premise", async () => {
+    const h = await record(
+      fixture("broken/bare-invocation-exits-64.ts"),
+      [usageDistinguishableChecker],
+      false,
+      new Set(["D2"]),
+    );
+    const f = usageDistinguishableChecker.check(h);
+    expect(f.verdict).toBe("fail");
+    expect(f.detail).toContain("64");
+  });
+
+  // ...and it must not claim exclusions that never happened. A7's shape exists only for a target
+  // whose help advertises a closed value set, so a waiver of A7 against a target without one is
+  // not an exclusion — saying so told the reader config had dropped a shape never in the
+  // population.
+  test("names only the shapes a waiver actually removed", async () => {
     const h = await record(
       fixture("bare-help.ts"),
+      [usageDistinguishableChecker],
+      false,
+      new Set(["D2", "A7"]),
+    );
+    const f = usageDistinguishableChecker.check(h);
+    expect(f.detail).toContain("D2");
+    expect(f.detail).not.toContain("A7");
+  });
+
+  // A waiver must not manufacture a pass out of a population of one.
+  //
+  // The target has to be one whose waived shapes actually exit 0, or they are not excluded at
+  // all — which is the point of the two-condition rule above. `bare-help.ts` answers an unknown
+  // flag and an unknown verb with 2, so waiving A1 and A2 against it correctly removes nothing.
+  test("reports unverified when too few shapes survive the waivers", async () => {
+    const h = await record(
+      fixture("broken/exits-zero-on-unknown-flag.ts"),
       [usageDistinguishableChecker],
       false,
       new Set(["D2", "A1", "A2"]),
@@ -201,9 +238,12 @@ describe("a waiver does not take evidence from the rules that did not inherit th
     const bare = h.observations.find((o) => o.invocation.args.length === 0);
     expect(bare).toBeDefined();
 
-    for (const checker of [neverBlockChecker, doesNotCrashChecker]) {
+    for (const [checker, expected] of [
+      [neverBlockChecker, "E1"],
+      [doesNotCrashChecker, "G1"],
+    ] as const) {
       const f = checker.check(h);
-      expect({ rule: f.ruleId, verdict: f.verdict }).toEqual({ rule: f.ruleId, verdict: "pass" });
+      expect({ rule: f.ruleId, verdict: f.verdict }).toEqual({ rule: expected, verdict: "pass" });
       expect(f.evidence).toContain(bare?.id as string);
     }
   });

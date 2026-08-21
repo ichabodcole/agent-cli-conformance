@@ -302,6 +302,11 @@ path, so C2 drops it from the contrast rather than reporting disagreement across
 project has just corrected — and says which shape it dropped, because the remaining comparison is a
 narrower claim.
 
+The shape is only dropped if it **behaved like the premise**: a waiver of D2 declares a help path,
+and a help path exits `0`. A bare invocation exiting `64` where every other usage error exits `2`
+stays in the comparison and is still reported. A waiver excuses a rule, it does not blind the kit
+to what the target did.
+
 Only the rules that inherited the premise are affected. E1 and G1 read the same observation for
 reasons that have nothing to do with it being an error, and they keep it. A waiver is not a
 deletion, and the coupling is named in the kit rather than in `acc.config.json` — a project should

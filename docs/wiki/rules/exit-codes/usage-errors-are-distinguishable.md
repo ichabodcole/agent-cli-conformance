@@ -163,6 +163,11 @@ reports disagreement across a set whose membership the project has just correcte
 The shape is therefore dropped, and the verdict says so, because three shapes compared where this
 page promises four is a smaller claim than a full pass.
 
+**Dropped only if it behaved like the premise.** A waiver of D2 declares a help path, and a help
+path exits `0`. A bare invocation that exits `64` while every other usage error exits `2` is still
+an error and its code still has to agree, so the shape stays and the disagreement is reported. A
+waiver excuses a rule; it does not blind the kit to what the target did.
+
 **This is not waiver propagation along shared evidence**, which was the first idea and is wrong.
 [E1](../interactivity/never-block-without-a-tty.md) and
 [G1](../lifecycle/inert-invocations-do-not-crash.md) read the very same bare observation and keep

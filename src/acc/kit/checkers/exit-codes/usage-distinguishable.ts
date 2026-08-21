@@ -7,7 +7,6 @@ const RULE_ID = "C2";
 
 const finding = findingFor(RULE_ID);
 
-/** C2 — docs/wiki/rules/exit-codes/usage-errors-are-distinguishable.md */
 /**
  * Which rule classifies each of this checker's shapes as a usage error.
  *
@@ -24,6 +23,7 @@ const OWNERS: readonly (readonly [string, string])[] = [
 const hasPurpose = (o: Observation, mark: string): boolean =>
   o.purposes.some((p) => p.startsWith(mark));
 
+/** C2 — docs/wiki/rules/exit-codes/usage-errors-are-distinguishable.md */
 export const usageDistinguishableChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/exit-codes/usage-errors-are-distinguishable.md",
@@ -100,7 +100,22 @@ export const usageDistinguishableChecker: Checker = {
     //
     // The coupling is named HERE rather than in `acc.config.json`, deliberately. A project should
     // describe its own CLI, not our internals.
-    const excluded = OWNERS.filter(([, rule]) => h.waived.has(rule));
+    // TWO CONDITIONS, not one. The waiver alone is not enough.
+    //
+    // A waiver of D2 declares the bare invocation a HELP PATH — and a help path exits 0. If it
+    // exits non-zero it is still an error, and its code still has to agree with the other errors,
+    // so the shape stays and the disagreement is reported. Excluding on the waiver alone made a
+    // bare invocation exiting 64 vanish from the entire run: C2 passed over `(2,2)` while D2's
+    // own waived verdict happened to fail on a different clause, so no line anywhere said the
+    // target answers one error class with two codes. Found by an independent review.
+    //
+    // Also filtered to shapes actually RECORDED. A7's probe exists only for a target whose help
+    // advertises a closed value set, so counting a waiver of A7 as an exclusion told the reader
+    // config had dropped a shape that was never in the population.
+    const excluded = OWNERS.filter(
+      ([mark, rule]) =>
+        h.waived.has(rule) && all.some((o) => hasPurpose(o, mark) && o.exitCode === 0),
+    );
     const recorded = all.filter((o) => !excluded.some(([mark]) => hasPurpose(o, mark)));
     const excusedBy = excluded.map(([, rule]) => rule).join(", ");
 
@@ -158,16 +173,16 @@ export const usageDistinguishableChecker: Checker = {
       );
     }
 
-    // Distinguishability from an INTERNAL fault cannot be established black-box: there is no
-    // safe general way to provoke one in an arbitrary binary. Say so rather than implying the
-    // full rule was checked — a `pass` that silently overclaims is the defect this project
-    // exists to catch.
     // A narrowed pass is not the same claim as a full one, so it says what it left out. A report
     // that quietly compared three shapes where the page promises four would be a checker
     // overstating its own reach — which is the defect this catalogue exists to report.
     const narrowed = excluded.length
-      ? `; the ${excusedBy} shape was excluded, waived by config`
+      ? `; the ${excusedBy} ${excluded.length === 1 ? "shape was" : "shapes were"} excluded, waived by config`
       : "";
+    // Distinguishability from an INTERNAL fault cannot be established black-box: there is no
+    // safe general way to provoke one in an arbitrary binary. Say so rather than implying the
+    // full rule was checked — a `pass` that silently overclaims is the defect this project
+    // exists to catch.
     return codes[0] === 2
       ? finding(
           "pass",
