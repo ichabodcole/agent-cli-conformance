@@ -4,14 +4,8 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
-import {
-  machineSelector,
-  machineVersionArgs,
-  parsesWhole,
-  selectorCorroborationProbes,
-  selectorObserved,
-} from "../../machine-mode.ts";
-import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
+import { parsesAsDocument } from "../../machine-mode.ts";
+import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
 const RULE_ID = "D1";
@@ -59,42 +53,24 @@ export const versionFlagChecker: Checker = {
     "for a target that advertises a machine-mode flag --version in that mode exits 0 and its whole stdout parses as one JSON object rather than a bare string",
   ],
 
-  probes: (d: Discovery): Invocation[] => {
-    const selector = machineSelector(d);
-    return [
-      { args: ["--version"], inertness: "help-path", purpose: "D1: --version" },
-      {
-        args: ["--version"],
-        // Same args, hostile env: verifies the no-configuration requirement. The runner's id
-        // incorporates env, so this is a distinct recording, not a dedup collision with the plain
-        // probe above.
-        env: { HOME: "/nonexistent-acc-probe", XDG_CONFIG_HOME: "/nonexistent-acc-probe" },
-        inertness: "help-path",
-        purpose: "D1: --version with no usable HOME",
-      },
-      // Every token is a help/version token or a format selector, so this is a `help-path`
-      // invocation exactly as plain `--version` is — the gate admits it as it stands.
-      ...(selector
-        ? [
-            {
-              args: machineVersionArgs(selector),
-              inertness: "help-path" as const,
-              purpose: `${MACHINE} the version must be a field under ${selector}`,
-            },
-          ]
-        : []),
-      // Corroboration, and it has to be the OTHER route: the probe above is the one this rule
-      // condemns, so it cannot also be what establishes that the flag selects anything.
-      ...selectorCorroborationProbes(d),
-    ];
-  },
+  probes: (): Invocation[] => [
+    { args: ["--version"], inertness: "help-path", purpose: "D1: --version" },
+    {
+      args: ["--version"],
+      // Same args, hostile env: verifies the no-configuration requirement. The runner's id
+      // incorporates env, so this is a distinct recording, not a dedup collision.
+      env: { HOME: "/nonexistent-acc-probe", XDG_CONFIG_HOME: "/nonexistent-acc-probe" },
+      inertness: "help-path",
+      purpose: "D1: --version with no usable HOME",
+    },
+  ],
 
   check: (h: History): Finding => {
     // findByPurpose, not findByArgs: both probes share args (["--version"]) and differ only by
     // env, which findByArgs ignores — it would return whichever recorded first, silently
     // collapsing the exact pair this checker exists to tell apart.
     const runs = [...findByPurpose(h, "D1:"), ...findByPurpose(h, MACHINE)];
-    const machine = findByPurpose(h, MACHINE)[0];
+    const _machine = findByPurpose(h, MACHINE)[0];
     const plain = runs.find((o) => !o.invocation.env && o.invocation.args.length === 1);
     const hostile = runs.find((o) => o.invocation.env);
     if (!plain) {
@@ -162,38 +138,21 @@ export const versionFlagChecker: Checker = {
     // for structured output got something it had to regex. An ARRAY is refused for the same
     // reason a string is — the version is a value in a document, not the document.
     //
-    // Skipped entirely when the plain run reported no version: `--version --json` against a CLI
-    // with no `--version` fails for the one reason already stated, and a second clause saying so
-    // is the same restatement this checker was reported for.
+    // THE DECLARED-DEFAULT CLAUSE. A target that declares machine mode its default has asserted
+    // that plain `--version` — no flag, nothing selected — is machine output, and this falsifies
+    // that assertion directly. It needs no selector, which is the point: `--version <flag>` rested
+    // on a flag matched from help by SPELLING, and seven attempts to make that guess safe each
+    // failed in a new direction. A declaration is an assertion; an inference is the kit writing
+    // the claim it then tests.
     //
-    // A FLAG NAME IS NOT A SELECTOR, and this whole half is skipped when the name is all there
-    // is. `--json <file>   Treat the input file as JSON` is an ordinary help entry; a CLI shaped
-    // that way answers `--version --json` in prose because prose is all it emits, and has broken
-    // nothing. Corroboration comes from the `help` route rather than this observation: taking it
-    // from the invocation the clause then condemns would establish the premise out of the
-    // evidence, which is question-begging rather than a probe.
-    //
-    // Uncorroborated behaves EXACTLY as an unadvertised machine mode does — the clause is not
-    // reached, and the clauses above still decide the rule. The first cut of this returned
-    // `unverified` from here instead, which threw away the `problems` already collected and
-    // silenced a directly measured core violation: a target whose `--version` genuinely required
-    // a usable HOME went from `fail` to `unverified` because its help happened to spell a flag
-    // `--json`. A guard on one clause may not answer for the others.
-    const machineEstablished = machine !== undefined && selectorObserved(h);
-    if (machine && machineEstablished && !noVersionAtAll) {
-      if (machine.exitCode !== 0) {
-        problems.push(`--version in machine mode exited ${machine.exitCode}`);
-      } else if (!parsesWhole(machine.stdout)) {
+    // Skipped when the plain run reported no version at all: a target with no `--version` fails
+    // for the one reason already stated, and a second clause saying so is the restatement this
+    // checker was once reported for.
+    if (h.discovery.machineModeDefault && !noVersionAtAll && plain.exitCode === 0) {
+      if (!parsesAsDocument(plain.stdout)) {
         problems.push(
-          `--version in machine mode did not emit a JSON document (${JSON.stringify(machine.stdout.trim().slice(0, 40))})`,
+          `machine mode is declared the default, so --version must emit a document; it emitted ${JSON.stringify(plain.stdout.trim().slice(0, 40))}`,
         );
-      } else {
-        const payload: unknown = JSON.parse(machine.stdout);
-        if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
-          problems.push(
-            "--version in machine mode emitted a bare value rather than a document carrying the version as a field",
-          );
-        }
       }
     }
 
@@ -201,11 +160,9 @@ export const versionFlagChecker: Checker = {
       ? finding("fail", problems.join("; "), evidence)
       : finding(
           "pass",
-          machineEstablished
-            ? "version reported with an unusable HOME and XDG_CONFIG_HOME, and as a structured document in machine mode"
-            : machine
-              ? `version reported with an unusable HOME and XDG_CONFIG_HOME; ${machineSelector(h.discovery)} did not change what any probe came back with, so it was not established as a machine-mode selector and the payload clause was not reached`
-              : "version reported with an unusable HOME and XDG_CONFIG_HOME; no machine mode was reachable at L0 so the payload clause was not reached",
+          h.discovery.machineModeDefault
+            ? "version reported with an unusable HOME and XDG_CONFIG_HOME, and as a structured document under the declared machine-mode default"
+            : "version reported with an unusable HOME and XDG_CONFIG_HOME; no machine mode was declared, so the payload clause was not reached",
           evidence,
         );
   },

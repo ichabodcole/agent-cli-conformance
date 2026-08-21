@@ -25,7 +25,6 @@ import { fileURLToPath } from "node:url";
 import { VERSION } from "../version.ts";
 import { doesNotCrashChecker } from "./checkers/lifecycle/does-not-crash.ts";
 import { loadConfig } from "./config.ts";
-import { isCorroborationProbe } from "./machine-mode.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import { buildReport, primaryProblem, runCheckers } from "./report.ts";
@@ -309,7 +308,7 @@ describe("one crashed probe among completed ones is not compliance either", () =
       const expected = OWNS_CRASHES.has(ruleId) ? "fail" : "unverified";
       // Corroboration probes are excluded: they are supporting evidence for whether the rule
       // applies, not a subject of it. See isCorroborationProbe.
-      for (const inv of checker.probes(real.discovery).filter((p) => !isCorroborationProbe(p))) {
+      for (const inv of checker.probes(real.discovery)) {
         const id = invocationId(inv);
         // Every declared probe is recorded, so a miss means the checker asked for something
         // record() never ran — worth knowing, and not something to skip past silently.
@@ -419,7 +418,11 @@ describe("the partial crasher — a green headline over eleven fallen-over rules
     );
     expect(report.conformant).toBe(true);
     expect(report.counts.coreFailures).toBe(0);
-    expect(report.counts.coreUnverified).toBe(13);
+    // Pinned literals, and they moved when B3 became an `L1` rule: its subject is a DATA
+    // command's output, which nothing at L0 can select safely, and the `--help <selector>` that
+    // stood in for it rested on a flag matched from help by SPELLING. One fewer core rule binds
+    // at L0, so one fewer can be unverified.
+    expect(report.counts.coreUnverified).toBe(12);
     // ...and the report was never silent about it: `fullyVerified` was false and every gap was
     // named. The defect was the HEADLINE speaking over them, which is what G1 changes.
     expect(report.fullyVerified).toBe(false);
@@ -528,7 +531,11 @@ describe("a signal the kit cannot attribute is nobody's violation", () => {
     expect(report.conformant).toBe(true);
     expect(report.fullyVerified).toBe(false);
     expect(report.counts.corePassed).toBe(0);
-    expect(report.counts.coreUnverified).toBe(18);
+    // Pinned literals, and they moved when B3 became an `L1` rule: its subject is a DATA
+    // command's output, which nothing at L0 can select safely, and the `--help <selector>` that
+    // stood in for it rested on a flag matched from help by SPELLING. One fewer core rule binds
+    // at L0, so one fewer can be unverified.
+    expect(report.counts.coreUnverified).toBe(17);
     // Asserted as the whole list rather than as `not.toContain("C1")`, so a rule quietly starting
     // to fail this target — the false positive arriving through yet another door — is caught.
     const violated = report.findings.filter(

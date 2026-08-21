@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { helpStatesMachineDefault, parsesAsDocument, selectorObserved } from "./machine-mode.ts";
+import { helpStatesMachineDefault, parsesAsDocument } from "./machine-mode.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import type { TargetInfo } from "./types.ts";
@@ -142,219 +142,114 @@ describe("a help statement that structured output is the default", () => {
   }
 });
 
-describe("selectorObserved — a flag spelled like a selector is not one", () => {
-  const fixture = (rel: string): TargetInfo => {
-    const p = join(HERE, "fixtures", rel);
-    return { path: p, argv0: ["bun", p] };
-  };
+// A flag matched out of help by SPELLING no longer reaches any verdict. Seven attempts to make
+// that inference safe each failed in a NEW direction — a version string that happens to parse; a
+// mode reachable only on the error path; a mode that collapses under its own flag; a flag taking a
+// value, so sending it bare is malformed and the tool's complaint reads as a mode switch; a
+// disqualified `--json` promoting `--format`; a structured REJECTION of the probe reading as
+// acceptance. The enumeration never closed because the question is not answerable from outside.
+//
+// These are the populations that were failed along the way. None of them declared anything, so
+// none of them may be condemned for a machine mode nobody asserted.
+describe("no verdict rests on a flag matched from help by spelling", () => {
+  const shapes = [
+    ["json-flag-is-an-input.ts", "--json names an input file and takes a value"],
+    ["json-flag-is-a-boolean-input.ts", "--json is boolean and asks for an input check"],
+    ["broken/machine-mode-help-not-json.ts", "advertises --json and does nothing with it"],
+    ["broken/machine-mode-drops-under-flag.ts", "machine mode collapses under its own flag"],
+    ["broken/machine-mode-only-on-the-error-path.ts", "machine mode reaches only the error path"],
+  ] as const;
 
-  // The false positive that motivated the rule. Before corroboration this target was NOT
-  // CONFORMANT on three core rules, all of them for answering in prose a question it was never
-  // asked in machine mode.
-  test("a --json that names an input file is not established as a selector", async () => {
-    // The BOOLEAN fixture, deliberately. Its valued sibling never reaches this predicate at all —
-    // discovery reads the value slot and declines to call the flag a machine-mode flag — so using
-    // it here would leave the contrast untested while appearing to test it.
-    const h = await record(fixture("json-flag-is-a-boolean-input.ts"), CHECKERS);
-    expect(h.discovery.machineModeFlag).toBe("--json");
-    expect(selectorObserved(h)).toBe(false);
+  test.each(shapes)(
+    "%s — %s",
+    async (rel) => {
+      const p = join(HERE, "fixtures", rel);
+      const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+      expect(h.discovery.machineModeDefault).toBe(false);
 
-    // B3 and B5 have nothing left to say: their whole subject is output under the selector.
-    for (const ruleId of ["B3", "B5"]) {
-      const checker = CHECKERS.find((c) => c.ruleId === ruleId);
-      if (!checker) throw new Error(`no checker for ${ruleId}`);
-      const f = checker.check(h);
-      expect([ruleId, f.verdict]).toEqual([ruleId, "unverified"]);
-      expect(f.detail).toContain("not established as a machine-mode selector");
-    }
-
-    // D1 PASSES, and that difference is the point rather than an inconsistency. Its other
-    // clauses — a version is reported, and still reported with an unusable HOME — are about
-    // plain `--version` and were measured directly. An uncorroborated selector silences the
-    // payload clause only, exactly as an unadvertised machine mode does.
-    //
-    // The first cut returned `unverified` for the whole rule from inside that clause, which
-    // discarded the problems the earlier clauses had already collected: a target that genuinely
-    // required a usable HOME went from `fail` to `unverified` because its help spelled a flag
-    // `--json`. A guard on one clause may not answer for the others.
-    const d1 = CHECKERS.find((c) => c.ruleId === "D1");
-    if (!d1) throw new Error("no checker for D1");
-    const f = d1.check(h);
-    expect(f.verdict).toBe("pass");
-    expect(f.detail).toContain("not established as a machine-mode selector");
-  }, 60_000);
-
-  // The other direction, and the one that keeps this from being a blanket amnesty: a target whose
-  // `--json` demonstrably changes the answer is established, and the paths where it changed it for
-  // the worse are condemned. This fixture answers its parser error as a document under the flag and
-  // in prose without it — the flag governs output shape — while its help under the flag stays prose.
-  test("a --json that changes the answer IS established, and B3 fails on it", async () => {
-    const p = join(HERE, "fixtures/broken/machine-mode-only-on-the-error-path.ts");
-    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
-    expect(selectorObserved(h)).toBe(true);
-
-    const b3 = CHECKERS.find((c) => c.ruleId === "B3");
-    if (!b3) throw new Error("no checker for B3");
-    expect(b3.check(h).verdict).toBe("fail");
-  }, 60_000);
-
-  // THE INVERSION THIS PREDICATE SHIPPED WITH, pinned so it cannot come back. Asking "did a
-  // document ever appear UNDER the flag" is anti-correlated with the defect B5 exists to catch:
-  // a CLI answering the bare parser error as an envelope and the same error under `--json` in
-  // prose has no document under the flag at all, so the more completely its machine mode collapsed
-  // the less the kit could say. A contrast sees it; a presence test cannot.
-  test("a machine mode that COLLAPSES under the flag is established, not excused", async () => {
-    const p = join(HERE, "fixtures/broken/machine-mode-drops-under-flag.ts");
-    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
-    expect(selectorObserved(h)).toBe(true);
-
-    const b5 = CHECKERS.find((c) => c.ruleId === "B5");
-    if (!b5) throw new Error("no checker for B5");
-    const f = b5.check(h);
-    expect(f.verdict).toBe("fail");
-    expect(f.detail).toContain("came back as prose");
-  }, 60_000);
+      for (const ruleId of ["B3", "B5"]) {
+        const checker = CHECKERS.find((c) => c.ruleId === ruleId);
+        if (!checker) throw new Error(`no checker for ${ruleId}`);
+        const f = checker.check(h);
+        expect([rel, ruleId, f.verdict]).toEqual([rel, ruleId, "unverified"]);
+        expect(f.detail).toContain("DECLARED");
+      }
+      // D1's other clauses still decide the rule; only its machine clause waits on a declaration.
+      const d1 = CHECKERS.find((c) => c.ruleId === "D1");
+      if (!d1) throw new Error("no checker for D1");
+      expect(d1.check(h).detail).not.toContain("machine mode is declared");
+    },
+    60_000,
+  );
 });
 
-describe("corroboration is evidence, and it has to be evidence of the right thing", () => {
-  // `JSON.parse` accepts bare scalars, so `parsesWhole` — the predicate this guard first shipped
-  // with — called `1.4` a document. The false-positive fixture escaped only because `1.0.0`
-  // happens not to be valid JSON, which is an accident of the version string. Two digits instead
-  // of three restored all three core failures against a CLI that had broken nothing.
-  test("a bare JSON scalar is not corroboration", () => {
+describe("parsesAsDocument", () => {
+  test("a bare JSON scalar is not a document", () => {
     for (const scalar of ["1.4", "7", '"1.0.0"', "true", "null"]) {
       expect([scalar, parsesAsDocument(scalar)]).toEqual([scalar, false]);
     }
-    for (const doc of ['{"a":1}', "[1,2]", '{"a":1}\n{"a":2}']) {
+  });
+
+  test("an object, an array, or a stream of them is", () => {
+    for (const doc of ['{"a":1}', "[1,2]", '{"a":1}\n{"a":2}', '["a",1]\n["b",2]']) {
       expect([doc, parsesAsDocument(doc)]).toEqual([doc, true]);
     }
   });
 
-  // The same fixture with its version string changed and nothing else. This is the regression
-  // test for the accident above: it must stay CONFORMANT whatever the version happens to spell.
-  test("the innocent CLI stays innocent whatever its version number parses as", async () => {
-    const source = readFileSync(join(HERE, "fixtures/json-flag-is-a-boolean-input.ts"), "utf8");
-    const dir = mkdtempSync(join(tmpdir(), "acc-scalar-"));
-    try {
-      for (const version of ["1.4", "7", "1.0.0"]) {
-        const p = join(dir, `v${version}.ts`);
-        writeFileSync(p, source.replace('"1.0.0\\n"', JSON.stringify(`${version}\n`)));
-        const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
-        for (const ruleId of ["B3", "B5"]) {
-          const checker = CHECKERS.find((c) => c.ruleId === ruleId);
-          if (!checker) throw new Error(`no checker for ${ruleId}`);
-          const f = checker.check(h);
-          expect([version, ruleId, f.verdict]).toEqual([version, ruleId, "unverified"]);
-        }
-        const d1 = CHECKERS.find((c) => c.ruleId === "D1");
-        if (!d1) throw new Error("no checker for D1");
-        expect([version, d1.check(h).verdict]).toEqual([version, "pass"]);
-      }
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  }, 120_000);
-
-  // The regression the guard itself introduced. A directly measured core violation — `--version`
-  // works normally and fails with an unusable HOME — was silenced because the same target's help
-  // spelled a flag `--json`. The guard belongs to the payload clause and may not answer for the
-  // rest of the rule.
-  test("an uncorroborated selector does not silence a violation measured elsewhere", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "acc-home-"));
-    try {
-      const p = join(dir, "needs-home.sh");
-      writeFileSync(
-        p,
-        [
-          "#!/bin/sh",
-          `HELP='v — thing`,
-          "",
-          "Options:",
-          "  --json <file>   Treat the input file as JSON.",
-          "  --help          Show help.",
-          "'",
-          'case "$1" in',
-          "  --help|-h) printf '%s' \"$HELP\"; exit 0 ;;",
-          "  --version|-V) [ -d \"$HOME\" ] || { printf 'no home\\n' >&2; exit 1; }; printf '1.0.0\\n'; exit 0 ;;",
-          "esac",
-          "printf 'v: unknown option: %s\\n' \"$1\" >&2; exit 2",
-        ].join("\n"),
-      );
-      chmodSync(p, 0o755);
-      const h = await record({ path: p, argv0: [p] }, CHECKERS);
-      const d1 = CHECKERS.find((c) => c.ruleId === "D1");
-      if (!d1) throw new Error("no checker for D1");
-      const f = d1.check(h);
-      expect(f.verdict).toBe("fail");
-      expect(f.detail).toContain("requires configuration");
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  }, 60_000);
-});
-
-describe("corroboration decides whether a rule may condemn, never a rule that already answered", () => {
-  // The regression that survived the first fix and was found by outside review. A CLI whose
-  // machine mode is real only on the error path answers B5's own probe with a JSON document; an
-  // early guard placed at the top of the evaluation returned before that observation was loaded
-  // and reported that nothing had come back under the flag.
-  test("B5 passes on a document it collected itself", async () => {
-    const p = join(HERE, "fixtures/broken/machine-mode-only-on-the-error-path.ts");
-    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
-    const b5 = CHECKERS.find((c) => c.ruleId === "B5");
-    if (!b5) throw new Error("no checker for B5");
-    const f = b5.check(h);
-    expect(f.verdict).toBe("pass");
-    expect(f.evidence.length).toBeGreaterThan(0);
-  }, 60_000);
-
-  // The other half, and the reason this is not a blanket amnesty: the same document establishes
-  // the selector, so the paths that answered in prose under it are condemned.
-  test("and the same document establishes the selector for the rules that were lied to", async () => {
-    const p = join(HERE, "fixtures/broken/machine-mode-only-on-the-error-path.ts");
-    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
-    for (const ruleId of ["B3", "D1"]) {
-      const checker = CHECKERS.find((c) => c.ruleId === ruleId);
-      if (!checker) throw new Error(`no checker for ${ruleId}`);
-      expect([ruleId, checker.check(h).verdict]).toEqual([ruleId, "fail"]);
-    }
-  }, 60_000);
-
-  // An NDJSON stream corroborates on the shape of its records, not on whether a brace appears
-  // somewhere in the bytes. These two differ by one character inside a string VALUE, and briefly
-  // got opposite answers — a substring standing in for a structural claim, which is the error the
-  // whole rule exists to remove.
-  test("NDJSON corroborates on record shape, not on a brace in the text", () => {
-    expect(parsesAsDocument('["a",1]\n["b",2]')).toBe(true);
+  // A brace inside a string VALUE is not structure. This briefly decided two core verdicts.
+  test("record shape decides, not a brace in the text", () => {
     expect(parsesAsDocument('["a{b",1]\n["c",2]')).toBe(true);
     expect(parsesAsDocument("1.4\n2.5")).toBe(false);
   });
 });
 
-// A verdict that depends on which OTHER rules ran is not a measurement, and this has broken twice:
-// once because a rule read corroboration it never asked for, and once because a rule asked for two
-// of the three routes and a target's machine mode lived on the third. Locked here rather than
-// re-derived, because neither break was visible in any single-target check.
-describe("no rule's verdict depends on which other rules ran", () => {
-  const targets = [
-    "fixtures/broken/machine-mode-only-on-the-error-path.ts",
-    "fixtures/broken/machine-mode-help-not-json.ts",
-    "fixtures/json-flag-is-an-input.ts",
-  ];
+describe("a declaration is an assertion, and the guard does not apply to it", () => {
+  const declaring = (dir: string): TargetInfo => {
+    const p = join(dir, "declared.sh");
+    writeFileSync(
+      p,
+      [
+        "#!/bin/sh",
+        "HELP='t — thing",
+        "",
+        "Options:",
+        "  --json     Machine-readable output.",
+        "  --help     Show help.",
+        "'",
+        'case "$1" in',
+        "  --help|-h) printf '%s' \"$HELP\"; exit 0 ;;",
+        "  --version|-V) printf '1.0.0\\n'; exit 0 ;;",
+        "esac",
+        "printf 't: unknown option %s\\n' \"$1\" >&2; exit 2",
+      ].join("\n"),
+    );
+    chmodSync(p, 0o755);
+    return { path: p, argv0: [p] };
+  };
 
-  test.each(targets)(
-    "%s gives the same verdict alone as in a full run",
-    async (rel) => {
-      const p = join(HERE, rel);
-      const target: TargetInfo = { path: p, argv0: ["bun", p] };
-      const full = await record(target, CHECKERS);
-      for (const ruleId of ["B3", "B5", "D1"]) {
+  test("all three rules still hold a declaring target to its own statement", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-declared-"));
+    try {
+      // `true` is the declared-machine-default flag `record()` takes; nothing about this target's
+      // `--json` changes any answer, so the guard would otherwise silence B3 and D1.
+      const h = await record(declaring(dir), CHECKERS, true);
+      expect(h.discovery.machineModeDefault).toBe(true);
+
+      // The two rules a declaration makes reachable inertly: the parser-error path, and
+      // `--version` itself, which a machine-first target has asserted is a document.
+      for (const ruleId of ["B5", "D1"]) {
         const checker = CHECKERS.find((c) => c.ruleId === ruleId);
         if (!checker) throw new Error(`no checker for ${ruleId}`);
-        const solo = checker.check(await record(target, [checker])).verdict;
-        expect([ruleId, "solo", solo]).toEqual([ruleId, "solo", checker.check(full).verdict]);
+        expect([ruleId, checker.check(h).verdict]).toEqual([ruleId, "fail"]);
       }
-    },
-    120_000,
-  );
+
+      // B3 stays unreachable, and says why: its subject is a DATA command's output, and choosing
+      // one means knowing it is side-effect-free. A declaration does not supply that.
+      const b3 = CHECKERS.find((c) => c.ruleId === "B3");
+      if (!b3) throw new Error("no checker for B3");
+      expect(b3.check(h).verdict).toBe("unverified");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
 });

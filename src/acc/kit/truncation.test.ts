@@ -14,7 +14,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { isCorroborationProbe } from "./machine-mode.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import { digestOfText, invocationId } from "./runner.ts";
@@ -270,7 +269,7 @@ describe("one truncated probe among completed ones is not compliance either", ()
     (ruleId, checker) => {
       // Corroboration probes are excluded: they are supporting evidence for whether the rule
       // applies, not a subject of it. See isCorroborationProbe.
-      for (const inv of checker.probes(real.discovery).filter((p) => !isCorroborationProbe(p))) {
+      for (const inv of checker.probes(real.discovery)) {
         const id = invocationId(inv);
         expect(real.byId.has(id)).toBe(true);
         const label = `${ruleId} with \`${inv.args.join(" ") || "(bare)"}\` truncated`;

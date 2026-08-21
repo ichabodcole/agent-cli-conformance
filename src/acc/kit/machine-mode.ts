@@ -9,7 +9,7 @@
 // talking about the same invocation, or the recorder's dedup silently gives them different ones.
 
 import { SENTINEL } from "./inert.ts";
-import type { Discovery, History, Invocation, Observation } from "./types.ts";
+import type { Discovery } from "./types.ts";
 
 /**
  * The token that selects machine mode, written so the whole probe stays flag-shaped.
@@ -57,19 +57,22 @@ export function machineErrorArgs(selector: string): string[] {
  * is the normal case here.
  */
 export function machineErrorProbesFor(d: Discovery): { args: string[]; how: string }[] {
-  const out: { args: string[]; how: string }[] = [];
-  // BOTH, when both exist, and the reason is the defect B5 is named for.
+  // ONLY the declared route. A flag matched out of help by SPELLING is not a machine-mode
+  // selector, it is a guess that one exists, and seven attempts to make that guess safe each
+  // failed in a new direction: a version string that happens to parse; a mode reachable only on
+  // the error path; a mode that collapses under its own flag; a flag that takes a value, so
+  // sending it bare is malformed and the tool's complaint reads as a mode switch; a disqualified
+  // `--json` promoting `--format`; a structured REJECTION of the probe reading as acceptance.
+  // The list never closed because the question — what does this flag MEAN — is not answerable
+  // from outside the program.
   //
-  // A CLI that emits JSON to a pipe very often ALSO ships `--json`, and the classic failure is a
-  // format resolved only from the tokens the parser managed to read before it stopped: the bare
-  // error comes back as a document and the SAME error under `--json` comes back as prose. Probing
-  // only the declared path would take the target's word for the half it got right and never look
-  // at the half it got wrong — a declaration turning a real failure into a pass, which is the
-  // exact shape this catalogue exists to report.
-  if (d.machineModeDefault) out.push({ args: [`--${SENTINEL}-flag`], how: "the declared default" });
-  const selector = machineSelector(d);
-  if (selector) out.push({ args: machineErrorArgs(selector), how: selector });
-  return out;
+  // So it is not asked. A declaration is an assertion and falsifying an assertion is sound; an
+  // inference is the kit writing the claim it then tests. `--json` still selects PROBES for the
+  // rules that only need to choose what to look at, and still answers D3, whose subject is the
+  // help text itself. It no longer reaches a verdict.
+  return d.machineModeDefault
+    ? [{ args: [`--${SENTINEL}-flag`], how: "the declared default" }]
+    : [];
 }
 
 /** A successful command in machine mode — the smallest one every CLI is expected to have. */
@@ -216,31 +219,12 @@ const MACHINE_DEFAULT_PHRASES: readonly { re: RegExp; gated: boolean }[] = [
   },
 ];
 
-/** The purpose prefix marking a probe as supporting evidence rather than a subject of the rule. */
-const CORROBORATION = "corroboration:";
-
-/**
- * The three invocations that exist in both a bare and a selected form at `L0`.
- *
- * Each is inert, needs no data command, and is already sent by some rule — `--help` by D2 and B3,
- * `--version` by D1, the sentinel by A1 and B5 — so pairing them costs no additional spawn.
- */
-const CONTRAST_BASES: readonly (readonly string[])[] = [
-  ["--help"],
-  ["--version"],
-  [`--${SENTINEL}-flag`],
-];
-
 /**
  * True when the text is one structured document, or a stream of them.
  *
- * Deliberately NARROWER than `parsesWhole`, which `JSON.parse` makes far weaker than it looks:
- * `1.4` is valid JSON, so a text-only CLI printing a two-component version number would otherwise
- * count as having produced a document. A bare scalar is exactly what a plain-text CLI emits.
- *
- * The NDJSON arm asks the same question of every line rather than looking for a `{` in the text.
- * It briefly did the latter, and a substring standing in for a structural claim is the error this
- * rule exists to remove, one layer down.
+ * Narrower than `parsesWhole`, which `JSON.parse` makes weaker than it looks: `1.4` is valid JSON,
+ * so a plain-text version number would otherwise count as a document. A bare scalar is exactly
+ * what a text CLI emits.
  */
 export function parsesAsDocument(text: string): boolean {
   const trimmed = text.trim();
@@ -258,88 +242,4 @@ function isStructured(text: string): boolean {
   } catch {
     return false;
   }
-}
-
-/** Did EITHER stream of this observation come back as a document? */
-function answeredWithDocument(o: Observation): boolean {
-  return parsesAsDocument(o.stdout) || parsesAsDocument(o.stderr);
-}
-
-/**
- * Every probe a checker declares so its evidence about the selector is complete on its own.
- *
- * Both halves of all three pairs. Reading corroboration out of whatever the shared recording
- * happens to hold works while the whole registry runs and inverts the moment it does not — a
- * single-checker unit test, or a future `--only B5`. A verdict that changes depending on which
- * OTHER rules ran is not a measurement, so a checker that needs an observation asks for it.
- */
-export function selectorCorroborationProbes(d: Discovery): Invocation[] {
-  const selector = machineSelector(d);
-  if (!selector) return [];
-  return CONTRAST_BASES.flatMap((base) =>
-    [base, [...base, selector]].map((args) => ({
-      args: [...args],
-      inertness:
-        args[0] === "--help" || args[0] === "--version"
-          ? ("help-path" as const)
-          : ("sentinel" as const),
-      purpose: `${CORROBORATION} does ${selector} change what ${base.join(" ")} answers with`,
-    })),
-  );
-}
-
-/**
- * True for a probe that exists to corroborate the selector, not to be judged by the rule.
- *
- * The incomplete-evidence sweeps need the distinction. Losing a probe the rule is ABOUT means the
- * rule cannot reach a verdict; losing one of these closes one pair, and the other two still answer.
- */
-export function isCorroborationProbe(inv: Invocation): boolean {
-  return inv.purpose.startsWith(CORROBORATION);
-}
-
-/**
- * Did the selector CHANGE anything? — the premise every rule needs before condemning under it.
- *
- * `machineModeFlag` is matched out of help by SPELLING. `--json <file>   Treat the input file as
- * JSON` is an ordinary help entry, and a CLI shaped that way was failed on three core rules for
- * answering their probes in prose. It had entered no contract to break.
- *
- * THE QUESTION IS A CONTRAST, NOT A PRESENCE, and getting that wrong inverted the rule against
- * exactly the targets it should catch hardest. Asking "did a document ever come back under the
- * flag" cannot see a machine mode that COLLAPSES under it: a CLI answering the bare parser error
- * as an envelope and the same error under `--json` in prose — B5's flagship defect — produced no
- * document under the flag and so could not be condemned, while the worse the collapse the quieter
- * the kit became. It also cleared a machine-first CLI whose `--json` names an input file, because
- * JSON was going to happen anyway.
- *
- * Pairing answers all four shapes with one question. A flag that changes whether the answer is a
- * document is doing something to the output; a flag that changes nothing, on any of the three
- * pairs available at `L0`, has not been shown to be a selector at all — which is the honest
- * reading of an input-file flag that happens to be spelled `--json`.
- *
- * Not circular where the contrast IS the defect. B5 condemning a collapse reads the pair as
- * evidence that the flag governs output shape; that it governs it WRONGLY is the separate claim,
- * and the observation cannot establish both at once by accident — a flag doing nothing produces no
- * contrast and no verdict.
- *
- * The cost, stated on all three rule pages: a CLI whose `--json` is genuinely a selector but whose
- * output shape is identical with and without it, on every pair this kit can reach, is not
- * condemned. From outside it cannot be told apart from the innocent one.
- */
-export function selectorObserved(h: History): boolean {
-  const selector = machineSelector(h.discovery);
-  if (!selector) return false;
-  const find = (args: readonly string[]): Observation | undefined =>
-    h.observations.find(
-      (o) =>
-        o.invocation.args.length === args.length &&
-        o.invocation.args.every((a, i) => a === args[i]),
-    );
-  return CONTRAST_BASES.some((base) => {
-    const bare = find(base);
-    const selected = find([...base, selector]);
-    if (!bare || !selected) return false;
-    return answeredWithDocument(bare) !== answeredWithDocument(selected);
-  });
 }

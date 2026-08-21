@@ -91,7 +91,7 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [A7](./rules/parsing/advertised-value-set-is-enforced.md)         | core       | L0    | implemented | partial  | 6    |
 | [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | L0    | implemented | partial  | 3    |
 | [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | L0    | implemented | partial  | 4    |
-| [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L0    | implemented | partial  | 6    |
+| [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L1    | implemented | partial  | 6    |
 | [B4](./rules/streams/output-is-delivered-whole.md)                | core       | L1    | planned     | partial  | 2    |
 | [B5](./rules/streams/machine-mode-holds-on-parser-errors.md)      | core       | L0    | implemented | partial  | 8    |
 | [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | L0    | implemented | partial  | 4    |

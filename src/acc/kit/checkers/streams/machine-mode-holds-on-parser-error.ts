@@ -4,14 +4,7 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
-import {
-  machineErrorProbesFor,
-  machineSelector,
-  parsesAsNdjson,
-  parsesWhole,
-  selectorCorroborationProbes,
-  selectorObserved,
-} from "../../machine-mode.ts";
+import { machineErrorProbesFor, parsesAsNdjson, parsesWhole } from "../../machine-mode.ts";
 import type { Checker, Discovery, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -67,7 +60,6 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
       inertness: "sentinel" as const,
       purpose: `B5 via ${how}: a parser error must still be a machine document`,
     })),
-    ...selectorCorroborationProbes(d),
   ],
 
   check: (h: History): Finding => {
@@ -75,7 +67,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
     if (ways.length === 0) {
       return finding(
         "unverified",
-        "no machine mode this probe can reach was advertised in help or declared, so there is no mode to hold",
+        "no machine mode was DECLARED, and a flag matched from help by spelling is a guess at one rather than evidence of one; add `machineMode` to acc.config.json to have this checked",
         [],
       );
     }
@@ -122,40 +114,8 @@ function one(h: History, purpose: string, how: string): Finding {
       );
     }
 
-    // THE PRECONDITION FOR CONDEMNING UNDER THE SELECTOR, consulted on the two paths below that
-    // do — and on neither the pass nor the unverified ones.
-    //
-    // This rule condemns a target for answering in prose WHILE IN machine mode, so the flag has to
-    // have been shown to select one: `--json <file>   Treat the input file as JSON` is an ordinary
-    // help entry and the CLI behind it is text-only, answering every probe in prose because prose
-    // is all it emits.
-    //
-    // Placement is the whole of it, and it has been wrong in both directions. Too late — after the
-    // empty-streams branch — and a target that rejects the sentinel silently is failed with the
-    // words "machine mode via --json" on a selector the same run reports as unestablished. Too
-    // early, at the top of this function, and a CLI whose machine mode is real only on the ERROR
-    // path answers THIS probe with a JSON document and is told nothing came back under the flag: a
-    // measured, correct pass thrown away. A guard belongs on the paths it is a precondition for.
-    //
-    // A DECLARED default is exempt. The premise there is a declaration rather than an inference
-    // about a flag name, and a target that declares machine mode its default while advertising
-    // `--json` has said the flag is a mode selector. Probing only the declared path would take its
-    // word for the half it got right and never look at the half it got wrong.
-    const condemnable =
-      how === "the declared default" ||
-      h.discovery.machineModeDefault ||
-      h.discovery.machineModeFlag === null ||
-      selectorObserved(h);
-    const unestablished = (): Finding =>
-      finding(
-        "unverified",
-        `${machineSelector(h.discovery)} did not change what any probe came back with — the same answers arrive with and without it — so it was not established as a machine-mode selector`,
-        [o.id],
-      );
-
     const streams = answers(o.stdout, o.stderr);
     if (streams.length === 0) {
-      if (!condemnable) return unestablished();
       return finding(
         "fail",
         `machine mode via ${how} and the failure was reported with nothing on either stream (exit ${o.exitCode})`,
@@ -182,7 +142,6 @@ function one(h: History, purpose: string, how: string): Finding {
         [o.id],
       );
     }
-    if (!condemnable) return unestablished();
     return finding(
       "fail",
       // The consequence, not just the fact: an agent that branched on a field of the envelope it

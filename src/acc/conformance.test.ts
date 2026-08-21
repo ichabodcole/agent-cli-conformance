@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CREDENTIAL_PATTERNS } from "./kit/checkers/safety/no-secrets-in-help.ts";
-import { loadConfig } from "./kit/config.ts";
+import type { AccConfig } from "./kit/config.ts";
 import { record } from "./kit/record.ts";
 import { CHECKERS } from "./kit/registry.ts";
 import { buildReport, runCheckers } from "./kit/report.ts";
@@ -730,17 +730,26 @@ describe("schema", () => {
 // stay covered by the tests above.
 const ACC: TargetInfo = { path: CLI, argv0: ["bun", CLI] };
 
+/**
+ * acc DECLARES machine mode its default, and the positive control now depends on it.
+ *
+ * A flag matched out of help by spelling stopped reaching any verdict — seven attempts to make
+ * that inference safe each failed in a new direction — so the machine-mode rules are reachable
+ * only through a declaration. acc is machine-first in fact: bare errors are envelopes on stderr
+ * and piped output is JSON, so the declaration is TRUE of it, and asserting it here is the kit
+ * eating its own cooking rather than exempting itself.
+ *
+ * Held in this suite rather than in a root `acc.config.json`, because `loadConfig` defaults to the
+ * CURRENT WORKING DIRECTORY: a file at the repo root would silently declare machine mode for every
+ * fixture the suite checks from there, most of which are not machine-first, and the declaration
+ * would be false of them.
+ */
+const ACC_DECLARES: AccConfig = { rules: {}, knownFailures: {}, machineMode: "default" };
+
 describe("acc checks itself, through the kit", () => {
   test("is conformant", async () => {
-    const h = await record(ACC, CHECKERS);
-    const r = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadConfig(undefined),
-      "L0",
-      VERSION,
-    );
+    const h = await record(ACC, CHECKERS, true);
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, ACC_DECLARES, "L0", VERSION);
     if (!r.conformant) {
       const failed = r.findings.filter((f) => f.verdict !== "pass" && f.tier === "core");
       throw new Error(
@@ -757,15 +766,8 @@ describe("acc checks itself, through the kit", () => {
   // not-applicable and excluded from both claims; A6 is diagnostic and unverifiable through a
   // bun launcher, so it gates neither.)
   test("every applicable core rule is verified, not merely unfailed", async () => {
-    const h = await record(ACC, CHECKERS);
-    const r = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadConfig(undefined),
-      "L0",
-      VERSION,
-    );
+    const h = await record(ACC, CHECKERS, true);
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, ACC_DECLARES, "L0", VERSION);
     const unverified = r.findings.filter(
       (f) => f.applicable && f.tier === "core" && f.verdict === "unverified",
     );
@@ -784,15 +786,8 @@ describe("acc checks itself, through the kit", () => {
   // is what the higher probe levels are for — so this assertion is also the ratchet: raising
   // any checker to `complete` without the evidence to back it goes red here.
   test("...but NOT fully verified, because every core checker's coverage is partial", async () => {
-    const h = await record(ACC, CHECKERS);
-    const r = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadConfig(undefined),
-      "L0",
-      VERSION,
-    );
+    const h = await record(ACC, CHECKERS, true);
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, ACC_DECLARES, "L0", VERSION);
     expect(r.fullyVerified).toBe(false);
     expect(r.counts.corePartial).toBe(r.counts.core);
     // The withheld claim must arrive with its reasons attached, one entry per blocking rule.

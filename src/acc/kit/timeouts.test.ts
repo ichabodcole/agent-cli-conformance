@@ -14,7 +14,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { isCorroborationProbe } from "./machine-mode.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import { digestOfText, invocationId } from "./runner.ts";
@@ -185,7 +184,7 @@ describe("a PARTIAL hang is not evidence of compliance either", () => {
       const expected = OWNS_HANGS.has(ruleId) ? "fail" : "unverified";
       // Corroboration probes are excluded: they are supporting evidence for whether the rule
       // applies, not a subject of it. See isCorroborationProbe.
-      for (const inv of checker.probes(real.discovery).filter((p) => !isCorroborationProbe(p))) {
+      for (const inv of checker.probes(real.discovery)) {
         const id = invocationId(inv);
         // Every declared probe is recorded, so a miss means the checker asked for something
         // record() never ran — worth knowing, and not something to skip past silently.
