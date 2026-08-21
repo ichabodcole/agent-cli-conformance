@@ -1,15 +1,17 @@
 #!/usr/bin/env bun
-// A CLI that declares machine-first IN ITS HELP and has no machine-mode flag at all.
+// A machine-first CLI that SAYS SO IN HELP and declares nothing to the kit.
 //
-// The shape the reference implementation cannot test. `acc` advertises `--json`, so D3 answers on
-// its flag clause and never reaches the prose branch — a structural blind spot in the positive
-// control, found by an outside adopter rather than by the suite. This fixture is what closes it.
+// It exists for D3, whose subject is the help text a caller reads: the prose claim moves that rule
+// from `fail` to `unverified` and no further, because matching a sentence is a guess about meaning
+// and a guess may not buy a pass. Two reviewers broke every version of the matcher with ordinary
+// rephrasings, one of them the literal opposite ("JSON output is disabled by default").
 //
-// It matters twice over. A statement in help is a declaration to the tool's own CALLERS, which is
-// a stronger promise than a key in `acc.config.json`, and it therefore unlocks the same
-// no-selector B5 probe: say it here and the kit goes and tries to falsify it. Before that wiring
-// existed, a tool could make this claim in the artifact its callers read, collect a D3 pass for
-// saying it, and never be checked.
+// It UNLOCKS NOTHING. An earlier design let a help statement unlock the parser-error rule's
+// no-selector probe, on the argument that a promise made where callers can read it deserves
+// scrutiny; that reasoning is sound for a claim actually made and did not survive the matcher's
+// false-positive rate — three ordinary human-first CLIs became CORE violations on one unrelated
+// sentence. Measured against this fixture today: `UNVR B5 — no machine mode was DECLARED`.
+// Unlocking a core check stays a deliberate, revocable act: `machineMode` in `acc.config.json`.
 const args = process.argv.slice(2);
 
 const HELP = `fixture — a machine-first tool with no flag

@@ -78,10 +78,9 @@ export interface AccConfig {
    * with no selector at all and see whether the answer is a document. A target that declares
    * this and answers in prose fails B5, which is the rule doing its job.
    *
-
-   *
-   * `undefined` means undeclared, which is not the same as "not machine-first" — it means the
-   * kit was told nothing and falls back to reading help.
+   * `undefined` means undeclared, which is not the same as "not machine-first" — it means the kit
+   * was told nothing, and nothing is what it will infer: the machine-mode rules report
+   * `unverified` and name this key as the remedy.
    */
   machineMode?: "default";
 }

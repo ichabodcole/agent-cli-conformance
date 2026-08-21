@@ -119,9 +119,11 @@ for a destination path. Seven successive attempts to infer a machine mode from t
 failed on a population nobody had enumerated, and the enumeration never closed — the question is not
 answerable from outside the program.
 
-So this rule waits for an assertion. A target that declares `"machineMode": "default"` in
-[`acc.config.json`](../../concepts/conformance.md) has stated something falsifiable, and this rule
-falsifies it. Without a declaration it reports `unverified` and names the one line that turns it on.
+So this rule's machine clause waits for an assertion. Without a declaration the clause is simply
+**not reached** — the rule is decided by its other clauses, which are about plain `--version` and
+were measured directly — and a target that reports a version properly still **passes**. With a
+declaration the clause falsifies it: machine mode is the default, so plain `--version` owes a
+document.
 See the [`L0` admission test](../../concepts/probing.md#what-l0-may-assume--the-admission-test) for
 why the boundary sits here.
 

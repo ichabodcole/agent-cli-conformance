@@ -130,7 +130,7 @@ catalog.
 
 ## The probe
 
-Inert (`L0`) — help output in machine mode, where such a path exists.
+**No probe.** This rule is `L1`: at `L0` it sends nothing and reports not-applicable.
 
 ```
 <cli> --help --json          # or the tool's discovered machine-mode flag
@@ -149,9 +149,10 @@ for a destination path. Seven successive attempts to infer a machine mode from t
 failed on a population nobody had enumerated, and the enumeration never closed — the question is not
 answerable from outside the program.
 
-So this rule waits for an assertion. A target that declares `"machineMode": "default"` in
-[`acc.config.json`](../../concepts/conformance.md) has stated something falsifiable, and this rule
-falsifies it. Without a declaration it reports `unverified` and names the one line that turns it on.
+So this rule waits for an assertion, and at `L0` there is nothing for it to do even with one: it
+reports **not-applicable**, because its subject is a data command's output and choosing one means
+knowing it is side-effect-free. The rule is `L1`; a declaration that names a command it may read is
+what makes it reachable, and that declaration does not exist yet.
 See the [`L0` admission test](../../concepts/probing.md#what-l0-may-assume--the-admission-test) for
 why the boundary sits here.
 
@@ -160,9 +161,6 @@ never says so is not checked for one. From outside it cannot be told apart from 
 none — inference may decide what to look at, only observation may condemn.
 
 **Passes** when the captured stdout parses whole, as the declared kind.
-
-**Reports `unverified`** where no machine-mode flag can be discovered, and raises
-[help advertises machine mode](../discoverability/help-advertises-machine-mode.md) instead.
 
 **Reports `unverified`** for valid NDJSON, rather than failing it. Under `L0` nothing is declared,
 and a stream of valid NDJSON is a plausible legitimate design — failing it without a declaration

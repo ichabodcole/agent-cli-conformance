@@ -103,7 +103,10 @@ by a fresh agent from the tree, cold-read, and carried through to the published 
 which otherwise shows only a list of commit subjects.
 
 **Most commit types do not release.** With `release-type: node` and no `changelog-sections`
-override, `feat` bumps the minor, `fix` bumps the patch and a breaking change bumps the major;
+override, `feat` bumps the minor and `fix` bumps the patch. **A breaking change does NOT bump the
+major while the version is below `1.0.0`** — release-please treats `0.x` as pre-stable and bumps
+the minor instead, unless `bump-major-pre-major` is set, which it is not. So a `feat!` here ships
+as a minor. Say "breaking" in the note and let the number be what it is;
 `docs`, `chore`, `ci`, `test` and `refactor` produce no version and no release PR at all. A
 docs-only merge to `main` that cuts no release is correct, not broken. Merge the promotion PR with a
 merge or rebase commit — a squash takes its headline from the PR title, and a title that is not a
