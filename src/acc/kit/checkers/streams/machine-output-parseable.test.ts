@@ -25,6 +25,7 @@ const emptyHistory = (machineModeDefault: boolean) => ({
 // breaking on a population nobody had enumerated. The stand-in is gone; the rule waits for a
 // declaration that names a command it may run.
 describe("B3 — machine output parses as its declared kind", () => {
+  // DEFENDS B3-E1 — this rule is L1 and reports not-applicable until a declaration names a command whose output it may read
   test("is an L1 rule and sends no probes", () => {
     expect(machineOutputParseableChecker.probeLevel).toBe("L1");
     expect(machineOutputParseableChecker.probes(DISCOVERY)).toEqual([]);

@@ -161,6 +161,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
   // machine-mode flag at all, so the ONLY way the kit reaches its error path is the declaration —
   // delete the declared branch and this test cannot fail through some other route, which is what
   // an earlier version of it did.
+  // DEFENDS B5-E1 — an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document
   test("FAILS a target that declares the default and answers in prose", async () => {
     const h = await record(
       fixture("broken/declares-machine-mode-answers-prose.ts"),

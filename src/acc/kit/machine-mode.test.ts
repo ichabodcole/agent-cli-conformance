@@ -227,6 +227,7 @@ describe("a declaration is an assertion, and the guard does not apply to it", ()
     return { path: p, argv0: [p] };
   };
 
+  // DEFENDS D1-E3 — plain --version emits a structured document rather than a bare value
   test("all three rules still hold a declaring target to its own statement", async () => {
     const dir = mkdtempSync(join(tmpdir(), "acc-declared-"));
     try {
