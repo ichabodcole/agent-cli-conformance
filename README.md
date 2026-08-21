@@ -72,7 +72,7 @@ answers `404` for a private repository whatever token is in the environment
 if and when this one opens up.
 
 Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
-commit or a release tag after the `#` — `…agent-cli-conformance.git#v0.1.0`.
+commit or a release tag after the `#` — `…agent-cli-conformance.git#v1.0.0`.
 
 **Two ways this install goes wrong, and only one of them is loud.**
 
