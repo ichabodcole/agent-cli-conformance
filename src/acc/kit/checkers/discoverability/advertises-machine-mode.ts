@@ -5,6 +5,7 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
+import { helpStatesMachineDefault } from "../../machine-mode.ts";
 import type { Checker, Finding, History, Invocation, Observation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -25,20 +26,6 @@ const FORCED_TEXT = "D3: human help, with machine mode forced off";
  * spaces) or by nothing. `parseHelp`'s structured parse is consulted first; this is the
  * fallback for help layouts its `Commands:` heuristic does not recognise.
  */
-/**
- * Help asserting that structured output is what the tool emits by default.
- *
- * Deliberately narrow, and the near-miss is why: `--format json (default: text)` contains both
- * "json" and "default" while meaning the opposite. Each pattern requires the format word to be
- * the thing defaulted TO, not merely adjacent to the word. A tool with a real `--format` flag
- * never reaches these anyway — the flag scan above answers first.
- */
-const MACHINE_DEFAULT_PHRASES: readonly RegExp[] = [
-  /\b(json|ndjson)\b[^.\n]{0,60}\bby default\b/i,
-  /\bdefaults?\s+to\b[^.\n]{0,30}\b(json|ndjson)\b/i,
-  /\bdefault\s+(output\s+)?(format\s+)?is\b[^.\n]{0,20}\b(json|ndjson)\b/i,
-];
-
 const SCHEMA_COMMAND_ROW = /^[ \t]+schema\b[^\n]*?(?:\s{2,}\S|\s*$)/m;
 
 /** Usable output from a probe: it ran, it finished under its own control, and it said something. */
@@ -184,7 +171,7 @@ export const advertisesMachineModeChecker: Checker = {
     // reached only when no flag and no schema command were found, so a tool that advertises
     // normally never touches it; and this rule already declares a loose-scan gap. In a core rule
     // none of that would be enough.
-    const advertisesMachineDefault = MACHINE_DEFAULT_PHRASES.some((re) => re.test(help));
+    const advertisesMachineDefault = helpStatesMachineDefault(help);
 
     const advertisesSchema =
       surface.subcommands.includes("schema") ||

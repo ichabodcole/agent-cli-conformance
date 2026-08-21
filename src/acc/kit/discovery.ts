@@ -1,3 +1,4 @@
+import { helpStatesMachineDefault } from "./machine-mode.ts";
 import { runProbe } from "./runner.ts";
 import type { Discovery, Invocation, TargetInfo } from "./types.ts";
 
@@ -241,7 +242,20 @@ export async function discover(
       helpReadable: false,
     };
   }
-  // The declaration survives unreadable help on purpose: it is the one thing the kit knows about
-  // a target that does not depend on parsing anything the target printed.
-  return { ...parseHelp(text), machineModeDefault: declaredMachineDefault, helpReadable: true };
+  // TWO ROUTES TO THE SAME FACT, and the second is the stronger promise.
+  //
+  // `acc.config.json` is a declaration to the kit. A statement in help is a declaration to the
+  // target's own callers, and it is the one this rule set should trust more — so it unlocks the
+  // same no-selector probe. Without that, a tool could assert "JSON by default" in the artifact
+  // its callers read, collect a D3 pass for saying it, and have nothing ever test the claim: a
+  // declaration that cannot be falsified, reachable through the front door. Found by an adopter
+  // running the branch that introduced it.
+  //
+  // This is not the kit guessing. The words are the target's; reading them is what lets B5 go and
+  // try to falsify them, which is the same shape L1 is built on.
+  return {
+    ...parseHelp(text),
+    machineModeDefault: declaredMachineDefault || helpStatesMachineDefault(text),
+    helpReadable: true,
+  };
 }

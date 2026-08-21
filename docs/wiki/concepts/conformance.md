@@ -219,6 +219,12 @@ the kit's own config had the rule's name and its behaviour coming apart.
 Help is what D3 reads. A tool with no flag to name satisfies it by saying so, which the rule's
 second clause has always asked for — only the checker was narrower.
 
+**And saying it in help unlocks the same probe the config key does.** That is the half that makes
+the sentence worth trusting: a claim made where callers can read it is the stronger promise, so it
+is the one that earns scrutiny rather than a free pass. The two routes are not alternatives with
+different strengths — `acc.config.json` tells the kit, help tells everyone, and both send B5 to
+find out.
+
 That division is the same one [the roadmap](../../roadmap.md#6-the-portable-declaration-ir) argues
 for at `L1`, arriving early and in miniature: something declares, something else tries to falsify
 it, and a declaration nothing can falsify is a comment that lies.

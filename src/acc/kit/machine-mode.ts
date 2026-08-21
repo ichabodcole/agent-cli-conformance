@@ -118,3 +118,40 @@ export function stringValuesOf(document: unknown): string[] {
   visit(document);
   return out;
 }
+
+/**
+ * Does this help text state that structured output is what the tool emits by default?
+ *
+ * The target's own words, in the artifact its callers read — a declaration, not the kit guessing.
+ * That distinction is what makes acting on it legitimate: it unlocks B5's no-selector probe, so
+ * the claim gets FALSIFIED rather than believed. A statement in help is the stronger of the two
+ * declarations, because it binds the tool to its callers and not merely to this kit.
+ *
+ * Two families, and the second was missing until an adopter measured it. `default`-shaped
+ * statements are the obvious ones; `pipe-conditional` ones — "JSON when stdout is not a terminal"
+ * — are the shape the docs call the common one, and every phrasing of it failed. So did this
+ * project's own sentence about itself, which is the tell: `acc` has a `--json` flag, so it answers
+ * D3 on clause one and can never exercise this branch. The positive control had a structural blind
+ * spot, and no amount of care in its own suite would have found it.
+ *
+ * Each pattern requires the format word to be the thing defaulted TO, or the thing produced WHEN
+ * piped. The near-miss that makes that necessary is `--format json (default: text)`, which carries
+ * both words and means the opposite; so does "JSON is the default INPUT format", and a tool whose
+ * subject is JSON while its output is a table. All are refused.
+ *
+ * Bounded with `[^.\n]` so a pattern cannot span two sentences: "Prints a JSON schema. Colour is
+ * off when piped." must not read as machine-first.
+ */
+export function helpStatesMachineDefault(help: string): boolean {
+  return MACHINE_DEFAULT_PHRASES.some((re) => re.test(help));
+}
+
+const MACHINE_DEFAULT_PHRASES: readonly RegExp[] = [
+  // default-shaped
+  /\b(json|ndjson)\b[^.\n]{0,60}\bby default\b/i,
+  /\bdefaults?\s+to\b[^.\n]{0,30}\b(json|ndjson)\b/i,
+  /\bdefault\s+(output\s+)?(format\s+)?is\b[^.\n]{0,20}\b(json|ndjson)\b/i,
+  // pipe-conditional
+  /\b(json|ndjson)\b[^.\n]{0,70}\bwhen\b[^.\n]{0,40}\b(piped|not\s+(a\s+)?(tty|terminal))\b/i,
+  /\bwhen\b[^.\n]{0,40}\b(piped|not\s+(a\s+)?(tty|terminal))\b[^.\n]{0,70}\b(json|ndjson)\b/i,
+];
