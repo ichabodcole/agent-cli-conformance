@@ -36,18 +36,21 @@ Produces a **review report** (§5). A run that ends without that artifact is not
 | **moved**       | an input whose observed output differs between the two trees                                                                                                                     |
 | **explained**   | you can say why it moved                                                                                                                                                         |
 | **intended**    | the change was _meant_ to move it, per §1(3)                                                                                                                                     |
-| **outstanding** | anything not yet resolved: a moved output that was not intended, a consumer nobody could analyse, a consumer the corpus could not reach, or a finding not yet repaired           |
+| **outstanding** | anything unresolved that could be resolved: a moved output that was not intended, a consumer nobody could analyse, a finding not yet repaired                                    |
+| **limit**       | something the review could not look at — a consumer the corpus could not reach, a population with no input, a path too destructive to sweep. Reported, never silently dropped    |
 
 > **⚠ Explaining a row does not clear it.** A moved output you can account for and did not intend is
 > the regression this whole method exists to find — the worked example in §2 is exactly that case.
-> `explained` is how you learn whether a move was `intended`; only `intended` clears it.
+> `explained` is how you learn whether a move was `intended`; only `intended` clears it. And
+> §1(3) is written BEFORE the sweep and never revised after it — deciding a move was intended once
+> you have seen it clears every row you are willing to argue for, which is no test at all.
 
 **The three verdicts.** They describe the state at the end of the run, not its history — a run that
 found defects and repaired them all ends `clear to land`:
 
 | verdict             | means                                                                         |
 | ------------------- | ----------------------------------------------------------------------------- |
-| `clear to land`     | every moved output was intended, and nothing is outstanding                   |
+| `clear to land`     | every moved output was intended, nothing outstanding, limits stated           |
 | `defects to repair` | something is outstanding                                                      |
 | `blocked`           | the review could not be performed **at all**. Not a synonym for "do not land" |
 
@@ -62,12 +65,13 @@ Otherwise you need three things:
 
 - **The change, and what it is compared against.** Normally a branch and its merge base. If the work
   is uncommitted, commit it to a scratch branch first — the sweep runs two trees at once and cannot
-  do that from a dirty tree. Note the branch and worktrees you create; §5 has you clean them up.
+  do that from a dirty tree. ⚠ That commit may be the only copy of the user's work: restore it to
+  the working tree before deleting the branch, and never delete it while a reviewer still holds it.
 - **A way to observe what the system does per input.** ⚠ **This is the one that can end the review
   before it starts.** Usually exit codes and stdout; it may instead be a rendered view, a stored
   record, a written file, or the return value of a public entry point. Report `blocked` only if
   **no** consumer can be observed — if some can and some cannot, sweep the ones you can and record
-  the rest as uncovered consumers, which are outstanding. Reviewing a **plan** is the one exception
+  the rest as limits. Reviewing a **plan** is the one exception
   to needing a runnable system; that means an artifact that proposes work not yet built, and
   reframing an unobservable system as "effectively a plan" is how a `blocked` run gets a verdict it
   did not earn.
@@ -122,21 +126,27 @@ outstanding.**
   files, mutates a database, sends mail or calls a paid API, sandbox it — a scratch data directory,
   a disposable container, stubbed network — or restrict the corpus to inputs that cannot reach the
   destructive path, and say in the report which consumers you could not safely sweep. They are
-  uncovered.
+  limits.
 - **If the merge-base tree will not build or needs different dependencies**, install them in that
-  worktree; the two trees are independent checkouts. If it genuinely cannot be built, that is
-  `blocked` — there is no baseline.
+  worktree; the two trees are independent checkouts. If it genuinely cannot be built there is no
+  baseline and no sweep — but Reviewer A needs neither, so run A, record the whole sweep as a limit
+  of the review, and report on what you have. `blocked` is only for a change nothing can observe.
 
 ### How to build the corpus
 
 Build it from §1(2) rather than from what is lying around:
 
 1. For each consumer, split its inputs into populations — two inputs are the same population only if
-   you can say what makes them take the same path through that consumer. If you cannot say, they are
-   different populations.
+   you can name the branch, guard or clause that makes them take the same path through that
+   consumer. A shared shape is not a path: "both are files" does not put two inputs in one
+   population. If you cannot name it, they are different populations. The split is what decides how
+   much the sweep actually looks at, and a coarse one produces a confident, near-empty result — one
+   population per consumer means the sweep tests the consumer, not the premise inside it.
 2. Name at least one input per population.
-3. If you cannot name one for some population, record that consumer as **uncovered**, and say which
-   population is missing. It goes in the report, and it is outstanding.
+3. If you cannot name one for some population, record that consumer as a **limit**, naming the
+   population that is missing. A limit does not block `clear to land` — it is a statement about what
+   the review saw, and treating it as a defect is what teaches readers to stop recording limits.
+   What it must never be is unrecorded.
 4. Only then add whatever existing fixtures also happen to serve that list.
 
 > **⚠ Pointing at an existing fixtures directory and calling it the corpus is the most likely way
@@ -171,13 +181,13 @@ Premise: a validator gained a guard so it stops rejecting inputs whose encoding 
     decides  : reject|accept|defer — INTENDED: reject→defer, for unconfirmed encoding only
 §2  populations: validate/confirmed, validate/unconfirmed, validate/oversize,
                  importFile/confirmed, importFile/unconfirmed  → 22 inputs
-    uncovered  : importFile/unconfirmed — no input reaches it; writes to disk, not sandboxed
+    limits     : importFile/unconfirmed — no input reaches it; writes to disk, not sandboxed
     output     : exit code + verdict line per input
     moved      : 7 of 22
              5  reject→defer   intended
              1  reject→accept  explained, NOT intended — the guard sits above the size check
              1  accept→accept  explained, NOT intended — message wording changed
-verdict: defects to repair (1 unintended move, 1 wording move, 1 uncovered population)
+verdict: defects to repair (2 unintended moves; 1 limit stated, which does not itself block)
 ```
 
 The `reject→accept` row is the finding, and note that it is **explained** — "the guard sits above
@@ -214,7 +224,7 @@ question:
 > **Do not evaluate whether the fix is correct. Assume it is.** Your question is only: what did this
 > premise previously decide that it no longer decides? Here is the sweep output from §2. Account for
 > every input whose result moved, say for each whether the premise note marks it intended, and name
-> any input shape the sweep does not cover.
+> any input shape the sweep does not cover. Do not revise the premise note to make a move intended.
 
 **If A and B contradict each other**, neither wins by seniority. Reproduce both claims yourself, and
 report what you ran.
@@ -234,9 +244,12 @@ worktree of your own and leave the shared tree alone.
 - **Re-run the whole sweep after every repair**, not the rows you judge related — the repair is a
   change like any other and gets the same treatment, and judging which rows it could have touched is
   the reading the sweep exists to replace. This is the largest cost in the method: one full sweep per
-  round, not one per run. Report how many inputs you re-ran.
-- **Send the result back to the reviewer who raised it**, telling them to assume the repair introduced
-  something new rather than only that it fixed something old.
+  repair, not one per run. The base tree has not moved, so its outputs can be reused; re-run the
+  branch. Report how many inputs you re-ran.
+- **Re-dispatch both reviewers, not only the one who raised it.** The repair moved the tree and
+  moved the sweep, and B is the only lens that reads sweep rows — sending back to A alone leaves the
+  new rows unread, which is the expensive step producing output nobody looks at. Tell both to assume
+  the repair introduced something new rather than only that it fixed something old.
 
 **Keep going while rounds return defects. Stop when they return preferences** — and note that you
 wrote the repair, which makes you the worst-placed judge of which is which. When a finding could be
@@ -250,15 +263,16 @@ human.** The design is being iterated through review, and review cannot converge
 ## 5 · Report
 
 The deliverable, and what the human uses to decide whether this lands. It is the message that ends
-the run — write it there unless someone asked for a file. Remove the worktrees and any scratch branch
-first, and restore the working tree you found.
+the run — write it there unless someone asked for a file. Remove the worktrees first. If §0 had you
+commit someone's uncommitted work to a scratch branch, **restore it to the working tree before you
+delete that branch** — deleting it discards the change you were reviewing.
 
 - **Verdict** — `clear to land`, `defects to repair`, or `blocked`.
 - **The premise note** from §1.
 - **The sweep** — the counts, the number of rounds, and every moved input with its explanation and
   whether it was intended. Unintended and unexplained ones first.
-- **Uncovered** — consumers the corpus could not reach, populations with no input, and consumers you
-  could not safely or observably sweep. Each is outstanding.
+- **Limits** — consumers the corpus could not reach, populations with no input, and consumers you
+  could not safely or observably sweep. These do not block the verdict; leaving one out does.
 - **Findings**, each with the command and output that confirmed it, and what was done about it.
 - **This skill** — any step that misfired, was ambiguous, did not apply, or was missing. Propose the
   change; do not work around it silently and do not edit this file unprompted. A step that failed is
