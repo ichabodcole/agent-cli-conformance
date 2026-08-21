@@ -41,7 +41,8 @@ bunx acc check ./your-cli --format text
 `--format text` is worth the habit. Without it you get JSON whenever output is piped or redirected
 — correct, and what CI wants — but the human report is the one with the aligned verdict table and
 the per-rule list of what each check did **not** establish. Its first line also carries
-`[acc <version>]`, which is the only place a stale install shows itself.
+`[acc <version>]` — the place a stale install is hardest to miss, though `acc --version` and the
+JSON report's `kitVersion` say the same thing.
 
 The repository is private today, which is why that is an SSH URL rather than
 `github:ichabodcole/agent-cli-conformance` — see [the README](../../../README.md#getting-started).

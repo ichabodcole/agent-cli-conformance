@@ -67,10 +67,16 @@ different matter — Bun does not support one
 
 **The silent one, which is worse.** The install can succeed at exit `0`, print a commit SHA, and
 put **different bytes on disk** — because the extracted-package cache is stale _independently_ of
-the bare clone, so clearing one does not clear the other. Nothing in the output says so. The only
-symptom is that `acc` is an older version than you asked for, which is why every report now ends
-with `[acc <version>]`: check it against the release you meant to install. If they disagree,
-`bun pm cache rm` and reinstall.
+the bare clone, so clearing one does not clear the other. Nothing in the output says so.
+
+Every report carries the kit's own version for this reason: compare it against the release you
+meant to install, and if they disagree run `bun pm cache rm` and reinstall.
+
+**Be clear how far that check reaches.** The version only changes when a release is cut, so it
+catches staleness that spans a release and not staleness within one — pin a **tag** and the check
+is meaningful; pin a branch or nothing and a stale copy reports the same version as a fresh one.
+On an unpinned install, `bun pm cache rm` before installing is the only reliable answer, and it
+costs a re-download.
 
 This is Bun's behaviour, not something this kit can fix. It is documented here because a tool that
 reports success while doing something else is the entire subject of this project, and the install
@@ -82,8 +88,8 @@ Then point it at your CLI:
 bunx acc check ./your-cli
 ```
 
-**Piped output is JSON, and a terminal gets the text report.** That is the contract this kit asks
-of everyone else, so it applies to itself — which means the report below is what you see at a
+**Piped output is JSON, and a terminal gets the text report** — unless `AI_AGENT` is set, which
+selects JSON anywhere. That is the contract this kit asks of everyone else, so it applies to itself — which means the report below is what you see at a
 terminal, and a pipe or a CI step gets one JSON document instead. `--format text` forces the human
 report anywhere:
 
@@ -94,11 +100,13 @@ bunx acc check ./your-cli --format text
 The first line is the verdict, and the exit code is the gate:
 
 ```
-NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered  /opt/homebrew/bin/git  [acc 0.1.1]
+NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered  /opt/homebrew/bin/git
 ```
 
-That trailing `[acc 0.1.1]` is the kit's own version, on every report. It is there because an
-install can silently give you an older one — see below.
+That line also ends with the kit's own version — `[acc 0.1.1]` <!-- x-release-please-version -->
+— which appears as `kitVersion` in the JSON report. It is there because an install can silently
+give you an older kit than you asked for; the install notes above explain how, and how far the
+check reaches.
 
 `0` means conformant and `9` means it is not. Any other code is `acc` itself failing rather
 than a verdict about your tool — the distinction is
