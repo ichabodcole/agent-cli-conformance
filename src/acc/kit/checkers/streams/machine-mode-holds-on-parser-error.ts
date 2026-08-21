@@ -41,30 +41,30 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
   // not the same rule twice.
   coverage: "partial",
   coverageGaps: [
-    "machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised",
+    "a machine mode is reached only through a declaration so a target whose machine mode is real but undeclared is not checked and only an unrecognised flag provokes the error a declared target is judged on",
     "only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not",
-    "only the --json and --format=json selectors are probed so a machine mode advertised through --output is not",
     "the answer is only required to parse and is never checked against a declared envelope shape",
     "that the invocation failed to PARSE is inferred from a non-zero exit rather than observed",
     "NDJSON is reported unverified rather than failed because no output kind is declared at L0",
   ],
   coverageEstablished: [
-    "for a target whose root help advertises --json or --format or which declares machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document",
+    "for a target that DECLARES machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document",
   ],
 
-  probes: (d: Discovery): Invocation[] =>
-    machineErrorProbesFor(d).map(({ args, how }) => ({
+  probes: (d: Discovery): Invocation[] => [
+    ...machineErrorProbesFor(d).map(({ args, how }) => ({
       args,
       inertness: "sentinel" as const,
       purpose: `B5 via ${how}: a parser error must still be a machine document`,
     })),
+  ],
 
   check: (h: History): Finding => {
     const ways = machineErrorProbesFor(h.discovery);
     if (ways.length === 0) {
       return finding(
         "unverified",
-        "no machine mode this probe can reach was advertised in help or declared, so there is no mode to hold",
+        "no machine mode was DECLARED, and a flag matched from help by spelling is a guess at one rather than evidence of one; add `machineMode` to acc.config.json to have this checked",
         [],
       );
     }

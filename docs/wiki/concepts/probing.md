@@ -44,8 +44,53 @@ the version). Their `coverage_gaps` all say some version of "no declaration exis
 
 `L1` and `L2` are named in every rule page that needs them and neither exists yet — both wait on
 a portable declaration format and a real sandbox
-([roadmap](../../roadmap.md#6-the-portable-declaration-ir)). Everything the kit does today is
-`L0`.
+([roadmap](../../roadmap.md#6-the-portable-declaration-ir)). Almost everything the kit does today
+is `L0`.
+
+### What `L0` may assume — the admission test
+
+`probe_level` bounds what may be **sent**. This bounds what may be **concluded**, and it is the
+harder of the two.
+
+> **`L0` performs mechanical checks that require no inference about the target's domain language.
+> If a rule has to work out what one of the target's own words MEANS, it is not an `L0` rule.**
+
+That is the test for admitting a rule to `L0`, and it is written down because the boundary was
+found the expensive way. `--json`, `--format` and `--output` were read out of `--help` and treated
+as switches into a machine mode. Seven successive attempts to make that inference safe each failed
+on a population nobody had enumerated, and the enumeration never closed, because the question —
+what does this flag MEAN — has no answer from outside the program. Two CLIs, one whose `--json`
+names an input file and one whose `--json` is meant to select JSON output and works nowhere, are
+the same program from the outside.
+
+What survives the test, and what does not:
+
+| `L0` may                                                                                    | `L0` may not                                                 |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Check mechanics: exit codes, stream discipline, hangs, crashes, determinism, ANSI in a pipe | Decide what a flag named for a data format governs           |
+| Treat `--help` and `--version` as requests for information about the tool                   | Read a value set out of help prose and hold the target to it |
+| Use a spelling to choose which probe to SEND                                                | Use that spelling to reach a verdict                         |
+| Falsify something the target **declared**                                                   | Falsify something the kit inferred on the target's behalf    |
+
+The middle two rows carry the whole distinction. **Inference may select what to look at; only
+observation may condemn** — being wrong about which probe to send costs a spawn, and being wrong
+about what a word meant costs someone their build. And falsification needs an assertion: with none,
+a kit supplies its own, tests its own supposition, and reports the result as though the target had
+promised something.
+
+`--help` and `--version` survive where `--json` does not, and the reason is structural rather than
+a matter of how common they are. They name a **request for information about the tool**, which has
+one meaning. A flag named for a **data format** does not say which side of the pipe it applies to —
+input, output, or the subject matter — so `--json`, `--format`, `--output`, `--csv` and `--yaml`
+are all ambiguous in the same way. That is also advice for CLI authors: a format-named flag has to
+carry its direction in the help entry, because nothing else can.
+
+**So the machine-mode rules wait for a declaration.** `machineMode` in
+[`acc.config.json`](./conformance.md) is an assertion, and falsifying an assertion is sound at any
+level; without it those rules report `unverified` and name the one line that turns them on. This is
+what `L1` buys in general — you say what your interface does, and the kit tells you whether that is
+true — and why a declaration is worth writing even before a test reads it: a CLI that states how its
+own interface behaves is self-describing to a caller, to an agent, and to its next maintainer.
 
 ## Why it matters for agents
 
@@ -88,7 +133,8 @@ it as input rather than rejecting it, which is exactly the shape of `claude`, `l
 
 The same limit applies to a flag that takes a value: without knowing that flag's arity, the
 runner cannot tell its value from a verb, so it cannot send one inertly. That is why a machine
-mode advertised only as `--format json` goes unprobed where `--json` does not — and, per B5, why a
+mode advertised only as `--format json` goes unprobed where `--json` does not — which now bears
+on probe SELECTION only, since no rule reaches a verdict from a spelling. It is also why a
 probe whose meaning depends on which sense the target implements is not a probe.
 
 This is also why a probe omits a verb wherever it can. Prefixing one — `<verb> -- <sentinel>` —

@@ -332,6 +332,17 @@ export async function checkCommand(
         ...(r.staleExpectations.length
           ? [`  stale expectations (now passing, remove them): ${r.staleExpectations.join(", ")}`]
           : []),
+        // Its own sentence, not the stale one. "Now passing, remove them" and "not being
+        // evaluated" call for opposite actions, and sharing a line would teach a reader to
+        // delete on both — where the second deletion loses the only record of a live defect.
+        ...(r.inertExpectations.length
+          ? [
+              `  not being evaluated (${r.inertExpectations
+                .map((e) => e.ruleId)
+                .join(", ")}) — these entries suppress nothing. NOT evidence the defect is fixed;`,
+              "         the kit stopped looking, so check the defect is still tracked before removing them",
+            ]
+          : []),
       ].join("\n");
     },
   });

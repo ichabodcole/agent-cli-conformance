@@ -125,7 +125,21 @@ export const namesOffendingTokenChecker: Checker = {
     // The machine clause fails only when there IS a document and the token is not in it. Its
     // absence is decided below, because "no document" is a different finding with a different
     // owner.
-    const inAField = machine && machine.exitCode !== 0 ? tokenInAField(machine) : null;
+    // THE MACHINE CLAUSE IS GATED ON THE DECLARATION, like every other machine-mode verdict.
+    //
+    // The invocation is still chosen from a flag matched out of help by SPELLING, which is
+    // allowed — inference may select what to look at. What it may not do is reach a verdict, and
+    // this clause did: a human-first CLI whose `--json` names an INPUT FILE, erroring in
+    // envelopes as machine-first tools do, was failed on a CORE rule for a document that did not
+    // carry the sentinel — a build broken by the spelling of somebody else's flag. Two
+    // independent reviews found it, and this branch's own admission test forbids it in words
+    // (`docs/wiki/concepts/probing.md`), which the code was contradicting while shipping it.
+    //
+    // Declared, the premise is the target's own: it said machine output is the default, so an
+    // error document is owed and the token belongs in a field of it.
+    const machineDeclared = h.discovery.machineModeDefault;
+    const inAField =
+      machineDeclared && machine && machine.exitCode !== 0 ? tokenInAField(machine) : null;
     if (inAField === false) {
       problems.push("the machine-mode document carried the token in no field");
     }
@@ -135,7 +149,7 @@ export const namesOffendingTokenChecker: Checker = {
     // half asks about a field in an envelope that was never emitted — which B5 reports as its own
     // violation. Saying `pass` here would license "the token reaches a field" off a run in which
     // no field existed, and that is the vacuous pass this project exists to catch.
-    if (machine && inAField === null) {
+    if (machineDeclared && machine && inAField === null) {
       return finding(
         "unverified",
         "the rejections named the token in prose, but machine mode produced no parseable document to inspect for the field; see B5",

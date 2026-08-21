@@ -46,6 +46,20 @@ the project whose CLI you want to check:
 bun pm cache rm && bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 ```
 
+> **⚠ Re-pointing at a different ref? Remove the old entry first.** `bun add` with a new ref does
+> not replace the existing dependency — it **appends a second entry under the same key**, prints
+> `warn: Duplicate key` in output nobody reads, and resolves the **first** one. You get the old
+> version at exit 0. `bun pm cache rm` does not help, because the cache was never the problem.
+>
+> ```sh
+> bun remove agent-cli-conformance && bun add -d 'git+ssh://…#<new-ref>'
+> ```
+>
+> This is the third distinct way this install path has silently delivered the wrong bytes at exit
+> 0 — after the stale bare clone and the stale extracted package, both above. An adopter hit all
+> three; this one is the nastiest, because the remedy for the other two does nothing. **Check the
+> installed artifacts before trusting a diff**: if the version you expect ships a file, look for it.
+
 The cache clear is first because **the second install of this package is the one that goes wrong**:
 Bun keeps a bare clone it does not re-fetch, so a tag pushed since your last install is invisible.
 Clearing costs a re-download and removes both failure modes below in one step. Drop it if this is

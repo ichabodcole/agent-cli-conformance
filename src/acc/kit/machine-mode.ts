@@ -57,24 +57,31 @@ export function machineErrorArgs(selector: string): string[] {
  * is the normal case here.
  */
 export function machineErrorProbesFor(d: Discovery): { args: string[]; how: string }[] {
-  const out: { args: string[]; how: string }[] = [];
-  // BOTH, when both exist, and the reason is the defect B5 is named for.
+  // Nothing here infers what a flag MEANS. A flag matched out of help by SPELLING is not a
+  // machine-mode selector, and seven attempts to make that guess safe each failed in a new
+  // direction; the question is not answerable from outside the program.
   //
-  // A CLI that emits JSON to a pipe very often ALSO ships `--json`, and the classic failure is a
-  // format resolved only from the tokens the parser managed to read before it stopped: the bare
-  // error comes back as a document and the SAME error under `--json` comes back as prose. Probing
-  // only the declared path would take the target's word for the half it got right and never look
-  // at the half it got wrong — a declaration turning a real failure into a pass, which is the
-  // exact shape this catalogue exists to report.
-  if (d.machineModeDefault) out.push({ args: [`--${SENTINEL}-flag`], how: "the declared default" });
+  // The DECLARATION is what makes this rule applicable, and it is a stronger statement than
+  // "some flag switches me into machine mode": it says machine output is the DEFAULT. So every
+  // parser error this target produces must be a document, whichever invocation provoked it —
+  // and an advertised flag is worth adding to the list precisely because it is one more way to
+  // provoke one, not because anyone has established what it does.
+  //
+  // Probing ONLY the bare route was shipped for one commit and is the defect this catalogue
+  // exists to report: a target that declared machine-first, answered its bare parser error as an
+  // envelope and the SAME error under its own `--json` in prose was reported CONFORMANT with
+  // `PASS+ B5`. The comment deleted alongside that route said so — "a declaration turning a real
+  // failure into a pass" — and deleting the warning did not make it wrong.
+  if (!d.machineModeDefault) return [];
+  const out = [{ args: [`--${SENTINEL}-flag`], how: "the declared default" }];
   const selector = machineSelector(d);
-  if (selector) out.push({ args: machineErrorArgs(selector), how: selector });
+  if (selector) {
+    out.push({
+      args: machineErrorArgs(selector),
+      how: `the declared default, with ${selector} also sent`,
+    });
+  }
   return out;
-}
-
-/** A successful command in machine mode — the smallest one every CLI is expected to have. */
-export function machineVersionArgs(selector: string): string[] {
-  return ["--version", selector];
 }
 
 /** True when the WHOLE string is exactly one JSON document. */
@@ -215,3 +222,28 @@ const MACHINE_DEFAULT_PHRASES: readonly { re: RegExp; gated: boolean }[] = [
     gated: true,
   },
 ];
+
+/**
+ * True when the text is one structured document, or a stream of them.
+ *
+ * Narrower than `parsesWhole`, which `JSON.parse` makes weaker than it looks: `1.4` is valid JSON,
+ * so a plain-text version number would otherwise count as a document. A bare scalar is exactly
+ * what a text CLI emits.
+ */
+export function parsesAsDocument(text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed === "") return false;
+  if (isStructured(trimmed)) return true;
+  const lines = trimmed.split("\n").filter((line) => line.trim() !== "");
+  return lines.length > 1 && lines.every(isStructured);
+}
+
+/** One JSON value that is an object or an array — not a bare scalar, and not unparseable. */
+function isStructured(text: string): boolean {
+  try {
+    const value: unknown = JSON.parse(text);
+    return typeof value === "object" && value !== null;
+  } catch {
+    return false;
+  }
+}

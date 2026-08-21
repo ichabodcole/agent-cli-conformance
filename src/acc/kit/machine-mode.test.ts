@@ -1,5 +1,14 @@
 import { describe, expect, test } from "bun:test";
-import { helpStatesMachineDefault } from "./machine-mode.ts";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { helpStatesMachineDefault, parsesAsDocument } from "./machine-mode.ts";
+import { record } from "./record.ts";
+import { CHECKERS } from "./registry.ts";
+import type { TargetInfo } from "./types.ts";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 // The corpus an outside adopter built to attack this, plus the family it missed.
 //
@@ -131,4 +140,117 @@ describe("a help statement that structured output is the default", () => {
       });
     });
   }
+});
+
+// A flag matched out of help by SPELLING no longer reaches any verdict. Seven attempts to make
+// that inference safe each failed in a NEW direction — a version string that happens to parse; a
+// mode reachable only on the error path; a mode that collapses under its own flag; a flag taking a
+// value, so sending it bare is malformed and the tool's complaint reads as a mode switch; a
+// disqualified `--json` promoting `--format`; a structured REJECTION of the probe reading as
+// acceptance. The enumeration never closed because the question is not answerable from outside.
+//
+// These are the populations that were failed along the way. None of them declared anything, so
+// none of them may be condemned for a machine mode nobody asserted.
+describe("no verdict rests on a flag matched from help by spelling", () => {
+  const shapes = [
+    ["json-flag-is-an-input.ts", "--json names an input file and takes a value"],
+    ["json-flag-is-a-boolean-input.ts", "--json is boolean and asks for an input check"],
+    ["broken/machine-mode-help-not-json.ts", "advertises --json and does nothing with it"],
+    ["broken/machine-mode-drops-under-flag.ts", "machine mode collapses under its own flag"],
+    ["broken/machine-mode-only-on-the-error-path.ts", "machine mode reaches only the error path"],
+  ] as const;
+
+  test.each(shapes)(
+    "%s — %s",
+    async (rel) => {
+      const p = join(HERE, "fixtures", rel);
+      const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+      expect(h.discovery.machineModeDefault).toBe(false);
+
+      for (const ruleId of ["B3", "B5"]) {
+        const checker = CHECKERS.find((c) => c.ruleId === ruleId);
+        if (!checker) throw new Error(`no checker for ${ruleId}`);
+        const f = checker.check(h);
+        expect([rel, ruleId, f.verdict]).toEqual([rel, ruleId, "unverified"]);
+        expect(f.detail).toContain("DECLARED");
+      }
+      // D1's other clauses still decide the rule; only its machine clause waits on a declaration.
+      const d1 = CHECKERS.find((c) => c.ruleId === "D1");
+      if (!d1) throw new Error("no checker for D1");
+      expect(d1.check(h).detail).not.toContain("machine mode is declared");
+    },
+    60_000,
+  );
+});
+
+describe("parsesAsDocument", () => {
+  test("a bare JSON scalar is not a document", () => {
+    for (const scalar of ["1.4", "7", '"1.0.0"', "true", "null"]) {
+      expect([scalar, parsesAsDocument(scalar)]).toEqual([scalar, false]);
+    }
+  });
+
+  test("an object, an array, or a stream of them is", () => {
+    for (const doc of ['{"a":1}', "[1,2]", '{"a":1}\n{"a":2}', '["a",1]\n["b",2]']) {
+      expect([doc, parsesAsDocument(doc)]).toEqual([doc, true]);
+    }
+  });
+
+  // A brace inside a string VALUE is not structure. This briefly decided two core verdicts.
+  test("record shape decides, not a brace in the text", () => {
+    expect(parsesAsDocument('["a{b",1]\n["c",2]')).toBe(true);
+    expect(parsesAsDocument("1.4\n2.5")).toBe(false);
+  });
+});
+
+describe("a declaration is an assertion, and the guard does not apply to it", () => {
+  const declaring = (dir: string): TargetInfo => {
+    const p = join(dir, "declared.sh");
+    writeFileSync(
+      p,
+      [
+        "#!/bin/sh",
+        "HELP='t — thing",
+        "",
+        "Options:",
+        "  --json     Machine-readable output.",
+        "  --help     Show help.",
+        "'",
+        'case "$1" in',
+        "  --help|-h) printf '%s' \"$HELP\"; exit 0 ;;",
+        "  --version|-V) printf '1.0.0\\n'; exit 0 ;;",
+        "esac",
+        "printf 't: unknown option %s\\n' \"$1\" >&2; exit 2",
+      ].join("\n"),
+    );
+    chmodSync(p, 0o755);
+    return { path: p, argv0: [p] };
+  };
+
+  // DEFENDS D1-E3 — plain --version emits a structured document rather than a bare value
+  test("all three rules still hold a declaring target to its own statement", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-declared-"));
+    try {
+      // `true` is the declared-machine-default flag `record()` takes; nothing about this target's
+      // `--json` changes any answer, so the guard would otherwise silence B3 and D1.
+      const h = await record(declaring(dir), CHECKERS, true);
+      expect(h.discovery.machineModeDefault).toBe(true);
+
+      // The two rules a declaration makes reachable inertly: the parser-error path, and
+      // `--version` itself, which a machine-first target has asserted is a document.
+      for (const ruleId of ["B5", "D1"]) {
+        const checker = CHECKERS.find((c) => c.ruleId === ruleId);
+        if (!checker) throw new Error(`no checker for ${ruleId}`);
+        expect([ruleId, checker.check(h).verdict]).toEqual([ruleId, "fail"]);
+      }
+
+      // B3 stays unreachable, and says why: its subject is a DATA command's output, and choosing
+      // one means knowing it is side-effect-free. A declaration does not supply that.
+      const b3 = CHECKERS.find((c) => c.ruleId === "B3");
+      if (!b3) throw new Error("no checker for B3");
+      expect(b3.check(h).verdict).toBe("unverified");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
 });

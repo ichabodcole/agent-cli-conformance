@@ -394,7 +394,9 @@ this report a violation a conforming target did not commit? G1's own instance is
 two — it was resolved by narrowing G1 and C1 to fault signals rather than published. Neither
 survivor is expressible as a coverage gap:
 
-- **B3 fails a tool whose help is not JSON.** Its only probe is `--help --json`, sent to any
+- **~~B3 fails a tool whose help is not JSON.~~** _Resolved 2026-08-21_: B3 is `L1` and sends no
+  probe at `L0`. Kept for the record — the risk was real and the audit that found it was right.
+  Its only probe was `--help --json`, sent to any
   target whose root help advertises `--json`, and a stream that is neither one document nor NDJSON
   is a `fail` on a **core** rule — `conformant: false`, exit `9`. A tool whose `--json` governs
   its data commands while `--help` keeps printing human help has violated nothing on any data

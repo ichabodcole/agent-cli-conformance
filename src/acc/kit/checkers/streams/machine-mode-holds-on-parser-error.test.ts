@@ -12,15 +12,49 @@ const fixture = (rel: string): TargetInfo => {
   return { path: p, argv0: ["bun", p] };
 };
 
-const PURPOSE = "B5 via --json: a parser error must still be a machine document";
+const PURPOSE = "B5 via the declared default: a parser error must still be a machine document";
 
 /** One recorded probe, with the three fields the verdict reads and nothing else varying. */
+/**
+ * One synthetic observation. `id` doubles as the recording key, so two of these can coexist.
+ */
+function _observation(
+  id: string,
+  args: string[],
+  purpose: string,
+  exitCode: number | null,
+  stdout: string,
+  stderr: string,
+) {
+  return {
+    id,
+    invocation: { args, inertness: "sentinel" as const, purpose },
+    purposes: [purpose],
+    stdout,
+    stderr,
+    stdoutBytes: stdout.length,
+    stderrBytes: stderr.length,
+    stdoutDigest: digestOfText(stdout),
+    stderrDigest: digestOfText(stderr),
+    stdoutLossy: false,
+    stderrLossy: false,
+    truncated: false,
+    exitCode,
+    signal: null,
+    crashed: false,
+    timedOut: false,
+    spawnFailed: false,
+    durationMs: 5,
+    timeToFirstByteMs: 1,
+  };
+}
+
 function historyWith(exitCode: number | null, stdout: string, stderr: string): History {
   const observations = [
     {
       id: "probe",
       invocation: {
-        args: ["--acc-probe-xyzzy-flag", "--json"],
+        args: ["--acc-probe-xyzzy-flag"],
         inertness: "sentinel" as const,
         purpose: PURPOSE,
       },
@@ -47,9 +81,15 @@ function historyWith(exitCode: number | null, stdout: string, stderr: string): H
     target: { path: "x", argv0: ["x"] },
     discovery: {
       subcommands: [],
-      flags: ["--json"],
-      machineModeFlag: "--json",
-      machineModeDefault: false,
+      flags: [],
+      // Declared and advertising NOTHING, so exactly one way in exists and these cases judge the
+      // answer rather than the probe list. A declared target that also advertises a flag is
+      // probed both ways — covered by the probe-list test above.
+      machineModeFlag: null,
+      // DECLARED, because a flag matched from help by spelling no longer reaches any verdict.
+      // Every case below describes a target that asserted machine mode; without the assertion the
+      // rule correctly reports that nobody claimed one, which is a different test.
+      machineModeDefault: true,
       valueSets: {},
       helpReadable: true,
     },
@@ -61,7 +101,7 @@ function historyWith(exitCode: number | null, stdout: string, stderr: string): H
 
 describe("B5 — machine mode holds on the parser-error path", () => {
   test("PASSES the conforming fixture", async () => {
-    const h = await record(fixture("conforming.ts"), [machineModeHoldsOnParserErrorChecker]);
+    const h = await record(fixture("conforming.ts"), [machineModeHoldsOnParserErrorChecker], true);
     const f = machineModeHoldsOnParserErrorChecker.check(h);
     expect(f.verdict).toBe("pass");
     expect(f.ruleId).toBe("B5");
@@ -69,21 +109,23 @@ describe("B5 — machine mode holds on the parser-error path", () => {
 
   // The negative control: machine mode is real on every path except this one. `--help --json`
   // returns a document, so the mode is not missing — it simply does not survive the parser.
-  test("FAILS a CLI whose parser error is a usage block under --json", async () => {
-    const h = await record(fixture("broken/machine-mode-drops-on-parser-error.ts"), [
-      machineModeHoldsOnParserErrorChecker,
-    ]);
+  test("FAILS a declaring CLI whose parser error is a usage block", async () => {
+    const h = await record(
+      fixture("broken/machine-mode-drops-on-parser-error.ts"),
+      [machineModeHoldsOnParserErrorChecker],
+      true,
+    );
     const f = machineModeHoldsOnParserErrorChecker.check(h);
     expect(f.verdict).toBe("fail");
     expect(f.detail).toContain("prose");
     expect(f.ruleId).toBe("B5");
   });
 
-  test("reports unverified when help advertises no machine-mode flag", async () => {
+  test("reports unverified when nothing was declared", async () => {
     const h = await record(fixture("no-machine-mode.ts"), [machineModeHoldsOnParserErrorChecker]);
     const f = machineModeHoldsOnParserErrorChecker.check(h);
     expect(f.verdict).toBe("unverified");
-    expect(f.detail).toContain("no machine mode this probe can reach");
+    expect(f.detail).toContain("no machine mode was DECLARED");
   });
 
   // THE DECLARED-DEFAULT PATH. A machine-first CLI has no selector to send, and until it could
@@ -122,6 +164,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
   // machine-mode flag at all, so the ONLY way the kit reaches its error path is the declaration —
   // delete the declared branch and this test cannot fail through some other route, which is what
   // an earlier version of it did.
+  // DEFENDS B5-E1 — an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document
   test("FAILS a target that declares the default and answers in prose", async () => {
     const h = await record(
       fixture("broken/declares-machine-mode-answers-prose.ts"),
@@ -147,25 +190,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
     expect(probe?.args).toEqual(["--acc-probe-xyzzy-flag"]);
   });
 
-  // A DECLARATION MUST NOT EXCUSE THE PATH IT DOES NOT COVER. A CLI that emits JSON to a pipe
-  // very often also ships `--json`, and the defect B5 is named for is a format resolved only from
-  // the tokens parsed before the parser stopped — bare error fine, `--json` error prose. Probing
-  // only the declared path took the target's word for the half it got right.
-  //
-  // Found by an independent review, which built this target and watched a real FAIL become a
-  // PASS on one line of config.
-  test("FAILS when the declared path holds but the advertised flag does not", async () => {
-    const h = await record(
-      fixture("broken/machine-mode-drops-under-flag.ts"),
-      [machineModeHoldsOnParserErrorChecker],
-      true,
-    );
-    const f = machineModeHoldsOnParserErrorChecker.check(h);
-    expect(f.verdict).toBe("fail");
-    expect(f.detail).toContain("--json");
-  });
-
-  test("probes BOTH ways in when a target declares the default and advertises a flag", () => {
+  test("probes every way a declared target can be made to fail", () => {
     const probes = machineModeHoldsOnParserErrorChecker.probes({
       subcommands: [],
       flags: ["--json"],
@@ -174,6 +199,15 @@ describe("B5 — machine mode holds on the parser-error path", () => {
       valueSets: {},
       helpReadable: true,
     });
+    // ONE probe. A flag matched out of help by SPELLING no longer reaches any verdict, so it
+    // buys no probes either — this target advertises `--json` and the probe list ignores it.
+    // Seven attempts to make that inference safe each failed in a new direction; the question it
+    // rests on, what does this flag MEAN, is not answerable from outside the program.
+    // BOTH, when the target declares AND advertises. Not because anyone established what `--json`
+    // means — nothing does — but because the DECLARATION says machine output is the default, so
+    // every parser error owes a document whichever invocation provoked it. Probing only the bare
+    // route shipped for one commit and passed a target whose machine mode collapsed under its own
+    // flag: a declaration turning a real failure into a pass.
     expect(probes.map((p) => p.args)).toEqual([
       ["--acc-probe-xyzzy-flag"],
       ["--acc-probe-xyzzy-flag", "--json"],
@@ -193,19 +227,6 @@ describe("B5 — machine mode holds on the parser-error path", () => {
         }),
       ).toEqual([]);
     }
-  });
-
-  // `--format` takes a value, so it is sent attached — the spelling inert.ts already whitelists.
-  test("selects --format=json when --format is the advertised machine-mode flag", () => {
-    const [probe] = machineModeHoldsOnParserErrorChecker.probes({
-      subcommands: [],
-      flags: ["--format"],
-      machineModeFlag: "--format",
-      machineModeDefault: false,
-      valueSets: {},
-      helpReadable: true,
-    });
-    expect(probe?.args).toEqual(["--acc-probe-xyzzy-flag", "--format=json"]);
   });
 
   // THE PRECONDITION. This rule governs how a FAILURE is reported; a target that exited 0
@@ -245,7 +266,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
   });
 
   test("cites the observations backing its verdict", async () => {
-    const h = await record(fixture("conforming.ts"), [machineModeHoldsOnParserErrorChecker]);
+    const h = await record(fixture("conforming.ts"), [machineModeHoldsOnParserErrorChecker], true);
     const f = machineModeHoldsOnParserErrorChecker.check(h);
     expect(f.evidence.length).toBeGreaterThan(0);
     for (const id of f.evidence) expect(h.byId.has(id)).toBe(true);
