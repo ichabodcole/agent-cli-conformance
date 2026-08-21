@@ -106,9 +106,12 @@ function historyWithAutoMachineHelp(machineHelp: string, forcedHelp: string | nu
 }
 
 describe("D3 — help advertises the machine-readable path", () => {
-  // THE RULE'S SECOND CLAUSE: discoverable from `--help`, which is the surface a caller reaches.
-  // A machine-first tool has no flag to name, so saying so in help is the whole of what it owes.
-  test("PASSES when help states that structured output is the default", () => {
+  // A CLAIM DOWNGRADES, IT DOES NOT PASS. Matching a sentence is a guess about meaning, and the
+  // verdict it earns is "we could not verify this", not "a caller can discover it". The upside is
+  // structural rather than stylistic: a false PASS becomes impossible, and deleting an honest
+  // sentence from help moves a target from `unverified` to `fail` — so the kit stops paying
+  // anyone to remove true documentation.
+  test("reports unverified — not pass — when help only CLAIMS a machine default", () => {
     for (const line of [
       "Data commands emit JSON on stdout by default; pass --human for prose.",
       "Output defaults to JSON when stdout is not a terminal.",
@@ -117,8 +120,22 @@ describe("D3 — help advertises the machine-readable path", () => {
       const f = advertisesMachineModeChecker.check(
         historyWithHelp(`fixture — a tool\n\nUsage:\n  fixture list\n\nOutput:\n  ${line}\n`),
       );
-      expect({ line, verdict: f.verdict }).toEqual({ line, verdict: "pass" });
+      expect({ line, verdict: f.verdict }).toEqual({ line, verdict: "unverified" });
     }
+  });
+
+  // The property that removes the incentive: the honest sentence is never the expensive choice.
+  test("deleting the claim makes the verdict WORSE, not better", () => {
+    const withClaim = advertisesMachineModeChecker.check(
+      historyWithHelp(
+        "fixture — a tool\n\nUsage:\n  fixture list\n\nOutput:\n  Output is JSON when piped.\n",
+      ),
+    );
+    const without = advertisesMachineModeChecker.check(
+      historyWithHelp("fixture — a tool\n\nUsage:\n  fixture list\n"),
+    );
+    expect(withClaim.verdict).toBe("unverified");
+    expect(without.verdict).toBe("fail");
   });
 
   // The near-misses the pattern exists to refuse. Each contains both a format word and the word

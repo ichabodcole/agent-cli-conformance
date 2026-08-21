@@ -81,7 +81,7 @@ export const advertisesMachineModeChecker: Checker = {
     "a pass establishes only that help names the flag and never that the flag is accepted",
   ],
   coverageEstablished: [
-    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row",
+    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row and a claim matched in help prose downgrades the verdict to unverified rather than establishing it",
   ],
 
   probes: (d): Invocation[] => [
@@ -187,10 +187,24 @@ export const advertisesMachineModeChecker: Checker = {
       );
     }
 
+    // A CLAIM IN PROSE DOWNGRADES A FAILURE; IT DOES NOT BUY A PASS.
+    //
+    // The rule asks whether a caller can discover the structured surface. For a tool with no flag
+    // to name, the only available evidence is a sentence — and matching a sentence is a guess
+    // about meaning, which this kit does not otherwise make. Two independent reviewers broke every
+    // version of the matcher with ordinary rephrasings ("Unlike JSON, text is emitted by default",
+    // "The JSON parser writes a table by default"), and one put the limit plainly: you are not
+    // fixing the detector, you are enumerating negations.
+    //
+    // So the claim moves the verdict from `fail` to `unverified` and no further. That makes a
+    // false positive cost an admission of ignorance rather than an assertion of fact, makes a
+    // false PASS structurally impossible, and — the part that matters most — removes the
+    // incentive to delete honest documentation: deleting the sentence moves a target from
+    // `unverified` to `fail`, which is worse for them, not better.
     if (advertisesMachineDefault) {
       return finding(
-        "pass",
-        "help appears to claim structured output is the default; there is no flag to name, so this is a claim detected in prose rather than a token observed",
+        "unverified",
+        "no machine-mode flag or schema command was advertised; help appears to CLAIM structured output is the default, which is a claim matched in prose rather than a token this kit can verify",
         evidence,
       );
     }

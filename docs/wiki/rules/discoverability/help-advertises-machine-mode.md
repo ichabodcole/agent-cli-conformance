@@ -20,7 +20,7 @@ coverage_gaps:
   - the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it
   - a pass establishes only that help names the flag and never that the flag is accepted
 coverage_established:
-  - the human root help surface names one of the flags --json or --format or --output or carries a schema command row
+  - the human root help surface names one of the flags --json or --format or --output or carries a schema command row and a claim matched in help prose downgrades the verdict to unverified rather than establishing it
 ---
 
 # Help advertises the machine-readable path
@@ -134,12 +134,21 @@ machine-mode path can be discovered here, because neither has anything to send. 
 the practical argument for the rule: an undiscoverable feature is, to a conformance kit,
 indistinguishable from an absent one.
 
-### A tool with no flag says it in prose, and that statement is then tested
+### A tool with no flag says it in prose, and that claim downgrades rather than passes
 
 The first clause exempts a tool with no machine-mode flag — "where one exists" — so what a
 machine-first CLI owes is the second clause: make the structured surface discoverable from `--help`.
-A sentence does that. `Prints JSON when stdout is not a terminal` satisfies this rule with no flag
-and no config.
+A sentence is how it does that, and the kit can see the sentence but cannot verify what it means.
+
+So the claim earns [`unverified`](../../concepts/conformance.md), never a pass:
+`Prints JSON when stdout is not a terminal` moves this rule off `fail` and no further, and the
+verdict says it matched a claim rather than observed a token.
+
+**Three things follow, and the third is the reason for the design.** A false match costs an
+admission of ignorance instead of an assertion of fact. A false **pass** becomes impossible, since
+prose cannot produce one. And **deleting an honest sentence makes a target's report worse** —
+`unverified` becomes `fail` — so the kit never pays anyone to remove true documentation, which a
+warning message alone could not achieve.
 
 The scan is **a fallback**, reached only when no machine-mode flag and no `schema` command row were
 found. A tool that advertises normally never touches it.
@@ -176,7 +185,7 @@ the rest of this page, unexamined.
 
 **Established**
 
-- the human root help surface names one of the flags --json or --format or --output or carries a schema command row
+- the human root help surface names one of the flags --json or --format or --output or carries a schema command row and a claim matched in help prose downgrades the verdict to unverified rather than establishing it
 
 Plain root help that answers with a machine document is not what gets scanned: the checker falls
 back to a forced-text form, and reports `unverified` when the human surface cannot be observed at

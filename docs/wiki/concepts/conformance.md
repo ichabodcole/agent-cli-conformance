@@ -216,8 +216,13 @@ had put an accurate statement in their help, D3 kept failing it, and a key in a 
 their CLI can read** made it pass. D3's subject is what a caller can find out, so answering it from
 the kit's own config had the rule's name and its behaviour coming apart.
 
-Help is what D3 reads. A tool with no flag to name satisfies it by saying so, which the rule's
-second clause has always asked for — only the checker was narrower.
+Help is what D3 reads, and a tool with no flag to name can only answer it with a sentence — which
+the kit matches by pattern and cannot verify the meaning of. So the claim moves D3 from `fail` to
+`unverified` and stops there.
+
+That third value is doing real work. A pass would assert something guessed; a fail would call an
+honest tool undiscoverable. And it makes the honest sentence the cheap choice rather than the
+expensive one: deleting it takes a target from `unverified` to `fail`.
 
 **Saying it in help does not unlock B5, though — the config key does.** The two are not
 interchangeable, and the asymmetry is about what each answer costs when the kit reads it wrongly. A
