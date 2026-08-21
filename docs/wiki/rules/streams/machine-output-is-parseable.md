@@ -15,7 +15,7 @@ checker: src/acc/kit/checkers/streams/machine-output-parseable.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - a flag spelled like a machine-mode selector is only treated as one once some observation came back structured under it so a target whose advertised selector emits prose everywhere is reported unverified rather than failed
+  - a flag spelled like a machine-mode selector is only treated as one once a document came back under it somewhere so a target whose advertised selector emits prose on every path this kit reaches is reported unverified rather than failed
   - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed
   - only machine-mode help is parsed and never a data command
   - shape stability across invocations and across commands is not compared
@@ -152,11 +152,18 @@ prose, and has broken nothing — so before this rule may condemn anything under
 accepts bare scalars, so a plain-text `--version` printing `1.4` would otherwise corroborate its
 own selector.
 
-The corroborating invocation is `<cli> --version <selector>`, and it is deliberately not `--help <selector>` — the invocation this
-rule judges. Establishing the premise out of the same evidence the clause then condemns is
-question-begging rather than a probe. This checker declares that invocation itself rather than
-reading it out of another checker's recordings, which would hold in a full run and invert under a
-single-checker one; recordings deduplicate, so it costs no extra spawn.
+This checker DECLARES both routes it does not judge — `<cli> --version <selector>` and the
+sentinel parser error under the selector — so its evidence is complete on its own: reading
+corroboration out of whatever the shared recording happens to hold would make the verdict depend on
+which other rules ran, which is not a measurement. What it does not do is restrict which
+observations may corroborate once taken. Any recording under the flag that came back as a document
+answers the question, including this rule's own — and that is not circular, because the guard is
+only consulted where the judged observation was NOT a document, and an observation cannot both fail
+to parse and be its own corroboration.
+
+There are three routes to a machine mode at `L0` — help, version, and the sentinel parser error
+— and each of these three rules judges exactly one. A rule that asks for only some of the rest
+inverts on a target whose machine mode is reachable only on the route it skipped.
 
 Uncorroborated, the verdict is `unverified` with that reason — the same verdict this rule
 reports when no machine-mode flag is discovered at all, because that is the same state of
@@ -199,9 +206,9 @@ the rest of this page, unexamined.
 
 **Gaps**
 
-- a flag spelled like a machine-mode selector is only treated as one once some observation came
-  back structured under it so a target whose advertised selector emits prose everywhere is
-  reported unverified rather than failed
+- a flag spelled like a machine-mode selector is only treated as one once a document came back
+  under it somewhere so a target whose advertised selector emits prose on every path this kit
+  reaches is reported unverified rather than failed
 - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified
   rather than failed
 - only machine-mode help is parsed and never a data command

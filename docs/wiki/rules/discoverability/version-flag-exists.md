@@ -121,11 +121,17 @@ prose, and has broken nothing — so before this rule may condemn anything under
 accepts bare scalars, so a plain-text `--version` printing `1.4` would otherwise corroborate its
 own selector.
 
-The corroborating invocation is `<cli> --help <selector>`, and it is deliberately not `--version <selector>` — the invocation this
-rule judges. Establishing the premise out of the same evidence the clause then condemns is
-question-begging rather than a probe. This checker declares that invocation itself rather than
-reading it out of another checker's recordings, which would hold in a full run and invert under a
-single-checker one; recordings deduplicate, so it costs no extra spawn.
+This checker DECLARES both routes it does not judge — `<cli> --help <selector>` and the sentinel
+parser error under the selector — so its evidence is complete on its own: this
+rule's own machine probe is the one it condemns, so without asking for the other route it could
+report `unverified` standalone and `fail` alongside B3, on one target and one set of evidence.
+Corroboration itself is not route-restricted — any recording under the flag that came back as a
+document answers it, this rule's own included, which is not circular because the guard is only
+consulted where that observation was NOT a document.
+
+There are three routes to a machine mode at `L0` — help, version, and the sentinel parser error
+— and each of these three rules judges exactly one. A rule that asks for only some of the rest
+inverts on a target whose machine mode is reachable only on the route it skipped.
 
 Uncorroborated, this clause behaves **exactly as an unadvertised machine mode does**: it is not
 reached, and the clauses above still decide the rule. That matters more than it sounds. An

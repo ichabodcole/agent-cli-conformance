@@ -48,7 +48,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
   // not the same rule twice.
   coverage: "partial",
   coverageGaps: [
-    "a flag spelled like a machine-mode selector is only treated as one once some observation came back structured under it so a target whose advertised selector emits prose everywhere is reported unverified rather than failed",
+    "a flag spelled like a machine-mode selector is only treated as one once a document came back under it somewhere so a target whose advertised selector emits prose on every path this kit reaches is reported unverified rather than failed",
     "machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised",
     "only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not",
     "only the --json and --format=json selectors are probed so a machine mode advertised through --output is not",
@@ -95,31 +95,6 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
 /** One way in, evaluated on its own. `how` names it, so a report says which path answered. */
 function one(h: History, purpose: string, how: string): Finding {
   {
-    // THE PRECONDITION FOR THE SELECTOR ROUTE, and it belongs FIRST.
-    //
-    // This rule condemns a target for answering in prose WHILE IN machine mode, so the flag has
-    // to have been shown to select one. `--json <file>   Treat the input file as JSON` is an
-    // ordinary help entry and the CLI behind it is text-only: every probe comes back as prose
-    // because prose is all it emits, and it has broken nothing.
-    //
-    // Placed at the top because every route out of this function below is a verdict about a mode
-    // that may not exist. The first cut of this guard sat further down, after the empty-streams
-    // branch, so a target that rejected the sentinel silently was still failed with the words
-    // "machine mode via --json" on a selector the same run reported as unestablished.
-    //
-    // Only the flag route can be misread this way — a declared default has no flag to have
-    // misread, and its premise is a declaration rather than an inference.
-    if (
-      how !== "the declared default" &&
-      h.discovery.machineModeFlag !== null &&
-      !selectorObserved(h, ["help", "version"])
-    ) {
-      return finding(
-        "unverified",
-        `nothing this target produced under ${machineSelector(h.discovery)} parsed as a document, so that flag was not established as a machine-mode selector`,
-        [],
-      );
-    }
     const [o] = findByPurpose(h, purpose);
     if (!o) return finding("unverified", `probe was not recorded (${how})`, []);
     // A target still thinking about the flag has emitted no outcome at all, in any shape.
@@ -146,8 +121,40 @@ function one(h: History, purpose: string, how: string): Finding {
       );
     }
 
+    // THE PRECONDITION FOR CONDEMNING UNDER THE SELECTOR, consulted on the two paths below that
+    // do — and on neither the pass nor the unverified ones.
+    //
+    // This rule condemns a target for answering in prose WHILE IN machine mode, so the flag has to
+    // have been shown to select one: `--json <file>   Treat the input file as JSON` is an ordinary
+    // help entry and the CLI behind it is text-only, answering every probe in prose because prose
+    // is all it emits.
+    //
+    // Placement is the whole of it, and it has been wrong in both directions. Too late — after the
+    // empty-streams branch — and a target that rejects the sentinel silently is failed with the
+    // words "machine mode via --json" on a selector the same run reports as unestablished. Too
+    // early, at the top of this function, and a CLI whose machine mode is real only on the ERROR
+    // path answers THIS probe with a JSON document and is told nothing came back under the flag: a
+    // measured, correct pass thrown away. A guard belongs on the paths it is a precondition for.
+    //
+    // A DECLARED default is exempt. The premise there is a declaration rather than an inference
+    // about a flag name, and a target that declares machine mode its default while advertising
+    // `--json` has said the flag is a mode selector. Probing only the declared path would take its
+    // word for the half it got right and never look at the half it got wrong.
+    const condemnable =
+      how === "the declared default" ||
+      h.discovery.machineModeDefault ||
+      h.discovery.machineModeFlag === null ||
+      selectorObserved(h);
+    const unestablished = (): Finding =>
+      finding(
+        "unverified",
+        `nothing this target produced under ${machineSelector(h.discovery)} parsed as a document, so that flag was not established as a machine-mode selector`,
+        [o.id],
+      );
+
     const streams = answers(o.stdout, o.stderr);
     if (streams.length === 0) {
+      if (!condemnable) return unestablished();
       return finding(
         "fail",
         `machine mode via ${how} and the failure was reported with nothing on either stream (exit ${o.exitCode})`,
@@ -174,6 +181,7 @@ function one(h: History, purpose: string, how: string): Finding {
         [o.id],
       );
     }
+    if (!condemnable) return unestablished();
     return finding(
       "fail",
       // The consequence, not just the fact: an agent that branched on a field of the envelope it

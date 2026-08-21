@@ -84,7 +84,7 @@ export const versionFlagChecker: Checker = {
         : []),
       // Corroboration, and it has to be the OTHER route: the probe above is the one this rule
       // condemns, so it cannot also be what establishes that the flag selects anything.
-      ...selectorCorroborationProbes(d, ["help"]),
+      ...selectorCorroborationProbes(d, ["help", "error"]),
     ];
   },
 
@@ -178,7 +178,7 @@ export const versionFlagChecker: Checker = {
     // silenced a directly measured core violation: a target whose `--version` genuinely required
     // a usable HOME went from `fail` to `unverified` because its help happened to spell a flag
     // `--json`. A guard on one clause may not answer for the others.
-    const machineEstablished = machine !== undefined && selectorObserved(h, ["help"]);
+    const machineEstablished = machine !== undefined && selectorObserved(h);
     if (machine && machineEstablished && !noVersionAtAll) {
       if (machine.exitCode !== 0) {
         problems.push(`--version in machine mode exited ${machine.exitCode}`);
@@ -203,7 +203,7 @@ export const versionFlagChecker: Checker = {
           machineEstablished
             ? "version reported with an unusable HOME and XDG_CONFIG_HOME, and as a structured document in machine mode"
             : machine
-              ? `version reported with an unusable HOME and XDG_CONFIG_HOME; nothing came back as a document under ${machineSelector(h.discovery)}, so it was not established as a machine-mode selector and the payload clause was not reached`
+              ? `version reported with an unusable HOME and XDG_CONFIG_HOME; nothing this target produced under ${machineSelector(h.discovery)} came back as a document, so it was not established as a machine-mode selector and the payload clause was not reached`
               : "version reported with an unusable HOME and XDG_CONFIG_HOME; no machine mode was reachable at L0 so the payload clause was not reached",
           evidence,
         );

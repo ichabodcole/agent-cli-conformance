@@ -154,7 +154,7 @@ describe("selectorObserved — a flag spelled like a selector is not one", () =>
   test("a --json that names an input file is not established as a selector", async () => {
     const h = await record(fixture("json-flag-is-an-input.ts"), CHECKERS);
     expect(h.discovery.machineModeFlag).toBe("--json");
-    expect(selectorObserved(h, ["help", "version"])).toBe(false);
+    expect(selectorObserved(h)).toBe(false);
 
     // B3 and B5 have nothing left to say: their whole subject is output under the selector.
     for (const ruleId of ["B3", "B5"]) {
@@ -186,7 +186,7 @@ describe("selectorObserved — a flag spelled like a selector is not one", () =>
   // for the path where the flag is ignored.
   test("a --json that returns a document IS established, and B3 still fails on it", async () => {
     const h = await record(fixture("broken/machine-mode-help-not-json.ts"), CHECKERS);
-    expect(selectorObserved(h, ["help", "version"])).toBe(true);
+    expect(selectorObserved(h)).toBe(true);
 
     const b3 = CHECKERS.find((c) => c.ruleId === "B3");
     if (!b3) throw new Error("no checker for B3");
@@ -269,4 +269,70 @@ describe("corroboration is evidence, and it has to be evidence of the right thin
       rmSync(dir, { recursive: true, force: true });
     }
   }, 60_000);
+});
+
+describe("corroboration decides whether a rule may condemn, never a rule that already answered", () => {
+  // The regression that survived the first fix and was found by outside review. A CLI whose
+  // machine mode is real only on the error path answers B5's own probe with a JSON document; an
+  // early guard placed at the top of the evaluation returned before that observation was loaded
+  // and reported that nothing had come back under the flag.
+  test("B5 passes on a document it collected itself", async () => {
+    const p = join(HERE, "fixtures/broken/machine-mode-only-on-the-error-path.ts");
+    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+    const b5 = CHECKERS.find((c) => c.ruleId === "B5");
+    if (!b5) throw new Error("no checker for B5");
+    const f = b5.check(h);
+    expect(f.verdict).toBe("pass");
+    expect(f.evidence.length).toBeGreaterThan(0);
+  }, 60_000);
+
+  // The other half, and the reason this is not a blanket amnesty: the same document establishes
+  // the selector, so the paths that answered in prose under it are condemned.
+  test("and the same document establishes the selector for the rules that were lied to", async () => {
+    const p = join(HERE, "fixtures/broken/machine-mode-only-on-the-error-path.ts");
+    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+    for (const ruleId of ["B3", "D1"]) {
+      const checker = CHECKERS.find((c) => c.ruleId === ruleId);
+      if (!checker) throw new Error(`no checker for ${ruleId}`);
+      expect([ruleId, checker.check(h).verdict]).toEqual([ruleId, "fail"]);
+    }
+  }, 60_000);
+
+  // An NDJSON stream corroborates on the shape of its records, not on whether a brace appears
+  // somewhere in the bytes. These two differ by one character inside a string VALUE, and briefly
+  // got opposite answers — a substring standing in for a structural claim, which is the error the
+  // whole rule exists to remove.
+  test("NDJSON corroborates on record shape, not on a brace in the text", () => {
+    expect(parsesAsDocument('["a",1]\n["b",2]')).toBe(true);
+    expect(parsesAsDocument('["a{b",1]\n["c",2]')).toBe(true);
+    expect(parsesAsDocument("1.4\n2.5")).toBe(false);
+  });
+});
+
+// A verdict that depends on which OTHER rules ran is not a measurement, and this has broken twice:
+// once because a rule read corroboration it never asked for, and once because a rule asked for two
+// of the three routes and a target's machine mode lived on the third. Locked here rather than
+// re-derived, because neither break was visible in any single-target check.
+describe("no rule's verdict depends on which other rules ran", () => {
+  const targets = [
+    "fixtures/broken/machine-mode-only-on-the-error-path.ts",
+    "fixtures/broken/machine-mode-help-not-json.ts",
+    "fixtures/json-flag-is-an-input.ts",
+  ];
+
+  test.each(targets)(
+    "%s gives the same verdict alone as in a full run",
+    async (rel) => {
+      const p = join(HERE, rel);
+      const target: TargetInfo = { path: p, argv0: ["bun", p] };
+      const full = await record(target, CHECKERS);
+      for (const ruleId of ["B3", "B5", "D1"]) {
+        const checker = CHECKERS.find((c) => c.ruleId === ruleId);
+        if (!checker) throw new Error(`no checker for ${ruleId}`);
+        const solo = checker.check(await record(target, [checker])).verdict;
+        expect([ruleId, "solo", solo]).toEqual([ruleId, "solo", checker.check(full).verdict]);
+      }
+    },
+    120_000,
+  );
 });

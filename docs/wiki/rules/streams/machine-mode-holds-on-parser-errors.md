@@ -15,7 +15,7 @@ checker: src/acc/kit/checkers/streams/machine-mode-holds-on-parser-error.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - a flag spelled like a machine-mode selector is only treated as one once some observation came back structured under it so a target whose advertised selector emits prose everywhere is reported unverified rather than failed
+  - a flag spelled like a machine-mode selector is only treated as one once a document came back under it somewhere so a target whose advertised selector emits prose on every path this kit reaches is reported unverified rather than failed
   - machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
   - only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not
   - only the --json and --format=json selectors are probed so a machine mode advertised through --output is not
@@ -155,11 +155,17 @@ prose, and has broken nothing — so before this rule may condemn anything under
 accepts bare scalars, so a plain-text `--version` printing `1.4` would otherwise corroborate its
 own selector.
 
-The corroborating invocation is `<cli> --help <selector>` or `<cli> --version <selector>`, and it is deliberately not the sentinel probe — the invocation this
-rule judges. Establishing the premise out of the same evidence the clause then condemns is
-question-begging rather than a probe. This checker declares that invocation itself rather than
-reading it out of another checker's recordings, which would hold in a full run and invert under a
-single-checker one; recordings deduplicate, so it costs no extra spawn.
+This checker DECLARES both `<cli> --help <selector>` and `<cli> --version <selector>` so its
+evidence is complete on its own, and consults the question only on the two paths that CONDEMN —
+never on the pass. Placement is the whole of it and has been wrong in both directions: too late,
+and a target that rejects the sentinel silently is failed with the words "machine mode via
+`--json`" on a selector the same run reports as unestablished; too early, and a CLI whose machine
+mode is real only on the error path answers this rule's own probe with a document and is told
+nothing came back under the flag.
+
+**A declared default is exempt**, and only the flag route is gated. The premise there is a
+declaration rather than an inference about a flag name, and a target that declares machine mode its
+default while advertising `--json` has said the flag is a mode selector.
 
 This rule judges neither of those, so it takes both routes. Uncorroborated, the **selector**
 route reports `unverified`; a declared default is untouched, because a declaration is not an
@@ -204,9 +210,9 @@ are the rest of this page, unexamined.
 
 **Gaps**
 
-- a flag spelled like a machine-mode selector is only treated as one once some observation came
-  back structured under it so a target whose advertised selector emits prose everywhere is
-  reported unverified rather than failed
+- a flag spelled like a machine-mode selector is only treated as one once a document came back
+  under it somewhere so a target whose advertised selector emits prose on every path this kit
+  reaches is reported unverified rather than failed
 - machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
 - only an unrecognised flag provokes the error so a missing value or a missing required argument
   or an out-of-set value is not

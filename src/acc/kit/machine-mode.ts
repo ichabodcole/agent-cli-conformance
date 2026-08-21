@@ -225,10 +225,17 @@ const CORROBORATION = "corroboration:";
  * Both are inert on the same grounds as plain `--help` and `--version`, and neither needs a data
  * command — which is what makes them the only routes available before anything is declared.
  */
-export type CorroborationRoute = "help" | "version";
+export type CorroborationRoute = "help" | "version" | "error";
 
 function corroborationArgs(selector: string, route: CorroborationRoute): string[] {
-  return route === "help" ? ["--help", selector] : machineVersionArgs(selector);
+  if (route === "help") return ["--help", selector];
+  if (route === "version") return machineVersionArgs(selector);
+  return machineErrorArgs(selector);
+}
+
+/** The `error` route carries the sentinel, so it is admissible as `sentinel` rather than `help-path`. */
+function corroborationInertness(route: CorroborationRoute): "help-path" | "sentinel" {
+  return route === "error" ? "sentinel" : "help-path";
 }
 
 /**
@@ -242,33 +249,48 @@ function corroborationArgs(selector: string, route: CorroborationRoute): string[
  *
  * A bare scalar is exactly what a plain-text CLI emits. It cannot be evidence that a flag selected
  * anything, so corroboration requires the shape a machine mode actually produces.
+ *
+ * The NDJSON arm asks the same question of every line rather than looking for a `{` in the text.
+ * It briefly did the latter, and a substring standing in for a structural claim is the very error
+ * this rule exists to remove, one layer down: `["a{b",1]` and `["a",1]` are the same shape, and a
+ * brace inside a string value decided two core verdicts between them.
  */
 export function parsesAsDocument(text: string): boolean {
   const trimmed = text.trim();
   if (trimmed === "") return false;
+  if (isStructured(trimmed)) return true;
+  const lines = trimmed.split("\n").filter((line) => line.trim() !== "");
+  return lines.length > 1 && lines.every(isStructured);
+}
+
+/** One JSON value that is an object or an array — not a bare scalar, and not unparseable. */
+function isStructured(text: string): boolean {
   try {
-    const value: unknown = JSON.parse(trimmed);
+    const value: unknown = JSON.parse(text);
     return typeof value === "object" && value !== null;
   } catch {
-    return parsesAsNdjson(trimmed) && trimmed.includes("{");
+    return false;
   }
 }
 
 /**
- * The probes a checker declares to CORROBORATE its selector before condemning anything under it.
+ * The probes a checker declares so its evidence about the selector is complete on its own.
  *
- * Two properties matter, and both were got wrong first time.
+ * Reading corroboration out of whatever the shared recording happens to hold works while the whole
+ * registry runs and inverts the moment it does not — a single-checker unit test, or a future
+ * `--only B5`. A verdict that changes depending on which OTHER rules ran is not a measurement. So
+ * a checker that needs an observation ASKS for it, and the routes it asks for are EVERY route it
+ * does not already judge. There are three at L0 — help, version, and the sentinel parser error —
+ * and each of the three rules judges exactly one of them: B3 judges help and asks for the other
+ * two, D1 judges version, B5 judges the error. Leave one out and the rule inverts on a target
+ * whose machine mode is reachable only there, which is not hypothetical: a CLI that answers only
+ * its error path in JSON made B3 and D1 report `unverified` alone and `fail` alongside B5.
  *
- * **The checker asks for its own evidence.** Reading corroboration out of whatever the shared
- * recording happens to hold works while the whole registry runs and inverts the moment it does
- * not — a single-checker unit test, or a future `--only B5`. A verdict that changes depending on
- * which OTHER rules ran is not a measurement.
- *
- * **The route must not be the invocation the checker judges.** D1 judges `--version <selector>`;
- * corroborating from that same observation would let it establish the premise out of the evidence
- * it then condemns, which is question-begging rather than a probe. So D1 corroborates via `help`
- * and B3, which judges `--help <selector>`, corroborates via `version`. B5 judges neither and
- * takes both.
+ * What this does NOT do is restrict which observations may corroborate once taken. That was the
+ * first shape of this fix and it suppressed a correct verdict: a CLI whose machine mode is real
+ * only on the ERROR path answered B5's own probe with a JSON document, and B5 reported that
+ * nothing had come back under the flag. Asking for evidence and discarding evidence are different
+ * things, and only the first one was ever needed.
  *
  * Recordings deduplicate on args and env, and both routes are invocations other checkers already
  * send, so all of this costs no additional spawn.
@@ -281,7 +303,7 @@ export function selectorCorroborationProbes(
   if (!selector) return [];
   return routes.map((route) => ({
     args: corroborationArgs(selector, route),
-    inertness: "help-path" as const,
+    inertness: corroborationInertness(route),
     purpose: `${CORROBORATION} does ${selector} select a machine mode on the ${route} path`,
   }));
 }
@@ -307,23 +329,23 @@ export function isCorroborationProbe(inv: Invocation): boolean {
  * B5 and D1 — for answering their probes in prose. It had entered no contract to break.
  *
  * So the premise those clauses rest on is checked before any of them may condemn: did a document
- * come back on one of the declared corroboration routes? Only those recordings are consulted,
- * because only those did the checker ask for.
+ * ever come back under that flag? ANY recording taken with it answers this, including the one the
+ * calling rule is about to judge — and that is not circular, because the guard is only consulted
+ * on a path where the judged observation was NOT a document. An observation cannot both fail to
+ * parse and be its own corroboration.
  *
  * The cost is stated on all three rule pages: a CLI whose `--json` genuinely IS a selector but
- * emits prose on every path is no longer failed, because from outside it cannot be told apart
- * from the innocent one. That is the direction this catalogue prefers to be wrong in.
+ * emits prose on every path this kit reaches is no longer condemned, because from outside it
+ * cannot be told apart from the innocent one. That is the direction this catalogue prefers to be
+ * wrong in.
  */
-export function selectorObserved(h: History, routes: readonly CorroborationRoute[]): boolean {
+export function selectorObserved(h: History): boolean {
   const selector = machineSelector(h.discovery);
   if (!selector) return false;
-  return routes.some((route) => {
-    const want = corroborationArgs(selector, route);
-    return h.observations.some(
-      (o) =>
-        o.invocation.args.length === want.length &&
-        o.invocation.args.every((a, i) => a === want[i]) &&
-        (parsesAsDocument(o.stdout) || parsesAsDocument(o.stderr)),
-    );
-  });
+  const token = selector.split("=")[0] as string;
+  return h.observations.some(
+    (o) =>
+      o.invocation.args.some((a) => a === selector || a === token || a.startsWith(`${token}=`)) &&
+      (parsesAsDocument(o.stdout) || parsesAsDocument(o.stderr)),
+  );
 }
