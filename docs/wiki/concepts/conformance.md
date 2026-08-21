@@ -197,9 +197,11 @@ That difference is why it sits at the top level rather than inside `rules`. It e
 suppresses no failure; what it changes is which probe the kit is able to send. The only other route
 to machine mode is reading help for a flag that selects it, and a machine-first CLI has none to
 find — there is no mode to switch into. Undeclared, such a target is **failed** by
-[D3](../rules/discoverability/help-advertises-machine-mode.md) for advertising nothing, and the
-rules that would check its envelope report [`unverified`](#what-it-is) for want of a
-selector to send — probed, and inconclusive.
+[D3](../rules/discoverability/help-advertises-machine-mode.md) for advertising nothing — a
+`diagnostic` verdict, so it is reported and gates nothing — and the rules that would check its
+envelope report [`unverified`](#what-it-is) for want of a selector to send: probed, and
+inconclusive, which also gates nothing. The cost is not a red build. It is that the contract those
+rules exist to check went unexamined on the class of tool they matter most to.
 
 **The declaration is falsifiable, and it is worth being exact about by which rule.**
 [B5](../rules/streams/machine-mode-holds-on-parser-errors.md) is the falsifier: it provokes a
@@ -309,8 +311,14 @@ to what the target did.
 
 Only the rules that inherited the premise are affected. E1 and G1 read the same observation for
 reasons that have nothing to do with it being an error, and they keep it. A waiver is not a
-deletion, and the coupling is named in the kit rather than in `acc.config.json` — a project should
-describe its own CLI, not this one's internals.
+deletion.
+
+**What the config does and does not have to name.** It names a rule — `D2` — as it always has;
+that much is unavoidable, since a waiver has to say what is being waived. What it never has to name
+is the **relationship between rules**: nothing in the file says C2 reads D2's observation, and
+nothing in it would need editing if that stopped being true. The table lives in C2's checker, so a
+project's config stays a statement about its own CLI and does not become a model of this one's
+wiring.
 
 **A waiver never goes stale.** Passing was never the goal, so "this waiver would now pass" is
 offered as information and never as a line to remove. `staleExpectations` is for debt; a

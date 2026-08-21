@@ -168,6 +168,10 @@ path exits `0`. A bare invocation that exits `64` while every other usage error 
 an error and its code still has to agree, so the shape stays and the disagreement is reported. A
 waiver excuses a rule; it does not blind the kit to what the target did.
 
+The coupling is written here rather than in a project's config. A waiver names a rule, which it
+must; it never names the **relationship** between rules, and nothing in `acc.config.json` would
+need editing if this table changed.
+
 **This is not waiver propagation along shared evidence**, which was the first idea and is wrong.
 [E1](../interactivity/never-block-without-a-tty.md) and
 [G1](../lifecycle/inert-invocations-do-not-crash.md) read the very same bare observation and keep

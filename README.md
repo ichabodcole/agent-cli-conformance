@@ -273,7 +273,11 @@ A third key in the same file says nothing about any rule. It describes **your to
 { "machineMode": "default" }
 ```
 
-It means: **structured output is what your CLI writes to a pipe**, and prose is the thing a caller
+`rules`, `knownFailures` and `machineMode` are the whole vocabulary — **an unrecognised top-level
+key is an error**, not an ignored line, for the same reason a mistyped rule id is: a declaration
+that silently does nothing leaves you believing you declared something you did not.
+
+It means: **your CLI writes JSON to a pipe**, and prose is the thing a caller
 opts into. That covers the tool with no `--json` flag because it never needed one — and it also
 covers the far more common shape, **a CLI that emits JSON when stdout is not a terminal and prose
 when it is.** Every probe runs against a pipe, never a terminal, so if your tool would answer a
