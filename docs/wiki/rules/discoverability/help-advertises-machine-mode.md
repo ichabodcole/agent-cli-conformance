@@ -19,7 +19,7 @@ coverage_gaps:
   - the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it
   - a pass establishes only that help names the flag and never that the flag is accepted
 coverage_established:
-  - the target declared machine mode its default or the human root help surface names one of the flags --json or --format or --output or carries a schema command row
+  - the human root help surface names one of the flags --json or --format or --output or carries a schema command row or states that structured output is its default
 ---
 
 # Help advertises the machine-readable path
@@ -141,7 +141,7 @@ the rest of this page, unexamined.
 
 **Established**
 
-- the target declared machine mode its default or the human root help surface names one of the flags --json or --format or --output or carries a schema command row
+- the human root help surface names one of the flags --json or --format or --output or carries a schema command row or states that structured output is its default
 
 Plain root help that answers with a machine document is not what gets scanned: the checker falls
 back to a forced-text form, and reports `unverified` when the human surface cannot be observed at

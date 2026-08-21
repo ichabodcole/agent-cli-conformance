@@ -25,6 +25,20 @@ const FORCED_TEXT = "D3: human help, with machine mode forced off";
  * spaces) or by nothing. `parseHelp`'s structured parse is consulted first; this is the
  * fallback for help layouts its `Commands:` heuristic does not recognise.
  */
+/**
+ * Help asserting that structured output is what the tool emits by default.
+ *
+ * Deliberately narrow, and the near-miss is why: `--format json (default: text)` contains both
+ * "json" and "default" while meaning the opposite. Each pattern requires the format word to be
+ * the thing defaulted TO, not merely adjacent to the word. A tool with a real `--format` flag
+ * never reaches these anyway — the flag scan above answers first.
+ */
+const MACHINE_DEFAULT_PHRASES: readonly RegExp[] = [
+  /\b(json|ndjson)\b[^.\n]{0,60}\bby default\b/i,
+  /\bdefaults?\s+to\b[^.\n]{0,30}\b(json|ndjson)\b/i,
+  /\bdefault\s+(output\s+)?(format\s+)?is\b[^.\n]{0,20}\b(json|ndjson)\b/i,
+];
+
 const SCHEMA_COMMAND_ROW = /^[ \t]+schema\b[^\n]*?(?:\s{2,}\S|\s*$)/m;
 
 /** Usable output from a probe: it ran, it finished under its own control, and it said something. */
@@ -79,7 +93,7 @@ export const advertisesMachineModeChecker: Checker = {
     "a pass establishes only that help names the flag and never that the flag is accepted",
   ],
   coverageEstablished: [
-    "the target declared machine mode its default or the human root help surface names one of the flags --json or --format or --output or carries a schema command row",
+    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row or states that structured output is its default",
   ],
 
   probes: (d): Invocation[] => [
@@ -123,26 +137,6 @@ export const advertisesMachineModeChecker: Checker = {
       if (crashed) return crashed;
     }
 
-    // A DECLARED default satisfies the rule before help is read at all — and it has to be
-    // decided HERE, above everything below.
-    //
-    // D3 asks that machine mode be discoverable. Reading help for a `--json`-shaped flag is how
-    // the kit discovers it when nothing was said; a declaration IS discovery, and a more durable
-    // form of it. A machine-first CLI has nothing to advertise because there is no mode to switch
-    // into, and failing it for that was the finding this branch answers.
-    //
-    // Placed below, it was unreachable for the exact population it is for: a CLI that emits JSON
-    // to a pipe answers `--help` with a document, and the machine-document branch returns
-    // `unverified` before any declaration is consulted. That left the guide promising a pass the
-    // code could not give.
-    if (h.discovery.machineModeDefault) {
-      return finding(
-        "pass",
-        "machine mode is declared the default, so there is no selector to advertise",
-        plain ? [plain.id] : [],
-      );
-    }
-
     // The HUMAN surface is what this rule names, so plain help is preferred and the forced-text
     // probe is consulted only when plain help came back as a machine document.
     const plainText = textOf(plain);
@@ -172,6 +166,26 @@ export const advertisesMachineModeChecker: Checker = {
       };
     }
 
+    // THE RULE'S SECOND CLAUSE, which the checker did not implement until now.
+    //
+    // "A CLI SHOULD make its structured surface discoverable from the surface a caller reaches
+    // first — which is `--help`, not documentation." A machine-first tool has no flag to name
+    // and no schema command, so the first clause exempts it ("where one exists") and the second
+    // is the whole of what it owes. Saying so in help satisfies the rule; the checker was only
+    // ever looking for a token.
+    //
+    // Reported by the first outside adopter across two rounds: they added an accurate Output
+    // block to their help and D3 kept failing them, while a key in `acc.config.json` — which no
+    // caller of their CLI can see — made it pass. Their words: the rule's name and its behaviour
+    // had come apart.
+    //
+    // Prose matching, and it is defensible HERE for reasons that would not hold elsewhere. D3 is
+    // `diagnostic`, so a false positive costs a reported line and never a build; the fallback is
+    // reached only when no flag and no schema command were found, so a tool that advertises
+    // normally never touches it; and this rule already declares a loose-scan gap. In a core rule
+    // none of that would be enough.
+    const advertisesMachineDefault = MACHINE_DEFAULT_PHRASES.some((re) => re.test(help));
+
     const advertisesSchema =
       surface.subcommands.includes("schema") ||
       surface.flags.includes("--schema") ||
@@ -181,6 +195,14 @@ export const advertisesMachineModeChecker: Checker = {
       return finding(
         "pass",
         `help advertises ${surface.machineModeFlag ?? "a schema command"}`,
+        evidence,
+      );
+    }
+
+    if (advertisesMachineDefault) {
+      return finding(
+        "pass",
+        "help states that structured output is the default, so a caller can discover it without a flag to name",
         evidence,
       );
     }

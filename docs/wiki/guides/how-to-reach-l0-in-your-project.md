@@ -85,8 +85,11 @@ Two shapes qualify, and the second is the common one:
   **Every probe runs against a pipe, never a terminal**, so if your tool would answer a script in
   JSON, this describes you.
 
-D3 then passes on the declaration, and B5 probes your error path with no selector — the path your
-callers actually take. What B5 requires is concrete: provoke a parser error and **one of your two
+B5 then probes your error path with no selector — the path your callers actually take.
+
+**The declaration does not answer D3**, and should not: `acc.config.json` is the kit's file, and
+D3 asks what a caller of _your_ CLI can find out. Say it in your help and D3 passes on that —
+"data commands emit JSON by default" is enough. What B5 requires is concrete: provoke a parser error and **one of your two
 streams must be exactly one JSON document**.
 
 **Declaring it commits you to it.** Answer a parser error in prose and B5 fails you. Check before

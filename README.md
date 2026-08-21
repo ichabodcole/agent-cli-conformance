@@ -43,8 +43,13 @@ is **private** while the first few projects are run through it — so install it
 the project whose CLI you want to check:
 
 ```bash
-bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
+bun pm cache rm && bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 ```
+
+The cache clear is first because **the second install of this package is the one that goes wrong**:
+Bun keeps a bare clone it does not re-fetch, so a tag pushed since your last install is invisible.
+Clearing costs a re-download and removes both failure modes below in one step. Drop it if this is
+your first install.
 
 That needs GitHub access to this repository. The shorter
 `bun add -d github:ichabodcole/agent-cli-conformance` goes through GitHub's tarball API, which

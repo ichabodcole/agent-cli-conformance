@@ -106,26 +106,44 @@ function historyWithAutoMachineHelp(machineHelp: string, forcedHelp: string | nu
 }
 
 describe("D3 — help advertises the machine-readable path", () => {
-  // A DECLARED default satisfies D3 before help is consulted. A machine-first CLI has nothing to
-  // advertise because there is no mode to switch into, and reporting "help names no machine-mode
-  // flag" against one was the finding this branch answers (EXT-4).
-  test("PASSES when machine mode is declared the default, whatever help says", () => {
-    const h = historyWithHelp("fixture — a tool\n\nUsage:\n  fixture list\n");
-    const declared: History = {
-      ...h,
-      discovery: { ...h.discovery, machineModeDefault: true },
-    };
-    const f = advertisesMachineModeChecker.check(declared);
-    expect(f.verdict).toBe("pass");
-    expect(f.detail).toContain("declared");
+  // THE RULE'S SECOND CLAUSE: discoverable from `--help`, which is the surface a caller reaches.
+  // A machine-first tool has no flag to name, so saying so in help is the whole of what it owes.
+  test("PASSES when help states that structured output is the default", () => {
+    for (const line of [
+      "Data commands emit JSON on stdout by default; pass --human for prose.",
+      "Output defaults to JSON when stdout is not a terminal.",
+      "The default output format is json.",
+    ]) {
+      const f = advertisesMachineModeChecker.check(
+        historyWithHelp(`fixture — a tool\n\nUsage:\n  fixture list\n\nOutput:\n  ${line}\n`),
+      );
+      expect({ line, verdict: f.verdict }).toEqual({ line, verdict: "pass" });
+    }
   });
 
-  // The same help WITHOUT the declaration still fails — otherwise the pass above would be the
-  // fixture's doing rather than the declaration's.
-  test("FAILS the same help when nothing is declared", () => {
-    const f = advertisesMachineModeChecker.check(
-      historyWithHelp("fixture — a tool\n\nUsage:\n  fixture list\n"),
-    );
+  // The near-misses the pattern exists to refuse. Each contains both a format word and the word
+  // "default" while meaning the opposite, and each would be a false pass on the one rule whose
+  // subject is whether a caller was told the truth.
+  test("does NOT read a default-to-text tool as machine-first", () => {
+    for (const line of [
+      "  --outfmt json    Output format (default: text)",
+      "  Emit JSON with --machine.  Text is the default.",
+      "Pretty tables by default; ask for machine output explicitly.",
+    ]) {
+      const f = advertisesMachineModeChecker.check(
+        historyWithHelp(`fixture — a tool\n\nUsage:\n  fixture list\n\n${line}\n`),
+      );
+      expect({ line, verdict: f.verdict }).toEqual({ line, verdict: "fail" });
+    }
+  });
+
+  // A DECLARATION IS NOT DISCOVERY. `acc.config.json` is ours; no caller of the target can read
+  // it, and this rule's subject is what a caller can find out. Declaring lets B5 probe the right
+  // path — it does not answer D3's question, and it used to.
+  test("does NOT pass on the declaration alone", () => {
+    const h = historyWithHelp("fixture — a tool\n\nUsage:\n  fixture list\n");
+    const declared: History = { ...h, discovery: { ...h.discovery, machineModeDefault: true } };
+    const f = advertisesMachineModeChecker.check(declared);
     expect(f.verdict).toBe("fail");
   });
 

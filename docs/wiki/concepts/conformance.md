@@ -209,11 +209,15 @@ parser error, sends no selector, and requires one of the two streams to be exact
 document. Declare the default and answer in prose and B5 fails — the declaration was tested and
 found false.
 
-**D3 does not test it; D3 accepts it.** That asymmetry is deliberate rather than an oversight. D3's
-subject is whether a caller can _find out_ how to get machine output, and a key committed in the
-project's own config is a discoverable answer — more durable than a line of help text. So D3 takes
-the declaration at its word, and B5 is what makes taking it at its word safe. A target that lies
-here gains a `pass` on D3 and buys a `fail` on B5, which is a worse trade than saying nothing.
+**D3 does not read the declaration at all**, and that is a correction rather than the original
+design. The first version let a declaration satisfy D3, reasoning that a committed config key is a
+durable answer. The adopter who asked for the declaration disposed of that across two rounds: they
+had put an accurate statement in their help, D3 kept failing it, and a key in a file **no caller of
+their CLI can read** made it pass. D3's subject is what a caller can find out, so answering it from
+the kit's own config had the rule's name and its behaviour coming apart.
+
+Help is what D3 reads. A tool with no flag to name satisfies it by saying so, which the rule's
+second clause has always asked for — only the checker was narrower.
 
 That division is the same one [the roadmap](../../roadmap.md#6-the-portable-declaration-ir) argues
 for at `L1`, arriving early and in miniature: something declares, something else tries to falsify
