@@ -126,12 +126,53 @@ So the waiver is not declaring the observation irrelevant. It is declaring a **p
 _exit `0` on a bare invocation is intended_ — and only a rule that fails **because of that
 property** should inherit the declaration.
 
-- [ ] Design pass first, written down before any code.
-- [ ] Decide where the property lives: on the waived rule, on the observation, or in the finding a
-      checker returns.
-- [ ] Whatever the mechanism, `acc.config.json` must not gain a word about which rules are coupled.
+### The design
+
+**The waiver withdraws a premise, and C2 was resting on it.**
+
+C2 compares four invocations it treats as usage errors. It does not discover that they are usage
+errors — it inherits that from the rules that say so:
+
+| C2's shape       | The rule that classifies it as a usage error |
+| ---------------- | -------------------------------------------- |
+| unknown flag     | A1                                           |
+| unknown verb     | A2                                           |
+| bare invocation  | **D2**                                       |
+| out-of-set value | A7                                           |
+
+Waiving D2 says: _a bare invocation is not a usage error for this tool; it is a help path._ That is
+not merely an excuse for D2's verdict — it withdraws the premise under which C2 had the bare
+invocation in its population at all. C2 then reports disagreement among a set whose membership the
+project has just corrected.
+
+So the rule is: **a checker that treats an observation as an instance of another rule's subject
+must respect a waiver of that rule.** Not a general propagation of waivers along shared evidence —
+that was the first idea and it is wrong. E1 and G1 read the same observation and keep it, because
+their premises do not depend on it being an error: E1 asks whether the target blocked, G1 whether
+it died by a fault, and both still apply to a help path.
+
+**Where the coupling lives.** In C2's checker, as a table from shape to owning rule. The adopter's
+constraint was about `acc.config.json` — _"if I have to describe the coupling in config, the config
+has become a model of your internals"_ — and this puts it in the internals, named once, where a
+reader of C2 can see why a shape dropped out.
+
+**What checkers need.** The set of waived rule ids, on `History`. `buildReport` already applies
+waivers to the VERDICT (excuse it, drop it from the counts); this applies the same declaration to a
+checker's PREMISE. Two consumers of one config field, doing different jobs, both derived from the
+same object so they cannot disagree about what was waived.
+
+**What C2 reports afterwards.** The three remaining shapes, compared as usual, with the detail
+naming what was excluded and why — a pass here establishes less than the unwaived pass does, and
+the report must not present them as the same claim. If fewer than two shapes survive, `unverified`
+rather than a vacuous pass over a population of one.
+
+- [x] Design pass first, written down before any code.
+- [x] Decided: the property lives on the **waived rule**, consulted by the checker that inherited a
+      premise from it. Not on the observation, which E1 and G1 read for other reasons entirely.
+- [ ] `acc.config.json` gains no word about which rules are coupled.
 - [ ] Fixture: the bare-help CLI already built for the trial, waiving D2, asserting C2 no longer
       fails **and** that E1 and G1 still reach their verdicts on the same run.
+- [ ] A pass under a waiver says what it excluded.
 
 ### 4. EXT-1 — make a stale install visible · P1
 

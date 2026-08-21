@@ -82,6 +82,7 @@ describe("A6 — the `--` terminator", () => {
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     expect(doubleDashTerminatorChecker.check(empty).verdict).toBe("unverified");

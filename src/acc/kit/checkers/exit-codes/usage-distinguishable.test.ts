@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { record } from "../../record.ts";
 import { digestOfText } from "../../runner.ts";
 import type { History, TargetInfo } from "../../types.ts";
+import { neverBlockChecker } from "../interactivity/never-block.ts";
+import { doesNotCrashChecker } from "../lifecycle/does-not-crash.ts";
 import { usageDistinguishableChecker } from "./usage-distinguishable.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -78,11 +80,104 @@ function historyWithOneTimedOutProbe(): History {
       helpReadable: false,
     },
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }
 
 describe("C2 — usage errors are distinguishable", () => {
+  // THE ADOPTION BLOCKER. One design decision — a bare invocation prints help and exits 0 —
+  // was reported as two core violations, because C2 reads the same observation D2 owns. Waiving
+  // D2 left C2 failing on that byte, so no configuration expressed "bare help is deliberate" and
+  // reached a green gate, and the only route to exit 0 was to record a permanent design decision
+  // as debt in `knownFailures`. Reported by the first outside adopter, who correctly refused to
+  // do that and could therefore not adopt at all.
+  test("PASSES when the shape it fails on belongs to a waived rule", async () => {
+    const h = await record(
+      fixture("bare-help.ts"),
+      [usageDistinguishableChecker],
+      false,
+      new Set(["D2"]),
+    );
+    const f = usageDistinguishableChecker.check(h);
+    expect(f.verdict).toBe("pass");
+    expect(f.ruleId).toBe("C2");
+  });
+
+  // ...and the same fixture with nothing waived still fails, or the pass above would be the
+  // fixture's doing rather than the waiver's.
+  test("FAILS the same target when nothing is waived", async () => {
+    const h = await record(fixture("bare-help.ts"), [usageDistinguishableChecker]);
+    expect(usageDistinguishableChecker.check(h).verdict).toBe("fail");
+  });
+
+  // A NARROWED PASS IS NOT THE SAME CLAIM. Three shapes compared where the page promises four is
+  // a smaller result, and a report that did not say so would be a checker overstating its reach.
+  test("says which shape it excluded and why", async () => {
+    const h = await record(
+      fixture("bare-help.ts"),
+      [usageDistinguishableChecker],
+      false,
+      new Set(["D2"]),
+    );
+    const f = usageDistinguishableChecker.check(h);
+    expect(f.detail).toContain("D2");
+    expect(f.detail).toContain("waived");
+    // The excluded observation is not cited as evidence for a verdict it took no part in.
+    const bare = h.observations.find((o) => o.invocation.args.length === 0);
+    expect(f.evidence).not.toContain(bare?.id);
+  });
+
+  // A WAIVER IS NOT A BLINDFOLD. Waiving D2 declares the bare invocation a help path, and a help
+  // path exits 0. A bare invocation exiting 64 is still an error, its code still has to agree,
+  // and excluding it on the waiver alone made it vanish from the entire run — C2 passed over
+  // (2,2) while D2's own waived verdict failed on a different clause, so nothing anywhere said
+  // the target answers one error class with two codes. Found by an independent review.
+  test("keeps a waived shape that did NOT behave like the withdrawn premise", async () => {
+    const h = await record(
+      fixture("broken/bare-invocation-exits-64.ts"),
+      [usageDistinguishableChecker],
+      false,
+      new Set(["D2"]),
+    );
+    const f = usageDistinguishableChecker.check(h);
+    expect(f.verdict).toBe("fail");
+    expect(f.detail).toContain("64");
+  });
+
+  // ...and it must not claim exclusions that never happened. A7's shape exists only for a target
+  // whose help advertises a closed value set, so a waiver of A7 against a target without one is
+  // not an exclusion — saying so told the reader config had dropped a shape never in the
+  // population.
+  test("names only the shapes a waiver actually removed", async () => {
+    const h = await record(
+      fixture("bare-help.ts"),
+      [usageDistinguishableChecker],
+      false,
+      new Set(["D2", "A7"]),
+    );
+    const f = usageDistinguishableChecker.check(h);
+    expect(f.detail).toContain("D2");
+    expect(f.detail).not.toContain("A7");
+  });
+
+  // A waiver must not manufacture a pass out of a population of one.
+  //
+  // The target has to be one whose waived shapes actually exit 0, or they are not excluded at
+  // all — which is the point of the two-condition rule above. `bare-help.ts` answers an unknown
+  // flag and an unknown verb with 2, so waiving A1 and A2 against it correctly removes nothing.
+  test("reports unverified when too few shapes survive the waivers", async () => {
+    const h = await record(
+      fixture("broken/exits-zero-on-unknown-flag.ts"),
+      [usageDistinguishableChecker],
+      false,
+      new Set(["D2", "A1", "A2"]),
+    );
+    const f = usageDistinguishableChecker.check(h);
+    expect(f.verdict).toBe("unverified");
+    expect(f.detail).toContain("waived");
+  });
+
   test("PASSES the conforming fixture", async () => {
     const h = await record(fixture("conforming.ts"), [usageDistinguishableChecker]);
     const f = usageDistinguishableChecker.check(h);
@@ -122,5 +217,34 @@ describe("C2 — usage errors are distinguishable", () => {
     expect(f.detail).toContain("timed out");
     expect(f.detail).not.toContain("not recorded");
     expect(f.ruleId).toBe("C2");
+  });
+});
+
+// The half of the design that is easy to get wrong, and that the first attempt at this would have
+// broken: a waiver withdraws a PREMISE, it does not strip an OBSERVATION.
+//
+// E1 and G1 read the same bare invocation C2 just dropped, for reasons that have nothing to do
+// with it being an error — one asks whether the target blocked, the other whether it died by a
+// fault. Removing the observation from the history would have silently taken evidence they are
+// entitled to, and neither would have said so.
+describe("a waiver does not take evidence from the rules that did not inherit the premise", () => {
+  test("E1 and G1 still reach verdicts on the observation C2 excluded", async () => {
+    const h = await record(
+      fixture("bare-help.ts"),
+      [usageDistinguishableChecker, neverBlockChecker, doesNotCrashChecker],
+      false,
+      new Set(["D2"]),
+    );
+    const bare = h.observations.find((o) => o.invocation.args.length === 0);
+    expect(bare).toBeDefined();
+
+    for (const [checker, expected] of [
+      [neverBlockChecker, "E1"],
+      [doesNotCrashChecker, "G1"],
+    ] as const) {
+      const f = checker.check(h);
+      expect({ rule: f.ruleId, verdict: f.verdict }).toEqual({ rule: expected, verdict: "pass" });
+      expect(f.evidence).toContain(bare?.id as string);
+    }
   });
 });

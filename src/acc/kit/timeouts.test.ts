@@ -79,6 +79,7 @@ function everyProbeTimedOut(): History {
     target: { path: "/hung-target", argv0: ["/hung-target"] },
     discovery: DISCOVERY,
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }

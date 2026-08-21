@@ -54,6 +54,7 @@ function historyWith(exitCode: number | null, stdout: string, stderr: string): H
       helpReadable: true,
     },
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }

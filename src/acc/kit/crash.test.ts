@@ -212,6 +212,7 @@ function everyProbeCrashed(): History {
     target: { path: "/crashing-target", argv0: ["/crashing-target"] },
     discovery: DISCOVERY,
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }
@@ -542,6 +543,7 @@ describe("G1 classifies by signal, and unknown names fall to the safe side", () 
       target: { path: "/x", argv0: ["/x"] },
       discovery: DISCOVERY,
       observations: [o],
+      waived: new Set<string>(),
       byId: new Map([[o.id, o]]),
     };
   };
@@ -577,6 +579,7 @@ describe("G1 classifies by signal, and unknown names fall to the safe side", () 
       target: { path: "/x", argv0: ["/x"] },
       discovery: DISCOVERY,
       observations,
+      waived: new Set<string>(),
       byId: new Map(observations.map((o) => [o.id, o])),
     });
     expect(f.verdict).toBe("fail");

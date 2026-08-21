@@ -295,6 +295,23 @@ been. A waiver sitting at `pass` is one the project can delete; a
 waiver sitting at `fail` is one still doing work. This is deliberately better than the ESLint
 model it borrows from, where a disabled rule produces no information at all.
 
+**A waiver can withdraw a premise another rule was resting on.** Rules share observations, and a
+rule sometimes treats one as an instance of another rule's subject: C2 compares four invocations it
+inherits as usage errors from A1, A2, A7 and D2. Waiving D2 declares the bare invocation a help
+path, so C2 drops it from the contrast rather than reporting disagreement across a population the
+project has just corrected — and says which shape it dropped, because the remaining comparison is a
+narrower claim.
+
+The shape is only dropped if it **behaved like the premise**: a waiver of D2 declares a help path,
+and a help path exits `0`. A bare invocation exiting `64` where every other usage error exits `2`
+stays in the comparison and is still reported. A waiver excuses a rule, it does not blind the kit
+to what the target did.
+
+Only the rules that inherited the premise are affected. E1 and G1 read the same observation for
+reasons that have nothing to do with it being an error, and they keep it. A waiver is not a
+deletion, and the coupling is named in the kit rather than in `acc.config.json` — a project should
+describe its own CLI, not this one's internals.
+
 **A waiver never goes stale.** Passing was never the goal, so "this waiver would now pass" is
 offered as information and never as a line to remove. `staleExpectations` is for debt; a
 declaration has nothing to repay.

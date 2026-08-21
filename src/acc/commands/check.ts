@@ -148,7 +148,16 @@ export async function checkCommand(
   // `not_found` is the honest kind: the caller named something that is not a runnable CLI.
   let history: History;
   try {
-    history = await record(target, CHECKERS, config.machineMode === "default");
+    history = await record(
+      target,
+      CHECKERS,
+      config.machineMode === "default",
+      // The SAME config object buildReport reads, so the two consumers cannot disagree about what
+      // was waived — one applies it to the verdict, the other to a checker's premise.
+      new Set(
+        Object.entries(config.rules).flatMap(([id, r]) => (r.severity === "off" ? [id] : [])),
+      ),
+    );
   } catch (err) {
     if (err instanceof TargetNotExecutableError) {
       throw notFoundError(`target could not be executed: ${targetPath}`, {

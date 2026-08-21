@@ -224,6 +224,22 @@ export interface TargetInfo {
 }
 
 export interface History {
+  /**
+   * Rule ids the project WAIVED in `acc.config.json` — "this rule does not bind for my tool".
+   *
+   * Checkers need this for one narrow reason, and it is not to excuse their own verdicts:
+   * `buildReport` does that. It is because a checker can inherit a PREMISE from another rule. C2
+   * compares four invocations it treats as usage errors, and it does not discover that they are
+   * errors — A1, A2, A7 and D2 are what say so. Waiving D2 declares that a bare invocation is a
+   * help path for this tool, which withdraws the premise under which C2 had it in the population
+   * at all, and C2 was reporting disagreement among a set whose membership the project had just
+   * corrected.
+   *
+   * NOT a general propagation of waivers along shared evidence. E1 and G1 read that same bare
+   * observation and must keep it: their premises do not depend on it being an error, so a waiver
+   * of D2 says nothing about whether the target blocked or died.
+   */
+  waived: ReadonlySet<string>;
   target: TargetInfo;
   discovery: Discovery;
   observations: Observation[];

@@ -25,6 +25,7 @@ function emptyHistory(): History {
       helpReadable: false,
     },
     observations: [],
+    waived: new Set<string>(),
     byId: new Map(),
   };
 }

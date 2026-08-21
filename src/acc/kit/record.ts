@@ -39,6 +39,8 @@ export async function record(
   target: TargetInfo,
   checkers: Checker[],
   declaredMachineDefault = false,
+  /** Rule ids waived in `acc.config.json`. See `History.waived` for the one thing it is for. */
+  waived: ReadonlySet<string> = new Set(),
 ): Promise<History> {
   const discovery = await discover(target, declaredMachineDefault);
 
@@ -74,6 +76,7 @@ export async function record(
     target,
     discovery,
     observations,
+    waived,
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }

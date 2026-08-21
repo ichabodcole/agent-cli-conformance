@@ -39,6 +39,7 @@ function history(observations: Observation[]): History {
       helpReadable: false,
     },
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }
