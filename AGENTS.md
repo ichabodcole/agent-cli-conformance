@@ -68,6 +68,13 @@ preference. Read the one you are writing into. `docs/wiki/` uses `SCHEMA.md` for
   never met. [`docs/techniques.md`](docs/techniques.md) collects the ones that have caught
   something here, each with what it caught.
 
+- **A fix is reviewed through two lenses, and one reviewer cannot hold both.** Whether the repair
+  is correct is a different question from what else the thing it changed used to decide, and the
+  second is the one that gets skipped — a guard suppresses, so whatever it suppresses that is not
+  the target of the fix ships as a regression alongside the repair. Run both lenses together via
+  the [`two-lens-review` skill](.claude/skills/two-lens-review/SKILL.md); serially is how the
+  systemic defect gets found after the narrow one has already landed.
+
 - **When you write a rule here, write the reason, not a number.** A cap like "at most two
   attempts" is easy to write and easy to follow off a cliff: the day there is a good reason for a
   third, the number is what gets obeyed. Give the condition instead — what you are looking for,

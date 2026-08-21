@@ -89,6 +89,25 @@ When you widen a condition to catch a case, ask what else it now catches.
 what the rule says. The narrow version could not fire on the population that produced the bug; the
 wide one would have found new ways to be wrong.
 
+## Diff the behaviour, not the diff
+
+Reading a diff tells you what the author changed. It does not tell you what the change decides. For
+that, run the system's observable output over a corpus of inputs before and after, and diff **that**
+— every input whose result moved needs an explanation, and one nobody can explain is load-bearing.
+
+Restrict the corpus to inputs that touch the changed premise so the sweep finishes, and compare
+against the merge base in a worktree rather than stashing, so both trees stay runnable.
+
+Run over the fixtures touching one guard here, seven of twenty-two moved. All seven were intended
+and each had a reason — but the same sweep is what makes an eighth, unintended one visible, and two
+regressions had already shipped past a green gate because nothing compared verdicts across the
+corpus.
+
+**The silence is the trap.** A population with no fixture cannot move, and reads exactly like a
+clean result. Both regressions here lived in the one shape nothing exercised — a machine mode
+reachable only on the error path — so the missing case was the finding, ahead of what it was
+hiding. Before trusting a clean sweep, ask which shapes of input have no case at all.
+
 ## Fix the premise, not the branch
 
 A fix that adds a **precondition** — a guard, a corroboration check, an applicability test — does
