@@ -55,6 +55,22 @@ export interface ReportedFinding extends Finding {
 
 export interface Report {
   target: string;
+  /**
+   * The version of the kit that produced this report.
+   *
+   * Here because a stale kit is otherwise invisible. The documented install can put an older
+   * commit on disk and report success — bun prints a SHA it did not install, and the extracted
+   * package cache goes stale independently of the bare clone — and the only place that showed was
+   * `acc --version`, which nobody thinks to check. The first outside adopter did not detect it;
+   * they happened to be holding a second version to compare against because they had cloned the
+   * repo to read the README before installing. Putting it in every report makes the comparison
+   * available to someone who has not accidentally armed themselves.
+   *
+   * It is also the first version coordinate a stored report carries, which roadmap step 2 wants
+   * five more of. This one is not that design — it is the cheapest half of it, and the half whose
+   * absence was measured.
+   */
+  kitVersion: string;
   /** The probe level this report was built at. Determines which findings are `applicable`. */
   level: ProbeLevel;
   /**
@@ -272,6 +288,11 @@ export function buildReport(
   checkers: Checker[],
   config: AccConfig,
   level: ProbeLevel,
+  /**
+   * Passed in rather than imported, so `kit/` stays free of the CLI wrapped around it. `level`
+   * and `config` arrive the same way and for the same reason.
+   */
+  kitVersion: string,
 ): Report {
   const byId = new Map(checkers.map((c) => [c.ruleId, c]));
 
@@ -379,6 +400,7 @@ export function buildReport(
 
   return {
     target: h.target.path,
+    kitVersion,
     level,
     conformant,
     fullyVerified:

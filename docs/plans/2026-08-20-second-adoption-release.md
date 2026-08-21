@@ -169,10 +169,9 @@ rather than a vacuous pass over a population of one.
 - [x] Design pass first, written down before any code.
 - [x] Decided: the property lives on the **waived rule**, consulted by the checker that inherited a
       premise from it. Not on the observation, which E1 and G1 read for other reasons entirely.
-- [ ] `acc.config.json` gains no word about which rules are coupled.
-- [ ] Fixture: the bare-help CLI already built for the trial, waiving D2, asserting C2 no longer
-      fails **and** that E1 and G1 still reach their verdicts on the same run.
-- [ ] A pass under a waiver says what it excluded.
+- [x] `acc.config.json` gains no word about which rules are coupled — the table lives in C2's checker.
+- [x] Fixture `bare-help.ts`: with no config C2 and D2 both fail and the run exits 9; with D2 waived it is CONFORMANT at exit 0, and E1 and G1 still cite the excluded observation.
+- [x] A pass under a waiver says what it excluded — and only names shapes a waiver actually removed.
 
 ### 4. EXT-1 — make a stale install visible · P1
 
@@ -180,11 +179,11 @@ The documented install put the wrong bytes on disk at exit `0`, twice, and `acc 
 only place it showed. The adopter did not detect it — they had cloned the repo first to read the
 README and so happened to be holding a second version to compare against.
 
-- [ ] Print the kit's own version in the `check` report header, both formats. A reader who has not
+- [x] Print the kit's own version in the `check` report header, both formats — `kitVersion` in the JSON, `[acc <version>]` on the text headline. A reader who has not
       accidentally armed themselves gets the comparison for free.
-- [ ] Document the **silent** arm of the install failure beside the loud one the README already
+- [x] Document the **silent** arm of the install failure beside the loud one the README already
       predicts correctly.
-- [ ] State the recovery: clearing the bare clone is not enough, because the extracted-package cache
+- [x] State the recovery: clearing the bare clone is not enough, because the extracted-package cache
       is stale independently of it.
 
 **Severity is about recovery, not annoyance.** They were two minutes from writing up "could not
@@ -197,8 +196,8 @@ Piping silently changes the output shape, and nothing says so. It caught the ado
 session as two apparently unrelated problems: the README's headline verdict line is TTY-only, and
 `acc check --help` answers with the root schema in machine mode.
 
-- [ ] Say in getting-started that piped output is JSON and the verdict line is TTY-only.
-- [ ] Put `--format text` in the first code block. The adopter calls that report _"the best artifact
+- [x] Say in getting-started, the tutorial and the adoption guide that piped output is JSON and the verdict line is TTY-only.
+- [x] Put `--format text` in the first code block. The adopter calls that report _"the best artifact
       the tool makes"_ and getting-started never mentions the flag.
 
 ## Out of scope, to the roadmap
@@ -227,9 +226,14 @@ test of first contact. Splitting the runs keeps both answers.
 
 ## Done when
 
-- [ ] A machine-first CLI reaches `conformant: true` with a config a reader would sign, and B3/B5
-      report a verdict rather than `unverified`.
-- [ ] No finding names a cause the evidence does not support.
+- [x] A machine-first CLI reaches `conformant: true` with a config a reader would sign, and **B5**
+      reports a verdict rather than `unverified`. **B3 was struck from this criterion**, because
+      the release established it cannot be met at `L0`: B3 reads a data command's output, `--help`
+      is not one, and choosing a data verb to run inertly needs what `L1` knows. Leaving the box
+      unmeetable would have made the plan lie about its own scope.
+- [x] No finding names a cause the evidence does not support — D1's hostile-HOME clause now
+      compares the two runs, and C2 keeps a waived shape that did not behave like the withdrawn
+      premise. Both have fixtures that fail without the fix.
 - [ ] The regression run reports the false accusation gone and the waiver working.
 - [ ] The cold run installs without the fallback of a clone.
 - [ ] The adopter's verdict is better than "roughly break-even" — **in their words, not our

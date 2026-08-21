@@ -55,13 +55,26 @@ if and when this one opens up.
 Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
 commit or a release tag after the `#` — `…agent-cli-conformance.git#v0.1.0`.
 
-One caveat, because it is indistinguishable from a tag that does not exist: Bun keeps a bare
-clone of each git dependency in its cache and does not re-fetch it, so **a tag pushed after your
-first install of this package is invisible** and the install fails with
-`no commit matching "…" found (but repository exists)`. `bun pm cache rm` fixes it
+**Two ways this install goes wrong, and only one of them is loud.**
+
+**The loud one.** Bun keeps a bare clone of each git dependency in its cache and does not
+re-fetch it, so a tag pushed after your first install of this package is invisible and the install
+fails with `no commit matching "…" found (but repository exists)` — indistinguishable from a tag
+that does not exist. `bun pm cache rm` fixes it
 ([oven-sh/bun#18947](https://github.com/oven-sh/bun/issues/18947)). A `#semver:` range is a
 different matter — Bun does not support one
 ([oven-sh/bun#4978](https://github.com/oven-sh/bun/issues/4978)).
+
+**The silent one, which is worse.** The install can succeed at exit `0`, print a commit SHA, and
+put **different bytes on disk** — because the extracted-package cache is stale _independently_ of
+the bare clone, so clearing one does not clear the other. Nothing in the output says so. The only
+symptom is that `acc` is an older version than you asked for, which is why every report now ends
+with `[acc <version>]`: check it against the release you meant to install. If they disagree,
+`bun pm cache rm` and reinstall.
+
+This is Bun's behaviour, not something this kit can fix. It is documented here because a tool that
+reports success while doing something else is the entire subject of this project, and the install
+path had an arm of exactly that shape with nothing pointing at it.
 
 Then point it at your CLI:
 
@@ -69,11 +82,23 @@ Then point it at your CLI:
 bunx acc check ./your-cli
 ```
 
+**Piped output is JSON, and a terminal gets the text report.** That is the contract this kit asks
+of everyone else, so it applies to itself — which means the report below is what you see at a
+terminal, and a pipe or a CI step gets one JSON document instead. `--format text` forces the human
+report anywhere:
+
+```bash
+bunx acc check ./your-cli --format text
+```
+
 The first line is the verdict, and the exit code is the gate:
 
 ```
-NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered  /opt/homebrew/bin/git
+NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered  /opt/homebrew/bin/git  [acc 0.1.1]
 ```
+
+That trailing `[acc 0.1.1]` is the kit's own version, on every report. It is there because an
+install can silently give you an older one — see below.
 
 `0` means conformant and `9` means it is not. Any other code is `acc` itself failing rather
 than a verdict about your tool — the distinction is
