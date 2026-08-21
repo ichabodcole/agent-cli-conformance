@@ -5,6 +5,7 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
+import { helpStatesMachineDefault } from "../../machine-mode.ts";
 import type { Checker, Finding, History, Invocation, Observation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -74,12 +75,14 @@ export const advertisesMachineModeChecker: Checker = {
   // implement passes D3 and takes B3 down with it.
   coverage: "partial",
   coverageGaps: [
+    "a flagless machine-first tool cannot reach a pass by any route because a flag is the only token this rule accepts and a prose claim only downgrades the verdict so for that shape the best available outcome is unverified",
+    "a machine-first tool with no flag is recognised only by matching a claim in help prose which is a heuristic that misreads contrastive and scoped statements and cannot see a non-English one",
     "help is only required to advertise either the machine-mode flag or a schema command and never both",
     "the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it",
     "a pass establishes only that help names the flag and never that the flag is accepted",
   ],
   coverageEstablished: [
-    "the target declared machine mode its default or the human root help surface names one of the flags --json or --format or --output or carries a schema command row",
+    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row — a claim ABOUT the help text rather than a claim that the flag selects anything",
   ],
 
   probes: (d): Invocation[] => [
@@ -123,26 +126,6 @@ export const advertisesMachineModeChecker: Checker = {
       if (crashed) return crashed;
     }
 
-    // A DECLARED default satisfies the rule before help is read at all — and it has to be
-    // decided HERE, above everything below.
-    //
-    // D3 asks that machine mode be discoverable. Reading help for a `--json`-shaped flag is how
-    // the kit discovers it when nothing was said; a declaration IS discovery, and a more durable
-    // form of it. A machine-first CLI has nothing to advertise because there is no mode to switch
-    // into, and failing it for that was the finding this branch answers.
-    //
-    // Placed below, it was unreachable for the exact population it is for: a CLI that emits JSON
-    // to a pipe answers `--help` with a document, and the machine-document branch returns
-    // `unverified` before any declaration is consulted. That left the guide promising a pass the
-    // code could not give.
-    if (h.discovery.machineModeDefault) {
-      return finding(
-        "pass",
-        "machine mode is declared the default, so there is no selector to advertise",
-        plain ? [plain.id] : [],
-      );
-    }
-
     // The HUMAN surface is what this rule names, so plain help is preferred and the forced-text
     // probe is consulted only when plain help came back as a machine document.
     const plainText = textOf(plain);
@@ -172,6 +155,26 @@ export const advertisesMachineModeChecker: Checker = {
       };
     }
 
+    // THE RULE'S SECOND CLAUSE, which the checker did not implement until now.
+    //
+    // "A CLI SHOULD make its structured surface discoverable from the surface a caller reaches
+    // first — which is `--help`, not documentation." A machine-first tool has no flag to name
+    // and no schema command, so the first clause exempts it ("where one exists") and the second
+    // is the whole of what it owes. Saying so in help satisfies the rule; the checker was only
+    // ever looking for a token.
+    //
+    // Reported by the first outside adopter across two rounds: they added an accurate Output
+    // block to their help and D3 kept failing them, while a key in `acc.config.json` — which no
+    // caller of their CLI can see — made it pass. Their words: the rule's name and its behaviour
+    // had come apart.
+    //
+    // Prose matching, and it is defensible HERE for reasons that would not hold elsewhere. D3 is
+    // `diagnostic`, so a false positive costs a reported line and never a build; the fallback is
+    // reached only when no flag and no schema command were found, so a tool that advertises
+    // normally never touches it; and this rule already declares a loose-scan gap. In a core rule
+    // none of that would be enough.
+    const advertisesMachineDefault = helpStatesMachineDefault(help);
+
     const advertisesSchema =
       surface.subcommands.includes("schema") ||
       surface.flags.includes("--schema") ||
@@ -185,13 +188,51 @@ export const advertisesMachineModeChecker: Checker = {
       );
     }
 
+    // A CLAIM IN PROSE DOWNGRADES A FAILURE; IT DOES NOT BUY A PASS.
+    //
+    // The rule asks whether a caller can discover the structured surface. For a tool with no flag
+    // to name, the only available evidence is a sentence — and matching a sentence is a guess
+    // about meaning, which this kit does not otherwise make. Two independent reviewers broke every
+    // version of the matcher with ordinary rephrasings ("Unlike JSON, text is emitted by default",
+    // "The JSON parser writes a table by default"), and one put the limit plainly: you are not
+    // fixing the detector, you are enumerating negations.
+    //
+    // So the claim moves the verdict from `fail` to `unverified` and no further. That makes a
+    // false positive cost an admission of ignorance rather than an assertion of fact, makes a
+    // false PASS structurally impossible, and — the part that matters most — removes the
+    // incentive to delete honest documentation: deleting the sentence moves a target from
+    // `unverified` to `fail`, which is worse for them, not better.
+    // A DECLARING TARGET IS TOLD THE DECLARATION WAS SEEN. It does not answer this rule — the
+    // question is what a CALLER can discover from help, and `acc.config.json` is a statement to
+    // the kit that no caller of the target can read — but a reader who did exactly what B5 and D1
+    // told them to do must not be handed a message about prose matching, which is not what they
+    // did and which names no remedy. Reported by the adopter who declared: the string was
+    // byte-identical with and without their declaration, so the rule was not declining to credit
+    // it, it did not know one existed.
+    const declared = h.discovery.machineModeDefault
+      ? "; defaultOutput is declared in acc.config.json, which B5 and D1 read but this rule cannot — a caller of your CLI sees your help, not our config file"
+      : "";
+
+    if (advertisesMachineDefault) {
+      return finding(
+        "unverified",
+        `no machine-mode flag or schema command was advertised; help appears to CLAIM structured output is the default, which is a claim matched in prose rather than a token this kit can verify${declared}`,
+        evidence,
+      );
+    }
+
     return finding(
       "fail",
-      // The knock-on effect, not just the fact of the miss: B3 (machine output is parseable)
-      // depends on discovery finding a machine-mode flag here, so when this fails B3 also goes
-      // unverified — an undiscoverable feature is, to this kit, indistinguishable from an
-      // absent one.
-      "help names no machine-mode flag or schema command; B3 will be unverified as a result",
+      // NAMES WHAT WAS LOOKED FOR, because "names no machine-mode flag" alone is read as false by
+      // an author whose help plainly contains the word `--json`. A flag documented with a value
+      // slot — `--json <file>` — is a flag that takes a filename, and cannot be the bare switch a
+      // caller flips to change output shape; that is why it is not counted here.
+      //
+      // The old message also promised a knock-on effect it no longer has: it said B3 "will be
+      // unverified as a result", which stopped being true when B3 became an L1 rule reachable
+      // only through a declaration. It is unverified for every undeclared target, whatever this
+      // rule finds.
+      `help names no machine-mode flag a caller could flip and no schema command: --json, --format and --output are looked for as bare switches, and one documented with a value slot is a flag that takes a value rather than one that selects a mode${declared}`,
       evidence,
     );
   },

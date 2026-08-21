@@ -175,6 +175,23 @@ export interface Report {
   /** Excused rules that now pass. The ratchet: remove these from `knownFailures`. */
   staleExpectations: string[];
   /**
+   * Excused rules the run did not EVALUATE — not applicable at this level, or `unverified`.
+   *
+   * Deliberately NOT folded into `staleExpectations`, because the two facts demand opposite
+   * actions and one message would teach a reader to take the wrong one:
+   *
+   * - **stale** — the rule now PASSES. You fixed it. Delete the line.
+   * - **inert** — the kit stopped LOOKING. The debt may be entirely intact. Do not delete the
+   *   line; go and find out.
+   *
+   * Reported by the adopter this happened to. They had filed a `knownFailures` entry as genuine
+   * tracked debt, and a rule moving to `L1` in this release turned an entry like it into one that
+   * suppresses nothing, never expires, and says nothing — leaving them believing a real defect was
+   * tracked and gate-suppressed when it was neither. Config hygiene rather than a property of the
+   * target, so like `staleExpectations` it gates nothing.
+   */
+  inertExpectations: Array<{ ruleId: string; reason: string }>;
+  /**
    * Every rule the project declared `severity: "off"` for — the frame `conformant` was reached
    * inside, published in full so a consumer can apply its own policy rather than trusting the
    * producer's. Four fields, and each is load-bearing:
@@ -430,6 +447,14 @@ export function buildReport(
     staleExpectations: Object.keys(config.knownFailures).filter(
       (id) => applicable.find((f) => f.ruleId === id)?.verdict === "pass",
     ),
+    // Not applicable at this level, or applicable and `unverified`. Either way the run reached no
+    // judgement, so the excuse suppressed nothing — excuses only ever reduce `coreFailures`.
+    inertExpectations: Object.keys(config.knownFailures)
+      .filter((id) => {
+        const found = reported.find((f) => f.ruleId === id);
+        return found !== undefined && (!found.applicable || found.verdict === "unverified");
+      })
+      .map((ruleId) => ({ ruleId, reason: config.knownFailures[ruleId] ?? "" })),
     // Both halves of the declared frame, echoed from the config and joined to what actually
     // happened. Built from `reported` rather than from `config.rules` alone so `verdict` and
     // `applicable` are the run's, not the file's — a waiver whose rule the run never reached

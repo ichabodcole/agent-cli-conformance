@@ -15,14 +15,13 @@ checker: src/acc/kit/checkers/streams/machine-mode-holds-on-parser-error.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
+  - a machine mode is reached only through a declaration so a target whose machine mode is real but undeclared is not checked and only an unrecognised flag provokes the error a declared target is judged on
   - only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not
-  - only the --json and --format=json selectors are probed so a machine mode advertised through --output is not
   - the answer is only required to parse and is never checked against a declared envelope shape
   - that the invocation failed to PARSE is inferred from a non-zero exit rather than observed
   - NDJSON is reported unverified rather than failed because no output kind is declared at L0
 coverage_established:
-  - for a target whose root help advertises --json or --format or which declares machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document
+  - for a target that DECLARES machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document
 ---
 
 # Machine mode holds on the parser-error path
@@ -126,7 +125,7 @@ output format, so a target advertising machine mode only that way is never probe
 
 **A target that is machine-first sends no selector at all**, and that path is the more important
 one. A CLI whose data commands emit JSON unless asked for prose declares
-`"machineMode": "default"` in [`acc.config.json`](../../concepts/conformance.md), and the probe
+`"defaultOutput": "json"` in [`acc.config.json`](../../concepts/conformance.md), and the probe
 becomes the bare unrecognised flag:
 
 ```
@@ -144,6 +143,23 @@ often breaks. A declared default _is_ that row.
 The declaration is falsifiable, which is why it is a declaration and not an inference: a target
 that claims machine mode by default and answers a parser error in prose fails here. That is the
 rule working, not a mis-declaration being punished.
+
+**A flag spelled like a selector is not a selector, and `L0` no longer guesses.** Discovery reads
+`--json` out of help, and the name does not carry the meaning: `--json <file>   Treat the input file
+as JSON` is an ordinary help entry, and so are `--format` for a source-code formatter and `--output`
+for a destination path. Seven successive attempts to infer a machine mode from that spelling each
+failed on a population nobody had enumerated, and the enumeration never closed — the question is not
+answerable from outside the program.
+
+So this rule waits for an assertion. A target that declares `"defaultOutput": "json"` in
+[`acc.config.json`](../../concepts/conformance.md) has stated something falsifiable, and this rule
+falsifies it. Without a declaration it reports `unverified` and names the one line that turns it on.
+See the [`L0` admission test](../../concepts/probing.md#what-l0-may-assume--the-admission-test) for
+why the boundary sits here.
+
+The cost is stated in the [gaps](#current-checker-coverage): a target with a real machine mode that
+never says so is not checked for one. From outside it cannot be told apart from a target that has
+none — inference may decide what to look at, only observation may condemn.
 
 **Passes** when at least one non-empty stream parses **whole** as exactly one JSON document.
 **Fails** when the failure comes back as prose, or with nothing on either stream — silence is not
@@ -173,15 +189,15 @@ are the rest of this page, unexamined.
 
 **Established**
 
-- for a target whose root help advertises --json or --format or which declares machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document
+- for a target that DECLARES machine mode its default an unrecognised flag leaves at least one stream whose whole content parses as exactly one JSON document
 
 **Gaps**
 
-- machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
+- a machine mode is reached only through a declaration so a target whose machine mode is real but
+  undeclared is not checked and only an unrecognised flag provokes the error a declared target is
+  judged on
 - only an unrecognised flag provokes the error so a missing value or a missing required argument
   or an out-of-set value is not
-- only the --json and --format=json selectors are probed so a machine mode advertised through
-  --output is not
 - the answer is only required to parse and is never checked against a declared envelope shape
 - that the invocation failed to PARSE is inferred from a non-zero exit rather than observed
 - NDJSON is reported unverified rather than failed because no output kind is declared at L0

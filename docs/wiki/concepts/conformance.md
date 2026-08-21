@@ -121,9 +121,13 @@ violations and `git` is non-conformant for them, on their own merits:
 its usage text to stdout, where a consumer reads it as output, rather than to stderr.
 
 B3's line is not a violation of anything. `git` advertises no machine-mode flag, so
-[B3](../rules/streams/machine-output-is-parseable.md) has nothing to parse and says so —
-"could not establish it", not "broke it". The same is true of the other two: `A7` found no
-advertised value set to falsify, and `B5` no machine mode it could select. Counted as failures,
+[B3](../rules/streams/machine-output-is-parseable.md) had nothing to parse and said so — "could
+not establish it", not "broke it". The same is true of the other two: `A7` found no advertised
+value set to falsify, and `B5` no machine mode it could select. (The capture is from 2026-08-19.
+B3 has since moved to `L1` and reports not-applicable for every target at `L0`, and `B5` now
+answers only to a declaration — the reasoning is
+[the `L0` admission test](./probing.md#what-l0-may-assume--the-admission-test). The point the
+capture makes about `unverified` is unchanged.) Counted as failures,
 those three would have told git's maintainers they had broken five rules — three of which name
 nothing they did wrong — mixed in with two they can act on today. The first thing a maintainer does with a gate that cannot tell
 those apart is turn it off.
@@ -134,10 +138,12 @@ So `unverified` is never folded into the pass count, is always reported by name,
 blocks `fullyVerified`. It just no longer masquerades as a violation.
 
 The practical shape: **`conformant` is the gate; `fullyVerified` is the goal.** A project
-adopts the kit by getting to conformant, then works the unverified list down — today by making
-discoverable in help what the kit otherwise has to guess at (advertising `--json` is what moves
-B3 off `unverified`), and eventually by declaring it outright, once there is a declaration
-format to write it in. That is the direction the spec wants a tool to move; the second half of
+adopts the kit by getting to conformant, then works the unverified list down — today by
+DECLARING what the kit is not allowed to guess at (`defaultOutput` in `acc.config.json` is what
+moves the machine-mode rules off `unverified`), and eventually by declaring the rest of it, once
+there is a portable format to write it in. Advertising `--json` in help does not move them and
+never should have: a flag's spelling is not its meaning, and
+[`L0` may not infer one](./probing.md#what-l0-may-assume--the-admission-test). That is the direction the spec wants a tool to move; the second half of
 it does not exist yet, and is
 [roadmap step 6](../../roadmap.md#6-the-portable-declaration-ir).
 
@@ -189,7 +195,7 @@ them apart is load-bearing: fold one into the other and the ratchet stops meanin
 | `knownFailures` | **debt** — "this is broken, I know, I will fix it"           | yes, once it passes |
 | `rules`         | **declaration** — "this binds differently for me, by design" | **never**           |
 
-A third key says nothing about any rule. `machineMode: "default"` is a statement about **the
+A third key says nothing about any rule. `defaultOutput: "json"` is a statement about **the
 tool** — that structured output is what it emits unless asked for prose — and it is the first of
 its kind here.
 
@@ -209,11 +215,30 @@ parser error, sends no selector, and requires one of the two streams to be exact
 document. Declare the default and answer in prose and B5 fails — the declaration was tested and
 found false.
 
-**D3 does not test it; D3 accepts it.** That asymmetry is deliberate rather than an oversight. D3's
-subject is whether a caller can _find out_ how to get machine output, and a key committed in the
-project's own config is a discoverable answer — more durable than a line of help text. So D3 takes
-the declaration at its word, and B5 is what makes taking it at its word safe. A target that lies
-here gains a `pass` on D3 and buys a `fail` on B5, which is a worse trade than saying nothing.
+**D3 does not read the declaration at all**, and that is a correction rather than the original
+design. The first version let a declaration satisfy D3, reasoning that a committed config key is a
+durable answer. The adopter who asked for the declaration disposed of that across two rounds: they
+had put an accurate statement in their help, D3 kept failing it, and a key in a file **no caller of
+their CLI can read** made it pass. D3's subject is what a caller can find out, so answering it from
+the kit's own config had the rule's name and its behaviour coming apart.
+
+Help is what D3 reads, and a tool with no flag to name can only answer it with a sentence — which
+the kit matches by pattern and cannot verify the meaning of. So the claim moves D3 from `fail` to
+`unverified` and stops there.
+
+That third value is doing real work. A pass would assert something guessed; a fail would call an
+honest tool undiscoverable. And it makes the honest sentence the cheap choice rather than the
+expensive one: deleting it takes a target from `unverified` to `fail`.
+
+**Saying it in help does not unlock B5, though — the config key does.** The two are not
+interchangeable, and the asymmetry is about what each answer costs when the kit reads it wrongly. A
+sentence in help is matched by pattern, and a pattern that misreads one costs a `diagnostic` line;
+the same misreading routed into a core probe costs a build. Three ordinary human-first CLIs were
+failed on a core rule by one unrelated sentence of help before that coupling was removed.
+
+So: help answers "can a caller find out", which is D3's question. `acc.config.json` unlocks the
+probe, because unlocking a core check should be a deliberate and revocable act by the maintainer
+rather than an inference from their prose.
 
 That division is the same one [the roadmap](../../roadmap.md#6-the-portable-declaration-ir) argues
 for at `L1`, arriving early and in miniature: something declares, something else tries to falsify
@@ -444,6 +469,7 @@ adopter.
   and also the rule most often `unverified`, because its probe cannot be delivered through
   every launcher.
 - [B3 — Machine output parses as its declared kind](../rules/streams/machine-output-is-parseable.md)
-  — core, and `unverified` for any tool that advertises no machine-mode path.
+  — core at `L1`, and reported not-applicable at `L0`, where nothing can safely select a data
+  command to read.
 - [C2 — Usage errors are distinguishable](../rules/exit-codes/usage-errors-are-distinguishable.md)
   — core, and `unverified` for a tool whose usage errors are consistent but not `2`.

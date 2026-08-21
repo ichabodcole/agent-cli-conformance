@@ -56,13 +56,21 @@ export interface AccConfig {
    */
   knownFailures: Record<string, string>;
   /**
-   * DECLARED MACHINE MODE — "structured output is what my tool emits by default."
+   * DECLARED DEFAULT OUTPUT — "my tool emits JSON with no flags at all."
    *
-   * The kit otherwise learns machine mode by reading help for a `--json`-shaped flag, and that
-   * inference cannot represent a CLI that is machine-first: one whose data commands emit JSON
-   * unless asked for prose. Against such a target D3 reported "help names no machine-mode flag",
-   * which is false, and B5 had nothing to select and reported `unverified` — so the rules that
-   * would have checked the envelope were skipped on exactly the class of tool this kit is for.
+   * The kit does not infer machine mode at all — a flag matched out of help by SPELLING is not a
+   * selector, and seven attempts to make that guess safe each failed in a new direction. Without
+   * this key the machine-mode rules report `unverified` and name it as the remedy, which is the
+   * `L0` boundary working rather than a gap: see
+   * [the admission test](../../../docs/wiki/concepts/probing.md#what-l0-may-assume--the-admission-test).
+   *
+   * It is worth most to the CLI an inference could never see: one whose data commands emit JSON
+   * unless asked for prose, with no flag to notice. This key does not touch D3, and measuring
+   * that is cheaper than reasoning about it: against `fixtures/machine-first.ts` D3 reports
+   * `unverified` — "help appears to CLAIM structured output is the default … a claim matched in
+   * prose rather than a token this kit can verify" — identically with and without the
+   * declaration. D3's subject is the help text a caller reads, and this key is a statement to the
+   * kit, which is the asymmetry that rule page argues for.
    *
    * A declaration rather than a sharper inference, and the argument is the one the roadmap
    * already makes for L1: a declaration can be FALSIFIED and an inference cannot, because the
@@ -70,13 +78,11 @@ export interface AccConfig {
    * with no selector at all and see whether the answer is a document. A target that declares
    * this and answers in prose fails B5, which is the rule doing its job.
    *
-   * The most machine-first CLI possible is also the one an inference cannot see: it emits JSON
-   * and has no inverse flag to notice.
-   *
-   * `undefined` means undeclared, which is not the same as "not machine-first" — it means the
-   * kit was told nothing and falls back to reading help.
+   * `undefined` means undeclared, which is not the same as "not machine-first" — it means the kit
+   * was told nothing, and nothing is what it will infer: the machine-mode rules report
+   * `unverified` and name this key as the remedy.
    */
-  machineMode?: "default";
+  defaultOutput?: "json";
 }
 
 /**
@@ -137,7 +143,7 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> =>
  * silent-failure shape this catalogue exists to catch a CLI doing.
  */
 /**
- * `"default"` is the only legal value, and anything else is an ERROR rather than an ignored key.
+ * `"json"` is the only legal value, and anything else is an ERROR rather than an ignored key.
  *
  * A mistyped declaration that silently does nothing leaves a project believing it declared
  * something it did not — the same silent no-op this file already refuses for a mistyped rule id
@@ -145,17 +151,17 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> =>
  * no `"flag"` value, because that case is what reading help already covers.
  */
 /** Every key this file accepts. Anything else is a typo, and a typo is an error here. */
-const TOP_LEVEL_KEYS = ["rules", "knownFailures", "machineMode"];
+const TOP_LEVEL_KEYS = ["rules", "knownFailures", "defaultOutput"];
 
-function parseMachineMode(path: string, raw: unknown): { machineMode?: "default" } {
+function parseDefaultOutput(path: string, raw: unknown): { defaultOutput?: "json" } {
   if (raw === undefined) return {};
-  if (raw !== "default") {
+  if (raw !== "json") {
     throw new ConfigError(
       path,
-      `machineMode must be "default" if present, found ${JSON.stringify(raw) ?? describe(raw)}`,
+      `defaultOutput must be "json" if present, found ${JSON.stringify(raw) ?? describe(raw)}`,
     );
   }
-  return { machineMode: "default" };
+  return { defaultOutput: "json" };
 }
 
 export function loadConfig(
@@ -191,7 +197,7 @@ export function loadConfig(
 
   // AN UNKNOWN TOP-LEVEL KEY IS AN ERROR, for the reason a mistyped rule id already is: a
   // declaration that silently does nothing leaves a project believing it declared something it
-  // did not. `{"machinemode": "default"}` used to run clean with the declaration quietly off —
+  // did not. `{"defaultoutput": "json"}` would otherwise run clean with the declaration quietly off —
   // and since the declaration is what lets B5 reach a machine-first target, the typo switched off
   // the falsification too. Found by an independent review.
   for (const key of Object.keys(parsed)) {
@@ -207,7 +213,7 @@ export function loadConfig(
   const rules = parseRules(path, parsed.rules, known);
   const knownFailures = parseKnownFailures(path, parsed.knownFailures, known);
   requireNoContradiction(path, rules, knownFailures);
-  return { rules, knownFailures, ...parseMachineMode(path, parsed.machineMode) };
+  return { rules, knownFailures, ...parseDefaultOutput(path, parsed.defaultOutput) };
 }
 
 /** The keys a rule entry may carry. An unrecognised one is a typo doing nothing, silently. */

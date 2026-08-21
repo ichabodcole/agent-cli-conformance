@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// THE LIAR. Paired with `{"machineMode": "default"}`, this is a false declaration: it claims
+// THE LIAR. Paired with `{"defaultOutput": "json"}`, this is a false declaration: it claims
 // structured output is what it emits, and answers a parser error in prose.
 //
 // It exists so the falsifiability claim has a fixture that can only fail one way. The first

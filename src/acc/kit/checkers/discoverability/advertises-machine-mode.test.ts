@@ -106,26 +106,61 @@ function historyWithAutoMachineHelp(machineHelp: string, forcedHelp: string | nu
 }
 
 describe("D3 — help advertises the machine-readable path", () => {
-  // A DECLARED default satisfies D3 before help is consulted. A machine-first CLI has nothing to
-  // advertise because there is no mode to switch into, and reporting "help names no machine-mode
-  // flag" against one was the finding this branch answers (EXT-4).
-  test("PASSES when machine mode is declared the default, whatever help says", () => {
-    const h = historyWithHelp("fixture — a tool\n\nUsage:\n  fixture list\n");
-    const declared: History = {
-      ...h,
-      discovery: { ...h.discovery, machineModeDefault: true },
-    };
-    const f = advertisesMachineModeChecker.check(declared);
-    expect(f.verdict).toBe("pass");
-    expect(f.detail).toContain("declared");
+  // A CLAIM DOWNGRADES, IT DOES NOT PASS. Matching a sentence is a guess about meaning, and the
+  // verdict it earns is "we could not verify this", not "a caller can discover it". The upside is
+  // structural rather than stylistic: a false PASS becomes impossible, and deleting an honest
+  // sentence from help moves a target from `unverified` to `fail` — so the kit stops paying
+  // anyone to remove true documentation.
+  test("reports unverified — not pass — when help only CLAIMS a machine default", () => {
+    for (const line of [
+      "Data commands emit JSON on stdout by default; pass --human for prose.",
+      "Output defaults to JSON when stdout is not a terminal.",
+      "The default output format is json.",
+    ]) {
+      const f = advertisesMachineModeChecker.check(
+        historyWithHelp(`fixture — a tool\n\nUsage:\n  fixture list\n\nOutput:\n  ${line}\n`),
+      );
+      expect({ line, verdict: f.verdict }).toEqual({ line, verdict: "unverified" });
+    }
   });
 
-  // The same help WITHOUT the declaration still fails — otherwise the pass above would be the
-  // fixture's doing rather than the declaration's.
-  test("FAILS the same help when nothing is declared", () => {
-    const f = advertisesMachineModeChecker.check(
+  // The property that removes the incentive: the honest sentence is never the expensive choice.
+  test("deleting the claim makes the verdict WORSE, not better", () => {
+    const withClaim = advertisesMachineModeChecker.check(
+      historyWithHelp(
+        "fixture — a tool\n\nUsage:\n  fixture list\n\nOutput:\n  Output is JSON when piped.\n",
+      ),
+    );
+    const without = advertisesMachineModeChecker.check(
       historyWithHelp("fixture — a tool\n\nUsage:\n  fixture list\n"),
     );
+    expect(withClaim.verdict).toBe("unverified");
+    expect(without.verdict).toBe("fail");
+  });
+
+  // The near-misses the pattern exists to refuse. Each contains both a format word and the word
+  // "default" while meaning the opposite, and each would be a false pass on the one rule whose
+  // subject is whether a caller was told the truth.
+  test("does NOT read a default-to-text tool as machine-first", () => {
+    for (const line of [
+      "  --outfmt json    Output format (default: text)",
+      "  Emit JSON with --machine.  Text is the default.",
+      "Pretty tables by default; ask for machine output explicitly.",
+    ]) {
+      const f = advertisesMachineModeChecker.check(
+        historyWithHelp(`fixture — a tool\n\nUsage:\n  fixture list\n\n${line}\n`),
+      );
+      expect({ line, verdict: f.verdict }).toEqual({ line, verdict: "fail" });
+    }
+  });
+
+  // A DECLARATION IS NOT DISCOVERY. `acc.config.json` is ours; no caller of the target can read
+  // it, and this rule's subject is what a caller can find out. Declaring lets B5 probe the right
+  // path — it does not answer D3's question, and it used to.
+  test("does NOT pass on the declaration alone", () => {
+    const h = historyWithHelp("fixture — a tool\n\nUsage:\n  fixture list\n");
+    const declared: History = { ...h, discovery: { ...h.discovery, machineModeDefault: true } };
+    const f = advertisesMachineModeChecker.check(declared);
     expect(f.verdict).toBe("fail");
   });
 
@@ -139,11 +174,12 @@ describe("D3 — help advertises the machine-readable path", () => {
   // The negative control: help never mentions --json, --format, --output, or "schema" anywhere.
   // A `fail` here also disables B3, and the detail must say so — an undiscoverable feature is,
   // to this kit, indistinguishable from an absent one.
-  test("FAILS, and names the B3 knock-on, when help advertises no machine-mode path", async () => {
+  // DEFENDS D3-E1 — the human root help surface names one of the flags --json or --format or --output
+  test("FAILS, and names what it looked for, when help advertises no machine-mode path", async () => {
     const h = await record(fixture("no-machine-mode.ts"), [advertisesMachineModeChecker]);
     const f = advertisesMachineModeChecker.check(h);
     expect(f.verdict).toBe("fail");
-    expect(f.detail).toContain("B3");
+    expect(f.detail).toContain("no schema command");
     expect(f.ruleId).toBe("D3");
   });
 

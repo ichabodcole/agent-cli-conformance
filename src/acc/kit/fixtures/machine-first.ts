@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // A MACHINE-FIRST CLI: structured output is what it emits, and prose is the thing you opt into.
 //
-// This is the shape the kit could not see until `machineMode: "default"` existed. There is no
+// This is the shape the kit could not see until `defaultOutput: "json"` existed. There is no
 // `--json` flag to advertise, because there is no mode to switch INTO — so help names none,
 // discovery finds none, and D3 used to report "help names no machine-mode flag" against a target
 // that is more agent-ready than one passing D3 with a flag bolted on. B5 then had nothing to

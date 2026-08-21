@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CREDENTIAL_PATTERNS } from "./kit/checkers/safety/no-secrets-in-help.ts";
-import { loadConfig } from "./kit/config.ts";
+import type { AccConfig } from "./kit/config.ts";
 import { record } from "./kit/record.ts";
 import { CHECKERS } from "./kit/registry.ts";
 import { buildReport, runCheckers } from "./kit/report.ts";
@@ -730,17 +730,26 @@ describe("schema", () => {
 // stay covered by the tests above.
 const ACC: TargetInfo = { path: CLI, argv0: ["bun", CLI] };
 
+/**
+ * acc DECLARES machine mode its default, and the positive control now depends on it.
+ *
+ * A flag matched out of help by spelling stopped reaching any verdict — seven attempts to make
+ * that inference safe each failed in a new direction — so the machine-mode rules are reachable
+ * only through a declaration. acc is machine-first in fact: bare errors are envelopes on stderr
+ * and piped output is JSON, so the declaration is TRUE of it, and asserting it here is the kit
+ * eating its own cooking rather than exempting itself.
+ *
+ * Held in this suite rather than in a root `acc.config.json`, because `loadConfig` defaults to the
+ * CURRENT WORKING DIRECTORY: a file at the repo root would silently declare machine mode for every
+ * fixture the suite checks from there, most of which are not machine-first, and the declaration
+ * would be false of them.
+ */
+const ACC_DECLARES: AccConfig = { rules: {}, knownFailures: {}, defaultOutput: "json" };
+
 describe("acc checks itself, through the kit", () => {
   test("is conformant", async () => {
-    const h = await record(ACC, CHECKERS);
-    const r = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadConfig(undefined),
-      "L0",
-      VERSION,
-    );
+    const h = await record(ACC, CHECKERS, true);
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, ACC_DECLARES, "L0", VERSION);
     if (!r.conformant) {
       const failed = r.findings.filter((f) => f.verdict !== "pass" && f.tier === "core");
       throw new Error(
@@ -757,15 +766,8 @@ describe("acc checks itself, through the kit", () => {
   // not-applicable and excluded from both claims; A6 is diagnostic and unverifiable through a
   // bun launcher, so it gates neither.)
   test("every applicable core rule is verified, not merely unfailed", async () => {
-    const h = await record(ACC, CHECKERS);
-    const r = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadConfig(undefined),
-      "L0",
-      VERSION,
-    );
+    const h = await record(ACC, CHECKERS, true);
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, ACC_DECLARES, "L0", VERSION);
     const unverified = r.findings.filter(
       (f) => f.applicable && f.tier === "core" && f.verdict === "unverified",
     );
@@ -784,15 +786,8 @@ describe("acc checks itself, through the kit", () => {
   // is what the higher probe levels are for — so this assertion is also the ratchet: raising
   // any checker to `complete` without the evidence to back it goes red here.
   test("...but NOT fully verified, because every core checker's coverage is partial", async () => {
-    const h = await record(ACC, CHECKERS);
-    const r = buildReport(
-      h,
-      runCheckers(h, CHECKERS),
-      CHECKERS,
-      loadConfig(undefined),
-      "L0",
-      VERSION,
-    );
+    const h = await record(ACC, CHECKERS, true);
+    const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, ACC_DECLARES, "L0", VERSION);
     expect(r.fullyVerified).toBe(false);
     expect(r.counts.corePartial).toBe(r.counts.core);
     // The withheld claim must arrive with its reasons attached, one entry per blocking rule.
@@ -920,20 +915,25 @@ describe("acc check — the outcome exit code", () => {
   }, 30_000);
 
   // Waivers, end to end, against the fixture that motivated them. `exits-zero-on-unknown-flag.ts`
-  // violates eight core rules including D2 — the rule dogfooding found three of four real CLIs
+  // violates six core rules including D2 — the rule dogfooding found three of four real CLIs
   // breaking deliberately, by printing help and exiting 0 on a bare invocation.
   describe("acc.config.json waivers", () => {
     const BROKEN = join(dirname(CLI), "kit/fixtures/broken/exits-zero-on-unknown-flag.ts");
     /**
      * Every core rule this fixture violates. Waiving all of them is what clears the gate.
      *
-     * Pinned as a literal, and it GREW when D1 learned to inspect the machine-mode version
-     * payload: this fixture answers `--version --json` with `did the thing` at exit 0, which is
-     * the same one defect — it accepts everything — surfacing under one more rule. A list that
-     * derived itself from the run would make this test agree with whatever the kit currently
-     * says, which is the opposite of what it is for.
+     * Pinned as a literal, and it has moved in both directions. It GREW when D1 learned to
+     * inspect the machine-mode version payload, then SHRANK by B3 and D1 again when a flag
+     * spelled `--json` stopped counting as a machine-mode selector on spelling alone: this
+     * fixture advertises `--json`, and answers it with the same 14 bytes of text it answers
+     * everything with, so nothing here ever established the flag selects anything. Those two
+     * rules now report `unverified` with that reason rather than failing, which is the honest
+     * reading — the fixture's one defect is that it accepts everything, and A1/A2/A3/A5/C2/D2
+     * are where that defect actually shows. A list that derived itself from the run would make
+     * this test agree with whatever the kit currently says, which is the opposite of what it is
+     * for.
      */
-    const VIOLATED = ["A1", "A2", "A3", "A5", "B3", "C2", "D1", "D2"];
+    const VIOLATED = ["A1", "A2", "A3", "A5", "C2", "D2"];
 
     /** A throwaway directory holding one acc.config.json. Nothing outside it is touched. */
     function configDir(config: unknown): string {
@@ -942,7 +942,7 @@ describe("acc check — the outcome exit code", () => {
       return dir;
     }
 
-    test("a waiver is targeted — waiving D2 alone leaves the other seven violations", async () => {
+    test("a waiver is targeted — waiving D2 alone leaves the other five violations", async () => {
       const dir = configDir({
         rules: { D2: { severity: "off", reason: "human-first CLI; bare help is deliberate" } },
       });
@@ -951,7 +951,7 @@ describe("acc check — the outcome exit code", () => {
         expect(r.code).toBe(9);
         const { data } = JSON.parse(r.stdout);
         expect(data.conformant).toBe(false);
-        expect(data.counts.coreFailures).toBe(7);
+        expect(data.counts.coreFailures).toBe(5);
         expect(data.counts.waived).toBe(1);
       } finally {
         rmSync(dir, { recursive: true, force: true });

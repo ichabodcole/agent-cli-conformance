@@ -84,8 +84,26 @@ know it but it might mean something specific here"_ — and what it takes away i
 > half-recognised one lets them carry on with the wrong reading.
 
 Wrong facts are defects: **fix them in the tree and commit**, do not paper over them in the note.
-Ambiguous terms get fixed in the note. Re-read only if the note's _structure_ changed — **one
-re-read maximum**, past which you are polishing.
+Ambiguous terms get fixed in the note.
+
+**Read it again whenever you have changed something a reader meets.** Cheap, and the failure it
+prevents is shipping a confident wrong sentence. Do not count the reads — count what they return.
+
+- **A read that returns defects** — a claim that is false, two sentences that disagree, something
+  that would make a reader act wrongly — has earned the next one. Fix and go again.
+- **A read that returns preferences** — wording, tone, a section someone would have ordered
+  differently — is the signal to stop. Not because further reads are forbidden, but because the
+  note is now being judged rather than checked, and the next reader will have different taste
+  rather than better information.
+
+Judge each finding by whether it names something **wrong**, not by whether it is new. A late read
+often objects to a fix an earlier one asked for; that is two readers disagreeing about taste, and
+resolving it costs a round trip and buys nothing.
+
+**Watch for the note arguing with its own previous reader** — a term explained three times, a
+paragraph defending against an objection this reader never raised. That is a hazard of reading it
+more than once, and only a fresh pair of eyes will see it, because the person editing remembers
+why every sentence is there.
 
 ## 3 · Open or update the PR
 

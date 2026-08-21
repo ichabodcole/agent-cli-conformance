@@ -1,8 +1,14 @@
 import { describe, expect, test } from "bun:test";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { VERSION } from "../version.ts";
-import { buildReport, primaryProblem } from "./report.ts";
+import { record } from "./record.ts";
+import { CHECKERS } from "./registry.ts";
+import { buildReport, primaryProblem, runCheckers } from "./report.ts";
 import { digestOfText } from "./runner.ts";
 import type { Checker, Coverage, Finding, History, Observation, ProbeLevel } from "./types.ts";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 const H: History = {
   target: { path: "x", argv0: ["x"] },
@@ -880,4 +886,44 @@ describe("primaryProblem", () => {
     const r = reportOf(H, [finding("A1", "pass")], [checker("A1", "core")]);
     expect(primaryProblem(H, r)).toBeUndefined();
   });
+});
+
+// An excuse on a rule the run never evaluated suppresses nothing and never expires — reported by
+// the adopter it happened to, whose `knownFailures` entry was genuine tracked debt. The two facts
+// are kept apart because they call for OPPOSITE actions: a stale entry means you fixed it and can
+// delete the line; an inert one means the kit stopped looking and the debt may be entirely intact.
+describe("an excuse the run did not evaluate is reported as inert, not stale", () => {
+  const excuse = { B3: "error envelope is prose; tracked in docs/backlog/412" };
+
+  test("a not-applicable rule lands in inertExpectations, never in staleExpectations", async () => {
+    const p = join(HERE, "fixtures/conforming.ts");
+    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+    const r = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      { rules: {}, knownFailures: excuse },
+      "L0",
+      VERSION,
+    );
+    expect(r.inertExpectations.map((e) => e.ruleId)).toEqual(["B3"]);
+    expect(r.staleExpectations).not.toContain("B3");
+    // The reason travels with it, so the report can point at the debt it no longer suppresses.
+    expect(r.inertExpectations[0]?.reason).toContain("docs/backlog/412");
+  }, 60_000);
+
+  test("a rule that now PASSES is stale, and stays out of the inert list", async () => {
+    const p = join(HERE, "fixtures/conforming.ts");
+    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+    const r = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      { rules: {}, knownFailures: { A1: "tracked" } },
+      "L0",
+      VERSION,
+    );
+    expect(r.staleExpectations).toContain("A1");
+    expect(r.inertExpectations.map((e) => e.ruleId)).not.toContain("A1");
+  }, 60_000);
 });

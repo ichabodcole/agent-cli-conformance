@@ -15,6 +15,7 @@ checker: src/acc/kit/checkers/discoverability/version-flag.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
+  - a machine mode is reached only through a declaration so a target whose --version misbehaves only under a flag it never declared is not checked
   - the machine-mode payload is only required to be a structured document because no declaration exists at L0 to name the field the version belongs in
   - no network and no credentials and no side effects cannot be observed at L0
   - the SHOULD to support -V is not probed
@@ -22,7 +23,7 @@ coverage_gaps:
 coverage_established:
   - --version exits 0 with non-empty stdout
   - --version still does so with HOME and XDG_CONFIG_HOME pointed at a path that does not exist
-  - for a target that advertises a machine-mode flag --version in that mode exits 0 and its whole stdout parses as one JSON object rather than a bare string
+  - for a target that DECLARES machine mode its default plain --version emits a structured document rather than a bare value
 ---
 
 # A version is reportable without side effects
@@ -111,6 +112,25 @@ That second invocation establishes exactly one of the rule's four "no work" clau
 configuration. A pass says nothing about no network, no credentials or no side effects, none of
 which are observable at `L0`; they are named under [gaps](#current-checker-coverage) below.
 
+**A flag spelled like a selector is not a selector, and `L0` no longer guesses.** Discovery reads
+`--json` out of help, and the name does not carry the meaning: `--json <file>   Treat the input file
+as JSON` is an ordinary help entry, and so are `--format` for a source-code formatter and `--output`
+for a destination path. Seven successive attempts to infer a machine mode from that spelling each
+failed on a population nobody had enumerated, and the enumeration never closed — the question is not
+answerable from outside the program.
+
+So this rule's machine clause waits for an assertion. Without a declaration the clause is simply
+**not reached** — the rule is decided by its other clauses, which are about plain `--version` and
+were measured directly — and a target that reports a version properly still **passes**. With a
+declaration the clause falsifies it: machine mode is the default, so plain `--version` owes a
+document.
+See the [`L0` admission test](../../concepts/probing.md#what-l0-may-assume--the-admission-test) for
+why the boundary sits here.
+
+The cost is stated in the [gaps](#current-checker-coverage): a target with a real machine mode that
+never says so is not checked for one. From outside it cannot be told apart from a target that has
+none — inference may decide what to look at, only observation may condemn.
+
 **Fails in machine mode** when the whole of stdout does not parse as one JSON **object**. The
 common shape is a bare string — `--version --json` printing `1.4.2` — and an array is refused for
 the same reason, because the version is a value inside a document rather than the document itself.
@@ -138,11 +158,12 @@ the rest of this page, unexamined.
 
 - --version exits 0 with non-empty stdout
 - --version still does so with HOME and XDG_CONFIG_HOME pointed at a path that does not exist
-- for a target that advertises a machine-mode flag --version in that mode exits 0 and its whole
-  stdout parses as one JSON object rather than a bare string
+- for a target that DECLARES machine mode its default plain --version emits a structured document rather than a bare value
 
 **Gaps**
 
+- a machine mode is reached only through a declaration so a target whose --version misbehaves only
+  under a flag it never declared is not checked
 - the machine-mode payload is only required to be a structured document because no declaration
   exists at L0 to name the field the version belongs in
 - no network and no credentials and no side effects cannot be observed at L0

@@ -80,7 +80,7 @@ const FILENAME_RE = /^(\d{4}-\d{2}-\d{2})-[a-z0-9]+(-[a-z0-9]+)*\.md$/;
 
 /** Collapse a tag to a key that ignores the ways a near-duplicate usually differs. Two distinct
  *  tags that collide here are almost always one tag and a typo — `exit-code` beside
- *  `exit-codes`, or `machineMode` beside `machine-mode`. A shared vocabulary is not enforced
+ *  `exit-codes`, or `defaultOutput` beside `machine-mode`. A shared vocabulary is not enforced
  *  outright: research legitimately opens subjects the wiki has no page for, and a check that
  *  blocked `mcp` or `prose` would be wrong. */
 const tagKey = (t: string) =>

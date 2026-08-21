@@ -68,6 +68,20 @@ preference. Read the one you are writing into. `docs/wiki/` uses `SCHEMA.md` for
   never met. [`docs/techniques.md`](docs/techniques.md) collects the ones that have caught
   something here, each with what it caught.
 
+- **A fix is reviewed through two lenses, and one reviewer cannot hold both.** Whether the repair
+  is correct is a different question from what else the thing it changed used to decide, and the
+  second is the one that gets skipped — a guard suppresses, so whatever it suppresses that is not
+  the target of the fix ships as a regression alongside the repair. Run both lenses together via
+  the [`two-lens-review` skill](.claude/skills/two-lens-review/SKILL.md); serially is how the
+  systemic defect gets found after the narrow one has already landed.
+
+- **When you write a rule here, write the reason, not a number.** A cap like "at most two
+  attempts" is easy to write and easy to follow off a cliff: the day there is a good reason for a
+  third, the number is what gets obeyed. Give the condition instead — what you are looking for,
+  and what tells you it has stopped arriving — so the next reader can recognise the case you did
+  not think of. This is a standing preference of the repo owner's, and it applies to skills,
+  guides and checker comments alike.
+
 - **Markdown must already be Prettier-clean.** The check is `--check`, never `--write`, in both
   the hook and the gate — so a `.md` file that has never been formatted fails the commit and
   reverts it. Run `bunx prettier --write` on anything you author. The formatter is configured to
@@ -89,7 +103,10 @@ by a fresh agent from the tree, cold-read, and carried through to the published 
 which otherwise shows only a list of commit subjects.
 
 **Most commit types do not release.** With `release-type: node` and no `changelog-sections`
-override, `feat` bumps the minor, `fix` bumps the patch and a breaking change bumps the major;
+override, `feat` bumps the minor and `fix` bumps the patch. **A breaking change does NOT bump the
+major while the version is below `1.0.0`** — release-please treats `0.x` as pre-stable and bumps
+the minor instead, unless `bump-major-pre-major` is set, which it is not. So a `feat!` here ships
+as a minor. Say "breaking" in the note and let the number be what it is;
 `docs`, `chore`, `ci`, `test` and `refactor` produce no version and no release PR at all. A
 docs-only merge to `main` that cuts no release is correct, not broken. Merge the promotion PR with a
 merge or rebase commit — a squash takes its headline from the PR title, and a title that is not a

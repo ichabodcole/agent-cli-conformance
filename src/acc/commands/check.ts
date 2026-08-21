@@ -121,7 +121,7 @@ export async function checkCommand(
 
   // CONFIG BEFORE THE FIRST SPAWN, for two reasons.
   //
-  // It carries `machineMode`, which discovery needs — a declaration is something the kit knows
+  // It carries `defaultOutput`, which discovery needs — a declaration is something the kit knows
   // about the target, and everything the kit knows about a target lives in Discovery.
   //
   // And it means a malformed `acc.config.json` is reported before the target is executed
@@ -153,7 +153,7 @@ export async function checkCommand(
     history = await record(
       target,
       CHECKERS,
-      config.machineMode === "default",
+      config.defaultOutput === "json",
       // The SAME config object buildReport reads, so the two consumers cannot disagree about what
       // was waived — one applies it to the verdict, the other to a checker's premise.
       new Set(
@@ -331,6 +331,17 @@ export async function checkCommand(
         "  WVD  waived by config — the probe still ran, and the verdict it reached binds nothing",
         ...(r.staleExpectations.length
           ? [`  stale expectations (now passing, remove them): ${r.staleExpectations.join(", ")}`]
+          : []),
+        // Its own sentence, not the stale one. "Now passing, remove them" and "not being
+        // evaluated" call for opposite actions, and sharing a line would teach a reader to
+        // delete on both — where the second deletion loses the only record of a live defect.
+        ...(r.inertExpectations.length
+          ? [
+              `  not being evaluated (${r.inertExpectations
+                .map((e) => e.ruleId)
+                .join(", ")}) — these entries suppress nothing. NOT evidence the defect is fixed;`,
+              "         the kit stopped looking, so check the defect is still tracked before removing them",
+            ]
           : []),
       ].join("\n");
     },

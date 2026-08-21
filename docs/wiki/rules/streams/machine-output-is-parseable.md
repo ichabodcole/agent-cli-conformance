@@ -10,17 +10,17 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: B3
 tier: core
-probe_level: L0
+probe_level: L1
 checker: src/acc/kit/checkers/streams/machine-output-parseable.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
+  - a machine mode is reached only through a declaration so a target with a real machine mode that never declares one is not checked for it at all
   - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed
-  - only machine-mode help is parsed and never a data command
   - shape stability across invocations and across commands is not compared
   - the stream and opaque output kinds are never exercised because no declaration exists at L0 to select them
 coverage_established:
-  - for a target whose root help advertises --json the entire stdout of machine-mode help parses as exactly one JSON document
+  - nothing at L0 — this rule is L1 and reports not-applicable until a declaration names a command whose output it may read
 ---
 
 # Machine output parses as its declared kind
@@ -130,7 +130,7 @@ catalog.
 
 ## The probe
 
-Inert (`L0`) — help output in machine mode, where such a path exists.
+**No probe.** This rule is `L1`: at `L0` it sends nothing and reports not-applicable.
 
 ```
 <cli> --help --json          # or the tool's discovered machine-mode flag
@@ -142,10 +142,25 @@ Inert (`L0`) — help output in machine mode, where such a path exists.
 because it takes a value: only the `--json` pairing with `--help` is `L0`-safe, so a tool whose
 only machine mode is `--format json` is not probed here.
 
-**Passes** when the captured stdout parses whole, as the declared kind.
+**A flag spelled like a selector is not a selector, and `L0` no longer guesses.** Discovery reads
+`--json` out of help, and the name does not carry the meaning: `--json <file>   Treat the input file
+as JSON` is an ordinary help entry, and so are `--format` for a source-code formatter and `--output`
+for a destination path. Seven successive attempts to infer a machine mode from that spelling each
+failed on a population nobody had enumerated, and the enumeration never closed — the question is not
+answerable from outside the program.
 
-**Reports `unverified`** where no machine-mode flag can be discovered, and raises
-[help advertises machine mode](../discoverability/help-advertises-machine-mode.md) instead.
+So this rule waits for an assertion, and at `L0` there is nothing for it to do even with one: it
+reports **not-applicable**, because its subject is a data command's output and choosing one means
+knowing it is side-effect-free. The rule is `L1`; a declaration that names a command it may read is
+what makes it reachable, and that declaration does not exist yet.
+See the [`L0` admission test](../../concepts/probing.md#what-l0-may-assume--the-admission-test) for
+why the boundary sits here.
+
+The cost is stated in the [gaps](#current-checker-coverage): a target with a real machine mode that
+never says so is not checked for one. From outside it cannot be told apart from a target that has
+none — inference may decide what to look at, only observation may condemn.
+
+**Passes** when the captured stdout parses whole, as the declared kind.
 
 **Reports `unverified`** for valid NDJSON, rather than failing it. Under `L0` nothing is declared,
 and a stream of valid NDJSON is a plausible legitimate design — failing it without a declaration
@@ -169,14 +184,14 @@ the rest of this page, unexamined.
 
 **Established**
 
-- for a target whose root help advertises --json the entire stdout of machine-mode help parses as
-  exactly one JSON document
+- nothing at L0 — this rule is L1 and reports not-applicable until a declaration names a command whose output it may read
 
 **Gaps**
 
+- a machine mode is reached only through a declaration so a target with a real machine mode that
+  never declares one is not checked for it at all
 - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified
   rather than failed
-- only machine-mode help is parsed and never a data command
 - shape stability across invocations and across commands is not compared
 - the stream and opaque output kinds are never exercised because no declaration exists at L0 to
   select them

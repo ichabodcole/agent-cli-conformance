@@ -22,6 +22,35 @@ describe("parseHelp", () => {
     expect(d.subcommands).toEqual(["list", "show"]);
   });
 
+  // A flag that REQUIRES a value is not a mode switch, whatever it is spelled. Sending it bare is
+  // a malformed invocation and the tool answers by complaining about the missing argument — a real
+  // difference in output, which a with-and-without comparison reads as the flag governing output
+  // shape. Measured before this check existed: a machine-first CLI whose help said `--json <file>`
+  // collected two core failures that vanished when the same tool called the flag `--infile`.
+  test("a --json that requires a value is not a machine-mode flag", () => {
+    for (const help of [
+      "Options:\n  --json <file>   Treat the input file as JSON.\n",
+      "Options:\n  --json=<file>   Treat the input file as JSON.\n",
+      "Options:\n  -j, --json <file>   Treat the input file as JSON.\n",
+    ]) {
+      expect([help, parseHelp(help).machineModeFlag]).toEqual([help, null]);
+    }
+  });
+
+  // The narrowness is deliberate and asymmetric: missing a slot leaves the previous behaviour,
+  // inventing one silently stops probing a real machine mode. `JSON` here is a description, not a
+  // metavar, and no rule can tell those apart.
+  test("a boolean --json is still a machine-mode flag, description notwithstanding", () => {
+    for (const help of [
+      "Options:\n  --json  JSON output\n",
+      "Options:\n  --json     Machine-readable output.\n",
+      "Options:\n  --json    Emit JSON (see <docs>)\n",
+      "Options:\n  --json [<file>]  optional input\n",
+    ]) {
+      expect([help, parseHelp(help).machineModeFlag]).toEqual([help, "--json"]);
+    }
+  });
+
   test("identifies an advertised machine-mode flag", () => {
     expect(parseHelp("  --json  JSON output\n").machineModeFlag).toBe("--json");
     expect(parseHelp("  --format <fmt>\n").machineModeFlag).toBe("--format");
@@ -233,7 +262,7 @@ describe("discover", () => {
   });
 });
 
-// THE WIRING. `machineMode` is read from acc.config.json and has to survive all the way into
+// THE WIRING. `defaultOutput` is read from acc.config.json and has to survive all the way into
 // Discovery, because that is where checkers look — and it must survive help that could not be
 // read at all, since a declaration is the one thing the kit knows about a target that does not
 // depend on parsing anything the target printed.
@@ -246,8 +275,10 @@ describe("a declared machine-mode default reaches Discovery", () => {
     expect(d.machineModeFlag).toBe(null);
   });
 
-  test("defaults to false when nothing was declared", async () => {
-    const p = join(HERE, "fixtures/machine-first.ts");
+  // NOT `machine-first.ts`, whose help says so out loud — that fixture is now `true` without any
+  // config, which is the point of the help route and was this test's stale assumption.
+  test("defaults to false when nothing was declared and help says nothing", async () => {
+    const p = join(HERE, "fixtures/broken/no-version-flag.ts");
     const d = await discover({ path: p, argv0: ["bun", p] });
     expect(d.machineModeDefault).toBe(false);
   });
@@ -257,5 +288,41 @@ describe("a declared machine-mode default reaches Discovery", () => {
     const d = await discover({ path: p, argv0: [p] }, true);
     expect(d.helpReadable).toBe(false);
     expect(d.machineModeDefault).toBe(true);
+  });
+});
+
+// A HELP STATEMENT DOES NOT UNLOCK THE PROBE, and this test asserted the opposite for one commit.
+//
+// The coupling was argued for on the grounds that a promise made where callers can read it is the
+// stronger one. It is — but it is read by pattern, and a reviewer with no stake in the design
+// turned three ordinary human-first CLIs into CORE violations with one unrelated sentence each,
+// including "Coverage is written to coverage.json by default". Routing a matcher's output into a
+// gating rule amplifies every one of its mistakes from a printed line into a broken build.
+//
+// So D3 reads help, and `acc.config.json` unlocks B5. Deliberate, revocable, and the maintainer's
+// own act rather than an inference from their prose.
+describe("a help statement does not unlock the probe", () => {
+  const at = (rel: string) => {
+    const p = join(HERE, rel);
+    return { path: p, argv0: ["bun", p] };
+  };
+
+  test("help stating a machine default leaves machineModeDefault false", async () => {
+    const d = await discover(at("fixtures/states-machine-first-in-help.ts"));
+    expect(d.machineModeDefault).toBe(false);
+  });
+
+  test("the config key is what sets it", async () => {
+    const d = await discover(at("fixtures/states-machine-first-in-help.ts"), true);
+    expect(d.machineModeDefault).toBe(true);
+  });
+
+  test("a target that says nothing is unaffected either way", async () => {
+    expect((await discover(at("fixtures/broken/no-version-flag.ts"))).machineModeDefault).toBe(
+      false,
+    );
+    expect(
+      (await discover(at("fixtures/broken/no-version-flag.ts"), true)).machineModeDefault,
+    ).toBe(true);
   });
 });
