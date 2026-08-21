@@ -75,6 +75,7 @@ export const advertisesMachineModeChecker: Checker = {
   // implement passes D3 and takes B3 down with it.
   coverage: "partial",
   coverageGaps: [
+    "a flagless machine-first tool cannot reach a pass by any route because a flag is the only token this rule accepts and a prose claim only downgrades the verdict so for that shape the best available outcome is unverified",
     "a machine-first tool with no flag is recognised only by matching a claim in help prose which is a heuristic that misreads contrastive and scoped statements and cannot see a non-English one",
     "help is only required to advertise either the machine-mode flag or a schema command and never both",
     "the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it",
@@ -201,10 +202,21 @@ export const advertisesMachineModeChecker: Checker = {
     // false PASS structurally impossible, and — the part that matters most — removes the
     // incentive to delete honest documentation: deleting the sentence moves a target from
     // `unverified` to `fail`, which is worse for them, not better.
+    // A DECLARING TARGET IS TOLD THE DECLARATION WAS SEEN. It does not answer this rule — the
+    // question is what a CALLER can discover from help, and `acc.config.json` is a statement to
+    // the kit that no caller of the target can read — but a reader who did exactly what B5 and D1
+    // told them to do must not be handed a message about prose matching, which is not what they
+    // did and which names no remedy. Reported by the adopter who declared: the string was
+    // byte-identical with and without their declaration, so the rule was not declining to credit
+    // it, it did not know one existed.
+    const declared = h.discovery.machineModeDefault
+      ? "; machineMode is declared in acc.config.json, which B5 and D1 read but this rule cannot — a caller of your CLI sees your help, not our config file"
+      : "";
+
     if (advertisesMachineDefault) {
       return finding(
         "unverified",
-        "no machine-mode flag or schema command was advertised; help appears to CLAIM structured output is the default, which is a claim matched in prose rather than a token this kit can verify",
+        `no machine-mode flag or schema command was advertised; help appears to CLAIM structured output is the default, which is a claim matched in prose rather than a token this kit can verify${declared}`,
         evidence,
       );
     }
@@ -220,7 +232,7 @@ export const advertisesMachineModeChecker: Checker = {
       // unverified as a result", which stopped being true when B3 became an L1 rule reachable
       // only through a declaration. It is unverified for every undeclared target, whatever this
       // rule finds.
-      "help names no machine-mode flag a caller could flip and no schema command: --json, --format and --output are looked for as bare switches, and one documented with a value slot is a flag that takes a value rather than one that selects a mode",
+      `help names no machine-mode flag a caller could flip and no schema command: --json, --format and --output are looked for as bare switches, and one documented with a value slot is a flag that takes a value rather than one that selects a mode${declared}`,
       evidence,
     );
   },

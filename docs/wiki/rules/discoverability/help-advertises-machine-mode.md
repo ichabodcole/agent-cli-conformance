@@ -15,6 +15,7 @@ checker: src/acc/kit/checkers/discoverability/advertises-machine-mode.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
+  - a flagless machine-first tool cannot reach a pass by any route because a flag is the only token this rule accepts and a prose claim only downgrades the verdict so for that shape the best available outcome is unverified
   - a machine-first tool with no flag is recognised only by matching a claim in help prose which is a heuristic that misreads contrastive and scoped statements and cannot see a non-English one
   - help is only required to advertise either the machine-mode flag or a schema command and never both
   - the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it
@@ -193,6 +194,9 @@ all.
 
 **Gaps**
 
+- a flagless machine-first tool cannot reach a pass by any route because a flag is the only token
+  this rule accepts and a prose claim only downgrades the verdict so for that shape the best
+  available outcome is unverified
 - a machine-first tool with no flag is recognised only by matching a claim in help prose which is a heuristic that misreads contrastive and scoped statements and cannot see a non-English one
 - help is only required to advertise either the machine-mode flag or a schema command and never both
 - the flag scan falls back to the whole help text when no options block is recognised so a flag
