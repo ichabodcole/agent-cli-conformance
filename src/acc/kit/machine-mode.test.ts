@@ -152,7 +152,10 @@ describe("selectorObserved — a flag spelled like a selector is not one", () =>
   // CONFORMANT on three core rules, all of them for answering in prose a question it was never
   // asked in machine mode.
   test("a --json that names an input file is not established as a selector", async () => {
-    const h = await record(fixture("json-flag-is-an-input.ts"), CHECKERS);
+    // The BOOLEAN fixture, deliberately. Its valued sibling never reaches this predicate at all —
+    // discovery reads the value slot and declines to call the flag a machine-mode flag — so using
+    // it here would leave the contrast untested while appearing to test it.
+    const h = await record(fixture("json-flag-is-a-boolean-input.ts"), CHECKERS);
     expect(h.discovery.machineModeFlag).toBe("--json");
     expect(selectorObserved(h)).toBe(false);
 
@@ -230,7 +233,7 @@ describe("corroboration is evidence, and it has to be evidence of the right thin
   // The same fixture with its version string changed and nothing else. This is the regression
   // test for the accident above: it must stay CONFORMANT whatever the version happens to spell.
   test("the innocent CLI stays innocent whatever its version number parses as", async () => {
-    const source = readFileSync(join(HERE, "fixtures/json-flag-is-an-input.ts"), "utf8");
+    const source = readFileSync(join(HERE, "fixtures/json-flag-is-a-boolean-input.ts"), "utf8");
     const dir = mkdtempSync(join(tmpdir(), "acc-scalar-"));
     try {
       for (const version of ["1.4", "7", "1.0.0"]) {

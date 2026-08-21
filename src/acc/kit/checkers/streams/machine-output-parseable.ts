@@ -51,6 +51,7 @@ export const machineOutputParseableChecker: Checker = {
   // entry names, reached from the other side.
   coverage: "partial",
   coverageGaps: [
+    "a flag whose help shows a required value slot is not treated as a machine-mode selector but only the bracketed and attached spellings are read so a bare-word metavar such as `--json FILE` is still probed as though it were a mode switch",
     "a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so a target whose advertised selector produces the same output with and without it on every pair this kit can compare is reported unverified rather than failed",
     "the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed",
     "only machine-mode help is parsed and never a data command",

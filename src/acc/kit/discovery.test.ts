@@ -22,6 +22,35 @@ describe("parseHelp", () => {
     expect(d.subcommands).toEqual(["list", "show"]);
   });
 
+  // A flag that REQUIRES a value is not a mode switch, whatever it is spelled. Sending it bare is
+  // a malformed invocation and the tool answers by complaining about the missing argument — a real
+  // difference in output, which a with-and-without comparison reads as the flag governing output
+  // shape. Measured before this check existed: a machine-first CLI whose help said `--json <file>`
+  // collected two core failures that vanished when the same tool called the flag `--infile`.
+  test("a --json that requires a value is not a machine-mode flag", () => {
+    for (const help of [
+      "Options:\n  --json <file>   Treat the input file as JSON.\n",
+      "Options:\n  --json=<file>   Treat the input file as JSON.\n",
+      "Options:\n  -j, --json <file>   Treat the input file as JSON.\n",
+    ]) {
+      expect([help, parseHelp(help).machineModeFlag]).toEqual([help, null]);
+    }
+  });
+
+  // The narrowness is deliberate and asymmetric: missing a slot leaves the previous behaviour,
+  // inventing one silently stops probing a real machine mode. `JSON` here is a description, not a
+  // metavar, and no rule can tell those apart.
+  test("a boolean --json is still a machine-mode flag, description notwithstanding", () => {
+    for (const help of [
+      "Options:\n  --json  JSON output\n",
+      "Options:\n  --json     Machine-readable output.\n",
+      "Options:\n  --json    Emit JSON (see <docs>)\n",
+      "Options:\n  --json [<file>]  optional input\n",
+    ]) {
+      expect([help, parseHelp(help).machineModeFlag]).toEqual([help, "--json"]);
+    }
+  });
+
   test("identifies an advertised machine-mode flag", () => {
     expect(parseHelp("  --json  JSON output\n").machineModeFlag).toBe("--json");
     expect(parseHelp("  --format <fmt>\n").machineModeFlag).toBe("--format");

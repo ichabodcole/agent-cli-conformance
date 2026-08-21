@@ -132,6 +132,51 @@ function extractValueSets(lines: string[]): Record<string, string[]> {
 }
 
 /**
+ * The token immediately after a flag on its own help line, if that token is a REQUIRED value slot.
+ *
+ * `--json <file>` and `--json` are the same four bytes of flag name and two different flags. The
+ * first cannot be a boolean mode selector: sending it bare is a malformed invocation, and the tool
+ * answers by complaining about the missing argument. That complaint is a real difference in output
+ * — so a kit comparing "with the flag" against "without it" sees a change, concludes the flag
+ * governs output shape, and condemns an innocent tool on the strength of its own mistake. Measured:
+ * one machine-first CLI, help reading `--json <file>`, collected two core failures that vanished
+ * when the same tool's help called the flag `--infile`.
+ *
+ * The kit ALREADY reasons this way elsewhere and only ever half-applied it — `machineSelector`
+ * sends `--format` attached as `--format=json` precisely because a bare `--format` would be
+ * malformed, and refuses `--output` outright because it names a destination at least as often as a
+ * format. Reading the slot is the same argument, made from bytes already collected.
+ *
+ * OPTIONAL slots (`[<file>]`) do not disqualify: a flag whose value may be omitted is still usable
+ * bare, which is the only property this asks about.
+ *
+ * Only the token IMMEDIATELY following the flag counts. `--json    Emit JSON (see <docs>)` has a
+ * `<...>` on the line and a description in that position, and describes a boolean flag.
+ *
+ * DELIBERATELY NARROW: only `<slot>` and `=slot` count, not the bare-word metavar of
+ * `--json FILE`. That spelling is real — argparse writes it — and it is not distinguishable from a
+ * description that opens with a capitalised word. `--json  JSON output` is an ordinary help line
+ * for a boolean flag, and a metavar rule reads `JSON` as the slot. The two errors are not
+ * symmetric: missing a slot leaves the previous behaviour, while inventing one silently stops
+ * probing a real machine mode and reports nothing where a rule used to speak. Declared as a gap on
+ * the rules that read this rather than guessed at.
+ */
+function takesRequiredValue(lines: string[], flag: string): boolean {
+  const scan = blockLines(lines, OPTIONS_HEADING);
+  for (const line of scan.found ? scan.content : lines) {
+    const at = line.search(new RegExp(`(?<![\\w-])${flag}(?![\\w-])`));
+    if (at === -1) continue;
+    const after = line.slice(at + flag.length);
+    // Attached form: `--json=<file>`, `--json=FILE`.
+    if (/^=\S/.test(after)) return true;
+    const next = after.trimStart().split(/\s+/)[0] ?? "";
+    // `<file>` required; `[<file>]` and `[file]` optional, so not disqualifying.
+    return /^<[^>]+>$/.test(next);
+  }
+  return false;
+}
+
+/**
  * The same sets, read STRUCTURALLY out of a help document that is itself JSON.
  *
  * Not an indulgence: every probe runs with stdout on a pipe, so a tool that switches to machine
@@ -206,7 +251,14 @@ export function parseHelp(text: string): Omit<Discovery, "helpReadable" | "machi
   }
 
   const flags = extractFlags(text, lines);
-  const machineModeFlag = MACHINE_FLAGS.find((f) => flags.includes(f)) ?? null;
+  // `--json` is the only one of these usable as a bare boolean, so it is the only one whose
+  // arity has to be checked: a `--json` that requires a value is not a mode switch, whatever it
+  // is spelled. `--format` is always sent attached and `--output` is refused outright, both in
+  // `machineSelector`.
+  const machineModeFlag =
+    MACHINE_FLAGS.find(
+      (f) => flags.includes(f) && !(f === "--json" && takesRequiredValue(lines, f)),
+    ) ?? null;
   // Same precedence as `extractFlags`: scope to the Options block when there is one, fall back to
   // the whole text when there is not. The JSON branch wins outright, because a document that
   // parses whole is a declaration rather than a layout to guess at.
