@@ -159,7 +159,7 @@ briefly did. The argument for coupling them was that a promise made where caller
 the stronger one and should earn scrutiny — sound for a claim actually made, and not survivable
 against a matcher that read `Coverage is written to coverage.json by default` as a promise about
 stdout. A reviewer built three ordinary human-first CLIs and turned each into a **core** violation
-with one unrelated sentence of help. Unlocking a core check is a deliberate act: `machineMode` in
+with one unrelated sentence of help. Unlocking a core check is a deliberate act: `defaultOutput` in
 `acc.config.json`.
 
 **`acc.config.json` does not satisfy this rule**, and an earlier version of the checker let it.

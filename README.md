@@ -289,10 +289,10 @@ than a waived one, is in [conformance](docs/wiki/concepts/conformance.md#the-fra
 A third key in the same file says nothing about any rule. It describes **your tool**:
 
 ```json
-{ "machineMode": "default" }
+{ "defaultOutput": "json" }
 ```
 
-`rules`, `knownFailures` and `machineMode` are the whole vocabulary — **an unrecognised top-level
+`rules`, `knownFailures` and `defaultOutput` are the whole vocabulary — **an unrecognised top-level
 key is an error**, not an ignored line, for the same reason a mistyped rule id is: a declaration
 that silently does nothing leaves you believing you declared something you did not.
 

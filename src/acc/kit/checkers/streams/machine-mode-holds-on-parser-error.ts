@@ -64,7 +64,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
     if (ways.length === 0) {
       return finding(
         "unverified",
-        "no machine mode was DECLARED, and a flag matched from help by spelling is a guess at one rather than evidence of one; add `machineMode` to acc.config.json to have this checked",
+        "no machine mode was DECLARED, and a flag matched from help by spelling is a guess at one rather than evidence of one; add `defaultOutput` to acc.config.json to have this checked",
         [],
       );
     }

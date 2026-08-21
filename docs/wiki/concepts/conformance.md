@@ -139,7 +139,7 @@ blocks `fullyVerified`. It just no longer masquerades as a violation.
 
 The practical shape: **`conformant` is the gate; `fullyVerified` is the goal.** A project
 adopts the kit by getting to conformant, then works the unverified list down — today by
-DECLARING what the kit is not allowed to guess at (`machineMode` in `acc.config.json` is what
+DECLARING what the kit is not allowed to guess at (`defaultOutput` in `acc.config.json` is what
 moves the machine-mode rules off `unverified`), and eventually by declaring the rest of it, once
 there is a portable format to write it in. Advertising `--json` in help does not move them and
 never should have: a flag's spelling is not its meaning, and
@@ -195,7 +195,7 @@ them apart is load-bearing: fold one into the other and the ratchet stops meanin
 | `knownFailures` | **debt** — "this is broken, I know, I will fix it"           | yes, once it passes |
 | `rules`         | **declaration** — "this binds differently for me, by design" | **never**           |
 
-A third key says nothing about any rule. `machineMode: "default"` is a statement about **the
+A third key says nothing about any rule. `defaultOutput: "json"` is a statement about **the
 tool** — that structured output is what it emits unless asked for prose — and it is the first of
 its kind here.
 

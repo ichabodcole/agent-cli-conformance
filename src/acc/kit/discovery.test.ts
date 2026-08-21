@@ -262,7 +262,7 @@ describe("discover", () => {
   });
 });
 
-// THE WIRING. `machineMode` is read from acc.config.json and has to survive all the way into
+// THE WIRING. `defaultOutput` is read from acc.config.json and has to survive all the way into
 // Discovery, because that is where checkers look — and it must survive help that could not be
 // read at all, since a declaration is the one thing the kit knows about a target that does not
 // depend on parsing anything the target printed.

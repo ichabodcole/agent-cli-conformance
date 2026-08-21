@@ -125,7 +125,7 @@ output format, so a target advertising machine mode only that way is never probe
 
 **A target that is machine-first sends no selector at all**, and that path is the more important
 one. A CLI whose data commands emit JSON unless asked for prose declares
-`"machineMode": "default"` in [`acc.config.json`](../../concepts/conformance.md), and the probe
+`"defaultOutput": "json"` in [`acc.config.json`](../../concepts/conformance.md), and the probe
 becomes the bare unrecognised flag:
 
 ```
@@ -151,7 +151,7 @@ for a destination path. Seven successive attempts to infer a machine mode from t
 failed on a population nobody had enumerated, and the enumeration never closed — the question is not
 answerable from outside the program.
 
-So this rule waits for an assertion. A target that declares `"machineMode": "default"` in
+So this rule waits for an assertion. A target that declares `"defaultOutput": "json"` in
 [`acc.config.json`](../../concepts/conformance.md) has stated something falsifiable, and this rule
 falsifies it. Without a declaration it reports `unverified` and names the one line that turns it on.
 See the [`L0` admission test](../../concepts/probing.md#what-l0-may-assume--the-admission-test) for

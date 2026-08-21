@@ -11,7 +11,7 @@
 // scrutiny; that reasoning is sound for a claim actually made and did not survive the matcher's
 // false-positive rate — three ordinary human-first CLIs became CORE violations on one unrelated
 // sentence. Measured against this fixture today: `UNVR B5 — no machine mode was DECLARED`.
-// Unlocking a core check stays a deliberate, revocable act: `machineMode` in `acc.config.json`.
+// Unlocking a core check stays a deliberate, revocable act: `defaultOutput` in `acc.config.json`.
 const args = process.argv.slice(2);
 
 const HELP = `fixture — a machine-first tool with no flag

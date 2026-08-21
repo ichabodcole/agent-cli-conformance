@@ -19,7 +19,7 @@
 // and the fixture was moved rather than the claim defended.//
 // NOTE: with inference gone, an UNDECLARED target of this shape is no longer condemned by any
 // machine-mode rule — the kit cannot tell a real machine mode from a flag that means something
-// else, and says so. Declare `machineMode` and the parser-error rule reaches it.
+// else, and says so. Declare `defaultOutput` and the parser-error rule reaches it.
 const args = process.argv.slice(2);
 const HELP = `usage: fixture <command>
 

@@ -74,7 +74,7 @@ them with nothing to select, reporting `unverified`.
 checker, declare it:
 
 ```json
-{ "machineMode": "default" }
+{ "defaultOutput": "json" }
 ```
 
 Two shapes qualify, and the second is the common one:

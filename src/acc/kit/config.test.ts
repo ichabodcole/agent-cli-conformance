@@ -22,16 +22,18 @@ function write(content: string): void {
 const IDS = ["A1", "A2", "B1"];
 
 describe("loadConfig", () => {
-  // The declaration a machine-first CLI makes about itself (EXT-4). One word wide on purpose:
-  // there is no `"flag"` value, because reading help already covers that case.
-  test("accepts machineMode: default", () => {
-    write(JSON.stringify({ machineMode: "default" }));
-    expect(loadConfig(dir, IDS).machineMode).toBe("default");
+  // The declaration a machine-first CLI makes about itself (EXT-4). Named for what is CHECKED:
+  // the kit accepts JSON and only JSON — not YAML, CSV, TSV or XML — so a broader word would
+  // invite a truthful declaration the kit then fails. There is no `"flag"` value; a flag-selected
+  // machine mode is not declarable, and that gap is stated on the rules that need it.
+  test("accepts defaultOutput: json", () => {
+    write(JSON.stringify({ defaultOutput: "json" }));
+    expect(loadConfig(dir, IDS).defaultOutput).toBe("json");
   });
 
-  test("leaves machineMode undefined when it is not declared", () => {
+  test("leaves defaultOutput undefined when it is not declared", () => {
     write(JSON.stringify({ rules: {} }));
-    expect(loadConfig(dir, IDS).machineMode).toBeUndefined();
+    expect(loadConfig(dir, IDS).defaultOutput).toBeUndefined();
   });
 
   // A mistyped declaration must be an ERROR, not an ignored key — the same rule this file already
@@ -40,16 +42,22 @@ describe("loadConfig", () => {
   // A near-miss key is the failure this guards: the declaration is what lets B5 reach a
   // machine-first target, so a typo silently switches off the check as well as the declaration.
   test("REJECTS an unknown top-level key rather than ignoring it", () => {
-    for (const bad of ["machinemode", "machine_mode", "Rules", "knownfailures"]) {
+    for (const bad of [
+      "defaultoutput",
+      "default_output",
+      "machineMode",
+      "Rules",
+      "knownfailures",
+    ]) {
       write(`{ "${bad}": {} }`);
       expect(() => loadConfig(dir, IDS)).toThrow(/unknown key/);
     }
   });
 
-  test("REJECTS any other machineMode value", () => {
-    for (const bad of ['"flag"', '"json"', "true", "1", "null", "{}"]) {
-      write(`{ "machineMode": ${bad} }`);
-      expect(() => loadConfig(dir, IDS)).toThrow(/machineMode must be "default"/);
+  test("REJECTS any other defaultOutput value", () => {
+    for (const bad of ['"flag"', '"yaml"', '"csv"', '"default"', "true", "1", "null", "{}"]) {
+      write(`{ "defaultOutput": ${bad} }`);
+      expect(() => loadConfig(dir, IDS)).toThrow(/defaultOutput must be "json"/);
     }
   });
 

@@ -14,6 +14,10 @@ examined: v0.2.0 (ab7265b) against Spellbook's `grapevine` CLI
 
 # Second adoption trial — the regression run
 
+> **Renamed since.** The key described here is now `defaultOutput: "json"`. It was `machineMode:
+"default"` when this was written, and the old spelling is rejected as an unknown key rather than
+> silently ignored. The record below is left as written.
+
 ## What this was
 
 The same agent (`assay`), the same CLI, the upgraded kit. Round one's report is

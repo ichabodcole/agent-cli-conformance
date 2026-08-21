@@ -744,7 +744,7 @@ const ACC: TargetInfo = { path: CLI, argv0: ["bun", CLI] };
  * fixture the suite checks from there, most of which are not machine-first, and the declaration
  * would be false of them.
  */
-const ACC_DECLARES: AccConfig = { rules: {}, knownFailures: {}, machineMode: "default" };
+const ACC_DECLARES: AccConfig = { rules: {}, knownFailures: {}, defaultOutput: "json" };
 
 describe("acc checks itself, through the kit", () => {
   test("is conformant", async () => {

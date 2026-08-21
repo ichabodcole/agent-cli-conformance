@@ -60,7 +60,7 @@ export const machineOutputParseableChecker: Checker = {
       "unverified",
       h.discovery.machineModeDefault
         ? "machine mode is declared the default, and this rule's subject is a DATA command's output — selecting one needs to know it is side-effect-free, which nothing at L0 knows; see B5, which reaches the declared default inertly"
-        : "no machine mode was DECLARED, and a flag matched from help by spelling is a guess at one rather than evidence of one; add `machineMode` to acc.config.json and this rule becomes reachable at L1",
+        : "no machine mode was DECLARED, and a flag matched from help by spelling is a guess at one rather than evidence of one; add `defaultOutput` to acc.config.json and this rule becomes reachable at L1",
       [],
     ),
 };

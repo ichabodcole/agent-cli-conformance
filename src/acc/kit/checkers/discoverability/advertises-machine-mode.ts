@@ -210,7 +210,7 @@ export const advertisesMachineModeChecker: Checker = {
     // byte-identical with and without their declaration, so the rule was not declining to credit
     // it, it did not know one existed.
     const declared = h.discovery.machineModeDefault
-      ? "; machineMode is declared in acc.config.json, which B5 and D1 read but this rule cannot — a caller of your CLI sees your help, not our config file"
+      ? "; defaultOutput is declared in acc.config.json, which B5 and D1 read but this rule cannot — a caller of your CLI sees your help, not our config file"
       : "";
 
     if (advertisesMachineDefault) {

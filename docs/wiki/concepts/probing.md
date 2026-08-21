@@ -85,7 +85,7 @@ input, output, or the subject matter — so `--json`, `--format`, `--output`, `-
 are all ambiguous in the same way. That is also advice for CLI authors: a format-named flag has to
 carry its direction in the help entry, because nothing else can.
 
-**So the machine-mode rules wait for a declaration.** `machineMode` in
+**So the machine-mode rules wait for a declaration.** `defaultOutput` in
 [`acc.config.json`](./conformance.md) is an assertion, and falsifying an assertion is sound at any
 level; without it those rules report `unverified` and name the one line that turns them on. This is
 what `L1` buys in general — you say what your interface does, and the kit tells you whether that is

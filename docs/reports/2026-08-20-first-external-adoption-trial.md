@@ -14,6 +14,10 @@ examined: v0.1.1 (0cace07) against Spellbook's `grapevine` and `astrolabe` CLIs
 
 # First external adoption trial
 
+> **Renamed since.** The key described here is now `defaultOutput: "json"`. It was `machineMode:
+"default"` when this was written, and the old spelling is rejected as an unknown key rather than
+> silently ignored. The record below is left as written.
+
 ## What this was
 
 The first use of `acc` by someone who did not build it. An agent in the Spellbook repo — alias

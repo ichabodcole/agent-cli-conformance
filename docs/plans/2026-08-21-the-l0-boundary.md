@@ -152,7 +152,7 @@ carry the direction.
 
 1. **The three rules become `diagnostic` when the premise was INFERRED, and stay `core` when it was
    DECLARED.** The demotion attaches to the evidence, not to the rule. A tool that writes
-   `"machineMode": "default"` in [`acc.config.json`](../wiki/concepts/conformance.md) has made an
+   `"defaultOutput": "json"` in [`acc.config.json`](../wiki/concepts/conformance.md) has made an
    assertion, and falsifying an assertion is sound at any level — that path keeps failing builds
    exactly as it does today. What stops gating is the path where the kit wrote the claim itself.
 

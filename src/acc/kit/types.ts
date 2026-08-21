@@ -190,7 +190,7 @@ export interface Discovery {
   /** A machine-mode flag if one was advertised (`--json`, `--format`). */
   machineModeFlag: string | null;
   /**
-   * The target DECLARED that structured output is its default (`machineMode: "default"` in
+   * The target DECLARED that its default output is JSON (`defaultOutput: "json"` in
    * `acc.config.json`), so machine mode needs no selector.
    *
    * Kept beside `machineModeFlag` rather than folded into it because they are different facts:

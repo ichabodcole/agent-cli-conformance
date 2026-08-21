@@ -12,6 +12,10 @@ tags: [conformance, adoption, acc-config, remediation]
 
 # 0.2.0 — the release that has to survive a second trial
 
+> **Renamed since.** The key described here is now `defaultOutput: "json"`. It was `machineMode:
+"default"` when this was written, and the old spelling is rejected as an unknown key rather than
+> silently ignored. The record below is left as written.
+
 **Goal:** an outside adopter reaches a green `L0` gate on a CLI that deserves one, and says the run
 was worth their time.
 

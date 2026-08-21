@@ -305,7 +305,7 @@ export async function discover(
   // The coupling amplified every matcher defect from a printed line into a broken build, and
   // handed the target's own prose the power to change which rules bind to it, in the failing
   // direction, with no way to say "I did not mean that". Unlocking a core check stays a
-  // deliberate, revocable act: `machineMode` in `acc.config.json`.
+  // deliberate, revocable act: `defaultOutput` in `acc.config.json`.
   //
   // D3 still reads help — see its checker. That is a `diagnostic` verdict, which is the cost the
   // matcher's precision can actually carry.
