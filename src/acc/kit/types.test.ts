@@ -35,6 +35,7 @@ function history(observations: Observation[]): History {
       flags: [],
       machineModeFlag: null,
       machineModeDefault: false,
+      machineModeSource: null,
       valueSets: {},
       helpReadable: false,
     },

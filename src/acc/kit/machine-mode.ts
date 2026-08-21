@@ -143,8 +143,28 @@ export function stringValuesOf(document: unknown): string[] {
  * off when piped." must not read as machine-first.
  */
 export function helpStatesMachineDefault(help: string): boolean {
-  return MACHINE_DEFAULT_PHRASES.some((re) => re.test(help));
+  return help
+    .split(/[.\n;]/)
+    .some(
+      (clause) => !READS_JSON.test(clause) && MACHINE_DEFAULT_PHRASES.some((re) => re.test(clause)),
+    );
 }
+
+/**
+ * The clause is about JSON going IN, so nothing in it is a claim about output.
+ *
+ * The direction gate the pipe-conditional patterns needed and did not have. "JSON input is
+ * accepted when piped to stdin" carries a format word and a pipe word in one clause and says
+ * the opposite of machine-first — and a false pass here is the expensive direction, because a
+ * statement recognised as a declaration also unlocks B5, so a JSON-CONSUMING tool would have its
+ * error path measured against a promise it never made and could be failed on a core rule for it.
+ *
+ * The default-shaped patterns never needed this: they require the format word to be the thing
+ * defaulted TO, which already excludes an input claim. The pipe-conditional ones test proximity,
+ * so they need the direction stated separately.
+ */
+const READS_JSON =
+  /\b(input|stdin|reads?|reading|accept(s|ed|ing)?|pars(e|es|ed|ing)|consum(e|es|ed|ing)|ingest(s|ed|ing)?|validat(e|es|ed|ing))\b/i;
 
 const MACHINE_DEFAULT_PHRASES: readonly RegExp[] = [
   // default-shaped

@@ -143,7 +143,14 @@ function one(h: History, purpose: string, how: string): Finding {
       "fail",
       // The consequence, not just the fact: an agent that branched on a field of the envelope it
       // was promised got `undefined`, and an agent that piped the stream got prose.
-      `machine mode via ${how} and the parser error came back as prose on ${streams.map((s) => s.stream).join(" and ")} (exit ${o.exitCode}): ${JSON.stringify(streams[0]?.text.slice(0, 60))}`,
+      // THE NUDGE, and it is here because the incentive runs the wrong way without it.
+      //
+      // When the promise came from HELP, deleting that sentence removes this core violation and
+      // costs only D3, which is diagnostic and gates nothing. Measured by an adopter on two
+      // builds identical but for one line: the honest one carried an extra core failure. So the
+      // cheapest response to this finding is to delete a true statement, and a report that says
+      // nothing is paying for that. `knownFailures` is the honest route and is named here.
+      `machine mode via ${how} and the parser error came back as prose on ${streams.map((s) => s.stream).join(" and ")} (exit ${o.exitCode}): ${JSON.stringify(streams[0]?.text.slice(0, 60))}${h.discovery.machineModeSource === "help" ? "; this path was reached because help states machine output is the default — deleting that sentence silences the check rather than fixing it, and knownFailures is the honest way to defer it" : ""}`,
       [o.id],
     );
   }

@@ -188,7 +188,9 @@ function valueSetsFromJson(text: string): Record<string, string[]> | null {
  * discovery turns dependent probes into `unverified` — an honest "could not check" rather than
  * a vacuous pass.
  */
-export function parseHelp(text: string): Omit<Discovery, "helpReadable" | "machineModeDefault"> {
+export function parseHelp(
+  text: string,
+): Omit<Discovery, "helpReadable" | "machineModeDefault" | "machineModeSource"> {
   const lines = text.split("\n");
 
   const subcommands: string[] = [];
@@ -238,6 +240,7 @@ export async function discover(
       flags: [],
       machineModeFlag: null,
       machineModeDefault: declaredMachineDefault,
+      machineModeSource: declaredMachineDefault ? "config" : null,
       valueSets: {},
       helpReadable: false,
     };
@@ -253,9 +256,12 @@ export async function discover(
   //
   // This is not the kit guessing. The words are the target's; reading them is what lets B5 go and
   // try to falsify them, which is the same shape L1 is built on.
+  const statedInHelp = helpStatesMachineDefault(text);
   return {
     ...parseHelp(text),
-    machineModeDefault: declaredMachineDefault || helpStatesMachineDefault(text),
+    machineModeDefault: declaredMachineDefault || statedInHelp,
+    // Config first: if both say it, the config is the deliberate act and help is corroboration.
+    machineModeSource: declaredMachineDefault ? "config" : statedInHelp ? "help" : null,
     helpReadable: true,
   };
 }

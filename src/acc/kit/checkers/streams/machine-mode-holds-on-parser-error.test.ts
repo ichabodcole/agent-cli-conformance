@@ -50,6 +50,7 @@ function historyWith(exitCode: number | null, stdout: string, stderr: string): H
       flags: ["--json"],
       machineModeFlag: "--json",
       machineModeDefault: false,
+      machineModeSource: null,
       valueSets: {},
       helpReadable: true,
     },
@@ -141,6 +142,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
       flags: [],
       machineModeFlag: null,
       machineModeDefault: true,
+      machineModeSource: null,
       valueSets: {},
       helpReadable: true,
     });
@@ -171,6 +173,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
       flags: ["--json"],
       machineModeFlag: "--json",
       machineModeDefault: true,
+      machineModeSource: null,
       valueSets: {},
       helpReadable: true,
     });
@@ -188,6 +191,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
           flags: ["--output"],
           machineModeFlag,
           machineModeDefault: false,
+          machineModeSource: null,
           valueSets: {},
           helpReadable: true,
         }),
@@ -202,6 +206,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
       flags: ["--format"],
       machineModeFlag: "--format",
       machineModeDefault: false,
+      machineModeSource: null,
       valueSets: {},
       helpReadable: true,
     });

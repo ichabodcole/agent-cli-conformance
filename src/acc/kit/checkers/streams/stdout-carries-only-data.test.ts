@@ -45,6 +45,7 @@ describe("B1 — stdout carries only data on failure", () => {
         flags: [],
         machineModeFlag: null,
         machineModeDefault: false,
+        machineModeSource: null,
         valueSets: {},
         helpReadable: false,
       },

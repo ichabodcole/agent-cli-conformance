@@ -29,7 +29,27 @@ describe("a help statement that structured output is the default", () => {
   // Each of these carries a format word, most carry "default" or "piped" too, and every one of
   // them describes a tool whose OUTPUT is text. A pass on any is a false claim about the one rule
   // whose subject is whether a caller was told the truth.
+  // THE DIRECTION BUG. The pipe-conditional patterns shipped without the discrimination the
+  // default-shaped ones already had: they tested proximity of a format word to a pipe word and
+  // stopped, so a tool that reads JSON IN and writes text OUT read as machine-first.
+  //
+  // The expensive direction, and the adopter said why: a statement recognised as a declaration
+  // also unlocks B5, so a JSON-CONSUMING tool would have its error path measured against a
+  // promise it never made — and could be failed on a CORE rule for it. A false fail costs a
+  // diagnostic line; a false pass costs a build.
+  const READS_IN_WRITES_OUT = [
+    "JSON input is accepted when piped to stdin.",
+    "Reads JSON when input is piped. Prints a table.",
+    "Accepts JSON on stdin when piped; writes a CSV report.",
+    "When piped, the JSON config is validated and a summary is printed.",
+  ];
+
   const REFUSED = [
+    ...READS_IN_WRITES_OUT,
+    // Controls: a pipe word with no output claim at all must not fire either.
+    "When piped, colour is disabled and progress bars are suppressed.",
+    "Pipe the JSON log to jq to filter it.",
+    "When stdout is not a terminal, output is buffered.",
     "Reads JSON from stdin and prints a human-readable table.", // JSON as input
     "JSON is the default input format. Results print as a table.", // "default" + input
     "Converts JSON to CSV. Output is CSV.", // JSON as subject
