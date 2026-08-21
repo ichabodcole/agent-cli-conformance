@@ -306,8 +306,6 @@ describe("one crashed probe among completed ones is not compliance either", () =
     "%s reports the gap when one of its own probes crashes and the rest complete",
     (ruleId, checker) => {
       const expected = OWNS_CRASHES.has(ruleId) ? "fail" : "unverified";
-      // Corroboration probes are excluded: they are supporting evidence for whether the rule
-      // applies, not a subject of it. See isCorroborationProbe.
       for (const inv of checker.probes(real.discovery)) {
         const id = invocationId(inv);
         // Every declared probe is recorded, so a miss means the checker asked for something

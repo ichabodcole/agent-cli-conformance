@@ -182,8 +182,6 @@ describe("a PARTIAL hang is not evidence of compliance either", () => {
     "%s reports the gap when one of its own probes hangs and the rest complete",
     (ruleId, checker) => {
       const expected = OWNS_HANGS.has(ruleId) ? "fail" : "unverified";
-      // Corroboration probes are excluded: they are supporting evidence for whether the rule
-      // applies, not a subject of it. See isCorroborationProbe.
       for (const inv of checker.probes(real.discovery)) {
         const id = invocationId(inv);
         // Every declared probe is recorded, so a miss means the checker asked for something

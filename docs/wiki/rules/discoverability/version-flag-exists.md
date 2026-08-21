@@ -15,8 +15,7 @@ checker: src/acc/kit/checkers/discoverability/version-flag.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - a flag whose help shows a required value slot is not treated as a machine-mode selector but only the bracketed and attached spellings are read so a bare-word metavar such as `--json FILE` is still probed as though it were a mode switch
-  - a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so for a target whose advertised selector produces the same output with and without it the machine-mode clause is not reached and the rule is decided by its other clauses
+  - a machine mode is reached only through a declaration so a target whose --version misbehaves only under a flag it never declared is not checked
   - the machine-mode payload is only required to be a structured document because no declaration exists at L0 to name the field the version belongs in
   - no network and no credentials and no side effects cannot be observed at L0
   - the SHOULD to support -V is not probed
@@ -161,10 +160,8 @@ the rest of this page, unexamined.
 
 **Gaps**
 
-- a flag whose help shows a required value slot is not treated as a machine-mode selector but only
-  the bracketed and attached spellings are read so a bare-word metavar such as `--json FILE` is
-  still probed as though it were a mode switch
-- a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so for a target whose advertised selector produces the same output with and without it the machine-mode clause is not reached and the rule is decided by its other clauses
+- a machine mode is reached only through a declaration so a target whose --version misbehaves only
+  under a flag it never declared is not checked
 - the machine-mode payload is only required to be a structured document because no declaration
   exists at L0 to name the field the version belongs in
 - no network and no credentials and no side effects cannot be observed at L0

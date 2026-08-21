@@ -15,10 +15,8 @@ checker: src/acc/kit/checkers/streams/machine-output-parseable.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - a flag whose help shows a required value slot is not treated as a machine-mode selector but only the bracketed and attached spellings are read so a bare-word metavar such as `--json FILE` is still probed as though it were a mode switch
-  - a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so a target whose advertised selector produces the same output with and without it on every pair this kit can compare is reported unverified rather than failed
+  - a machine mode is reached only through a declaration so a target with a real machine mode that never declares one is not checked for it at all
   - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified rather than failed
-  - only machine-mode help is parsed and never a data command
   - shape stability across invocations and across commands is not compared
   - the stream and opaque output kinds are never exercised because no declaration exists at L0 to select them
 coverage_established:
@@ -192,13 +190,10 @@ the rest of this page, unexamined.
 
 **Gaps**
 
-- a flag whose help shows a required value slot is not treated as a machine-mode selector but only
-  the bracketed and attached spellings are read so a bare-word metavar such as `--json FILE` is
-  still probed as though it were a mode switch
-- a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so a target whose advertised selector produces the same output with and without it on every pair this kit can compare is reported unverified rather than failed
+- a machine mode is reached only through a declaration so a target with a real machine mode that
+  never declares one is not checked for it at all
 - the undeclared-output default of data is not enforced at L0 so NDJSON is reported unverified
   rather than failed
-- only machine-mode help is parsed and never a data command
 - shape stability across invocations and across commands is not compared
 - the stream and opaque output kinds are never exercised because no declaration exists at L0 to
   select them

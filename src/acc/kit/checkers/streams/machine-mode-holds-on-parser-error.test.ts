@@ -81,8 +81,11 @@ function historyWith(exitCode: number | null, stdout: string, stderr: string): H
     target: { path: "x", argv0: ["x"] },
     discovery: {
       subcommands: [],
-      flags: ["--json"],
-      machineModeFlag: "--json",
+      flags: [],
+      // Declared and advertising NOTHING, so exactly one way in exists and these cases judge the
+      // answer rather than the probe list. A declared target that also advertises a flag is
+      // probed both ways — covered by the probe-list test above.
+      machineModeFlag: null,
       // DECLARED, because a flag matched from help by spelling no longer reaches any verdict.
       // Every case below describes a target that asserted machine mode; without the assertion the
       // rule correctly reports that nobody claimed one, which is a different test.
@@ -187,7 +190,7 @@ describe("B5 — machine mode holds on the parser-error path", () => {
     expect(probe?.args).toEqual(["--acc-probe-xyzzy-flag"]);
   });
 
-  test("probes the declared default only, whatever help advertises", () => {
+  test("probes every way a declared target can be made to fail", () => {
     const probes = machineModeHoldsOnParserErrorChecker.probes({
       subcommands: [],
       flags: ["--json"],
@@ -200,7 +203,15 @@ describe("B5 — machine mode holds on the parser-error path", () => {
     // buys no probes either — this target advertises `--json` and the probe list ignores it.
     // Seven attempts to make that inference safe each failed in a new direction; the question it
     // rests on, what does this flag MEAN, is not answerable from outside the program.
-    expect(probes.map((p) => p.args)).toEqual([["--acc-probe-xyzzy-flag"]]);
+    // BOTH, when the target declares AND advertises. Not because anyone established what `--json`
+    // means — nothing does — but because the DECLARATION says machine output is the default, so
+    // every parser error owes a document whichever invocation provoked it. Probing only the bare
+    // route shipped for one commit and passed a target whose machine mode collapsed under its own
+    // flag: a declaration turning a real failure into a pass.
+    expect(probes.map((p) => p.args)).toEqual([
+      ["--acc-probe-xyzzy-flag"],
+      ["--acc-probe-xyzzy-flag", "--json"],
+    ]);
   });
 
   test("declares no probe when no selectable machine mode was discovered", () => {

@@ -32,7 +32,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CHECKERS } from "./registry.ts";
 
-const SRC = join(dirname(fileURLToPath(import.meta.url)), "..");
+const SELF = fileURLToPath(import.meta.url);
+const SRC = join(dirname(SELF), "..");
 
 /**
  * Claims with no defending test yet — the debt, enumerated so it cannot accumulate silently.
@@ -79,10 +80,24 @@ function markers(): Map<string, string[]> {
     for (const name of readdirSync(dir)) {
       const p = join(dir, name);
       if (statSync(p).isDirectory()) walk(p);
-      else if (name.endsWith(".test.ts")) {
-        for (const m of readFileSync(p, "utf8").matchAll(/DEFENDS\s+([A-G]\d-E\d+)\s+—\s+(.+)/g)) {
+      // THE SCANNER SKIPS ITSELF, and that is not tidiness. Any file this walk reads cannot
+      // safely quote the marker syntax, and this file's whole job is to document it: a syntax
+      // example in the header once bound D1-E2 with a sentence about HOME, and the comment
+      // explaining THAT trap then bound A3-E3 by quoting the attack it was warning about. Two
+      // self-inflicted bindings from prose is enough evidence that care is the wrong mechanism.
+      else if (name.endsWith(".test.ts") && p !== SELF) {
+        const all = readFileSync(p, "utf8").split("\n");
+        for (const [i, line] of all.entries()) {
+          const m = /DEFENDS\s+([A-G]\d-E\d+)\s+—\s+(.+)/.exec(line);
+          if (!m) continue;
           const [, id, fragment] = m;
-          if (id && fragment) out.set(id, [...(out.get(id) ?? []), fragment.trim()]);
+          if (!id || !fragment) continue;
+          // A marker must sit ON a test. Otherwise one line appended anywhere in any test FILE
+          // binds a claim — which is how a reviewer bound the most drift-prone claim in the repo
+          // with `// DEFENDS A3-E3 — a`, outside every describe block, and this file passed.
+          const near = all.slice(i + 1, i + 4).join("\n");
+          if (/\btest(\.each)?\(/.test(near))
+            out.set(id, [...(out.get(id) ?? []), fragment.trim()]);
         }
       }
     }
@@ -116,6 +131,9 @@ describe("every coverage claim is bound to a test, or listed as debt", () => {
     ),
   )("%s — each marker quotes the claim it names", (id, claim) => {
     for (const fragment of bound.get(id) ?? []) {
+      // Long enough to be a quotation rather than a coincidence: `claim.includes("a")` is true of
+      // almost every sentence in the catalogue, so a one-character fragment binds anything.
+      expect([id, fragment, fragment.length >= 30]).toEqual([id, fragment, true]);
       expect([id, fragment, claim.includes(fragment)]).toEqual([id, fragment, true]);
     }
   });

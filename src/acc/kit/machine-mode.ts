@@ -57,27 +57,31 @@ export function machineErrorArgs(selector: string): string[] {
  * is the normal case here.
  */
 export function machineErrorProbesFor(d: Discovery): { args: string[]; how: string }[] {
-  // ONLY the declared route. A flag matched out of help by SPELLING is not a machine-mode
-  // selector, it is a guess that one exists, and seven attempts to make that guess safe each
-  // failed in a new direction: a version string that happens to parse; a mode reachable only on
-  // the error path; a mode that collapses under its own flag; a flag that takes a value, so
-  // sending it bare is malformed and the tool's complaint reads as a mode switch; a disqualified
-  // `--json` promoting `--format`; a structured REJECTION of the probe reading as acceptance.
-  // The list never closed because the question — what does this flag MEAN — is not answerable
-  // from outside the program.
+  // Nothing here infers what a flag MEANS. A flag matched out of help by SPELLING is not a
+  // machine-mode selector, and seven attempts to make that guess safe each failed in a new
+  // direction; the question is not answerable from outside the program.
   //
-  // So it is not asked. A declaration is an assertion and falsifying an assertion is sound; an
-  // inference is the kit writing the claim it then tests. `--json` still selects PROBES for the
-  // rules that only need to choose what to look at, and still answers D3, whose subject is the
-  // help text itself. It no longer reaches a verdict.
-  return d.machineModeDefault
-    ? [{ args: [`--${SENTINEL}-flag`], how: "the declared default" }]
-    : [];
-}
-
-/** A successful command in machine mode — the smallest one every CLI is expected to have. */
-export function machineVersionArgs(selector: string): string[] {
-  return ["--version", selector];
+  // The DECLARATION is what makes this rule applicable, and it is a stronger statement than
+  // "some flag switches me into machine mode": it says machine output is the DEFAULT. So every
+  // parser error this target produces must be a document, whichever invocation provoked it —
+  // and an advertised flag is worth adding to the list precisely because it is one more way to
+  // provoke one, not because anyone has established what it does.
+  //
+  // Probing ONLY the bare route was shipped for one commit and is the defect this catalogue
+  // exists to report: a target that declared machine-first, answered its bare parser error as an
+  // envelope and the SAME error under its own `--json` in prose was reported CONFORMANT with
+  // `PASS+ B5`. The comment deleted alongside that route said so — "a declaration turning a real
+  // failure into a pass" — and deleting the warning did not make it wrong.
+  if (!d.machineModeDefault) return [];
+  const out = [{ args: [`--${SENTINEL}-flag`], how: "the declared default" }];
+  const selector = machineSelector(d);
+  if (selector) {
+    out.push({
+      args: machineErrorArgs(selector),
+      how: `the declared default, with ${selector} also sent`,
+    });
+  }
+  return out;
 }
 
 /** True when the WHOLE string is exactly one JSON document. */

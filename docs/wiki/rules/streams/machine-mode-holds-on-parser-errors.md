@@ -15,11 +15,8 @@ checker: src/acc/kit/checkers/streams/machine-mode-holds-on-parser-error.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - a flag whose help shows a required value slot is not treated as a machine-mode selector but only the bracketed and attached spellings are read so a bare-word metavar such as `--json FILE` is still probed as though it were a mode switch
-  - a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so a target whose advertised selector produces the same output with and without it on every pair this kit can compare is reported unverified rather than failed
-  - machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
+  - a machine mode is reached only through a declaration so a target whose machine mode is real but undeclared is not checked and only an unrecognised flag provokes the error a declared target is judged on
   - only an unrecognised flag provokes the error so a missing value or a missing required argument or an out-of-set value is not
-  - only the --json and --format=json selectors are probed so a machine mode advertised through --output is not
   - the answer is only required to parse and is never checked against a declared envelope shape
   - that the invocation failed to PARSE is inferred from a non-zero exit rather than observed
   - NDJSON is reported unverified rather than failed because no output kind is declared at L0
@@ -196,15 +193,11 @@ are the rest of this page, unexamined.
 
 **Gaps**
 
-- a flag whose help shows a required value slot is not treated as a machine-mode selector but only
-  the bracketed and attached spellings are read so a bare-word metavar such as `--json FILE` is
-  still probed as though it were a mode switch
-- a flag spelled like a machine-mode selector is only treated as one once it is seen to CHANGE an answer so a target whose advertised selector produces the same output with and without it on every pair this kit can compare is reported unverified rather than failed
-- machine mode is selected explicitly unless the target declared it the default so for an undeclared target the piped-default resolution path that the same defect most often breaks is never exercised
+- a machine mode is reached only through a declaration so a target whose machine mode is real but
+  undeclared is not checked and only an unrecognised flag provokes the error a declared target is
+  judged on
 - only an unrecognised flag provokes the error so a missing value or a missing required argument
   or an out-of-set value is not
-- only the --json and --format=json selectors are probed so a machine mode advertised through
-  --output is not
 - the answer is only required to parse and is never checked against a declared envelope shape
 - that the invocation failed to PARSE is inferred from a non-zero exit rather than observed
 - NDJSON is reported unverified rather than failed because no output kind is declared at L0

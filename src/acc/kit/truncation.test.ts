@@ -267,8 +267,6 @@ describe("one truncated probe among completed ones is not compliance either", ()
   test.each(CHECKERS.map((c) => [c.ruleId, c] as const))(
     "%s reports the gap when one of its own probes is truncated and the rest complete",
     (ruleId, checker) => {
-      // Corroboration probes are excluded: they are supporting evidence for whether the rule
-      // applies, not a subject of it. See isCorroborationProbe.
       for (const inv of checker.probes(real.discovery)) {
         const id = invocationId(inv);
         expect(real.byId.has(id)).toBe(true);

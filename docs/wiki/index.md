@@ -91,13 +91,13 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [A7](./rules/parsing/advertised-value-set-is-enforced.md)         | core       | L0    | implemented | partial  | 6    |
 | [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | L0    | implemented | partial  | 3    |
 | [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | L0    | implemented | partial  | 4    |
-| [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L1    | implemented | partial  | 6    |
+| [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L1    | implemented | partial  | 4    |
 | [B4](./rules/streams/output-is-delivered-whole.md)                | core       | L1    | planned     | partial  | 2    |
-| [B5](./rules/streams/machine-mode-holds-on-parser-errors.md)      | core       | L0    | implemented | partial  | 8    |
+| [B5](./rules/streams/machine-mode-holds-on-parser-errors.md)      | core       | L0    | implemented | partial  | 5    |
 | [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | L0    | implemented | partial  | 4    |
 | [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | L0    | implemented | partial  | 3    |
 | [C3](./rules/exit-codes/exit-codes-are-deterministic.md)          | core       | L0    | implemented | partial  | 5    |
-| [D1](./rules/discoverability/version-flag-exists.md)              | core       | L0    | implemented | partial  | 6    |
+| [D1](./rules/discoverability/version-flag-exists.md)              | core       | L0    | implemented | partial  | 5    |
 | [D2](./rules/discoverability/bare-invocation-is-a-usage-error.md) | core       | L0    | implemented | partial  | 4    |
 | [D3](./rules/discoverability/help-advertises-machine-mode.md)     | diagnostic | L0    | implemented | partial  | 4    |
 | [D4](./rules/discoverability/help-output-is-deterministic.md)     | core       | L0    | implemented | partial  | 3    |
@@ -106,7 +106,7 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
 | [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | L0    | implemented | partial  | 4    |
 | [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | L0    | implemented | partial  | 4    |
 
-23 rules · 0 `complete` · 23 `partial` · 97 named gaps.
+23 rules · 0 `complete` · 23 `partial` · 91 named gaps.
 
 ### Parsing
 
