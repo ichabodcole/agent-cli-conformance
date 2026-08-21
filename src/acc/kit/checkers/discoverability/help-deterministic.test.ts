@@ -52,6 +52,7 @@ function historyWithOneRun(): History {
       helpReadable: true,
     },
     observations: [o],
+    waived: new Set<string>(),
     byId: new Map([[o.id, o]]),
   };
 }
@@ -141,6 +142,7 @@ describe("D4 compares digests, not the strings the decode produced", () => {
       helpReadable: true,
     },
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   });
 

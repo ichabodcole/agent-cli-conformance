@@ -147,6 +147,33 @@ Distinguishability from an internal error is reported **unverified** at `L0`: no
 binary. It becomes a hard check at `L1`, where the tool has declared its error kinds and each one
 can be provoked and confirmed against its declared code.
 
+### A waived rule withdraws a shape from the contrast
+
+This rule does not discover that its four invocations are usage errors. It inherits that:
+[A1](../parsing/unknown-flag-exits-nonzero.md) says an unknown flag is one,
+[A2](../parsing/unknown-command-exits-nonzero.md) an unknown verb,
+[A7](../parsing/advertised-value-set-is-enforced.md) an out-of-set value, and
+[D2](../discoverability/bare-invocation-is-a-usage-error.md) the bare invocation.
+
+So waiving one of those does more than excuse its own verdict. A project that waives D2 has
+declared that a bare invocation is a **help path** for its tool, not an error — which withdraws the
+premise under which that observation was in this rule's population at all. Comparing it anyway
+reports disagreement across a set whose membership the project has just corrected.
+
+The shape is therefore dropped, and the verdict says so, because three shapes compared where this
+page promises four is a smaller claim than a full pass.
+
+**This is not waiver propagation along shared evidence**, which was the first idea and is wrong.
+[E1](../interactivity/never-block-without-a-tty.md) and
+[G1](../lifecycle/inert-invocations-do-not-crash.md) read the very same bare observation and keep
+it: their premises do not depend on it being an error — one asks whether the target blocked, the
+other whether it died by a fault — so a waiver of D2 says nothing about either. Removing the
+observation instead of withdrawing the premise would have taken evidence they are entitled to, and
+neither would have reported the loss.
+
+If waivers leave fewer than two shapes, the verdict is `unverified`. A comparison needs something
+to compare.
+
 ## Current checker coverage
 
 [`usage-distinguishable.ts`](../../../../src/acc/kit/checkers/exit-codes/usage-distinguishable.ts) — `L0`,

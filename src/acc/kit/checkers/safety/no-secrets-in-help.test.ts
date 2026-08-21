@@ -44,6 +44,7 @@ describe("F1 — help and schema never contain secrets", () => {
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     const f = noSecretsInHelpChecker.check(h);

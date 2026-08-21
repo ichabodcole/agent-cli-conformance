@@ -14,6 +14,7 @@ const H: History = {
     helpReadable: true,
   },
   observations: [],
+  waived: new Set<string>(),
   byId: new Map(),
 };
 

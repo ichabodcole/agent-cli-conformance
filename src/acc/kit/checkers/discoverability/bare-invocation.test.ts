@@ -52,6 +52,7 @@ function historyWithHang(): History {
       helpReadable: false,
     },
     observations: [o],
+    waived: new Set<string>(),
     byId: new Map([[o.id, o]]),
   };
 }
@@ -94,6 +95,7 @@ describe("D2 — bare invocation is a usage error", () => {
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     const f = bareInvocationChecker.check(h);

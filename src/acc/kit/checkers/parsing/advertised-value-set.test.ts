@@ -65,6 +65,7 @@ function historyWith(attached: Outcome, detached: Outcome = attached): History {
       helpReadable: true,
     },
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }

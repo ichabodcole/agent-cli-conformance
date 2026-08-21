@@ -50,6 +50,7 @@ describe("F2 — first byte arrives promptly", () => {
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     const f = firstBytePromptChecker.check(h);
@@ -98,6 +99,7 @@ describe("F2 — first byte arrives promptly", () => {
         helpReadable: false,
       },
       observations,
+      waived: new Set<string>(),
       byId: new Map(observations.map((o) => [o.id, o])),
     };
     const f = firstBytePromptChecker.check(h);

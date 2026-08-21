@@ -58,6 +58,7 @@ function historyWithHelp(text: string, subcommands: string[] = []): History {
       helpReadable: true,
     },
     observations: [o],
+    waived: new Set<string>(),
     byId: new Map([[o.id, o]]),
   };
 }
@@ -96,6 +97,7 @@ function historyWithAutoMachineHelp(machineHelp: string, forcedHelp: string | nu
       helpReadable: true,
     },
     observations: [plain, forced],
+    waived: new Set<string>(),
     byId: new Map([
       [plain.id, plain],
       [forced.id, forced],
@@ -157,6 +159,7 @@ describe("D3 — help advertises the machine-readable path", () => {
         helpReadable: false,
       },
       observations: [],
+      waived: new Set<string>(),
       byId: new Map(),
     };
     const f = advertisesMachineModeChecker.check(h);

@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { record } from "../../record.ts";
 import { digestOfText } from "../../runner.ts";
 import type { History, TargetInfo } from "../../types.ts";
+import { neverBlockChecker } from "../interactivity/never-block.ts";
+import { doesNotCrashChecker } from "../lifecycle/does-not-crash.ts";
 import { usageDistinguishableChecker } from "./usage-distinguishable.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -78,11 +80,67 @@ function historyWithOneTimedOutProbe(): History {
       helpReadable: false,
     },
     observations,
+    waived: new Set<string>(),
     byId: new Map(observations.map((o) => [o.id, o])),
   };
 }
 
 describe("C2 — usage errors are distinguishable", () => {
+  // THE ADOPTION BLOCKER. One design decision — a bare invocation prints help and exits 0 —
+  // was reported as two core violations, because C2 reads the same observation D2 owns. Waiving
+  // D2 left C2 failing on that byte, so no configuration expressed "bare help is deliberate" and
+  // reached a green gate, and the only route to exit 0 was to record a permanent design decision
+  // as debt in `knownFailures`. Reported by the first outside adopter, who correctly refused to
+  // do that and could therefore not adopt at all.
+  test("PASSES when the shape it fails on belongs to a waived rule", async () => {
+    const h = await record(
+      fixture("bare-help.ts"),
+      [usageDistinguishableChecker],
+      false,
+      new Set(["D2"]),
+    );
+    const f = usageDistinguishableChecker.check(h);
+    expect(f.verdict).toBe("pass");
+    expect(f.ruleId).toBe("C2");
+  });
+
+  // ...and the same fixture with nothing waived still fails, or the pass above would be the
+  // fixture's doing rather than the waiver's.
+  test("FAILS the same target when nothing is waived", async () => {
+    const h = await record(fixture("bare-help.ts"), [usageDistinguishableChecker]);
+    expect(usageDistinguishableChecker.check(h).verdict).toBe("fail");
+  });
+
+  // A NARROWED PASS IS NOT THE SAME CLAIM. Three shapes compared where the page promises four is
+  // a smaller result, and a report that did not say so would be a checker overstating its reach.
+  test("says which shape it excluded and why", async () => {
+    const h = await record(
+      fixture("bare-help.ts"),
+      [usageDistinguishableChecker],
+      false,
+      new Set(["D2"]),
+    );
+    const f = usageDistinguishableChecker.check(h);
+    expect(f.detail).toContain("D2");
+    expect(f.detail).toContain("waived");
+    // The excluded observation is not cited as evidence for a verdict it took no part in.
+    const bare = h.observations.find((o) => o.invocation.args.length === 0);
+    expect(f.evidence).not.toContain(bare?.id);
+  });
+
+  // A waiver must not manufacture a pass out of a population of one.
+  test("reports unverified when too few shapes survive the waivers", async () => {
+    const h = await record(
+      fixture("bare-help.ts"),
+      [usageDistinguishableChecker],
+      false,
+      new Set(["D2", "A1", "A2"]),
+    );
+    const f = usageDistinguishableChecker.check(h);
+    expect(f.verdict).toBe("unverified");
+    expect(f.detail).toContain("waived");
+  });
+
   test("PASSES the conforming fixture", async () => {
     const h = await record(fixture("conforming.ts"), [usageDistinguishableChecker]);
     const f = usageDistinguishableChecker.check(h);
@@ -122,5 +180,31 @@ describe("C2 — usage errors are distinguishable", () => {
     expect(f.detail).toContain("timed out");
     expect(f.detail).not.toContain("not recorded");
     expect(f.ruleId).toBe("C2");
+  });
+});
+
+// The half of the design that is easy to get wrong, and that the first attempt at this would have
+// broken: a waiver withdraws a PREMISE, it does not strip an OBSERVATION.
+//
+// E1 and G1 read the same bare invocation C2 just dropped, for reasons that have nothing to do
+// with it being an error — one asks whether the target blocked, the other whether it died by a
+// fault. Removing the observation from the history would have silently taken evidence they are
+// entitled to, and neither would have said so.
+describe("a waiver does not take evidence from the rules that did not inherit the premise", () => {
+  test("E1 and G1 still reach verdicts on the observation C2 excluded", async () => {
+    const h = await record(
+      fixture("bare-help.ts"),
+      [usageDistinguishableChecker, neverBlockChecker, doesNotCrashChecker],
+      false,
+      new Set(["D2"]),
+    );
+    const bare = h.observations.find((o) => o.invocation.args.length === 0);
+    expect(bare).toBeDefined();
+
+    for (const checker of [neverBlockChecker, doesNotCrashChecker]) {
+      const f = checker.check(h);
+      expect({ rule: f.ruleId, verdict: f.verdict }).toEqual({ rule: f.ruleId, verdict: "pass" });
+      expect(f.evidence).toContain(bare?.id as string);
+    }
   });
 });
