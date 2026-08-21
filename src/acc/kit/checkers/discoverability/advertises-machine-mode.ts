@@ -75,12 +75,13 @@ export const advertisesMachineModeChecker: Checker = {
   // implement passes D3 and takes B3 down with it.
   coverage: "partial",
   coverageGaps: [
+    "a machine-first tool with no flag is recognised only by matching a claim in help prose which is a heuristic that misreads contrastive and scoped statements and cannot see a non-English one",
     "help is only required to advertise either the machine-mode flag or a schema command and never both",
     "the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it",
     "a pass establishes only that help names the flag and never that the flag is accepted",
   ],
   coverageEstablished: [
-    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row or states that structured output is its default",
+    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row",
   ],
 
   probes: (d): Invocation[] => [
@@ -189,7 +190,7 @@ export const advertisesMachineModeChecker: Checker = {
     if (advertisesMachineDefault) {
       return finding(
         "pass",
-        "help states that structured output is the default, so a caller can discover it without a flag to name",
+        "help appears to claim structured output is the default; there is no flag to name, so this is a claim detected in prose rather than a token observed",
         evidence,
       );
     }
