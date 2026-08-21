@@ -85,9 +85,19 @@ Two shapes qualify, and the second is the common one:
   **Every probe runs against a pipe, never a terminal**, so if your tool would answer a script in
   JSON, this describes you.
 
-D3 then passes on the declaration, and B5 probes your error path with no selector — the path your
-callers actually take. What B5 requires is concrete: provoke a parser error and **one of your two
-streams must be exactly one JSON document**.
+B5 then probes your error path with no selector — the path your callers actually take.
+
+**Say it in your help as well.** `acc.config.json` is the kit's file, and D3 asks what a caller of
+_your_ CLI can find out — so the key does not answer it. A sentence in help does, as far as
+anything can: D3 moves from `fail` to `unverified` and tells you it matched a claim rather than
+observed a flag. It will not pass, because the kit cannot check what a sentence means.
+
+They do different jobs and you want both. The sentence is the best D3 can be given; the key lets
+B5 go and test your error path. Unlocking a core check stays deliberate, because a sentence read
+wrongly should never cost anyone a build.
+
+What B5 requires is concrete: provoke a parser error and **one of your two streams must be exactly
+one JSON document**.
 
 **Declaring it commits you to it.** Answer a parser error in prose and B5 fails you. Check before
 you commit the key:

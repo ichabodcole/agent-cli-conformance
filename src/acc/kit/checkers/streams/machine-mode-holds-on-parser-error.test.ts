@@ -100,11 +100,16 @@ describe("B5 — machine mode holds on the parser-error path", () => {
     expect(f.ruleId).toBe("B5");
   });
 
-  // ...and the same fixture WITHOUT the declaration is the before-picture: nothing to select, so
-  // nothing established. This is the pair that shows the declaration is what changed the verdict,
-  // not the fixture.
-  test("reports unverified on the same fixture when nothing is declared", async () => {
-    const h = await record(fixture("machine-first.ts"), [machineModeHoldsOnParserErrorChecker]);
+  // The before-picture: a target with no flag to select AND no statement in help gives this rule
+  // nothing to reach, so nothing is established.
+  //
+  // NOT `machine-first.ts` any more. Its help says "emit JSON on stdout by default", and a
+  // statement in help is now a declaration in its own right — it unlocks this probe exactly as the
+  // config key does. That change is why this test had to move fixtures rather than be deleted:
+  // the `unverified` branch still exists, it is just no longer reachable by a target that says so
+  // out loud.
+  test("reports unverified when nothing is declared and help states nothing", async () => {
+    const h = await record(fixture("no-machine-mode.ts"), [machineModeHoldsOnParserErrorChecker]);
     const f = machineModeHoldsOnParserErrorChecker.check(h);
     expect(f.verdict).toBe("unverified");
   });

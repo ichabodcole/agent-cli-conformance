@@ -107,6 +107,42 @@ had invented data.
 
 A grep tells you about strings. Confirm what it means by running the thing.
 
+## Get a reader with no stake before it merges
+
+Three reviewers looked at one change here in sequence. The first two had helped design it, and each
+declared the pattern matching unbreakable after failing to break it. The third had no stake, was
+told to attack it, and produced a dozen false passes in one pass — including the one that mattered:
+an ordinary human-first CLI, correct in every respect, failed on a **core** rule because its help
+mentioned `coverage.json`.
+
+The invested reviewers were not careless; they were the best-informed people available and had
+found real defects in earlier rounds. But by round three the best-informed reviewer and the most
+invested one were the same person, and the design's central safety argument — "this is diagnostic,
+it gates nothing" — had been repeated by everyone who had helped write it, and was **false about
+the code as shipped**.
+
+**When a reviewer has shaped a design, they can still test it — but they cannot be the last word on
+whether it is sound.**
+
+## Test your own proposal as hard as you tested theirs
+
+An outside reviewer here spent an hour writing eight attacks against a pattern set we had
+written, could not break it, and said so. In the same message they proposed widening it to a new
+family — and handed over four examples that should pass and **not one attack against the family
+they were asking for.** The widening shipped with a defect their own method would have caught in
+minutes.
+
+Their words afterwards: _"I tested your patterns adversarially and my own proposal credulously…
+the bias is not that I liked the design too much to criticise it, but that I stopped generating
+counterexamples the moment the idea was mine."_ And: _"On my own I would have signed off on my own
+bug."_
+
+Two things follow. **Ask for the attack explicitly** — they caught it on the next pass only
+because the request named breaking it as the goal, and would otherwise have re-run their existing
+fixtures, seen them all pass, and reported it ready. And **get a reader with no stake before
+merging** anything a reviewer helped design; by the third round the best-informed reviewer is also
+the most invested one, and those are the same person.
+
 ## When a reading of the source disagrees with a measurement, the measurement wins
 
 Two people read one CLI's dispatch and both concluded its bare invocation would exit non-zero. It

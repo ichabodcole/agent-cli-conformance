@@ -246,8 +246,10 @@ describe("a declared machine-mode default reaches Discovery", () => {
     expect(d.machineModeFlag).toBe(null);
   });
 
-  test("defaults to false when nothing was declared", async () => {
-    const p = join(HERE, "fixtures/machine-first.ts");
+  // NOT `machine-first.ts`, whose help says so out loud — that fixture is now `true` without any
+  // config, which is the point of the help route and was this test's stale assumption.
+  test("defaults to false when nothing was declared and help says nothing", async () => {
+    const p = join(HERE, "fixtures/broken/no-version-flag.ts");
     const d = await discover({ path: p, argv0: ["bun", p] });
     expect(d.machineModeDefault).toBe(false);
   });
@@ -257,5 +259,41 @@ describe("a declared machine-mode default reaches Discovery", () => {
     const d = await discover({ path: p, argv0: [p] }, true);
     expect(d.helpReadable).toBe(false);
     expect(d.machineModeDefault).toBe(true);
+  });
+});
+
+// A HELP STATEMENT DOES NOT UNLOCK THE PROBE, and this test asserted the opposite for one commit.
+//
+// The coupling was argued for on the grounds that a promise made where callers can read it is the
+// stronger one. It is — but it is read by pattern, and a reviewer with no stake in the design
+// turned three ordinary human-first CLIs into CORE violations with one unrelated sentence each,
+// including "Coverage is written to coverage.json by default". Routing a matcher's output into a
+// gating rule amplifies every one of its mistakes from a printed line into a broken build.
+//
+// So D3 reads help, and `acc.config.json` unlocks B5. Deliberate, revocable, and the maintainer's
+// own act rather than an inference from their prose.
+describe("a help statement does not unlock the probe", () => {
+  const at = (rel: string) => {
+    const p = join(HERE, rel);
+    return { path: p, argv0: ["bun", p] };
+  };
+
+  test("help stating a machine default leaves machineModeDefault false", async () => {
+    const d = await discover(at("fixtures/states-machine-first-in-help.ts"));
+    expect(d.machineModeDefault).toBe(false);
+  });
+
+  test("the config key is what sets it", async () => {
+    const d = await discover(at("fixtures/states-machine-first-in-help.ts"), true);
+    expect(d.machineModeDefault).toBe(true);
+  });
+
+  test("a target that says nothing is unaffected either way", async () => {
+    expect((await discover(at("fixtures/broken/no-version-flag.ts"))).machineModeDefault).toBe(
+      false,
+    );
+    expect(
+      (await discover(at("fixtures/broken/no-version-flag.ts"), true)).machineModeDefault,
+    ).toBe(true);
   });
 });

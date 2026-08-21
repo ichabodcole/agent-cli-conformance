@@ -15,11 +15,12 @@ checker: src/acc/kit/checkers/discoverability/advertises-machine-mode.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
+  - a machine-first tool with no flag is recognised only by matching a claim in help prose which is a heuristic that misreads contrastive and scoped statements and cannot see a non-English one
   - help is only required to advertise either the machine-mode flag or a schema command and never both
   - the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it
   - a pass establishes only that help names the flag and never that the flag is accepted
 coverage_established:
-  - the target declared machine mode its default or the human root help surface names one of the flags --json or --format or --output or carries a schema command row
+  - the human root help surface names one of the flags --json or --format or --output or carries a schema command row and a claim matched in help prose downgrades the verdict to unverified rather than establishing it
 ---
 
 # Help advertises the machine-readable path
@@ -133,6 +134,49 @@ machine-mode path can be discovered here, because neither has anything to send. 
 the practical argument for the rule: an undiscoverable feature is, to a conformance kit,
 indistinguishable from an absent one.
 
+### A tool with no flag says it in prose, and that claim downgrades rather than passes
+
+The first clause exempts a tool with no machine-mode flag — "where one exists" — so what a
+machine-first CLI owes is the second clause: make the structured surface discoverable from `--help`.
+A sentence is how it does that, and the kit can see the sentence but cannot verify what it means.
+
+So the claim earns [`unverified`](../../concepts/conformance.md), never a pass:
+`Prints JSON when stdout is not a terminal` moves this rule off `fail` and no further, and the
+verdict says it matched a claim rather than observed a token.
+
+**Three things follow, and the third is the reason for the design.** A false match costs an
+admission of ignorance instead of an assertion of fact. A false **pass** becomes impossible, since
+prose cannot produce one. And **deleting an honest sentence makes a target's report worse** —
+`unverified` becomes `fail` — so the kit never pays anyone to remove true documentation, which a
+warning message alone could not achieve.
+
+The scan is **a fallback**, reached only when no machine-mode flag and no `schema` command row were
+found. A tool that advertises normally never touches it.
+
+**The statement does not unlock [B5](../streams/machine-mode-holds-on-parser-errors.md)**, and it
+briefly did. The argument for coupling them was that a promise made where callers can read it is
+the stronger one and should earn scrutiny — sound for a claim actually made, and not survivable
+against a matcher that read `Coverage is written to coverage.json by default` as a promise about
+stdout. A reviewer built three ordinary human-first CLIs and turned each into a **core** violation
+with one unrelated sentence of help. Unlocking a core check is a deliberate act: `machineMode` in
+`acc.config.json`.
+
+**`acc.config.json` does not satisfy this rule**, and an earlier version of the checker let it.
+That file is the kit's; no caller of the target can read it. Answering "can a caller find out?" from
+it had the rule's name and its behaviour coming apart — reported by an adopter who had put an
+accurate statement in their help and was failed for it while a config key passed.
+
+**This is prose matching, which the kit avoids everywhere else.** What makes it admissible is the
+price of being wrong: this rule is `diagnostic`, so a false reading costs one printed line and
+never a verdict. That is the whole of the argument, and it only holds while nothing else consumes
+the result — which is why a help statement no longer reaches `machineModeDefault`.
+
+The matcher refuses negations, claims about files, flag documentation, hedged claims, table rows,
+and clauses about JSON arriving rather than leaving. Each guard is there because a string got
+through: the corpus is in
+[`machine-mode.test.ts`](../../../../src/acc/kit/machine-mode.test.ts), and it was built by three
+reviewers in succession, each of whom found what the previous one had declared unbreakable.
+
 ## Current checker coverage
 
 [`advertises-machine-mode.ts`](../../../../src/acc/kit/checkers/discoverability/advertises-machine-mode.ts) — `L0`,
@@ -141,7 +185,7 @@ the rest of this page, unexamined.
 
 **Established**
 
-- the target declared machine mode its default or the human root help surface names one of the flags --json or --format or --output or carries a schema command row
+- the human root help surface names one of the flags --json or --format or --output or carries a schema command row and a claim matched in help prose downgrades the verdict to unverified rather than establishing it
 
 Plain root help that answers with a machine document is not what gets scanned: the checker falls
 back to a forced-text form, and reports `unverified` when the human surface cannot be observed at
@@ -149,6 +193,7 @@ all.
 
 **Gaps**
 
+- a machine-first tool with no flag is recognised only by matching a claim in help prose which is a heuristic that misreads contrastive and scoped statements and cannot see a non-English one
 - help is only required to advertise either the machine-mode flag or a schema command and never both
 - the flag scan falls back to the whole help text when no options block is recognised so a flag
   named only in an example can satisfy it

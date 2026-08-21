@@ -209,11 +209,30 @@ parser error, sends no selector, and requires one of the two streams to be exact
 document. Declare the default and answer in prose and B5 fails — the declaration was tested and
 found false.
 
-**D3 does not test it; D3 accepts it.** That asymmetry is deliberate rather than an oversight. D3's
-subject is whether a caller can _find out_ how to get machine output, and a key committed in the
-project's own config is a discoverable answer — more durable than a line of help text. So D3 takes
-the declaration at its word, and B5 is what makes taking it at its word safe. A target that lies
-here gains a `pass` on D3 and buys a `fail` on B5, which is a worse trade than saying nothing.
+**D3 does not read the declaration at all**, and that is a correction rather than the original
+design. The first version let a declaration satisfy D3, reasoning that a committed config key is a
+durable answer. The adopter who asked for the declaration disposed of that across two rounds: they
+had put an accurate statement in their help, D3 kept failing it, and a key in a file **no caller of
+their CLI can read** made it pass. D3's subject is what a caller can find out, so answering it from
+the kit's own config had the rule's name and its behaviour coming apart.
+
+Help is what D3 reads, and a tool with no flag to name can only answer it with a sentence — which
+the kit matches by pattern and cannot verify the meaning of. So the claim moves D3 from `fail` to
+`unverified` and stops there.
+
+That third value is doing real work. A pass would assert something guessed; a fail would call an
+honest tool undiscoverable. And it makes the honest sentence the cheap choice rather than the
+expensive one: deleting it takes a target from `unverified` to `fail`.
+
+**Saying it in help does not unlock B5, though — the config key does.** The two are not
+interchangeable, and the asymmetry is about what each answer costs when the kit reads it wrongly. A
+sentence in help is matched by pattern, and a pattern that misreads one costs a `diagnostic` line;
+the same misreading routed into a core probe costs a build. Three ordinary human-first CLIs were
+failed on a core rule by one unrelated sentence of help before that coupling was removed.
+
+So: help answers "can a caller find out", which is D3's question. `acc.config.json` unlocks the
+probe, because unlocking a core check should be a deliberate and revocable act by the maintainer
+rather than an inference from their prose.
 
 That division is the same one [the roadmap](../../roadmap.md#6-the-portable-declaration-ir) argues
 for at `L1`, arriving early and in miniature: something declares, something else tries to falsify
