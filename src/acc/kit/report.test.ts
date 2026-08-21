@@ -11,7 +11,6 @@ const H: History = {
     flags: [],
     machineModeFlag: null,
     machineModeDefault: false,
-    machineModeSource: null,
     valueSets: {},
     helpReadable: true,
   },

@@ -43,7 +43,6 @@ describe("B2 — no ANSI escapes when piped", () => {
         flags: [],
         machineModeFlag: null,
         machineModeDefault: false,
-        machineModeSource: null,
         valueSets: {},
         helpReadable: false,
       },

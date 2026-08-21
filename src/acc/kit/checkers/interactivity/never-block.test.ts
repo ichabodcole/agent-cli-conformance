@@ -42,7 +42,6 @@ describe("E1 — never block on input without a TTY", () => {
         flags: [],
         machineModeFlag: null,
         machineModeDefault: false,
-        machineModeSource: null,
         valueSets: {},
         helpReadable: false,
       },

@@ -12,7 +12,13 @@ import { helpStatesMachineDefault } from "./machine-mode.ts";
 // here, and no amount of care in `conformance.test.ts` would have closed it. These fixtures are
 // the closure.
 describe("a help statement that structured output is the default", () => {
+  // Output claims that a clause-wide input scan wrongly REFUSED. A false fail costs a diagnostic
+  // line, but each of these is a tool telling the truth and being marked down for it.
   const RECOGNISED = [
+    "Output defaults to JSON for easy parsing",
+    "Emits JSON by default so downstream tools can read it",
+    "Prints JSON by default, accepted by jq",
+    "The output is JSON unless stdout is a terminal",
     // default-shaped
     "Data commands emit JSON on stdout by DEFAULT; pass --human for prose.",
     "Output defaults to JSON when stdout is not a terminal.",
@@ -44,7 +50,51 @@ describe("a help statement that structured output is the default", () => {
     "When piped, the JSON config is validated and a summary is printed.",
   ];
 
+  // The corpus a reviewer with NO STAKE in the design produced, after two invested reviewers had
+  // each declared the patterns unbreakable. Every string below returned the wrong answer at some
+  // point on this branch. They are grouped by the guard that now handles them, because each group
+  // is a different way for prose to look like a promise.
+  const NEGATED = [
+    "JSON output is disabled by default",
+    "JSON is never emitted by default",
+    "Do not emit JSON by default",
+    "JSON output is suppressed when stdout is not a terminal",
+  ];
+  const WRITES_A_FILE = [
+    // The clause split used to cut `coverage.json` into `coverage` + `json by default`, so ANY
+    // sentence naming a `*.json` output file matched. This one turned a correct human-first CLI
+    // into a core violation.
+    "Coverage is written to coverage.json by default",
+    "Report is saved to report.json by default",
+    "Audit events are written to the log file as JSON by default",
+    "Generated config files are JSON by default",
+    "The lockfile is JSON by default",
+    "Cache entries are stored as JSON by default under ~/.cache",
+  ];
+  const DOCUMENTS_A_FLAG = [
+    "--json is recommended when output is piped to another program",
+    "Colour is disabled when stdout is not a terminal, so pass --json for machine output",
+    "--format FMT  Output format. Defaults to text; use json when piped",
+    "If you want JSON by default, set MYAPP_FORMAT=json",
+  ];
+  const READS_IT_IN = [
+    "Takes JSON when piped from another tool",
+    "Expects NDJSON when piped",
+    "Decodes JSON when piped",
+    "Loads JSON by default",
+    "The manifest it opens is JSON by default",
+  ];
+  const NOT_A_SENTENCE = [
+    "| json | by default |",
+    "Some subcommands print JSON by default; most print a table",
+  ];
+
   const REFUSED = [
+    ...NEGATED,
+    ...WRITES_A_FILE,
+    ...DOCUMENTS_A_FLAG,
+    ...READS_IT_IN,
+    ...NOT_A_SENTENCE,
     ...READS_IN_WRITES_OUT,
     // Controls: a pipe word with no output claim at all must not fire either.
     "When piped, colour is disabled and progress bars are suppressed.",

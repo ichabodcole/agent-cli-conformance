@@ -143,24 +143,29 @@ and no config.
 The scan is **a fallback**, reached only when no machine-mode flag and no `schema` command row were
 found. A tool that advertises normally never touches it.
 
-**And the statement unlocks [B5](../streams/machine-mode-holds-on-parser-errors.md)**, exactly as
-the `machineMode` config key does. That is the half that keeps this rule honest: without it a tool
-could assert JSON-by-default in the artifact its callers read, collect a pass here for saying so,
-and have nothing ever check it — a declaration that cannot be falsified, which this catalogue calls
-a comment that lies. A statement in help is the _stronger_ of the two declarations, because it
-binds the tool to its callers rather than to the kit, so it is the one that should buy scrutiny.
+**The statement does not unlock [B5](../streams/machine-mode-holds-on-parser-errors.md)**, and it
+briefly did. The argument for coupling them was that a promise made where callers can read it is
+the stronger one and should earn scrutiny — sound for a claim actually made, and not survivable
+against a matcher that read `Coverage is written to coverage.json by default` as a promise about
+stdout. A reviewer built three ordinary human-first CLIs and turned each into a **core** violation
+with one unrelated sentence of help. Unlocking a core check is a deliberate act: `machineMode` in
+`acc.config.json`.
 
 **`acc.config.json` does not satisfy this rule**, and an earlier version of the checker let it.
 That file is the kit's; no caller of the target can read it. Answering "can a caller find out?" from
 it had the rule's name and its behaviour coming apart — reported by an adopter who had put an
 accurate statement in their help and was failed for it while a config key passed.
 
-**This is prose matching, which the kit avoids elsewhere.** It is admissible here because this rule
-is `diagnostic` and gates nothing, because the branch is a fallback, and because the patterns
-require the format word to be the thing produced — `--format json (default: text)` carries both
-words and means the opposite. The corpus of refusals is in
-[`machine-mode.test.ts`](../../../../src/acc/kit/machine-mode.test.ts), and it exists because an
-outside adopter spent eight attempts trying to force a false pass and could not.
+**This is prose matching, which the kit avoids everywhere else.** What makes it admissible is the
+price of being wrong: this rule is `diagnostic`, so a false reading costs one printed line and
+never a verdict. That is the whole of the argument, and it only holds while nothing else consumes
+the result — which is why a help statement no longer reaches `machineModeDefault`.
+
+The matcher refuses negations, claims about files, flag documentation, hedged claims, table rows,
+and clauses about JSON arriving rather than leaving. Each guard is there because a string got
+through: the corpus is in
+[`machine-mode.test.ts`](../../../../src/acc/kit/machine-mode.test.ts), and it was built by three
+reviewers in succession, each of whom found what the previous one had declared unbreakable.
 
 ## Current checker coverage
 

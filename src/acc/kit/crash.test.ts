@@ -169,7 +169,6 @@ const DISCOVERY: Discovery = {
   flags: ["--json", "--verbose"],
   machineModeFlag: "--json",
   machineModeDefault: false,
-  machineModeSource: null,
   valueSets: { "--format": ["text", "json"] },
   helpReadable: true,
 };

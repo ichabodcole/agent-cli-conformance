@@ -61,7 +61,6 @@ function historyWith(attached: Outcome, detached: Outcome = attached): History {
       flags: ["--format"],
       machineModeFlag: null,
       machineModeDefault: false,
-      machineModeSource: null,
       valueSets: { "--format": ["text", "json"] },
       helpReadable: true,
     },
@@ -107,7 +106,6 @@ describe("A7 — an advertised value set is enforced", () => {
         flags: ["--json"],
         machineModeFlag: "--json",
         machineModeDefault: false,
-        machineModeSource: null,
         valueSets: {},
         helpReadable: true,
       }),
@@ -125,7 +123,6 @@ describe("A7 — an advertised value set is enforced", () => {
       flags: ["--format"],
       machineModeFlag: null,
       machineModeDefault: false,
-      machineModeSource: null,
       valueSets: { "--format": ["text", "json"] },
       helpReadable: true,
     });

@@ -87,13 +87,13 @@ Two shapes qualify, and the second is the common one:
 
 B5 then probes your error path with no selector — the path your callers actually take.
 
-**Say it in your help too — or instead.** `acc.config.json` is the kit's file, and D3 asks what a
-caller of _your_ CLI can find out, so the config key alone does not answer it. One sentence does,
-and it is enough on its own: a tool whose help says `emits JSON when stdout is not a terminal`
-needs no config at all. D3 passes on the sentence, and B5 goes and tests it.
+**Say it in your help as well.** `acc.config.json` is the kit's file and D3 asks what a caller of
+_your_ CLI can find out, so the config key does not answer it — one sentence in help does, and D3
+passes on that alone.
 
-The help route is the better one where you have the choice — it is a promise to your callers
-rather than to a checker, and it is the one they can act on.
+They do different jobs and you want both: the sentence satisfies D3, the key lets B5 go and test
+your error path. Unlocking a core check stays deliberate, because a sentence read wrongly should
+never cost anyone a build.
 
 What B5 requires is concrete: provoke a parser error and **one of your two streams must be exactly
 one JSON document**.

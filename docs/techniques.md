@@ -107,6 +107,23 @@ had invented data.
 
 A grep tells you about strings. Confirm what it means by running the thing.
 
+## Get a reader with no stake before it merges
+
+Three reviewers looked at one change here in sequence. The first two had helped design it, and each
+declared the pattern matching unbreakable after failing to break it. The third had no stake, was
+told to attack it, and produced a dozen false passes in one pass — including the one that mattered:
+an ordinary human-first CLI, correct in every respect, failed on a **core** rule because its help
+mentioned `coverage.json`.
+
+The invested reviewers were not careless; they were the best-informed people available and had
+found real defects in earlier rounds. But by round three the best-informed reviewer and the most
+invested one were the same person, and the design's central safety argument — "this is diagnostic,
+it gates nothing" — had been repeated by everyone who had helped write it, and was **false about
+the code as shipped**.
+
+**When a reviewer has shaped a design, they can still test it — but they cannot be the last word on
+whether it is sound.**
+
 ## Test your own proposal as hard as you tested theirs
 
 An outside reviewer here spent an hour writing eight attacks against a pattern set we had

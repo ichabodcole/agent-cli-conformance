@@ -21,7 +21,6 @@ function emptyHistory(): History {
       flags: [],
       machineModeFlag: null,
       machineModeDefault: false,
-      machineModeSource: null,
       valueSets: {},
       helpReadable: false,
     },

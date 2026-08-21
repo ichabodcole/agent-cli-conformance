@@ -37,7 +37,6 @@ describe("A4 — arity cannot be probed at L0", () => {
       flags: ["--json"],
       machineModeFlag: "--json",
       machineModeDefault: false,
-      machineModeSource: null,
       valueSets: {},
       helpReadable: true,
     });

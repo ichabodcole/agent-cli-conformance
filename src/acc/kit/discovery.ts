@@ -1,4 +1,3 @@
-import { helpStatesMachineDefault } from "./machine-mode.ts";
 import { runProbe } from "./runner.ts";
 import type { Discovery, Invocation, TargetInfo } from "./types.ts";
 
@@ -188,9 +187,7 @@ function valueSetsFromJson(text: string): Record<string, string[]> | null {
  * discovery turns dependent probes into `unverified` — an honest "could not check" rather than
  * a vacuous pass.
  */
-export function parseHelp(
-  text: string,
-): Omit<Discovery, "helpReadable" | "machineModeDefault" | "machineModeSource"> {
+export function parseHelp(text: string): Omit<Discovery, "helpReadable" | "machineModeDefault"> {
   const lines = text.split("\n");
 
   const subcommands: string[] = [];
@@ -240,7 +237,6 @@ export async function discover(
       flags: [],
       machineModeFlag: null,
       machineModeDefault: declaredMachineDefault,
-      machineModeSource: declaredMachineDefault ? "config" : null,
       valueSets: {},
       helpReadable: false,
     };
@@ -256,12 +252,25 @@ export async function discover(
   //
   // This is not the kit guessing. The words are the target's; reading them is what lets B5 go and
   // try to falsify them, which is the same shape L1 is built on.
-  const statedInHelp = helpStatesMachineDefault(text);
+  // A HELP STATEMENT DOES NOT UNLOCK B5, and the reason is the false-positive rate.
+  //
+  // It briefly did, on the argument that a promise made where callers can read it is the stronger
+  // one and should earn scrutiny. That reasoning is sound for a claim actually made; it does not
+  // survive a matcher that reads "Coverage is written to coverage.json by default" as a promise.
+  // A reviewer built three ordinary human-first CLIs — `--json` flag, tables by default, correct
+  // errors in both modes — and turned each into a CORE violation with one unrelated sentence of
+  // help. One of them said the literal opposite: "JSON output is disabled by default".
+  //
+  // The coupling amplified every matcher defect from a printed line into a broken build, and
+  // handed the target's own prose the power to change which rules bind to it, in the failing
+  // direction, with no way to say "I did not mean that". Unlocking a core check stays a
+  // deliberate, revocable act: `machineMode` in `acc.config.json`.
+  //
+  // D3 still reads help — see its checker. That is a `diagnostic` verdict, which is the cost the
+  // matcher's precision can actually carry.
   return {
     ...parseHelp(text),
-    machineModeDefault: declaredMachineDefault || statedInHelp,
-    // Config first: if both say it, the config is the deliberate act and help is corroboration.
-    machineModeSource: declaredMachineDefault ? "config" : statedInHelp ? "help" : null,
+    machineModeDefault: declaredMachineDefault,
     helpReadable: true,
   };
 }

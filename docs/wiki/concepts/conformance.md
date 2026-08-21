@@ -219,11 +219,15 @@ the kit's own config had the rule's name and its behaviour coming apart.
 Help is what D3 reads. A tool with no flag to name satisfies it by saying so, which the rule's
 second clause has always asked for — only the checker was narrower.
 
-**And saying it in help unlocks the same probe the config key does.** That is the half that makes
-the sentence worth trusting: a claim made where callers can read it is the stronger promise, so it
-is the one that earns scrutiny rather than a free pass. The two routes are not alternatives with
-different strengths — `acc.config.json` tells the kit, help tells everyone, and both send B5 to
-find out.
+**Saying it in help does not unlock B5, though — the config key does.** The two are not
+interchangeable, and the asymmetry is about what each answer costs when the kit reads it wrongly. A
+sentence in help is matched by pattern, and a pattern that misreads one costs a `diagnostic` line;
+the same misreading routed into a core probe costs a build. Three ordinary human-first CLIs were
+failed on a core rule by one unrelated sentence of help before that coupling was removed.
+
+So: help answers "can a caller find out", which is D3's question. `acc.config.json` unlocks the
+probe, because unlocking a core check should be a deliberate and revocable act by the maintainer
+rather than an inference from their prose.
 
 That division is the same one [the roadmap](../../roadmap.md#6-the-portable-declaration-ir) argues
 for at `L1`, arriving early and in miniature: something declares, something else tries to falsify

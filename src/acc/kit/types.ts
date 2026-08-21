@@ -200,18 +200,6 @@ export interface Discovery {
    */
   machineModeDefault: boolean;
   /**
-   * Which declaration made `machineModeDefault` true, so a report can tell a reader what NOT to
-   * do about a failure it caused.
-   *
-   * An adopter measured the incentive: two builds identical except for one line of help, and the
-   * one that documents itself honestly carries an extra CORE violation, because the sentence
-   * unlocks B5 and B5 catches a real defect. Deleting the sentence removes the violation and
-   * costs only D3, which is diagnostic and gates nothing. So under CI pressure the cheapest
-   * response to the failure is to delete the true statement, and nothing in the report says that
-   * silences the check rather than fixing it.
-   */
-  machineModeSource: "config" | "help" | null;
-  /**
    * Flags whose help ADVERTISES a closed set of values, keyed by flag name.
    *
    * The declaration A7 falsifies. A set here is not the kit's opinion about what a flag accepts

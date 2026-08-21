@@ -143,35 +143,75 @@ export function stringValuesOf(document: unknown): string[] {
  * off when piped." must not read as machine-first.
  */
 export function helpStatesMachineDefault(help: string): boolean {
-  return help
-    .split(/[.\n;]/)
-    .some(
-      (clause) => !READS_JSON.test(clause) && MACHINE_DEFAULT_PHRASES.some((re) => re.test(clause)),
-    );
+  // Split on SENTENCE punctuation, not on every dot: `coverage.json` must not become `coverage`
+  // + `json by default`, which is how "Coverage is written to coverage.json by default" once read
+  // as a promise about stdout.
+  return help.split(/[;\n]|\.(?=\s|$)/).some(isMachineDefaultClause);
 }
 
-/**
- * The clause is about JSON going IN, so nothing in it is a claim about output.
- *
- * The direction gate the pipe-conditional patterns needed and did not have. "JSON input is
- * accepted when piped to stdin" carries a format word and a pipe word in one clause and says
- * the opposite of machine-first — and a false pass here is the expensive direction, because a
- * statement recognised as a declaration also unlocks B5, so a JSON-CONSUMING tool would have its
- * error path measured against a promise it never made and could be failed on a core rule for it.
- *
- * The default-shaped patterns never needed this: they require the format word to be the thing
- * defaulted TO, which already excludes an input claim. The pipe-conditional ones test proximity,
- * so they need the direction stated separately.
- */
-const READS_JSON =
-  /\b(input|stdin|reads?|reading|accept(s|ed|ing)?|pars(e|es|ed|ing)|consum(e|es|ed|ing)|ingest(s|ed|ing)?|validat(e|es|ed|ing))\b/i;
+function isMachineDefaultClause(clause: string): boolean {
+  // Documenting a FLAG is not declaring a default — "--json is recommended when output is piped"
+  // and "use json when piped" both describe a choice the caller makes.
+  if (FLAG_OR_CALLER_ACTION.test(clause)) return false;
+  // A file is not stdout.
+  if (WRITES_TO_FILE.test(clause)) return false;
+  // A table row is not a sentence. `| json | by default |` carries both tokens and asserts
+  // nothing about this tool's stdout.
+  if ((clause.match(/\|/g)?.length ?? 0) >= 2) return false;
+  // A hedged claim is not a default. "Some subcommands print JSON by default; most print a table"
+  // describes a tool that is not machine-first, in the clause that looks like it is.
+  if (QUALIFIED.test(clause)) return false;
 
-const MACHINE_DEFAULT_PHRASES: readonly RegExp[] = [
-  // default-shaped
-  /\b(json|ndjson)\b[^.\n]{0,60}\bby default\b/i,
-  /\bdefaults?\s+to\b[^.\n]{0,30}\b(json|ndjson)\b/i,
-  /\bdefault\s+(output\s+)?(format\s+)?is\b[^.\n]{0,20}\b(json|ndjson)\b/i,
-  // pipe-conditional
-  /\b(json|ndjson)\b[^.\n]{0,70}\bwhen\b[^.\n]{0,40}\b(piped|not\s+(a\s+)?(tty|terminal))\b/i,
-  /\bwhen\b[^.\n]{0,40}\b(piped|not\s+(a\s+)?(tty|terminal))\b[^.\n]{0,70}\b(json|ndjson)\b/i,
+  for (const { re, gated } of MACHINE_DEFAULT_PHRASES) {
+    const m = re.exec(clause);
+    if (!m) continue;
+    // Window on the FORMAT TOKEN, not on the match start — two of these patterns begin at `when`,
+    // so a window on the match start looks at the wrong words entirely.
+    const at = m[0].search(/\b(json|ndjson)\b/i);
+    if (at < 0) continue;
+    const tokenAt = m.index + at;
+    const before = clause.slice(Math.max(0, tokenAt - 28), tokenAt);
+    const after = clause.slice(tokenAt, tokenAt + 34);
+
+    // Polarity, near the claim. `not a terminal` is the legitimate phrasing and is excised first;
+    // a distant "not" ("…and the human report when it is not") is not a negation of this claim.
+    if (NEGATED.test(`${before} ${after}`.replace(NOT_A_TERMINAL, " piped "))) continue;
+
+    if (gated) {
+      // An OUTPUT verb in front settles it: "Prints JSON by default, accepted by jq" is an output
+      // claim whatever follows. Without that, any downstream-consumption verb in the sentence
+      // wrongly refused a true statement.
+      const saysOutput = WRITES_OUT.test(before);
+      if (!saysOutput && (READS_JSON.test(before) || READS_JSON.test(after))) continue;
+    }
+    return true;
+  }
+  return false;
+}
+
+const NOT_A_TERMINAL = /\bnot\s+(a\s+)?(tty|terminal)\b|\bnot\s+attached\b/gi;
+const NEGATED = /\b(not|never|no|without|disabled?|suppressed?|omitted?|off)\b/i;
+const FLAG_OR_CALLER_ACTION = /--\w|\b(use|pass|add|set|specify|supply)\b/i;
+const QUALIFIED = /\b(some|most|certain|a few|several|many)\b/i;
+// Deliberately no bare `report` or `config`: "the human report" is this project's own phrase for
+// its text output, and refusing it was a false fail. The input gate already covers the config case.
+const WRITES_TO_FILE =
+  /\.(json|ndjson|jsonl)\b|\b(file|files|log|logs|cache|lockfile|manifest|artifact|written\s+to|saved\s+to|stored)\b/i;
+const WRITES_OUT = /\b(prints?|emits?|writes?|outputs?|returns?|produces?|renders?)\b/i;
+const READS_JSON =
+  /\b(input|stdin|reads?|reading|takes?|expects?|decodes?|loads?|opens?|accept(s|ed|ing)?|pars(e|es|ed|ing)|consum(e|es|ed|ing)|ingest(s|ed|ing)?|validat(e|es|ed|ing))\b/i;
+
+/** `gated` marks a pattern whose format token can be the object of an input verb. */
+const MACHINE_DEFAULT_PHRASES: readonly { re: RegExp; gated: boolean }[] = [
+  { re: /\b(json|ndjson)\b[^.\n]{0,60}\bby default\b/i, gated: true },
+  { re: /\bdefaults?\s+to\b[^.\n]{0,30}\b(json|ndjson)\b/i, gated: false },
+  { re: /\bdefault\s+(output\s+)?(format\s+)?is\b[^.\n]{0,20}\b(json|ndjson)\b/i, gated: false },
+  {
+    re: /\b(json|ndjson)\b[^.\n]{0,70}\b(when|whenever|unless)\b[^.\n]{0,40}\b(piped|not\s+(a\s+)?(tty|terminal)|a\s+(tty|terminal))\b/i,
+    gated: true,
+  },
+  {
+    re: /\b(when|whenever)\b[^.\n]{0,40}\b(piped|not\s+(a\s+)?(tty|terminal))\b[^.\n]{0,70}\b(json|ndjson)\b/i,
+    gated: true,
+  },
 ];

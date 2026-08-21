@@ -149,7 +149,6 @@ export const advertisesMachineModeChecker: Checker = {
       surface = {
         ...parseHelp(forcedText),
         machineModeDefault: h.discovery.machineModeDefault,
-        machineModeSource: h.discovery.machineModeSource,
         helpReadable: true,
       };
     }
