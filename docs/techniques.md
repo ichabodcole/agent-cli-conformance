@@ -143,6 +143,51 @@ fixtures, seen them all pass, and reported it ready. And **get a reader with no 
 merging** anything a reviewer helped design; by the third round the best-informed reviewer is also
 the most invested one, and those are the same person.
 
+## Build the innocent target too
+
+`Build the adversary` above has a complement that is easier to skip and cost more here. Every
+fixture in this repo was a CLI that had done something wrong, and the suite grew to 1,281 tests
+without one that asked the other question: **what does this mechanism do to a tool that has done
+nothing wrong?**
+
+What it did was report `NOT CONFORMANT — 3 core violated` against a correct, text-only CLI, because
+its help said `--json <file>   Treat the input file as JSON` and three core rules read the spelling
+as a promise of machine mode. Every test passed. The rules were each correct about the target they
+were written against; none of them had ever been pointed at a target they should leave alone.
+
+A false-positive control is a different fixture from a negative control, and neither substitutes
+for the other. The negative control proves the check fires. The innocent one proves it stops.
+
+## Run the checker alone
+
+A checker that reads evidence out of the shared recording can be reading a probe **some other
+checker** asked for. That holds while the whole registry runs and inverts the moment it does not —
+which is what a single-checker unit test is, and what any future `--only B5` would be.
+
+Found here by accident: a guard added to three rules was correct in `acc check` and wrong in the
+one unit test that recorded a single checker, because the corroborating evidence came from a
+different rule's probe. The fix was for each checker to declare the probe it needs rather than
+borrow one — recordings deduplicate, so asking costs nothing.
+
+**If a verdict depends on an observation, the checker that reaches the verdict should have asked
+for it.**
+
+## Trace the inference back to where it entered
+
+When a rule reaches a wrong verdict, the defect is often not in the rule. Three core rules were
+condemning innocent CLIs, and all three were reading one line — a list of flag spellings in
+`discovery.ts` — committed in `08f38ba`, an ancestor of all three: ninety minutes before the first
+rule that reads it (`da66644`, B1–B3) and two days before the last (`479697c`, B5). **It predated
+every consumer it now decides for.** No review of those rules could have caught it, because in each
+one the inference arrived as a fact.
+
+`git log -S` on the responsible expression dates the line and shows what it was written for. If it
+predates its consumers, its original author never agreed to what it now decides.
+
+The rule that came out of it is worth more than the fix: **inference may select what to look at;
+only observation may condemn.** A heuristic that picks which probe to send costs a wasted spawn when
+it is wrong. The same heuristic gating a core verdict costs someone their build.
+
 ## When a reading of the source disagrees with a measurement, the measurement wins
 
 Two people read one CLI's dispatch and both concluded its bare invocation would exit non-zero. It
