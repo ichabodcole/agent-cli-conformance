@@ -375,8 +375,8 @@ probe. Every one of the 22 checkers declares `coverage: partial` — see
 
 **Planned** — filesystem hashing and snapshot diffing, the `L1` and `L2` levels that falsify a
 CLI's own effect declarations, durable and replayable observation histories, and the
-retroactive re-checking those make possible. None of it exists yet; every mention below is
-labelled. [The roadmap](docs/roadmap.md) is the full list — what is missing, why each item is
+retroactive re-checking those make possible. None of it exists yet, and every mention of it
+elsewhere on this page is labelled. [The roadmap](docs/roadmap.md) is the full list — what is missing, why each item is
 blocked on the ones before it, and the evidence that each gap is real. Nothing on it is
 scheduled or promised.
 

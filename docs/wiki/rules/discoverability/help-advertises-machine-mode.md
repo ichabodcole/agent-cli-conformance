@@ -38,8 +38,15 @@ first — which is `--help`, not documentation.
 > **A different design can be right here** (`deviation: design-choice`). A CLI may reasonably
 > decide its machine-readable path belongs in a manpage, a schema endpoint or a published contract
 > rather than in `--help` — and a tool that offers no machine-readable mode at all has made a
-> product decision, not a mistake. This rule reports `fail` in both cases, so the waiver is how
-> that decision gets recorded. What the rule is arguing is narrower than "you must do this": an
+> product decision, not a mistake. Where the verdict is `fail`, a waiver is how that decision gets
+> recorded.
+>
+> **Check which verdict you actually got before waiving.** Help that names no machine-mode flag
+> and makes no claim about one reports `fail`. Help whose PROSE claims machine-readable output is
+> the default reports **`unverified`** instead — the claim downgrades the verdict rather than
+> satisfying the rule, because prose is not a token a caller can flip. Waiving an `unverified` does
+> not record a design decision; it converts a gap in the evidence into a waived core rule, which
+> is strictly worse. That shape is a named gap on this page, not something a waiver fixes. What the rule is arguing is narrower than "you must do this": an
 > agent reads your help and nothing else tells it, so help is the one place where advertising
 > works without being told where to look.
 

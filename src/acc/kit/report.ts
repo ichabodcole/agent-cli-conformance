@@ -75,8 +75,13 @@ export interface ReportedFinding extends Finding {
  * byte-level record here, for the reason the durable-artifact work already settled: retaining the
  * bytes as well doubles the artifact for an equality question a 32-byte hash already answers, and
  * hands an unbounded binary field the redaction and retention problems that come with it. What a
- * reader needs to reconstruct a verdict is the ARGV, and it carries nothing the target did not
+ * reader needs to reconstruct a verdict is the ARGV, and that carries nothing the target did not
  * already receive from us.
+ *
+ * **`purposes` is the exception, and it is deliberate.** A7 builds its purpose string from the
+ * value set it read out of the target's own `--help`, so this field can contain target-derived
+ * text. That is the point — a purpose that named no specifics would not tell a reader why the
+ * probe was sent — but it means the projection is not strictly "only what we sent".
  *
  * **`args` is not bounded independently.** Several checkers build a probe from a flag discovered
  * in the target's own `--help`, and that scan has no length limit of its own — so a pathological
