@@ -86,7 +86,9 @@ Not measured for the bare case: `clap`, Click/Typer, `node:util parseArgs`, `cit
 **If answering a bare invocation is a deliberate product decision** — see [when a different answer is right](#when-a-different-answer-is-right) — waive the rule rather than change your tool to satisfy it:
 in `acc.config.json`, `"D2": { "severity": "off", "reason": "..." }` — see
 [waivers](../../concepts/conformance.md#waivers-a-rule-that-does-not-apply-to-this-tool) for what
-that costs (a waived core rule blocks `fullyVerified` even when it would have passed) and
+that costs — and for this rule the answer is **nothing**: D2 is classified `design-choice`, so
+waiving it leaves `fullyVerified` intact and keeps the rule out of `evidenceGaps`. The waiver is
+still listed, with your reason, so the decision is visible rather than silent. See also
 [the triage step](../../guides/how-to-reach-l0-in-your-project.md#3-triage-what-is-left-into-three-buckets)
 for when a waiver is the right bucket.
 

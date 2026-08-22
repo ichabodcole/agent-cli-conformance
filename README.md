@@ -11,7 +11,8 @@ agent-harness authors second. It is a conformance suite for _ordinary CLIs consu
 not for agent applications that happen to have a CLI. If a person types your tool and a script
 also runs it, it is in scope.
 
-> **Status.** `v0.1.0` <!-- x-release-please-version --> is installable and runs today. `L0` is the
+> **Status.** The kit runs today and the next release will be `v0.1.0` <!-- x-release-please-version -->
+> — **no tag exists yet**, so install from a branch or a commit SHA until one does. `L0` is the
 > only probe level that exists so far, and it is the shallow one — see
 > [where this is going](#where-this-is-going) for what it does and does not reach yet.
 >
@@ -67,7 +68,8 @@ answers `404` for a private repository whatever token is in the environment
 if and when this one opens up.
 
 Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
-commit or a release tag after the `#` — `…agent-cli-conformance.git#v0.1.0`. <!-- x-release-please-version -->
+commit or a release tag after the `#`. Until the first tag is cut, pin a **commit SHA**; the tag
+form will be `…agent-cli-conformance.git#v0.1.0`. <!-- x-release-please-version -->
 
 > **⚠ Re-installing, or moving to a different ref?** Three separate failures can hand you the old
 > kit instead, and **two of them succeed at exit `0`** — so a diff that shows no change may mean
@@ -292,7 +294,8 @@ than a line that quietly does nothing.
 A waiver can make a target `conformant: true`. **What it costs depends on what the rule is.**
 Waiving a rule classified `defect` also costs `fullyVerified`, even when the rule would have
 passed — you chose not to be measured against a real failure, and the evidence claim has to say
-so. Waiving a rule classified `design-choice` costs nothing: that is the target stating a design
+so. Waiving a rule classified `design-choice` costs nothing (though note that `fullyVerified` is out
+of reach for every target today, because every core checker declares `coverage: partial`): that is the target stating a design
 the catalogue does not require of it, which is a claim being made rather than a hole being left.
 `acc rules --deviation defect` lists the ones that cost. Waived rules are still **probed** either
 way, so the report shows what the verdict would have been. The full argument, including why an unwaivable spec is worse

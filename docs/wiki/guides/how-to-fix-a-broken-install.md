@@ -66,7 +66,7 @@ it**. Measured, after re-pointing at a ref:
 
 ```json
 "agent-cli-conformance": "git+ssh://…/agent-cli-conformance.git",
-"agent-cli-conformance": "git+ssh://…/agent-cli-conformance.git#v1.0.0"
+"agent-cli-conformance": "git+ssh://…/agent-cli-conformance.git#v0.2.0"
 ```
 
 **Remedy:** `bun remove` before `bun add`. If your `package.json` already has two, fix the file

@@ -826,8 +826,9 @@ the Evidence-provenance audit, at
 - the per-project config file is validated rather than cast, and a target's own shebang is
   honoured (R2-4, R2-5);
 - `acc.config.json` carries per-rule severity beside the known-failure ratchet, so a project can
-  waive a rule that does not apply to it — and a waived core rule still blocks `fullyVerified`,
-  so the adopter's frame moves the gate and never the evidence claim
+  waive a rule that does not apply to it — and a waived core `defect` still blocks `fullyVerified`,
+  so the adopter's frame moves the gate and never the evidence claim. A waived `design-choice` is
+  the exception, and deliberately so
   ([conformance](./wiki/concepts/conformance.md#the-asymmetry-a-waiver-buys-the-gate-never-the-evidence));
 - every published example is executed by the test suite, C3 repeats one invocation instead of
   comparing three flags, and the CLI's own dogfood suite runs in the gate (R3-5, R5-1);

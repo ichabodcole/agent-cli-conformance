@@ -79,8 +79,11 @@ break it, and none of them would show up as a failing test.
   materially raised my trust when a checker disagreed with me, and it is why I spent time
   disproving A6 instead of dismissing it."_ At risk from **B**, if a README trim drops the
   self-check.
-- **The waiver escape hatch behaving exactly as documented** — `conformant: true`,
-  `fullyVerified: false`. At risk from **E**, which reopens waiver ergonomics.
+- **The waiver escape hatch behaving as documented, and the report saying which.** Written
+  originally as "`conformant: true`, `fullyVerified: false`" — that half is **deliberately
+  changed**: a waived `design-choice` now keeps `fullyVerified`. What must not regress is the
+  property underneath, that a waiver stays visible in the report with its reason and its would-be
+  verdict rather than silently vanishing.
 
 **These are acceptance constraints, not commentary.** A cold reader of the rewritten README should
 still be able to find the positive control, and a reader of the changed report should still meet
