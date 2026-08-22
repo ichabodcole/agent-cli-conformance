@@ -11,6 +11,7 @@ export const bareInvocationChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/discoverability/bare-invocation-is-a-usage-error.md",
   tier: "core",
+  deviation: "design-choice",
   probeLevel: "L0",
   // Two clauses of the four are read here (not 0, stdout empty) and the hang clause is owned
   // outright. The two below are simply not asserted: the check tests `exitCode === 0` rather

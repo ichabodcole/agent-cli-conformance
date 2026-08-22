@@ -56,6 +56,26 @@ the three above; the waiver changes only what that verdict is allowed to bind. S
 claim about the rules `L0` can reach, not about the catalogue — which is why the level is
 printed beside the verdict rather than left implicit.
 
+### A waiver costs the evidence claim only when the rule is a `defect`
+
+Every rule page carries a [`deviation`](../SCHEMA.md#rule-pages-carry-extra-frontmatter):
+`defect` where no defensible alternative exists, `design-choice` where a different design can be
+right. `fullyVerified` reads it.
+
+| waived rule is… | `conformant` | `fullyVerified` | why                                                                 |
+| --------------- | ------------ | --------------- | ------------------------------------------------------------------- |
+| `defect`        | unaffected   | **blocked**     | the project chose not to be measured against a real failure         |
+| `design-choice` | unaffected   | **kept**        | the target is stating a design the catalogue does not require of it |
+
+**The asymmetry is the point.** Waiving a `design-choice` is the nearest thing `L0` has to a
+target declaring its own contract — "a bare invocation returns my command manifest" — and a claim
+the target makes and the kit accepts is verification, not a gap in it. Waiving a `defect` is the
+opposite: an evidence claim that survived it would be worth nothing.
+
+This distinction only became expressible once every rule was classified. Before that both waivers
+looked identical, and a tool with a deliberate design paid the same price as one suppressing a
+known bug. `acc rules --deviation defect` lists the rules where a waiver still costs.
+
 ### Coverage: a pass can be narrower than its rule
 
 The `pass` row above carries a qualifier the other two do not: it blocks `fullyVerified` only

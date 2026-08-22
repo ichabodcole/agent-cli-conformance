@@ -30,6 +30,7 @@ export const doubleDashTerminatorChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/double-dash-terminator.md",
   tier: "diagnostic",
+  deviation: "design-choice",
   probeLevel: "L0",
   // The assertion is an ABSENCE — no unknown-option error naming the sentinel — which rules out
   // "parsed as a flag" without ruling in "received as a positional": a CLI that silently drops

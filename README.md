@@ -279,10 +279,13 @@ and `off` is a **waiver**, which never goes stale, because passing was never the
 `reason` is required on both, and rule ids are validated, so a mistyped id is an error rather
 than a line that quietly does nothing.
 
-A waiver can make a target `conformant: true`. It can never make it `fullyVerified` — a waived core rule
-blocks the evidence claim even when it would have passed, because a rule you chose not to be
-measured against was not established. Waived rules are still **probed**, so the report shows
-what the verdict would have been. The full argument, including why an unwaivable spec is worse
+A waiver can make a target `conformant: true`. **What it costs depends on what the rule is.**
+Waiving a rule classified `defect` also costs `fullyVerified`, even when the rule would have
+passed — you chose not to be measured against a real failure, and the evidence claim has to say
+so. Waiving a rule classified `design-choice` costs nothing: that is the target stating a design
+the catalogue does not require of it, which is a claim being made rather than a hole being left.
+`acc rules --deviation defect` lists the ones that cost. Waived rules are still **probed** either
+way, so the report shows what the verdict would have been. The full argument, including why an unwaivable spec is worse
 than a waived one, is in [conformance](docs/wiki/concepts/conformance.md#the-frame-a-verdict-was-reached-in).
 
 ### Declaring that your tool is machine-first

@@ -12,6 +12,7 @@ export const helpExitsZeroChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/exit-codes/help-exits-zero.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // Two of the rule's three sentences are about reach, and both need a real verb in the argv.
   // "At every level" means `<cli> <group> --help`, and "regardless of what else is on the

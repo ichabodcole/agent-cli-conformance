@@ -31,6 +31,7 @@ const CHECKERS_DIR = join(REPO_ROOT, "src/acc/kit/checkers");
 // time — so this import has no side effects and is safe from a lint entry point.
 const PROBE_LEVEL_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.probeLevel]));
 const TIER_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.tier]));
+const DEVIATION_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.deviation]));
 const COVERAGE_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.coverage]));
 const COVERAGE_GAPS_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.coverageGaps]));
 const COVERAGE_ESTABLISHED_BY_RULE_ID = new Map(
@@ -128,6 +129,19 @@ export function ruleChecks(pages: LintPage[]): string[] {
       if (checkerLevel && checkerLevel !== level)
         problems.push(
           `MISMATCH probe_level ${page.rel}: page declares "${level}", checker declares "${checkerLevel}"`,
+        );
+    }
+
+    // And for `deviation`, which is now consulted at runtime rather than being documentation:
+    // `buildReport` lets a WAIVED `design-choice` keep `fullyVerified`. A page saying
+    // `design-choice` while its checker says `defect` would offer a reader a waiver that does not
+    // cost what the page promises — or, the other way, silently spend an evidence claim the
+    // reader was told they could keep.
+    if (status === "implemented" && id && deviation && DEVIATIONS.has(deviation)) {
+      const checkerDeviation = DEVIATION_BY_RULE_ID.get(id);
+      if (checkerDeviation && checkerDeviation !== deviation)
+        problems.push(
+          `MISMATCH deviation ${page.rel}: page declares "${deviation}", checker declares "${checkerDeviation}"`,
         );
     }
 

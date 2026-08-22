@@ -25,6 +25,7 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/streams/machine-mode-holds-on-parser-errors.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // One parser error, provoked one way, with machine mode selected one way.
   //

@@ -24,6 +24,14 @@ export interface ReportedFinding extends Finding {
    * `waived`, which is what excludes it.
    */
   tier: "core" | "diagnostic";
+  /**
+   * `defect` | `design-choice`, carried through from the checker.
+   *
+   * Published because it decides what a WAIVER costs: waiving a `design-choice` keeps
+   * `fullyVerified`, waiving a `defect` does not. A consumer looking at a waived rule and asking
+   * why the evidence claim did or did not survive needs this in the same document.
+   */
+  deviation: "defect" | "design-choice";
   /** Where to read about the rule. A failure that does not point at its explanation is a chore. */
   rulePath: string;
   /** True when this failure is listed under `knownFailures` in the project's config. */
@@ -410,6 +418,9 @@ export function buildReport(
     // silently upgrading a rule to "fully established".
     const probeLevel = c?.probeLevel ?? "L0";
     const declaredTier = c?.tier ?? "core";
+    // `defect` is the unforgiving default, for the same reason `core` is: an unregistered checker
+    // must not hand a waiver the cheaper treatment by accident.
+    const deviation = c?.deviation ?? "defect";
     // NOTE that nothing here decides whether to RUN a checker: every checker in the registry has
     // already run by the time `findings` reaches this function, waived rules included. That is
     // deliberate and it is free — probes are shared across checkers, so a waived rule costs no
@@ -424,6 +435,7 @@ export function buildReport(
       // `off` is not a tier, so a waived rule keeps the one it would have bound at — which is
       // exactly what `fullyVerified` needs to know about it below.
       tier: declaration && declaration.severity !== "off" ? declaration.severity : declaredTier,
+      deviation,
       rulePath: c?.rulePath ?? "",
       probeLevel,
       coverage: c?.coverage ?? "partial",
@@ -479,7 +491,13 @@ export function buildReport(
   // A waived rule that WOULD have been core. Excluded from `core` above, and so from every
   // predicate built on it — which is why the evidence claim has to name it separately or the
   // config could buy `fullyVerified` outright. See the `fullyVerified` doc comment.
-  const waivedCore = waived.filter((f) => f.tier === "core");
+  // A waived `design-choice` does NOT block `fullyVerified`. Waiving one is the nearest thing
+  // `L0` has to the target declaring its own design — "a bare invocation returns my manifest" —
+  // and a claim the target makes and the kit accepts is verification, not a hole in it. Waiving a
+  // `defect` still blocks: there the project chose not to be measured against a real failure, and
+  // an evidence claim that stayed true through that would be worthless. The distinction is only
+  // expressible because the catalogue classifies every rule; before that, both looked the same.
+  const waivedCore = waived.filter((f) => f.tier === "core" && f.deviation === "defect");
 
   // ...and the same predicates, rendered as the reason. A rule can appear for more than one: a
   // non-pass verdict contributes what the checker said it could not establish, partial coverage
@@ -489,7 +507,7 @@ export function buildReport(
   const evidenceGaps = applicable
     .filter((f) =>
       f.waived
-        ? f.tier === "core"
+        ? f.tier === "core" && f.deviation === "defect"
         : f.tier === "core" && (f.verdict !== "pass" || f.coverage === "partial"),
     )
     .map((f) => ({

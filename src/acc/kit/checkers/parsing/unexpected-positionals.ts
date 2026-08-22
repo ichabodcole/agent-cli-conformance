@@ -22,6 +22,7 @@ export const unexpectedPositionalsChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/unexpected-positionals-rejected.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L1",
   // The whole rule is the gap, which is the honest reading of a checker that declares no probes
   // and returns one fixed `unverified`. `coverage` describes what a PASS from this file would

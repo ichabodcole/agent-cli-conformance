@@ -19,6 +19,7 @@ export const firstBytePromptChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/safety/first-byte-is-prompt.md",
   tier: "diagnostic",
+  deviation: "design-choice",
   probeLevel: "L0",
   // The rule names three no-I/O commands and this times one of them. The other two clauses are
   // about commands that do work: a `stream` command's first record and per-record flush, and

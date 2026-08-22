@@ -15,6 +15,7 @@ export const unknownFlagChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/unknown-flag-exits-nonzero.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // Two long flags at the root — one valueless, one carrying a value — and the page's clauses
   // divide three ways against them (review R6-5).
