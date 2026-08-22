@@ -382,17 +382,46 @@ makes it smaller than it looked.
 
 Also live and unreconciled: `docs/plans/2026-08-20-second-adoption-release.md`.
 
-## Decisions needed before any of this gets detailed
+## Decisions — made 2026-08-22
 
-1. **Attach the observations, or drop the ids?** They offered both and said either beats today.
-   Attaching is more useful and grows the report; dropping is honest, free, and **breaking**.
-   This decides the shape _and the version type_ of **A**.
-2. **If we attach: does the digest suffice, or do we serialize bytes?** Roadmap item 4 has already
-   answered this once — digest, not bytes — so serializing raw streams means overturning a written
-   decision, with the redaction and size arguments answered.
-3. **Does `acc check` learn an argv prefix, or do we only document the wrapper?** Documenting is
-   nearly free. Supporting it is a new CLI surface every future probe has to respect.
-4. **Is D2's premise right for a CLI whose bare invocation returns a machine-readable manifest?**
-   The only spec-level challenge the trial produced.
-5. **Is L1 in scope for this cycle?** If out, say so — they named it as one of two conditions for
-   the adoption outcome this project presumably wants.
+1. **Evidence ids: attach.** _"Let's attach them, and just make sure they do and work as we say."_
+   The second clause is the harder half: the field's own doc comment promises any finding can be
+   traced to raw evidence, so the promise gets bound to a test, not just implemented.
+2. **What an observation carries: argv, exit status, signal, timing and the digests — not the
+   stream bytes.** Keeps [roadmap item 4](../roadmap.md#4-durable-observation-and-replay)'s written
+   decision intact (the digest is the byte-level record) while answering the question that cost the
+   adopter an hour: _what did you actually run?_
+3. **Interposed launchers: document only, for now.** Revisit once a non-bun CLI has actually been
+   put through the kit. Stated reason: the projects available to test with are bun-based, so the
+   argv-prefix surface would be designed against one case and no evidence. It becomes urgent if
+   this project goes public, where a non-bun CLI's first experience matters.
+4. **D2: keep the default, soften the language.** Not a rule change and not a checker change —
+   a **language** change, which is far smaller than this plan assumed. The rule stays: a bare
+   invocation is an error by default, and the config can already override it. What changes is the
+   register. Three things to carry:
+   - Frame it as **our default and the reasoning for it**, not as a verdict on the reader's design.
+   - **Give the why**, because a reader may not have met it: an unset shell variable expanding to
+     nothing is indistinguishable from a deliberate bare call, and exiting `0` there is how a
+     silent no-op ships.
+   - **Say plainly that a different design can be right.** Returning a machine-readable manifest
+     to inform an agent is a legitimate choice, and the page should not imply otherwise.
+5. **L1: in scope, and it is the point.** _"L0 is foundational… but it's not really where the user
+   is going to get value. L1 is really where you're going to get a lot more benefit — and you're
+   going to get benefit more from the guidance and the thinking we've done around it than from the
+   tooling."_ That last clause is the steer: L1's value is the declaration format and what it makes
+   sayable, not the checker count.
+
+   **A fair objection to the question as posed:** "this cycle" was never defined. Taken as _the
+   work following the anthill trial_, L1 is in it and is the largest item.
+
+6. **Sequencing: proceed on judgement.**
+
+### What this changes about the plan above
+
+- **E shrinks to a documentation task.** The D2 disposition is decided and needs no rule-premise
+  change, no checker change and no catalogue-lint change. What remains in E is the committed-waiver
+  CI blocker, which L1 may dissolve anyway.
+- **C shrinks to documentation** for now, with the enumeration of distortable rules — A6 and F2 so
+  far — kept as the record for when it is revisited.
+- **A is the near-term build**, and it is also infrastructure L1 needs: falsifying a declaration
+  means pointing at the observation that falsified it.
