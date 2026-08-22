@@ -46,14 +46,27 @@ the project whose CLI you want to check:
 bun pm cache rm && bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 ```
 
-> **⚠ Re-pointing at a different ref? Remove the old entry first.** `bun add` with a new ref does
-> not replace the existing dependency — it **appends a second entry under the same key**, prints
-> `warn: Duplicate key` in output nobody reads, and resolves the **first** one. You get the old
-> version at exit 0. `bun pm cache rm` does not help, because the cache was never the problem.
+> **⚠ Upgrading, or re-pointing at a different ref? You need BOTH remedies, in this order.**
 >
 > ```sh
-> bun remove agent-cli-conformance && bun add -d 'git+ssh://…#<new-ref>'
+> bun remove agent-cli-conformance && bun pm cache rm && bun add -d 'git+ssh://…#<new-ref>'
 > ```
+>
+> They fix two different failures and neither covers the other. **`bun remove`** is for the
+> duplicate key: `bun add` with a new ref does not replace the existing dependency, it appends a
+> second entry under the same key, prints `warn: Duplicate key` in output nobody reads, and
+> resolves the **first** one — and that second entry is written to `package.json`, so it is
+> committed and your CI installs from it. **`bun pm cache rm`** is for the stale bare clone above,
+> and an upgrade always needs it: a release tag is pushed after your first install, so the tag you
+> are asking for is the one your cache cannot see. Skip it and you get
+> `no commit matching "<tag>" found (but repository exists)`, which reads like a missing tag.
+>
+> ⚠ `bun pm cache rm` clears bun's **whole global cache** at `~/.bun/install/cache` — it takes no
+> package argument. Cheap on a laptop, expensive in CI, where it cold-caches every dependency of
+> every job on that runner. Do not put it in a build step.
+>
+> Both failures succeed at exit `0` while giving you the old kit, so **finish with
+> `acc --version`**. It is the only way to know the upgrade landed.
 >
 > This is the third distinct way this install path has silently delivered the wrong bytes at exit
 > 0 — after the stale bare clone and the stale extracted package, both above. An adopter hit all
@@ -72,7 +85,7 @@ answers `404` for a private repository whatever token is in the environment
 if and when this one opens up.
 
 Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
-commit or a release tag after the `#` — `…agent-cli-conformance.git#v0.1.0`.
+commit or a release tag after the `#` — `…agent-cli-conformance.git#v1.0.0`.
 
 **Two ways this install goes wrong, and only one of them is loud.**
 
@@ -266,8 +279,10 @@ Two keys, two different statements about **rules**, kept apart on purpose:
 ```
 
 `knownFailures` is **debt**: "this is broken, I know, I will fix it." It is meant only to
-shrink, and a rule that starts passing is reported as a **stale expectation** — the line to
-delete. That report is a reminder, not a gate: `acc` still exits `0`, because a target with a
+shrink, and a rule that starts passing is reported under **STALE EXPECTATIONS** — the entry to
+delete. An entry for a rule the run never evaluated is reported under **NOT BEING EVALUATED**
+instead, and that one should not be deleted on sight: the kit stopped looking, so the defect may
+be entirely intact. That report is a reminder, not a gate: `acc` still exits `0`, because a target with a
 stale expectation is conformant and an exit code that said otherwise would be lying. Enforcing
 removal needs an outcome code of its own and is
 [on the roadmap](docs/roadmap.md#a-ratchet-the-tool-does-not-turn), not in the tool today.

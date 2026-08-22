@@ -337,6 +337,55 @@ being taught rather than helped, and the explanation belongs somewhere the how-t
 
 ---
 
+## 7. The point held back until the end of the sentence
+
+**Where it appears.** Warnings, rules and closing lines — anywhere the writer wants a point to
+land hard.
+
+> **Before** — A note that ships an install line for a tag that was never cut is a `404` for every
+> reader.
+
+> **After** — deleted. The rule above it already said what to do, and the consequence was
+> decoration.
+
+**The reader's report.** "It's just hard to comprehend that sentence without rereading it a bunch
+of times." And on the habit behind it: "we're not trying to make this poetry, we're not trying to
+create a turn of phrase here… we're just literally saying what this is."
+
+**What goes wrong.** The sentence is **periodic** — it withholds its main point until the close,
+so the reader holds an unresolved subject through every qualifier before anything happens to it.
+Here thirteen words separate the subject from its verb:
+
+    A note [that ships an install line] [for a tag] [that was never cut] IS …
+
+That structure is **left-branching**: modifiers stack in front of the verb, where English normally
+puts them after it. Working memory pays the difference, which is why a second read fixes it — the
+second pass already knows where the verb is.
+
+Periodic sentences are a real tool. They build to a reveal, and a reader of fiction has agreed to
+wait for it. A reader of a technical document has not: they want to stop as soon as they have the
+instruction, and a periodic sentence makes stopping early yield nothing.
+
+**The fix is to make it loose** — state the point, then hang the qualifications off the back. If
+the point is already stated in the line above, delete the sentence instead: the reveal was
+restating a rule the reader had.
+
+**Where it looks like this but is not.** A long subject is not the defect; a long subject with the
+verb withheld is. `The rules that changed tier, the fixtures that moved, and the counts that
+shifted are all listed below` is a heavy subject and reads fine, because the qualifiers are a flat
+list rather than nested clauses and the verb is where the reader expects it. Count nesting depth,
+not words.
+
+**How to spot it.** Read to the first verb that belongs to the subject. If you had to hold more
+than one clause open to get there, recast it. The reading tell: you understood the sentence and
+had to go back to the start to check what it was about.
+
+**Often carries a second fault.** A held-back point tends to arrive as a figure, because the
+reveal wants to land — `is a 404` is **metonymy**, naming the note by its effect. Name the
+structure first, then check the payload separately: fixing the shape does not remove the figure.
+
+---
+
 ## Two things that apply to every entry
 
 **Findings from the reader, judgement from the writer.** A reader without the writing context

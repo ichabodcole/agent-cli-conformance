@@ -41,6 +41,32 @@ something to hold.
 
 **Say it once.** Do not restate a point in a more elegant form after making it plainly.
 
+## The register, named
+
+Naming both sides makes the fix obvious from the name, so these are worth knowing as pairs.
+
+| avoid                                                  | prefer                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------- |
+| **periodic** — the point held to the end               | **loose** / **cumulative** — point first, detail after  |
+| **left-branching** — modifiers stacked before the verb | **right-branching** — verb early, detail accretes after |
+| a **figure** standing in for the mechanism             | the **literal** statement                               |
+| **grand style** — cadence, ornament, the quotable line | **plain style** — written to teach and to prove         |
+
+At paragraph and section scale the same instinct is **BLUF** — bottom line up front. Say the
+conclusion, then support it.
+
+Two rules in the spirit of controlled technical English, which is worth knowing as a direction
+rather than a standard to adopt — its dictionary would forbid the domain terms this project needs:
+
+- **One word, one meaning.** Pick a term for a thing and keep it. If `verdict` means the result of
+  a rule, it never also means the exit code.
+- **Say it literally.** A reader should not have to decode an image and map it back onto the
+  subject to learn what happened.
+
+**A metaphor is allowed when you are deliberately giving one**, because the domain has no plain
+word and the image does work no phrasing would. It is not allowed as decoration on a sentence that
+already says the thing. The test is whether you could delete it and lose information.
+
 ## Habits to drop
 
 - **"Not X, but Y" as a closing move.** It makes a paragraph feel finished whether or not the
@@ -51,6 +77,16 @@ something to hold.
 - **"which is exactly the…"** and similar closers. They assert a connection rather than showing it.
 - **Aphorisms as section endings.** If a line seems quotable, check whether it is also clear on
   first read.
+- **The periodic sentence** — the point withheld until the end, so the reader holds every qualifier
+  open until the close. It is how you build to a reveal, which is why it belongs in fiction and not
+  here: the reader wants to stop as soon as they have the instruction, and this structure makes
+  stopping early yield nothing. Write **loose** instead — point first, qualifications after.
+- **Modifiers stacked in front of the verb.** `A note that ships an install line for a tag that was
+never cut is a 404` puts thirteen words between the subject and what happens to it. English puts
+  detail after the verb; front-loading it spends the reader's working memory. If you had to hold
+  more than one clause open to reach the verb, recast it.
+- **Naming a thing by its effect.** `is a 404`, `is a build breaker`. The reader decodes the
+  substitution, then maps it back. Say what happens.
 
 ## When compression is allowed
 

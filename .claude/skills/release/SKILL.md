@@ -29,9 +29,11 @@ git checkout develop && git merge --ff-only origin/develop
 bun run check > /tmp/gate.log 2>&1; echo $?  # must be 0
 ```
 
-> **⚠ Run the gate UNPIPED.** `bun run check | tail` reports **`tail`'s** status, not the gate's —
-> `sh -c 'exit 7' | tail -5; echo $?` prints `0`. Redirect and read `$?`. A false green matters most
-> here, where nothing downstream re-checks it.
+> **⚠ A pipe throws away the exit status, so keep every step above out of one.** `bun run check |
+tail` reports **`tail`'s** status, not the gate's — `sh -c 'exit 7' | tail -5; echo $?` prints
+> `0`. The same applies to `git checkout`, `git merge` and anything else whose success you go on to
+> rely on: piped into `tail` or `head`, a failure exits `0`, and an `&&` after it runs anyway on a
+> branch you never switched to. Redirect, then read `$?`.
 
 Then look at what is actually going to `main`, because it decides whether there is a release at all:
 
@@ -71,6 +73,10 @@ Build **one file**: subject on line 1, blank line, then body.
 > because it happens to be the first one anyone can install. When the range's own commits already
 > carry the signal, `chore(release):` adds none and lets them decide. Check the type against §0's
 > range before writing anything else.
+
+> **⚠ Pick the TYPE, never the version number.** The type is yours. The number is created by
+> release-please on the release PR in §5. Do not work it out from the current version and the
+> config — write the note with no version in it, and fill the number in once that PR names one.
 
 ## 2 · Cold-read it
 
