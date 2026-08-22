@@ -11,12 +11,22 @@ agent-harness authors second. It is a conformance suite for _ordinary CLIs consu
 not for agent applications that happen to have a CLI. If a person types your tool and a script
 also runs it, it is in scope.
 
-> **Status.** `v1.0.1` <!-- x-release-please-version --> is installable and runs today. `L0` is the
+> **Status.** `v0.1.0` <!-- x-release-please-version --> is installable and runs today. `L0` is the
 > only probe level that exists so far, and it is the shallow one — see
 > [where this is going](#where-this-is-going) for what it does and does not reach yet.
 >
-> **Rule ids are append-only and safe to depend on. The report and schema shapes are not, and may
-> still change** — pin a version if you parse the JSON.
+> **This is a pre-1.0 line, and the version number means it.** While the major is `0`, a breaking
+> change bumps the minor and a feature bumps the patch. What is promised and what is not:
+>
+> | stable — a change here is breaking                           | unstable — a change here is not                    |
+> | ------------------------------------------------------------ | -------------------------------------------------- |
+> | rule ids (`A1`, `D2`, …), append-only                        | the report's JSON shape, and every field in it     |
+> | exit codes: `0` conformant, `9` not, `1`–`8` the kit failing | `fullyVerified` and what costs it                  |
+> | `conformant` — what it means and when it is true             | `acc.config.json` keys, CLI flags, the text layout |
+>
+> Everything a CI gate binds to is on the left. Everything still being designed is on the right —
+> and pin a commit SHA rather than a tag if you parse the JSON.
+> [Why](docs/wiki/decisions/pre-1-0-while-the-design-moves.md).
 
 ## The problem
 
@@ -57,7 +67,7 @@ answers `404` for a private repository whatever token is in the environment
 if and when this one opens up.
 
 Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
-commit or a release tag after the `#` — `…agent-cli-conformance.git#v1.0.1`. <!-- x-release-please-version -->
+commit or a release tag after the `#` — `…agent-cli-conformance.git#v0.1.0`. <!-- x-release-please-version -->
 
 > **⚠ Re-installing, or moving to a different ref?** Three separate failures can hand you the old
 > kit instead, and **two of them succeed at exit `0`** — so a diff that shows no change may mean
@@ -115,12 +125,12 @@ The first line is the verdict, and the exit code is the gate:
 <!-- x-release-please-start-version -->
 
 ```
-NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered  /opt/homebrew/bin/git  [acc 1.0.1]
+NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered  /opt/homebrew/bin/git  [acc 0.1.0]
 ```
 
 <!-- x-release-please-end -->
 
-That line also ends with the kit's own version — `[acc 1.0.1]` <!-- x-release-please-version -->
+That line also ends with the kit's own version — `[acc 0.1.0]` <!-- x-release-please-version -->
 — which appears as `kitVersion` in the JSON report. It is there because an install can silently
 give you an older kit than you asked for; the install notes above explain how, and how far the
 check reaches.
@@ -149,7 +159,7 @@ first CLI](docs/wiki/guides/check-your-first-cli.md) walks through a real one.
 <!-- x-release-please-start-version -->
 
 ```
-CONFORMANT (L0) — 0 core violated, 1 core unverified, 16 core partially covered  ./conforming.ts  [acc 1.0.1]
+CONFORMANT (L0) — 0 core violated, 1 core unverified, 16 core partially covered  ./conforming.ts  [acc 0.1.0]
 
   PASS+ A1  root flag rejected with exit 2, stdout empty, flag named; the same flag carrying a value likewise
   PASS+ A2  root verb rejected with exit 2; nested case not probed at L0

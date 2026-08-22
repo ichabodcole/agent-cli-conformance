@@ -207,6 +207,7 @@ cancellation, bounded shutdown, `SIGPIPE`, resumability.
 
 Why we chose what we chose, citing the research.
 
+- [Stay pre-1.0 while the design is still moving](./decisions/pre-1-0-while-the-design-moves.md) — A version number is a claim about stability, and this project was making one it could not keep — so the 1.x line was withdrawn, the tags deleted, and the promised surface narrowed to what is actually settled.
 - [Exit codes stay below 125](./decisions/exit-codes-below-125.md) — Reserving the band POSIX and
   the delegators already use, rather than inventing a new one, keeps our domain codes clear of the
   shell's — on POSIX, and not without residue.

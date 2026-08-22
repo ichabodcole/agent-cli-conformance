@@ -102,11 +102,19 @@ Cutting a release runs the [`release` skill](.claude/skills/release/SKILL.md) �
 by a fresh agent from the tree, cold-read, and carried through to the published GitHub Release,
 which otherwise shows only a list of commit subjects.
 
-**Most commit types do not release.** With `release-type: node` and no `changelog-sections`
-override, `feat` bumps the minor, `fix` bumps the patch and **a breaking change bumps the major,
-including below `1.0.0`** — measured: `feat(kit)!` on `0.2.0` shipped `v1.0.0`, not `v0.3.0`. This
-sentence briefly said the opposite, on the reasoning that release-please treats `0.x` as
-pre-stable; the release falsified it the same day. Do not derive the version from configuration you
+**This is a pre-1.0 line, deliberately** — see
+[stay pre-1.0 while the design is still moving](docs/wiki/decisions/pre-1-0-while-the-design-moves.md).
+`bump-minor-pre-major` and `bump-patch-for-minor-pre-major` are set, so while the major is `0` a
+**breaking change bumps the MINOR** and a **feature bumps the PATCH**. Without those options a `!`
+bumps the major even from `0.x` — measured, before they were set: `feat(kit)!` on `0.2.0` shipped
+`v1.0.0`, not `v0.3.0`. **Both readings have now been wrong once**, so verify against the release
+rather than against this sentence.
+
+**Reserve `!` for the promised surface, which is narrow.** Rule ids, the exit-code taxonomy and
+`conformant` are stable; the report shape, `fullyVerified`, config keys and CLI flags are not, and
+the README states the split. A change to the right-hand column is a `feat` or a `fix`, not a
+break — the project is still deciding those, and typing every one of them `!` would make the
+version number meaningless rather than careful. Do not derive the version from configuration you
 have not run — a `!` here is a major, so pick the type knowing that;
 `docs`, `chore`, `ci`, `test` and `refactor` produce no version and no release PR at all. A
 docs-only merge to `main` that cuts no release is correct, not broken. Merge the promotion PR with a
