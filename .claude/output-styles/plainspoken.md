@@ -51,6 +51,16 @@ something to hold.
 - **"which is exactly the…"** and similar closers. They assert a connection rather than showing it.
 - **Aphorisms as section endings.** If a line seems quotable, check whether it is also clear on
   first read.
+- **The periodic sentence** — the point withheld until the end, so the reader holds every qualifier
+  open until the close. It is how you build to a reveal, which is why it belongs in fiction and not
+  here: the reader wants to stop as soon as they have the instruction, and this structure makes
+  stopping early yield nothing. Write **loose** instead — point first, qualifications after.
+- **Modifiers stacked in front of the verb.** `A note that ships an install line for a tag that was
+never cut is a 404` puts thirteen words between the subject and what happens to it. English puts
+  detail after the verb; front-loading it spends the reader's working memory. If you had to hold
+  more than one clause open to reach the verb, recast it.
+- **Naming a thing by its effect.** `is a 404`, `is a build breaker`. The reader decodes the
+  substitution, then maps it back. Say what happens.
 
 ## When compression is allowed
 

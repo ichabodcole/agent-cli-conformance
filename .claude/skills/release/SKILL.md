@@ -74,10 +74,9 @@ Build **one file**: subject on line 1, blank line, then body.
 > carry the signal, `chore(release):` adds none and lets them decide. Check the type against §0's
 > range before writing anything else.
 
-> **⚠ Pick the TYPE, never the version number.** The type is yours; the number is release-please's,
-> and it arrives for free on the release PR in §5. Do not derive it from the current version and
-> the config — write the note without a version, and fill it in once the release PR names one. A
-> note that ships an install line for a tag that was never cut is a `404` for every reader.
+> **⚠ Pick the TYPE, never the version number.** The type is yours. The number is created by
+> release-please on the release PR in §5. Do not work it out from the current version and the
+> config — write the note with no version in it, and fill the number in once that PR names one.
 
 ## 2 · Cold-read it
 
