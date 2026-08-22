@@ -6,7 +6,7 @@ and framework maintainers make ordinary command-line tools predictable, machine-
 safely operable by autonomous agents, using an executable specification and black-box evidence
 rather than documentation alone.
 
-> **Status: released, with an unfrozen report shape.** `v1.0.1` is installable today, and runs
+> **Status: released, with an unfrozen report shape.** `v1.0.1` <!-- x-release-please-version --> is installable today, and runs
 > against your CLI as black-box evidence. Rule ids are
 > append-only and safe to depend on. **The report and schema shapes are not yet covered by that
 > promise and may still change.** Every checker covers only part of its rule; one rule
