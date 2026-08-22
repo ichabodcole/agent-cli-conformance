@@ -14,6 +14,9 @@ also runs it, it is in scope.
 > **Status.** `v1.0.1` <!-- x-release-please-version --> is installable and runs today. `L0` is the
 > only probe level that exists so far, and it is the shallow one — see
 > [where this is going](#where-this-is-going) for what it does and does not reach yet.
+>
+> **Rule ids are append-only and safe to depend on. The report and schema shapes are not, and may
+> still change** — pin a version if you parse the JSON.
 
 ## The problem
 

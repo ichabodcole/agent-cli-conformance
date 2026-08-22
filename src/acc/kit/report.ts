@@ -415,13 +415,17 @@ export function buildReport(
     const waived = declaration?.severity === "off";
     return {
       ...f,
+      evidence: [...f.evidence],
       // `off` is not a tier, so a waived rule keeps the one it would have bound at — which is
       // exactly what `fullyVerified` needs to know about it below.
       tier: declaration && declaration.severity !== "off" ? declaration.severity : declaredTier,
       rulePath: c?.rulePath ?? "",
       probeLevel,
       coverage: c?.coverage ?? "partial",
-      coverageGaps: c?.coverageGaps ?? ["no checker was found for this rule id"],
+      // COPIED, not aliased. `c` is an entry in the module-level `CHECKERS` registry, which
+      // lives for the whole process — a consumer mutating a finding would otherwise rewrite the
+      // checker definition every later run reads.
+      coverageGaps: [...(c?.coverageGaps ?? ["no checker was found for this rule id"])],
       applicable: LEVEL_RANK[probeLevel] <= LEVEL_RANK[level],
       // `unverified` is excusable too, not just `fail`. Excusing only failures left a project
       // blocked by an unverified core rule with no path to green: nothing it could change
@@ -574,7 +578,7 @@ export function buildReport(
  * `Observation` cannot silently publish it. The two that must never appear here are `stdout` and
  * `stderr`: they are the target's own output, unbounded, and already represented by their digests.
  */
-function toReportedObservation(o: Observation): ReportedObservation {
+export function toReportedObservation(o: Observation): ReportedObservation {
   return {
     id: o.id,
     args: [...o.invocation.args],

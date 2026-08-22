@@ -35,6 +35,13 @@ export interface Invocation {
    * instrument was perturbing the quantity it measured. Nothing in the kit now puts a probe
    * identity where the target can see it (review R6-6).
    */
+  /**
+   * **1-based.** `invocationId` folds `repeat ?? 0` into its material, so a checker indexing from
+   * zero would give its first run the same id as a probe that asked for no repetition at all —
+   * two different invocations, one recording, and a published `repeat` stamped on an observation
+   * that was shared. Every repeating checker today uses `[1, 2, 3]`; this says why that is a
+   * requirement rather than a habit.
+   */
   repeat?: number;
 }
 

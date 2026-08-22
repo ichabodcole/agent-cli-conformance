@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { VERSION } from "../version.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
-import { buildReport, primaryProblem, runCheckers } from "./report.ts";
+import { buildReport, primaryProblem, runCheckers, toReportedObservation } from "./report.ts";
 import { digestOfText } from "./runner.ts";
 import type { Checker, Coverage, Finding, History, Observation, ProbeLevel } from "./types.ts";
 
@@ -984,13 +984,58 @@ describe("evidence ids resolve", () => {
     expect([...seen.values()].filter((n) => n > 1)).toEqual([]);
   }, 60_000);
 
-  test("env is published when a probe imposed one, and omitted when it did not", async () => {
-    const r = await realRun();
-    // D1 probes `--version` under a hostile HOME; that is the only env override at L0.
-    const withEnv = r.observations.filter((o) => o.env !== undefined);
-    expect(withEnv.length).toBeGreaterThan(0);
-    for (const o of withEnv) expect(Object.keys(o.env ?? {}).length).toBeGreaterThan(0);
-  }, 60_000);
+  // Driven through `toReportedObservation` directly, because the condition these assert cannot be
+  // produced by any probe that exists: no checker asks for `env: {}`, and copy-versus-alias is
+  // byte-identical in every output. An earlier version of these tests asserted over a real run
+  // and passed with the bugs present, which is no test at all.
+  const observationOf = (over: Partial<Observation> = {}): Observation => ({
+    id: "obs-1",
+    invocation: { args: ["--help"], inertness: "help-path", purpose: "p" },
+    purposes: ["p"],
+    stdout: "out",
+    stderr: "",
+    stdoutBytes: 3,
+    stderrBytes: 0,
+    stdoutDigest: digestOfText("out"),
+    stderrDigest: digestOfText(""),
+    stdoutLossy: false,
+    stderrLossy: false,
+    truncated: false,
+    exitCode: 0,
+    signal: null,
+    crashed: false,
+    timedOut: false,
+    spawnFailed: false,
+    durationMs: 1,
+    timeToFirstByteMs: 1,
+    ...over,
+  });
+
+  test("an EMPTY env is omitted — the field means the probe imposed one", () => {
+    const o = observationOf({
+      invocation: { args: [], inertness: "bare", purpose: "p", env: {} },
+    });
+    expect(Object.hasOwn(toReportedObservation(o), "env")).toBe(false);
+  });
+
+  test("a non-empty env is published, and copied rather than aliased", () => {
+    const env = { HOME: "/nonexistent" };
+    const o = observationOf({
+      invocation: { args: ["--version"], inertness: "help-path", purpose: "p", env },
+    });
+    const projected = toReportedObservation(o);
+    expect(projected.env).toEqual(env);
+    expect(projected.env).not.toBe(env);
+  });
+
+  test("purposes is copied, not aliased — mutating a report must not rewrite the recording", () => {
+    const o = observationOf({ purposes: ["a", "b"] });
+    const projected = toReportedObservation(o);
+    expect(projected.purposes).toEqual(["a", "b"]);
+    expect(projected.purposes).not.toBe(o.purposes);
+    projected.purposes.push("c");
+    expect(o.purposes).toEqual(["a", "b"]);
+  });
 
   test("the projection copies rather than aliases the recording", async () => {
     const p = join(HERE, "fixtures/conforming.ts");

@@ -125,6 +125,24 @@ decides whether a violation gates CI. `deviation` decides what a violation means
   waiver records a decision, and the page owes the reader the reasoning behind the default rather
   than a verdict on their design.
 
+**A default is not a verdict.** `L0` is mostly error-checking — a tool that exits `0` on an unknown
+flag is broken for an agent and the catalogue should say so. But some rules encode a **design
+preference** rather than a defect, and there the catalogue's job changes: state the default, give
+the reasoning, and treat an override as a legitimate outcome rather than a failure to be argued
+out of. A reader who disagrees with a `design-choice` rule is not being non-conformant at us; they
+are doing what the field exists to permit.
+
+**This is most of the value for a CLI that does not exist yet.** A team starting a new tool can
+adopt the catalogue wholesale and get a coherent set of interface decisions without having to make
+each one — which is a better reason to read a spec than "you will be marked down otherwise". The
+`design-choice` rules are exactly the places where a mature project may already have decided
+differently, on purpose, and the page should meet them as a peer rather than as a defect report.
+
+**What follows for how these pages are written.** A `design-choice` page owes the reader three
+things: what our default is, why it is the default in terms they can evaluate, and what a
+different design would have to get right instead. It does not owe them a verdict, and it should
+not imply their interface is wrong for diverging.
+
 Most of the catalogue is `defect`, which is what a conformance spec should look like. The
 classification exists so the handful that are not cannot be mistaken for it — and so a reader
 meeting a rule they disagree with can tell immediately whether the catalogue expects that
