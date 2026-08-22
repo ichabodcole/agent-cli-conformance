@@ -6,37 +6,39 @@ and framework maintainers make ordinary command-line tools predictable, machine-
 safely operable by autonomous agents, using an executable specification and black-box evidence
 rather than documentation alone.
 
-> **Status: released, with an unfrozen report shape.** `v1.0.1` <!-- x-release-please-version --> is installable today, and runs
-> against your CLI as black-box evidence. Rule ids are
-> append-only and safe to depend on. **The report and schema shapes are not yet covered by that
-> promise and may still change.** Every checker covers only part of its rule; one rule
-> ([A4](docs/wiki/rules/parsing/unexpected-positionals-rejected.md)) reports `not applicable`
-> until `L1` exists; and `L0` is the only probe level that runs.
-
 **For** — CLI authors, framework and scaffold maintainers, and platform/tooling teams;
 agent-harness authors second. It is a conformance suite for _ordinary CLIs consumed by agents_,
 not for agent applications that happen to have a CLI. If a person types your tool and a script
 also runs it, it is in scope.
 
-**Today** — the [wiki](docs/wiki/index.md) (23 rules, 22 of them with a checker; the 23rd is
-`planned`), the `acc` reference CLI, the documentation graph and linter, and an `L0` black-box
-checker that records argv, stdout, stderr, exit status, the terminating signal and timing per
-probe. Every one of the 22 checkers declares `coverage: partial` — see
-[the matrix](docs/wiki/index.md#coverage-at-a-glance) for what each one leaves unestablished.
+> **Status.** `v1.0.1` <!-- x-release-please-version --> is installable and runs today. `L0` is the
+> only probe level that exists so far, and it is the shallow one — see
+> [where this is going](#where-this-is-going) for what it does and does not reach yet.
+>
+> **Rule ids are append-only and safe to depend on. The report and schema shapes are not, and may
+> still change** — pin a version if you parse the JSON.
 
-**Planned** — filesystem hashing and snapshot diffing, the `L1` and `L2` levels that falsify a
-CLI's own effect declarations, durable and replayable observation histories, and the
-retroactive re-checking those make possible. None of it exists yet; every mention below is
-labelled. [The roadmap](docs/roadmap.md) is the full list — what is missing, why each item is
-blocked on the ones before it, and the evidence that each gap is real. Nothing on it is
-scheduled or promised.
+## The problem
 
-**Non-goals** — a passing report is **not a security certification**, does **not** prove
-domain-level correctness, and at `L0` does **not** prove a target is harmless to execute. It
-proves that no core rule the kit could apply was violated, which is a narrower claim than any of
-those. That is deliberately reported as two booleans: `conformant` (nothing the kit applied was
-violated) and `fullyVerified` (every core rule was actually established) — see
-[conformance](docs/wiki/concepts/conformance.md).
+CLIs built for agents keep re-learning the same lessons, one project at a time. A survey of 15
+CLIs across one developer's projects found the same contract implemented at four different
+maturity levels, with no path for improvements to propagate — one project had grown a proper
+exit-code taxonomy, another had independently added a `code` field to its error envelope, and
+the shared scaffold both were generated from had neither.
+
+The failures are consistent, and they share a shape: **the tool does the wrong thing and
+reports success.**
+
+- An unrecognised flag is accepted, its value orphaned, and the command runs with defaults —
+  exit `0`. (Measured in `citty`, which underpins the scaffold that was supposed to prevent
+  exactly this.)
+- `docker inspect <missing> --format json` prints `[]` to stdout _and_ an error to stderr, so
+  a consumer reading stdout sees "no results" rather than "that failed."
+- `docker container prune` treats closed stdin as a decline and exits `0` — an agent invoking
+  it non-interactively gets a success code and no work done.
+
+Documentation does not fix this class of bug, because the failure is invisible at the point
+where documentation would be read.
 
 ## Getting started
 
@@ -142,6 +144,37 @@ distinction the whole report is built around:
 and they are why a clean run is reported as two separate booleans rather than one. [Check your
 first CLI](docs/wiki/guides/check-your-first-cli.md) walks through a real one.
 
+**A clean run looks like this** — the kit against a fixture written to pass:
+
+<!-- x-release-please-start-version -->
+
+```
+CONFORMANT (L0) — 0 core violated, 1 core unverified, 16 core partially covered  ./conforming.ts  [acc 1.0.1]
+
+  PASS+ A1  root flag rejected with exit 2, stdout empty, flag named; the same flag carrying a value likewise
+  PASS+ A2  root verb rejected with exit 2; nested case not probed at L0
+```
+
+<!-- x-release-please-end -->
+
+Exit `0`. Note that a **conformant** run still carries `PASS+` and one `UNVR`: passing every rule
+the kit could apply is not the same as having verified every rule, and the report keeps those
+apart rather than rounding up.
+
+**The three fixes that clear most first-run findings**, so you can judge the work before you
+start:
+
+- **Send diagnostics to stderr**, and keep stdout for data only. A CLI that prints its errors to
+  stdout corrupts every pipeline that parses it.
+- **Make the parser strict** — exit non-zero on an unknown flag or an unknown subcommand, name the
+  offending token in the message, and never guess at a correction. An agent that gets exit `0` for
+  a typo has no way to learn it made one.
+- **Advertise your machine-readable mode in `--help`**, if you have one. An agent reads your help
+  to find it; nothing else tells it.
+
+None of that requires restructuring your tool. The full triage is in
+[how to reach L0](docs/wiki/guides/how-to-reach-l0-in-your-project.md).
+
 **Read the safety note before pointing it at your own work.** `acc check` **executes** the
 target — see [what L0 does not prevent](#the-conformance-kit) below.
 
@@ -158,50 +191,6 @@ Where to go next:
   with this repository, so clone it for that one.
 - **[How to reach L0 in your project](docs/wiki/guides/how-to-reach-l0-in-your-project.md)** —
   taking your own CLI from a first failing check to a green gate.
-
-## Branches and releases
-
-`develop` is where work lands; `main` is what is released from. Branch off `develop`, merge
-back into `develop`, and open a pull request from `develop` into `main` to begin a release.
-
-**Releasing takes two merges, not one.** Merging `develop` into `main` publishes nothing: it
-makes release-please open a _second_ pull request carrying the version bump and the changelog
-entry, and merging **that** creates the tag and the GitHub Release. So between the two merges
-`main` holds the next release rather than the last one. Merge the promotion PR with a merge or
-rebase merge — a squash takes its headline from the PR title, and a title that is not a
-Conventional Commit leaves release-please with no version signal.
-
-[release-please](.github/workflows/release-please.yml) watches `main` only, and derives the
-version and the changelog from the commit messages
-([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)). It writes the version
-to `package.json`, which is what `src/acc/version.ts` reads — so `acc --version`, the git tag and
-the changelog cannot disagree. Releases are tagged `v<version>`. Nothing is
-published to npm.
-
-[The gate](.github/workflows/check.yml) runs on every push and every pull request, on both
-branches.
-
-## The problem
-
-CLIs built for agents keep re-learning the same lessons, one project at a time. A survey of 15
-CLIs across one developer's projects found the same contract implemented at four different
-maturity levels, with no path for improvements to propagate — one project had grown a proper
-exit-code taxonomy, another had independently added a `code` field to its error envelope, and
-the shared scaffold both were generated from had neither.
-
-The failures are consistent, and they share a shape: **the tool does the wrong thing and
-reports success.**
-
-- An unrecognised flag is accepted, its value orphaned, and the command runs with defaults —
-  exit `0`. (Measured in `citty`, which underpins the scaffold that was supposed to prevent
-  exactly this.)
-- `docker inspect <missing> --format json` prints `[]` to stdout _and_ an error to stderr, so
-  a consumer reading stdout sees "no results" rather than "that failed."
-- `docker container prune` treats closed stdin as a decline and exits `0` — an agent invoking
-  it non-interactively gets a success code and no work done.
-
-Documentation does not fix this class of bug, because the failure is invisible at the point
-where documentation would be read.
 
 ## The approach
 
@@ -367,7 +356,57 @@ acc show A99 --json        # exit 5, kind: not_found, and every valid handle as 
 acc rules --tier nonsense  # exit 2, kind: usage, choices: ["core","diagnostic"]
 ```
 
-## Layout
+## What a pass does not prove
+
+**Non-goals** — a passing report is **not a security certification**, does **not** prove
+domain-level correctness, and at `L0` does **not** prove a target is harmless to execute. It
+proves that no core rule the kit could apply was violated, which is a narrower claim than any of
+those. That is deliberately reported as two booleans: `conformant` (nothing the kit applied was
+violated) and `fullyVerified` (every core rule was actually established) — see
+[conformance](docs/wiki/concepts/conformance.md).
+
+## Where this is going
+
+**Today** — the [wiki](docs/wiki/index.md) (23 rules, 22 of them with a checker; the 23rd is
+`planned`), the `acc` reference CLI, the documentation graph and linter, and an `L0` black-box
+checker that records argv, stdout, stderr, exit status, the terminating signal and timing per
+probe. Every one of the 22 checkers declares `coverage: partial` — see
+[the matrix](docs/wiki/index.md#coverage-at-a-glance) for what each one leaves unestablished.
+
+**Planned** — filesystem hashing and snapshot diffing, the `L1` and `L2` levels that falsify a
+CLI's own effect declarations, durable and replayable observation histories, and the
+retroactive re-checking those make possible. None of it exists yet, and every mention of it
+elsewhere on this page is labelled. [The roadmap](docs/roadmap.md) is the full list — what is missing, why each item is
+blocked on the ones before it, and the evidence that each gap is real. Nothing on it is
+scheduled or promised.
+
+## Working on this repository
+
+Everything below is for people editing _this_ project rather than checking their own CLI.
+
+### Branches and releases
+
+`develop` is where work lands; `main` is what is released from. Branch off `develop`, merge
+back into `develop`, and open a pull request from `develop` into `main` to begin a release.
+
+**Releasing takes two merges, not one.** Merging `develop` into `main` publishes nothing: it
+makes release-please open a _second_ pull request carrying the version bump and the changelog
+entry, and merging **that** creates the tag and the GitHub Release. So between the two merges
+`main` holds the next release rather than the last one. Merge the promotion PR with a merge or
+rebase merge — a squash takes its headline from the PR title, and a title that is not a
+Conventional Commit leaves release-please with no version signal.
+
+[release-please](.github/workflows/release-please.yml) watches `main` only, and derives the
+version and the changelog from the commit messages
+([Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)). It writes the version
+to `package.json`, which is what `src/acc/version.ts` reads — so `acc --version`, the git tag and
+the changelog cannot disagree. Releases are tagged `v<version>`. Nothing is
+published to npm.
+
+[The gate](.github/workflows/check.yml) runs on every push and every pull request, on both
+branches.
+
+### Layout
 
 ```
 docs/wiki/     the spec and its rationale — see docs/wiki/SCHEMA.md before editing
@@ -379,7 +418,7 @@ scripts/
   docs-lint/   portable, zero-dependency wiki linter (lift it into other repos as-is)
 ```
 
-## Commands
+### Commands
 
 ```bash
 bun run check                  # THE gate: typecheck, lint, wiki lint, tests

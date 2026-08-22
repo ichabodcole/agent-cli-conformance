@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-15 }
 rule_id: G1
 tier: core
+deviation: defect
 probe_level: L0
 checker: src/acc/kit/checkers/lifecycle/does-not-crash.ts
 checker_status: implemented

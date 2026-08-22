@@ -2,14 +2,16 @@
 type: rule
 title: Bare invocation is a usage error
 description:
-  Running the tool with no arguments requested nothing and did nothing — reporting success for
-  that is how an unset shell variable becomes a silent no-op.
+  Our default is that a bare invocation is a usage error, because an unset shell variable
+  expanding to nothing is indistinguishable from a deliberate bare call. A tool that answers with
+  a machine-readable manifest has made a different and defensible choice.
 tags: [discoverability, exit-codes, silent-failure, core]
 related: [rule/help-exits-zero, concept/exit-codes]
 status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: D2
 tier: core
+deviation: design-choice
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/bare-invocation.ts
 checker_status: implemented
@@ -36,6 +38,27 @@ It **MUST NOT** exit `0`, and **MUST NOT** wait for input — see
 This is the deliberate inverse of [`--help`](../exit-codes/help-exits-zero.md), which is a
 request and therefore succeeds.
 
+## When a different answer is right
+
+**This is a default, not a judgement about your design.** The rule assumes a bare invocation
+requested nothing — and for most CLIs that is true, which is why it is the default. It is not
+true for every CLI.
+
+A machine-first tool may answer a bare invocation with **a description of its own command
+surface** — a JSON manifest of what it can do — precisely so that an agent can discover it in one
+call. That is a request being answered, not a no-op being reported as success, and it is a
+reasonable thing to build. An adopter argued exactly this case for their CLI and we think they
+are right about their CLI.
+
+**The reason the default runs the other way is worth reading even if you disagree with it**,
+because it is a failure mode people meet without recognising it: an unset shell variable expands
+to nothing, so `mytool $SUBCOMMAND` becomes a bare invocation, and a bare invocation that exits
+`0` makes that indistinguishable from success. See [Why](#why) below for the worked case.
+
+If you have made the other choice deliberately, **[waive the rule](#how-to-comply) and record
+why** — that is what the waiver is for, and the report will show the verdict the probe reached
+rather than pretending the rule was never tested.
+
 ## How to comply
 
 Three things must change together: the code, the stream, and the handler. If your framework
@@ -60,7 +83,7 @@ Not measured for the bare case: `clap`, Click/Typer, `node:util parseArgs`, `cit
 `oclif`, Swift ArgumentParser. Verify yours rather than assuming from its unknown-flag strictness
 — they are separate code paths.
 
-**If printing help here is a deliberate product decision**, waive the rule rather than fake it:
+**If answering a bare invocation is a deliberate product decision** — see [when a different answer is right](#when-a-different-answer-is-right) — waive the rule rather than change your tool to satisfy it:
 in `acc.config.json`, `"D2": { "severity": "off", "reason": "..." }` — see
 [waivers](../../concepts/conformance.md#waivers-a-rule-that-does-not-apply-to-this-tool) for what
 that costs (a waived core rule blocks `fullyVerified` even when it would have passed) and

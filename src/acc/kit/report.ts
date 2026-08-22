@@ -1,5 +1,14 @@
 import type { AccConfig } from "./config.ts";
-import type { Checker, Coverage, Finding, History, ProbeLevel, Verdict } from "./types.ts";
+import type {
+  Checker,
+  Coverage,
+  Finding,
+  History,
+  Invocation,
+  Observation,
+  ProbeLevel,
+  Verdict,
+} from "./types.ts";
 
 /** Numeric order for comparing probe levels — L0 < L1 < L2. */
 const LEVEL_RANK: Record<ProbeLevel, number> = { L0: 0, L1: 1, L2: 2 };
@@ -53,8 +62,79 @@ export interface ReportedFinding extends Finding {
   applicable: boolean;
 }
 
+/**
+ * One observation, as the report publishes it — what the kit RAN, not what it read back.
+ *
+ * `Finding.evidence` has always carried observation ids, and `types.ts` has always documented them
+ * as the way "any finding can be traced to raw evidence". Nothing resolved them: the ids shipped
+ * and the observations did not, so the report cited proof it could not produce. An outside adopter
+ * reported it as the single highest-value fix on their list, having spent an hour reconstructing a
+ * probe by hand that a resolvable id would have handed them.
+ *
+ * **The streams are deliberately absent.** `stdoutDigest` and `stderrDigest` are the whole
+ * byte-level record here, for the reason the durable-artifact work already settled: retaining the
+ * bytes as well doubles the artifact for an equality question a 32-byte hash already answers, and
+ * hands an unbounded binary field the redaction and retention problems that come with it. What a
+ * reader needs to reconstruct a verdict is the ARGV, and that carries nothing the target did not
+ * already receive from us.
+ *
+ * **`purposes` is the exception, and it is deliberate.** A7 builds its purpose string from the
+ * value set it read out of the target's own `--help`, so this field can contain target-derived
+ * text. That is the point — a purpose that named no specifics would not tell a reader why the
+ * probe was sent — but it means the projection is not strictly "only what we sent".
+ *
+ * **`args` is not bounded independently.** Several checkers build a probe from a flag discovered
+ * in the target's own `--help`, and that scan has no length limit of its own — so a pathological
+ * help screen produces a pathological argv, bounded only by `MAX_STREAM_BYTES` in `runner.ts`.
+ * The bytes are the target's own and F1 requires help to hold no secrets, so this is a size
+ * question rather than a disclosure one; it is written down because "argv is small" is an
+ * assumption a reader would otherwise make.
+ */
+export interface ReportedObservation {
+  /** Matches the ids in `ReportedFinding.evidence`. */
+  id: string;
+  /** The argv this probe sent, after `target.argv0`. The answer to "what did you actually run?" */
+  args: string[];
+  /** Environment overrides the probe imposed, when it imposed any. */
+  env?: Record<string, string>;
+  inertness: Invocation["inertness"];
+  /** Every checker that asked for this invocation — one observation can back several rules. */
+  purposes: string[];
+  /**
+   * Which repetition this was, when the probe asked for several.
+   *
+   * Without it, the repeated invocations C3, D4 and F2 exist to compare project identically —
+   * four rows with the same argv and no way to say which run each verdict read. For those three
+   * rules the repetition IS the subject, so an evidence id that cannot name it does not answer
+   * the question the id was published to answer.
+   */
+  repeat?: number;
+  exitCode: number | null;
+  signal: string | null;
+  crashed: boolean;
+  timedOut: boolean;
+  spawnFailed: boolean;
+  durationMs: number;
+  timeToFirstByteMs: number | null;
+  stdoutBytes: number;
+  stderrBytes: number;
+  stdoutDigest: string;
+  stderrDigest: string;
+  /** The decode threw information away, so a digest is the only faithful record of that stream. */
+  stdoutLossy: boolean;
+  stderrLossy: boolean;
+  truncated: boolean;
+}
+
 export interface Report {
   target: string;
+  /**
+   * How the target was actually launched, including any interpreter the kit resolved from its
+   * shebang. `target` alone is the least informative thing available about what was measured: a
+   * path says nothing about whether a `.ts` file ran under Bun or as itself, and that distinction
+   * decides several verdicts.
+   */
+  targetArgv0: string[];
   /**
    * The version of the kit that produced this report.
    *
@@ -167,6 +247,14 @@ export interface Report {
    */
   evidenceGaps: Array<{ ruleId: string; gaps: string[] }>;
   findings: ReportedFinding[];
+  /**
+   * Every observation any finding cites, resolvable by the ids in `ReportedFinding.evidence`.
+   *
+   * Observations no finding cites are included too: a probe that ran and backed nothing is itself
+   * information about the run, and omitting them would make the list look like the whole record
+   * when it was a filtered one.
+   */
+  observations: ReportedObservation[];
   /** Rule ids excluded from this run because their `probeLevel` exceeds `level`. Surfaced by
    *  name, not just by count, so a rule mislabelled with too high a `probeLevel` is visible
    *  rather than silently missing from the conformance verdict. */
@@ -332,13 +420,17 @@ export function buildReport(
     const waived = declaration?.severity === "off";
     return {
       ...f,
+      evidence: [...f.evidence],
       // `off` is not a tier, so a waived rule keeps the one it would have bound at — which is
       // exactly what `fullyVerified` needs to know about it below.
       tier: declaration && declaration.severity !== "off" ? declaration.severity : declaredTier,
       rulePath: c?.rulePath ?? "",
       probeLevel,
       coverage: c?.coverage ?? "partial",
-      coverageGaps: c?.coverageGaps ?? ["no checker was found for this rule id"],
+      // COPIED, not aliased. `c` is an entry in the module-level `CHECKERS` registry, which
+      // lives for the whole process — a consumer mutating a finding would otherwise rewrite the
+      // checker definition every later run reads.
+      coverageGaps: [...(c?.coverageGaps ?? ["no checker was found for this rule id"])],
       applicable: LEVEL_RANK[probeLevel] <= LEVEL_RANK[level],
       // `unverified` is excusable too, not just `fail`. Excusing only failures left a project
       // blocked by an unverified core rule with no path to green: nothing it could change
@@ -437,8 +529,10 @@ export function buildReport(
       notApplicable: notApplicable.length,
       waived: waived.length,
     },
+    targetArgv0: [...h.target.argv0],
     evidenceGaps,
     findings: reported,
+    observations: h.observations.map(toReportedObservation),
     notApplicable: notApplicable.map((f) => f.ruleId),
     knownFailures: Object.entries(config.knownFailures).map(([ruleId, reason]) => ({
       ruleId,
@@ -479,5 +573,37 @@ export function buildReport(
         to: f.tier,
         reason: config.rules[f.ruleId]?.reason ?? "",
       })),
+  };
+}
+
+/**
+ * Project an `Observation` onto what the report publishes.
+ *
+ * Written as an explicit field list rather than a spread-and-delete, so adding a field to
+ * `Observation` cannot silently publish it. The two that must never appear here are `stdout` and
+ * `stderr`: they are the target's own output, unbounded, and already represented by their digests.
+ */
+export function toReportedObservation(o: Observation): ReportedObservation {
+  return {
+    id: o.id,
+    args: [...o.invocation.args],
+    ...(Object.keys(o.invocation.env ?? {}).length > 0 ? { env: { ...o.invocation.env } } : {}),
+    inertness: o.invocation.inertness,
+    ...(o.invocation.repeat === undefined ? {} : { repeat: o.invocation.repeat }),
+    purposes: [...o.purposes],
+    exitCode: o.exitCode,
+    signal: o.signal,
+    crashed: o.crashed,
+    timedOut: o.timedOut,
+    spawnFailed: o.spawnFailed,
+    durationMs: o.durationMs,
+    timeToFirstByteMs: o.timeToFirstByteMs,
+    stdoutBytes: o.stdoutBytes,
+    stderrBytes: o.stderrBytes,
+    stdoutDigest: o.stdoutDigest,
+    stderrDigest: o.stderrDigest,
+    stdoutLossy: o.stdoutLossy,
+    stderrLossy: o.stderrLossy,
+    truncated: o.truncated,
   };
 }

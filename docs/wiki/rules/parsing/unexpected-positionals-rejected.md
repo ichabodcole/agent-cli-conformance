@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: A4
 tier: core
+deviation: defect
 probe_level: L1
 checker: src/acc/kit/checkers/parsing/unexpected-positionals.ts
 checker_status: implemented

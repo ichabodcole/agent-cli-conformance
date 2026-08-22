@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: E1
 tier: core
+deviation: defect
 probe_level: L0
 checker: src/acc/kit/checkers/interactivity/never-block.ts
 checker_status: implemented

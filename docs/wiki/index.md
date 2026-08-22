@@ -79,33 +79,35 @@ which blocks full verification without failing the run.
 Generated from rule frontmatter by `bun run docs:sync`; the lint fails when it drifts.
 **Checker** is presence — a checker file exists and is registered. **Coverage** answers the
 different question of how much of the page that checker actually establishes, and each rule
-page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).
+page names its own gaps. **Deviation** says what a violation MEANS — `defect` if there is no
+defensible alternative, `design-choice` if a different design can be right and a waiver records
+a decision rather than hiding a failure. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).
 
-| Rule                                                              | Tier       | Level | Checker     | Coverage | Gaps |
-| ----------------------------------------------------------------- | ---------- | ----- | ----------- | -------- | ---- |
-| [A1](./rules/parsing/unknown-flag-exits-nonzero.md)               | core       | L0    | implemented | partial  | 5    |
-| [A2](./rules/parsing/unknown-command-exits-nonzero.md)            | core       | L0    | implemented | partial  | 4    |
-| [A3](./rules/parsing/errors-name-the-offending-token.md)          | core       | L0    | implemented | partial  | 4    |
-| [A4](./rules/parsing/unexpected-positionals-rejected.md)          | core       | L1    | implemented | partial  | 1    |
-| [A5](./rules/parsing/no-fuzzy-auto-correction.md)                 | core       | L0    | implemented | partial  | 5    |
-| [A6](./rules/parsing/double-dash-terminator.md)                   | diagnostic | L0    | implemented | partial  | 4    |
-| [A7](./rules/parsing/advertised-value-set-is-enforced.md)         | core       | L0    | implemented | partial  | 6    |
-| [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | L0    | implemented | partial  | 3    |
-| [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | L0    | implemented | partial  | 4    |
-| [B3](./rules/streams/machine-output-is-parseable.md)              | core       | L1    | implemented | partial  | 4    |
-| [B4](./rules/streams/output-is-delivered-whole.md)                | core       | L1    | planned     | partial  | 2    |
-| [B5](./rules/streams/machine-mode-holds-on-parser-errors.md)      | core       | L0    | implemented | partial  | 5    |
-| [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | L0    | implemented | partial  | 4    |
-| [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | L0    | implemented | partial  | 3    |
-| [C3](./rules/exit-codes/exit-codes-are-deterministic.md)          | core       | L0    | implemented | partial  | 5    |
-| [D1](./rules/discoverability/version-flag-exists.md)              | core       | L0    | implemented | partial  | 5    |
-| [D2](./rules/discoverability/bare-invocation-is-a-usage-error.md) | core       | L0    | implemented | partial  | 4    |
-| [D3](./rules/discoverability/help-advertises-machine-mode.md)     | diagnostic | L0    | implemented | partial  | 5    |
-| [D4](./rules/discoverability/help-output-is-deterministic.md)     | core       | L0    | implemented | partial  | 3    |
-| [E1](./rules/interactivity/never-block-without-a-tty.md)          | core       | L0    | implemented | partial  | 4    |
-| [F1](./rules/safety/no-secrets-in-help-or-schema.md)              | core       | L0    | implemented | partial  | 4    |
-| [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | L0    | implemented | partial  | 4    |
-| [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | L0    | implemented | partial  | 4    |
+| Rule                                                              | Tier       | Deviation     | Level | Checker     | Coverage | Gaps |
+| ----------------------------------------------------------------- | ---------- | ------------- | ----- | ----------- | -------- | ---- |
+| [A1](./rules/parsing/unknown-flag-exits-nonzero.md)               | core       | defect        | L0    | implemented | partial  | 5    |
+| [A2](./rules/parsing/unknown-command-exits-nonzero.md)            | core       | defect        | L0    | implemented | partial  | 4    |
+| [A3](./rules/parsing/errors-name-the-offending-token.md)          | core       | defect        | L0    | implemented | partial  | 4    |
+| [A4](./rules/parsing/unexpected-positionals-rejected.md)          | core       | defect        | L1    | implemented | partial  | 1    |
+| [A5](./rules/parsing/no-fuzzy-auto-correction.md)                 | core       | defect        | L0    | implemented | partial  | 5    |
+| [A6](./rules/parsing/double-dash-terminator.md)                   | diagnostic | design-choice | L0    | implemented | partial  | 4    |
+| [A7](./rules/parsing/advertised-value-set-is-enforced.md)         | core       | defect        | L0    | implemented | partial  | 6    |
+| [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | defect        | L0    | implemented | partial  | 3    |
+| [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | defect        | L0    | implemented | partial  | 4    |
+| [B3](./rules/streams/machine-output-is-parseable.md)              | core       | defect        | L1    | implemented | partial  | 4    |
+| [B4](./rules/streams/output-is-delivered-whole.md)                | core       | defect        | L1    | planned     | partial  | 2    |
+| [B5](./rules/streams/machine-mode-holds-on-parser-errors.md)      | core       | defect        | L0    | implemented | partial  | 5    |
+| [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | defect        | L0    | implemented | partial  | 4    |
+| [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | defect        | L0    | implemented | partial  | 3    |
+| [C3](./rules/exit-codes/exit-codes-are-deterministic.md)          | core       | defect        | L0    | implemented | partial  | 5    |
+| [D1](./rules/discoverability/version-flag-exists.md)              | core       | defect        | L0    | implemented | partial  | 5    |
+| [D2](./rules/discoverability/bare-invocation-is-a-usage-error.md) | core       | design-choice | L0    | implemented | partial  | 4    |
+| [D3](./rules/discoverability/help-advertises-machine-mode.md)     | diagnostic | design-choice | L0    | implemented | partial  | 5    |
+| [D4](./rules/discoverability/help-output-is-deterministic.md)     | core       | defect        | L0    | implemented | partial  | 3    |
+| [E1](./rules/interactivity/never-block-without-a-tty.md)          | core       | defect        | L0    | implemented | partial  | 4    |
+| [F1](./rules/safety/no-secrets-in-help-or-schema.md)              | core       | defect        | L0    | implemented | partial  | 4    |
+| [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | design-choice | L0    | implemented | partial  | 4    |
+| [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | defect        | L0    | implemented | partial  | 4    |
 
 23 rules · 0 `complete` · 23 `partial` · 92 named gaps.
 
@@ -166,8 +168,9 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
   — Version is the cheapest possible probe of whether a tool is installed, reachable, and which
   contract it implements.
 - [D2 — Bare invocation is a usage error](./rules/discoverability/bare-invocation-is-a-usage-error.md)
-  — Running the tool with no arguments requested nothing and did nothing — reporting success for
-  that is how an unset shell variable becomes a silent no-op.
+  — Our default is that a bare invocation is a usage error, because an unset shell variable
+  expanding to nothing is indistinguishable from a deliberate bare call. A tool that answers with
+  a machine-readable manifest has made a different and defensible choice.
 - [D3 — Help advertises the machine-readable path](./rules/discoverability/help-advertises-machine-mode.md)
   _(diagnostic)_ — An agent reading help should not have to guess whether structured output exists
   — the human surface is where it looks first.

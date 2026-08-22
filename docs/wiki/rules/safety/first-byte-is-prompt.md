@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: F2
 tier: diagnostic
+deviation: design-choice
 probe_level: L0
 checker: src/acc/kit/checkers/safety/first-byte-prompt.ts
 checker_status: implemented
@@ -36,6 +37,18 @@ buffering to completion.
 Where work genuinely takes longer, the command **SHOULD** signal that it started — on stderr,
 never polluting [stdout](../streams/stdout-carries-only-data.md), and without
 [ANSI animation when not a terminal](../streams/no-ansi-when-piped.md).
+
+> **A wrapper is measured alongside your tool here.** This rule times wall-clock to the first
+> byte, so a wrapper script's own startup lands inside the measurement — a consistent 2–3 ms,
+> measured. That is noise against the 100 ms threshold for a fast tool and is not noise for a slow
+> one, and unlike [A6](../parsing/double-dash-terminator.md) nothing in the output says a layer was
+> measured. See
+> [what an interposed layer can distort](../../concepts/probing.md#what-an-interposed-layer-can-distort).
+
+> **A different design can be right here** (`deviation: design-choice`). A tool that legitimately
+> does expensive work before it can say anything — loading a model, opening a remote session — is
+> not defective for being slow to its first byte. What the rule is really after is that a caller
+> is not left staring at nothing, so a progress signal on stderr satisfies the intent.
 
 ## How to comply
 

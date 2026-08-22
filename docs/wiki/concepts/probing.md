@@ -243,6 +243,39 @@ Four own it instead, because on their probe a hang **is** the violation:
 [E1](../rules/interactivity/never-block-without-a-tty.md), which is the catalogue's backstop for
 the paths the other three do not reach.
 
+## What an interposed layer can distort
+
+`acc` measures the process it launches. When something sits **between** the kit and the tool under
+test — an interpreter, a launcher, a wrapper script — some of what gets measured belongs to that
+layer rather than to the target, and the kit cannot always tell.
+
+**This is not hypothetical and it is not rare.** A wrapper is the ordinary way to check a CLI the
+kit cannot launch directly: an npm script, `python -m`, a tool behind its own launcher.
+
+Two rules are known to move, and they move differently:
+
+| rule                                             | what the layer does                                                                        | how it shows up                                                                                |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| [A6](../rules/parsing/double-dash-terminator.md) | Bun consumes a bare `--` after the script path, so the terminator never reaches the target | **loud, and wrong** — `FAIL` blaming the target for something it never received                |
+| [F2](../rules/safety/first-byte-is-prompt.md)    | the wrapper is a real process, so it adds its own startup to the measurement               | **quiet** — a consistent 2–3 ms, measured; noise at 15 ms, not noise near the 100 ms threshold |
+
+The asymmetry is the part worth holding on to. **A6 announces itself when the kit can see the
+launcher**: `argv0` names `bun`, the checker declines to judge, and the verdict is `unverified`
+with the reason attached. Behind a wrapper the kit sees a shell script, the guard misses, and a
+`fail` is reported against an argv the target never received. **F2 never announces anything** — it
+reports a slower tool than the one under test, and nothing in the output says a layer was
+measured alongside the target.
+
+**So the guidance is: pass the target directly wherever you can.** A `.ts` file with a `bun`
+shebang, or with no shebang at all, is launched by the kit under Bun and needs no wrapper — see
+[the README](../../../README.md#getting-started). Reach for a wrapper only when there is no direct
+path, and treat A6 and F2 as suspect when you do.
+
+**What this list is not.** Two rules are the two that have been _found_, by running the kit both
+ways against the same target. Any rule whose measurement includes wall-clock time, process
+identity, or argv delivery could in principle join them, and none of the others have been checked.
+Treating this as the complete set would be the mistake this page exists to prevent.
+
 ## Related rules
 
 - [G1 — Inert invocations must not crash the tool](../rules/lifecycle/inert-invocations-do-not-crash.md)

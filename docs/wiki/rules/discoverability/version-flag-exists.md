@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-16 }
 rule_id: D1
 tier: core
+deviation: defect
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/version-flag.ts
 checker_status: implemented

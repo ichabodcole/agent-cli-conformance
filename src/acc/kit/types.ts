@@ -34,6 +34,12 @@ export interface Invocation {
    * variable would have been made faster or slower by the recorder's own dedup workaround. The
    * instrument was perturbing the quantity it measured. Nothing in the kit now puts a probe
    * identity where the target can see it (review R6-6).
+   *
+   * **Indices are 1-based, and that is a requirement rather than a convention.** `invocationId`
+   * folds `repeat ?? 0` into its material, so a checker numbering from zero would give its first
+   * run the same id as a probe that asked for no repetition — two different invocations, one
+   * recording, and a `repeat` published on an observation that was shared. The three repeating
+   * checkers start at 1 today; C3 and F2 use `[1, 2, 3]` and D4 uses `[1, 2]`.
    */
   repeat?: number;
 }
