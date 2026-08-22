@@ -9,7 +9,7 @@ rather than documentation alone.
 > **Status: released, with an unfrozen report shape.** `v1.0.1` is installable today, and runs
 > against your CLI as black-box evidence. Rule ids are
 > append-only and safe to depend on. **The report and schema shapes are not yet covered by that
-> promise and may still change.** Every checker covers only part of its rule; one of the 22
+> promise and may still change.** Every checker covers only part of its rule; one rule
 > ([A4](docs/wiki/rules/parsing/unexpected-positionals-rejected.md)) reports `not applicable`
 > until `L1` exists; and `L0` is the only probe level that runs.
 
