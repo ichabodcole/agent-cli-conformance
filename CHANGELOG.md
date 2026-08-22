@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.1](https://github.com/ichabodcole/agent-cli-conformance/compare/v1.0.0...v1.0.1) (2026-08-22)
+
+
+### Bug Fixes
+
+* **cli:** a finding about the reader's config is a section, not a legend entry ([12f22ca](https://github.com/ichabodcole/agent-cli-conformance/commit/12f22ca7b2f970ee51023a5d8fad1e51cd167794))
+* **cli:** correct the documented upgrade command, and lift config findings out of the legend ([195a722](https://github.com/ichabodcole/agent-cli-conformance/commit/195a7222a51a4450d47cb9eb7f6574f18536dd0c))
+* **cli:** test the rendered report, and correct the specimens that drifted from it ([bbcfe50](https://github.com/ichabodcole/agent-cli-conformance/commit/bbcfe50821cf2e05ef57a6cda8512fe975936c18))
+
 ## [1.0.0](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.2.0...v1.0.0) (2026-08-21)
 
 

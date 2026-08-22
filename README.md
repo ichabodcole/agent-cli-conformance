@@ -135,7 +135,7 @@ The first line is the verdict, and the exit code is the gate:
 NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered  /opt/homebrew/bin/git
 ```
 
-That line also ends with the kit's own version — `[acc 1.0.0]` <!-- x-release-please-version -->
+That line also ends with the kit's own version — `[acc 1.0.1]` <!-- x-release-please-version -->
 — which appears as `kitVersion` in the JSON report. It is there because an install can silently
 give you an older kit than you asked for; the install notes above explain how, and how far the
 check reaches.
