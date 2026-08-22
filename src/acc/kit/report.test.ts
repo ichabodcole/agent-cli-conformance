@@ -927,3 +927,61 @@ describe("an excuse the run did not evaluate is reported as inert, not stale", (
     expect(r.inertExpectations.map((e) => e.ruleId)).not.toContain("A1");
   }, 60_000);
 });
+
+// The promise `types.ts` makes about `Finding.evidence` — "any finding can be traced to raw
+// evidence" — used to be untrue: the ids shipped and nothing resolved them. These tests bind the
+// promise, so it cannot quietly become false again.
+describe("evidence ids resolve", () => {
+  const realRun = async () => {
+    const p = join(HERE, "fixtures/conforming.ts");
+    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+    return buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      { rules: {}, knownFailures: {} },
+      "L0",
+      VERSION,
+    );
+  };
+
+  test("every id a finding cites resolves to a published observation", async () => {
+    const r = await realRun();
+    const published = new Set(r.observations.map((o) => o.id));
+    // Guard the guard: a run whose findings cite nothing would pass the assertion below
+    // vacuously, which is exactly how this promise went unnoticed in the first place.
+    const cited = r.findings.flatMap((f) => f.evidence);
+    expect(cited.length).toBeGreaterThan(0);
+    const dangling = [...new Set(cited)].filter((id) => !published.has(id));
+    expect(dangling).toEqual([]);
+  }, 60_000);
+
+  test("a published observation carries the argv that produced it", async () => {
+    const r = await realRun();
+    // `--help` is requested by several checkers, so it is the safest invocation to pin without
+    // asserting over the whole probe set.
+    const help = r.observations.find((o) => o.args.includes("--help"));
+    expect(help).toBeDefined();
+    expect(help?.purposes.length).toBeGreaterThan(0);
+    expect(typeof help?.exitCode === "number" || help?.exitCode === null).toBe(true);
+    expect(help?.stdoutDigest).toMatch(/^[0-9a-f]{8,}$/);
+  }, 60_000);
+
+  test("the target's launcher reaches the report, not just its path", async () => {
+    const r = await realRun();
+    expect(r.targetArgv0[0]).toBe("bun");
+    expect(r.targetArgv0.length).toBe(2);
+  }, 60_000);
+
+  test("the streams themselves are NOT published — the digest is the byte-level record", async () => {
+    const r = await realRun();
+    const withOutput = r.observations.find((o) => o.stdoutBytes > 0);
+    expect(withOutput).toBeDefined();
+    // Adding `stdout`/`stderr` to the projection would double the artifact and hand an unbounded
+    // binary field the redaction problem the digest exists to avoid.
+    for (const o of r.observations) {
+      expect(Object.hasOwn(o, "stdout")).toBe(false);
+      expect(Object.hasOwn(o, "stderr")).toBe(false);
+    }
+  }, 60_000);
+});
