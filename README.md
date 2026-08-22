@@ -6,11 +6,12 @@ and framework maintainers make ordinary command-line tools predictable, machine-
 safely operable by autonomous agents, using an executable specification and black-box evidence
 rather than documentation alone.
 
-> **Status: pre-1.0.** Usable today and installable — 23 rules, 22 of them with a registered
-> checker, run against your CLI as black-box evidence. Not yet settled: rule ids are
-> append-only but the report and schema shapes may still change before 1.0, every checker
-> covers only part of its rule, one of the 22 ([A4](docs/wiki/rules/parsing/unexpected-positionals-rejected.md))
-> can only report `unverified` until `L1` exists, and `L0` is the only probe level there is.
+> **Status: released, with an unfrozen report shape.** `v1.0.1` is installable today, and runs
+> against your CLI as black-box evidence. Rule ids are
+> append-only and safe to depend on. **The report and schema shapes are not yet covered by that
+> promise and may still change.** Every checker covers only part of its rule; one rule
+> ([A4](docs/wiki/rules/parsing/unexpected-positionals-rejected.md)) reports `not applicable`
+> until `L1` exists; and `L0` is the only probe level that runs.
 
 **For** — CLI authors, framework and scaffold maintainers, and platform/tooling teams;
 agent-harness authors second. It is a conformance suite for _ordinary CLIs consumed by agents_,
@@ -33,52 +34,19 @@ scheduled or promised.
 **Non-goals** — a passing report is **not a security certification**, does **not** prove
 domain-level correctness, and at `L0` does **not** prove a target is harmless to execute. It
 proves that no core rule the kit could apply was violated, which is a narrower claim than any of
-those and is deliberately reported as two separate booleans (see
-[conformance](docs/wiki/concepts/conformance.md)).
+those. That is deliberately reported as two booleans: `conformant` (nothing the kit applied was
+violated) and `fullyVerified` (every core rule was actually established) — see
+[conformance](docs/wiki/concepts/conformance.md).
 
 ## Getting started
 
-You need [Bun](https://bun.sh) 1.4 or later, on **macOS or Linux**. `acc` is not published to npm, and this repository
-is **private** while the first few projects are run through it — so install it over SSH, into
-the project whose CLI you want to check:
+You need [Bun](https://bun.sh) 1.4 or later, on **macOS or Linux**. `acc` is not published to npm,
+and this repository is **private** while the first few projects are run through it — so install it
+over SSH, into the project whose CLI you want to check:
 
 ```bash
-bun pm cache rm && bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
+bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 ```
-
-> **⚠ Upgrading, or re-pointing at a different ref? You need BOTH remedies, in this order.** The
-> second matters when your cache predates the tag you are asking for, which is the normal case for
-> anyone who installed before the release they are upgrading to.
->
-> ```sh
-> bun remove agent-cli-conformance && bun pm cache rm && bun add -d 'git+ssh://…#<new-ref>'
-> ```
->
-> They fix two different failures and neither covers the other. **`bun remove`** is for the
-> duplicate key: `bun add` with a new ref does not replace the existing dependency, it appends a
-> second entry under the same key, prints `warn: Duplicate key` in output nobody reads, and
-> resolves the **first** one — and that second entry is written to `package.json`, so it is
-> committed and your CI installs from it. **`bun pm cache rm`** is for the stale bare clone above,
-> and an upgrade always needs it: a release tag is pushed after your first install, so the tag you
-> are asking for is the one your cache cannot see. Skip it and you get
-> `no commit matching "<tag>" found (but repository exists)`, which reads like a missing tag.
->
-> ⚠ `bun pm cache rm` clears bun's **whole global cache** at `~/.bun/install/cache` — it takes no
-> package argument. Cheap on a laptop, expensive in CI, where it cold-caches every dependency of
-> every job on that runner. Do not put it in a build step.
->
-> Both failures succeed at exit `0` while giving you the old kit, so **finish with
-> `acc --version`**. It is the only way to know the upgrade landed.
->
-> This is the third distinct way this install path has silently delivered the wrong bytes at exit
-> 0 — after the stale bare clone and the stale extracted package, both above. An adopter hit all
-> three; this one is the nastiest, because the remedy for the other two does nothing. **Check the
-> installed artifacts before trusting a diff**: if the version you expect ships a file, look for it.
-
-The cache clear is first because **the second install of this package is the one that goes wrong**:
-Bun keeps a bare clone it does not re-fetch, so a tag pushed since your last install is invisible.
-Clearing costs a re-download and removes both failure modes below in one step. Drop it if this is
-your first install.
 
 That needs GitHub access to this repository. The shorter
 `bun add -d github:ichabodcole/agent-cli-conformance` goes through GitHub's tarball API, which
@@ -87,40 +55,49 @@ answers `404` for a private repository whatever token is in the environment
 if and when this one opens up.
 
 Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
-commit or a release tag after the `#` — `…agent-cli-conformance.git#v1.0.0`.
+commit or a release tag after the `#` — `…agent-cli-conformance.git#v1.0.1`. <!-- x-release-please-version -->
 
-**Two ways this install goes wrong, and only one of them is loud.**
-
-**The loud one.** Bun keeps a bare clone of each git dependency in its cache and does not
-re-fetch it, so a tag pushed after your first install of this package is invisible and the install
-fails with `no commit matching "…" found (but repository exists)` — indistinguishable from a tag
-that does not exist. `bun pm cache rm` fixes it
-([oven-sh/bun#18947](https://github.com/oven-sh/bun/issues/18947)). A `#semver:` range is a
-different matter — Bun does not support one
-([oven-sh/bun#4978](https://github.com/oven-sh/bun/issues/4978)).
-
-**The silent one, which is worse.** The install can succeed at exit `0`, print a commit SHA, and
-put **different bytes on disk** — because the extracted-package cache is stale _independently_ of
-the bare clone, so clearing one does not clear the other. Nothing in the output says so.
-
-Every report carries the kit's own version for this reason: compare it against the release you
-meant to install, and if they disagree run `bun pm cache rm` and reinstall.
-
-**Be clear how far that check reaches.** The version only changes when a release is cut, so it
-catches staleness that spans a release and not staleness within one — pin a **tag** and the check
-is meaningful; pin a branch or nothing and a stale copy reports the same version as a fresh one.
-On an unpinned install, `bun pm cache rm` before installing is the only reliable answer, and it
-costs a re-download.
-
-This is Bun's behaviour, not something this kit can fix. It is documented here because a tool that
-reports success while doing something else is the entire subject of this project, and the install
-path had an arm of exactly that shape with nothing pointing at it.
+> **⚠ Re-installing, or moving to a different ref?** Three separate failures can hand you the old
+> kit instead, and **two of them succeed at exit `0`** — so a diff that shows no change may mean
+> the upgrade never happened. [How to fix a broken install](docs/wiki/guides/how-to-fix-a-broken-install.md)
+> has the diagnosis and the remedy. **A first install meets none of them**; skip it for now.
 
 Then point it at your CLI:
 
 ```bash
 bunx acc check ./your-cli
 ```
+
+**What to pass.** The target is a path. `acc` works out how to launch it, and gets this right for
+the three ordinary cases:
+
+| your CLI is…                                                     | pass                                                                                 |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| a compiled binary, or a script with the exec bit                 | the path — it is launched as itself, so the kernel honours its own shebang           |
+| a TypeScript source file (`.ts`) with no shebang, or a `bun` one | **the `.ts` file itself** — Bun is the documented fallback for running a source file |
+| a script whose shebang names an interpreter                      | the path                                                                             |
+
+**If you write TypeScript, pass the entry `.ts` file.** You do not need a wrapper, a shim, or a
+build step, and passing the source directly is the case `acc` handles best — it recognises Bun as
+the launcher and reports [A6](docs/wiki/rules/parsing/double-dash-terminator.md) as `unverified`
+rather than guessing, because Bun consumes a bare `--` before your tool can see it.
+
+**Only if none of those fit** — an npm script, `python -m`, a CLI behind a launcher — write a
+one-line wrapper and point `acc` at that:
+
+```sh
+#!/bin/sh
+exec bun /abs/path/to/cli.ts "$@"
+```
+
+⚠ **A wrapper hides the launcher from `acc`, and one verdict depends on seeing it.** Measured: the
+same CLI passed directly reports `UNVR A6`, and behind a shell wrapper reports `FAIL A6 — a value
+after \`--\` was still parsed as an option`, which the tool did not do. A6 is `diagnostic` and
+never affects your exit code. **Prefer the direct path wherever you have one.**
+
+⚠ **Point it at your working tree, not an installed copy.** `acc check $(which your-cli)` will
+happily measure whatever is on your `PATH` — a globally installed build, a plugin cache — and every
+fix you make will appear to change nothing.
 
 **Piped output is JSON, and a terminal gets the text report** — unless `AI_AGENT` is set, which
 selects JSON anywhere. That is the contract this kit asks of everyone else, so it applies to itself — which means the report below is what you see at a
@@ -133,9 +110,13 @@ bunx acc check ./your-cli --format text
 
 The first line is the verdict, and the exit code is the gate:
 
+<!-- x-release-please-start-version -->
+
 ```
-NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered  /opt/homebrew/bin/git
+NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered  /opt/homebrew/bin/git  [acc 1.0.1]
 ```
+
+<!-- x-release-please-end -->
 
 That line also ends with the kit's own version — `[acc 1.0.1]` <!-- x-release-please-version -->
 — which appears as `kitVersion` in the JSON report. It is there because an install can silently
@@ -146,6 +127,20 @@ check reaches.
 than a verdict about your tool — the distinction is
 [outcomes are not errors](docs/wiki/concepts/exit-codes.md#outcomes-are-not-errors). That makes
 the whole CI step one line with no flags.
+
+**Four markers appear in the left column, and only one of them means "broken".** This is the
+distinction the whole report is built around:
+
+| marker  | meaning                                                                                                |
+| ------- | ------------------------------------------------------------------------------------------------------ |
+| `FAIL`  | the probe ran and the rule was broken. **Only this one blocks conformance.**                           |
+| `PASS+` | the rule held, but the checker establishes only _part_ of it — the pass is narrower than the rule page |
+| `UNVR`  | the probe ran and established neither answer. Not a violation, not a pass                              |
+| `N/A`   | the rule needs a deeper probe level than this run used, so it was never attempted                      |
+
+`UNVR` and `N/A` are the instrument reporting its own limits rather than a claim about your tool,
+and they are why a clean run is reported as two separate booleans rather than one. [Check your
+first CLI](docs/wiki/guides/check-your-first-cli.md) walks through a real one.
 
 **Read the safety note before pointing it at your own work.** `acc check` **executes** the
 target — see [what L0 does not prevent](#the-conformance-kit) below.
@@ -210,7 +205,7 @@ where documentation would be read.
 
 ## The approach
 
-Three layers, each enforcing what the one below cannot:
+Three layers, each enforcing what the weaker layer cannot:
 
 1. **Impossible** — API shapes that make the violation unrepresentable.
 2. **Caught** — a conformance kit that fails CI when a violation ships.
@@ -228,9 +223,9 @@ recorded observations.
 consequences:
 
 - **A new rule is a new checker over data already collected** — not a new test in every
-  project. Learn a lesson once and every CLI is audited for it retroactively. _Planned:_ the
-  history is in-memory and dies with the process, so retroactive checking is a property of the
-  architecture rather than a workflow you can run.
+  project. _Planned:_ retroactive re-checking is a property of the architecture rather than a
+  workflow you can run today, because the history is in-memory and dies with the process. Once it
+  is durable, a lesson learned once audits every CLI already recorded.
 - **It is language-agnostic by construction**, because it only ever touches argv, streams, and
   exit codes. Rust, TypeScript, Go and Python CLIs are tested identically, and an executable
   target is launched as itself so the kernel honours its own shebang.
@@ -259,7 +254,7 @@ argv are all _planned_; none of them exist today.
 `L1` and `L2` are _planned_ — neither level runs today, and `acc check` is `L0` only. They will
 require the CLI to _declare_ what its commands do, and then try to falsify those claims: a
 command declaring `read_only` run in a snapshotted sandbox, with the filesystem diffed
-afterwards. A declaration that cannot be falsified is a comment that lies, which is the whole
+afterwards. A declaration nothing can falsify can be wrong without anything noticing, which is the whole
 argument for building them — and the reason the rules that need them
 ([A4](docs/wiki/rules/parsing/unexpected-positionals-rejected.md)) report `not applicable`
 rather than passing today.
@@ -285,7 +280,7 @@ shrink, and a rule that starts passing is reported under **STALE EXPECTATIONS** 
 delete. An entry for a rule the run never evaluated is reported under **NOT BEING EVALUATED**
 instead, and that one should not be deleted on sight: the kit stopped looking, so the defect may
 be entirely intact. That report is a reminder, not a gate: `acc` still exits `0`, because a target with a
-stale expectation is conformant and an exit code that said otherwise would be lying. Enforcing
+stale expectation is conformant and any other exit code would contradict that verdict. Enforcing
 removal needs an outcome code of its own and is
 [on the roadmap](docs/roadmap.md#a-ratchet-the-tool-does-not-turn), not in the tool today.
 
@@ -295,7 +290,7 @@ and `off` is a **waiver**, which never goes stale, because passing was never the
 `reason` is required on both, and rule ids are validated, so a mistyped id is an error rather
 than a line that quietly does nothing.
 
-A waiver can buy `conformant: true`. It can never buy `fullyVerified` — a waived core rule
+A waiver can make a target `conformant: true`. It can never make it `fullyVerified` — a waived core rule
 blocks the evidence claim even when it would have passed, because a rule you chose not to be
 measured against was not established. Waived rules are still **probed**, so the report shows
 what the verdict would have been. The full argument, including why an unwaivable spec is worse
@@ -401,7 +396,7 @@ never authored. The output is gitignored and needs no network — it reads from 
 `bun run check` is the whole gate and the only definition of it. [The CI
 workflow](.github/workflows/check.yml) runs that line and nothing else; the pre-commit hook runs
 it too, behind a `lint-staged` pass that applies the same rules to the staged files first for
-speed. Nothing the hook enforces is absent from `bun run check`, so a `--no-verify` commit cannot
+speed. Every rule the hook enforces is in `bun run check`, so a `--no-verify` commit cannot
 land something CI would have caught.
 
 The wiki lint is not optional decoration. It verifies that every rule page declares a checker
