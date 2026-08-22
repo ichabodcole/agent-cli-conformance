@@ -426,6 +426,14 @@ Also live and unreconciled: `docs/plans/2026-08-20-second-adoption-release.md`.
 - **A is the near-term build**, and it is also infrastructure L1 needs: falsifying a declaration
   means pointing at the observation that falsified it.
 
+> **A signal found while doing item 3, recorded before `L1` starts.** The `design-choice`
+> classification may be marking rules that belong at `L1` rather than rules that are permanently
+> different: every rule it labels is one a declaration would resolve, and no rule it does not label
+> is. That makes a `design-choice` rule at `L0` an instance of the defect class the machine-mode
+> work already removed — the kit supplying an assertion the target never made. See
+> [design-choice may be L1 leaking into L0](../reports/2026-08-22-design-choice-is-l1-leaking-into-l0.md).
+> Nothing to act on yet; it changes what `L1` is for.
+
 ## The gate: what "ready for L1 takeoff" means
 
 Added 2026-08-22. `L1` is in scope and is the point; the blocker is that **the `L0` experience and
