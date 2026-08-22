@@ -5,7 +5,7 @@ description:
   Diagnose the three ways installing `acc` from a private git ref delivers the wrong bytes — two
   of which succeed at exit 0 — and apply the remedy that matches the one you hit.
 tags: [guide, install, bun, troubleshooting]
-related: [concept/conformance]
+related: [concept/conformance, tutorial/check-your-first-cli]
 status: stable
 generated: { by: claude-opus-5, at: 2026-08-21 }
 ---
