@@ -41,6 +41,32 @@ something to hold.
 
 **Say it once.** Do not restate a point in a more elegant form after making it plainly.
 
+## The register, named
+
+Naming both sides makes the fix obvious from the name, so these are worth knowing as pairs.
+
+| avoid                                                  | prefer                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------- |
+| **periodic** — the point held to the end               | **loose** / **cumulative** — point first, detail after  |
+| **left-branching** — modifiers stacked before the verb | **right-branching** — verb early, detail accretes after |
+| a **figure** standing in for the mechanism             | the **literal** statement                               |
+| **grand style** — cadence, ornament, the quotable line | **plain style** — written to teach and to prove         |
+
+At paragraph and section scale the same instinct is **BLUF** — bottom line up front. Say the
+conclusion, then support it.
+
+Two rules in the spirit of controlled technical English, which is worth knowing as a direction
+rather than a standard to adopt — its dictionary would forbid the domain terms this project needs:
+
+- **One word, one meaning.** Pick a term for a thing and keep it. If `verdict` means the result of
+  a rule, it never also means the exit code.
+- **Say it literally.** A reader should not have to decode an image and map it back onto the
+  subject to learn what happened.
+
+**A metaphor is allowed when you are deliberately giving one**, because the domain has no plain
+word and the image does work no phrasing would. It is not allowed as decoration on a sentence that
+already says the thing. The test is whether you could delete it and lose information.
+
 ## Habits to drop
 
 - **"Not X, but Y" as a closing move.** It makes a paragraph feel finished whether or not the
