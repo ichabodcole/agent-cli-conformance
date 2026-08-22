@@ -46,7 +46,9 @@ the project whose CLI you want to check:
 bun pm cache rm && bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 ```
 
-> **⚠ Upgrading, or re-pointing at a different ref? You need BOTH remedies, in this order.**
+> **⚠ Upgrading, or re-pointing at a different ref? You need BOTH remedies, in this order.** The
+> second matters when your cache predates the tag you are asking for, which is the normal case for
+> anyone who installed before the release they are upgrading to.
 >
 > ```sh
 > bun remove agent-cli-conformance && bun pm cache rm && bun add -d 'git+ssh://…#<new-ref>'
