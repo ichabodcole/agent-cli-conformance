@@ -137,6 +137,42 @@ describe("A — parsing", () => {
     expect(env.error.message).toContain("nonsense");
   });
 
+  test("`--deviation` filters, and every row carries the classification", async () => {
+    const all = await run(["rules", "--json"]);
+    const picked = await run(["rules", "--deviation", "design-choice", "--json"]);
+    const allRows = JSON.parse(all.stdout).data.rules;
+    const rows = JSON.parse(picked.stdout).data.rules;
+    // The point of publishing it: a caller deciding whether to waive can read the classification
+    // from the surface they already use, instead of opening the wiki.
+    for (const r of allRows) expect(["defect", "design-choice"]).toContain(r.deviation);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.length).toBeLessThan(allRows.length);
+    for (const r of rows) expect(r.deviation).toBe("design-choice");
+  });
+
+  test("a bad `--deviation` is refused with the valid set, like any other closed set", async () => {
+    const r = await run(["rules", "--deviation", "nonsense", "--json"]);
+    expect(r.code).toBe(2);
+    const env = JSON.parse(r.stderr);
+    expect(env.error.kind).toBe("usage");
+    expect(env.error.choices).toEqual(["defect", "design-choice"]);
+  });
+
+  test("`acc show` publishes the classification beside the tier", async () => {
+    const r = await run(["show", "A6", "--json"]);
+    const d = JSON.parse(r.stdout).data;
+    expect(d.tier).toBe("diagnostic");
+    expect(d.deviation).toBe("design-choice");
+  });
+
+  test("the text list names only `design-choice` — `defect` is the default and would be noise", async () => {
+    const r = await run(["rules", "--format", "text"]);
+    const a6 = r.stdout.split("\n").find((l) => l.includes("A6"));
+    const a1 = r.stdout.split("\n").find((l) => l.includes("A1"));
+    expect(a6).toContain("design-choice");
+    expect(a1).not.toContain("defect");
+  });
+
   test("A4 unexpected positionals are rejected", async () => {
     const r = await run(["tags", "unexpected-value-xyz"]);
     expect(r.code).toBe(2);

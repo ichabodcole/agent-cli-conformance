@@ -113,6 +113,13 @@ export const COMMANDS: CommandSpec[] = [
         valueHint: "L0|L1|L2",
       },
       {
+        name: "--deviation",
+        type: "string",
+        description: "Only rules where not satisfying it means this.",
+        values: ["defect", "design-choice"],
+        valueHint: "defect|design-choice",
+      },
+      {
         name: "--tag",
         type: "string",
         description: "Only rules carrying this tag.",
@@ -120,7 +127,12 @@ export const COMMANDS: CommandSpec[] = [
       },
     ],
     errors: [],
-    examples: ["acc rules", "acc rules --tier core", "acc rules --tag silent-failure --json"],
+    examples: [
+      "acc rules",
+      "acc rules --tier core",
+      "acc rules --deviation design-choice",
+      "acc rules --tag silent-failure --json",
+    ],
   },
   {
     name: "show",
