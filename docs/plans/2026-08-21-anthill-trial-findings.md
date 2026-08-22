@@ -276,6 +276,26 @@ hazard; have A6 decline to report when it cannot establish the launcher; or corr
 second probe that shows whether the terminator arrived at all. The third is the only one that
 scales past bun, and it is the most expensive.
 
+**A6 is not the only rule a wrapper moves — and the other one moves quietly.** Reported by
+`sable` on the confirmation run and reproduced here: a wrapper adds a consistent 2-3 ms to
+[F2](../wiki/rules/safety/first-byte-is-prompt.md), because F2 measures wall-clock to first byte
+and an `sh -c exec` is a real process.
+
+| target                        | F2                          |
+| ----------------------------- | --------------------------- |
+| the `.ts` file directly       | `15ms (runs: 16, 15, 15ms)` |
+| the same CLI behind a wrapper | `18ms (runs: 19, 18, 18ms)` |
+
+`THRESHOLD_MS` is 100 and the verdict takes the fastest of three runs, so 3 ms is 3% of the
+budget and noise at 15 ms. It is not noise for a target sitting near the threshold — and unlike
+A6, **this one moves toward `fail` rather than toward `unverified`.** A6 at least announces
+itself as undeliverable when the guard fires; F2 silently reports a slower tool than the one
+under test. Their words: _"F2 is the second rule a wrapper can move, and that one moves quietly
+in the direction of failing rather than of being unverifiable."_
+
+That reframes the workstream: the subject is **any rule whose measurement an interposed layer
+can distort**, not bun's `--` specifically. Enumerate those before designing a fix.
+
 **Widen before fixing.** `argv0` is consulted in only one checker today, so the blast radius is
 A6 alone — but the same reasoning ("we inferred the launcher from the target") is the shape the
 `L0` boundary work already ruled out for machine mode. Check that this guard is observation and
