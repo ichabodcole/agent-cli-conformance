@@ -46,14 +46,19 @@ the project whose CLI you want to check:
 bun pm cache rm && bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 ```
 
-> **⚠ Re-pointing at a different ref? Remove the old entry first.** `bun add` with a new ref does
-> not replace the existing dependency — it **appends a second entry under the same key**, prints
-> `warn: Duplicate key` in output nobody reads, and resolves the **first** one. You get the old
-> version at exit 0. `bun pm cache rm` does not help, because the cache was never the problem.
+> **⚠ Upgrading, or re-pointing at a different ref? You need BOTH remedies, in this order.**
 >
 > ```sh
-> bun remove agent-cli-conformance && bun add -d 'git+ssh://…#<new-ref>'
+> bun remove agent-cli-conformance && bun pm cache rm && bun add -d 'git+ssh://…#<new-ref>'
 > ```
+>
+> They fix two different failures and neither covers the other. **`bun remove`** is for the
+> duplicate key: `bun add` with a new ref does not replace the existing dependency, it appends a
+> second entry under the same key, prints `warn: Duplicate key` in output nobody reads, and
+> resolves the **first** one. **`bun pm cache rm`** is for the stale bare clone above — and an
+> upgrade always needs it, because **a release tag is by definition pushed after your first
+> install**, so the tag you are asking for is the one your cache cannot see. Skip it and you get
+> `no commit matching "<tag>" found (but repository exists)`, which reads like a missing tag.
 >
 > This is the third distinct way this install path has silently delivered the wrong bytes at exit
 > 0 — after the stale bare clone and the stale extracted package, both above. An adopter hit all

@@ -323,26 +323,36 @@ export async function checkCommand(
               ...overrides,
             ]
           : []),
+        ...(r.staleExpectations.length
+          ? [
+              "",
+              `  STALE EXPECTATIONS (${r.staleExpectations.length}) — these rules now pass; remove them from knownFailures:`,
+              `    ${r.staleExpectations.join(", ")}`,
+            ]
+          : []),
+        // Its own SECTION, not a line in the legend, and not merged with the stale one. This is a
+        // finding about the reader's config, and the legend is where abbreviations are explained —
+        // an outside adopter reported it rendering "indented like a glossary entry, the last thing
+        // on the page". "Now passing, remove them" and "not being evaluated" also call for opposite
+        // actions, so sharing either a line or a heading would teach a reader to delete on both.
+        ...(r.inertExpectations.length
+          ? [
+              "",
+              `  NOT BEING EVALUATED (${r.inertExpectations.length}) — these knownFailures entries suppress nothing:`,
+              `    ${r.inertExpectations.map((e) => e.ruleId).join(", ")}`,
+              "    NOT evidence the defect is fixed — the kit stopped looking. Check it is still",
+              "    tracked before removing them.",
+            ]
+          : []),
         "",
         "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable at this level",
         "  PASS+ passed, but the checker establishes only part of its rule — see the gaps above",
         // The glyph is explained even when nothing carries it, exactly as the four above are: a
         // legend that changes shape between runs is one a reader has to re-read.
         "  WVD  waived by config — the probe still ran, and the verdict it reached binds nothing",
-        ...(r.staleExpectations.length
-          ? [`  stale expectations (now passing, remove them): ${r.staleExpectations.join(", ")}`]
-          : []),
         // Its own sentence, not the stale one. "Now passing, remove them" and "not being
         // evaluated" call for opposite actions, and sharing a line would teach a reader to
         // delete on both — where the second deletion loses the only record of a live defect.
-        ...(r.inertExpectations.length
-          ? [
-              `  not being evaluated (${r.inertExpectations
-                .map((e) => e.ruleId)
-                .join(", ")}) — these entries suppress nothing. NOT evidence the defect is fixed;`,
-              "         the kit stopped looking, so check the defect is still tracked before removing them",
-            ]
-          : []),
       ].join("\n");
     },
   });
