@@ -425,3 +425,30 @@ Also live and unreconciled: `docs/plans/2026-08-20-second-adoption-release.md`.
   far — kept as the record for when it is revisited.
 - **A is the near-term build**, and it is also infrastructure L1 needs: falsifying a declaration
   means pointing at the observation that falsified it.
+
+## The gate: what "ready for L1 takeoff" means
+
+Added 2026-08-22. `L1` is in scope and is the point; the blocker is that **the `L0` experience and
+the current documentation have to be somewhere L1 can take off cleanly.** So the remaining
+workstreams are not a queue of nice-to-haves — they are the gate, and it is worth writing down what
+passing it looks like.
+
+1. **A — a finding can be traced to its evidence.** The one functional defect an outside adopter
+   named, and it is also the first piece of `L1` rather than a detour before it: falsifying a
+   declaration means pointing at the observation that falsified it. Ship it at `L0` and `L1`
+   inherits a working mechanism instead of specifying a new one.
+2. **B2 — the README stops arguing before it helps.** Three cold readers left the page before
+   reaching what the project is for. A front door that loses readers at `L0` loses them for `L1`
+   too.
+3. **The catalogue's register — and this is bigger than D2.** The decision above was made about one
+   rule, but it generalises: a rule page should state **our default and the reasoning for it**, not
+   a verdict on the reader's design. That matters disproportionately at `L1`, because `L1` is
+   _"the tool declares what it does and the kit falsifies the declaration"_ — if the `L0` pages read
+   as judgements, a declaration format built on top of them reads as a trap rather than an
+   invitation. **Before writing L1's declaration format, sweep the catalogue for the same voice.**
+4. **C — the interposed-layer distortions are written down**, so a wrapper user knows which
+   verdicts to distrust: A6 loudly, F2 quietly.
+
+Not in the gate: **D**. Three catalogue questions whose output is a report, and at least one is
+probably [roadmap item 8](../roadmap.md#8-test-the-checker-as-a-measurement-instrument) rather than
+anything new. It can run alongside or after.
