@@ -271,8 +271,10 @@ Two keys, two different statements about **rules**, kept apart on purpose:
 ```
 
 `knownFailures` is **debt**: "this is broken, I know, I will fix it." It is meant only to
-shrink, and a rule that starts passing is reported as a **stale expectation** — the line to
-delete. That report is a reminder, not a gate: `acc` still exits `0`, because a target with a
+shrink, and a rule that starts passing is reported under **STALE EXPECTATIONS** — the entry to
+delete. An entry for a rule the run never evaluated is reported under **NOT BEING EVALUATED**
+instead, and that one should not be deleted on sight: the kit stopped looking, so the defect may
+be entirely intact. That report is a reminder, not a gate: `acc` still exits `0`, because a target with a
 stale expectation is conformant and an exit code that said otherwise would be lying. Enforcing
 removal needs an outcome code of its own and is
 [on the roadmap](docs/roadmap.md#a-ratchet-the-tool-does-not-turn), not in the tool today.

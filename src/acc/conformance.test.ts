@@ -1176,3 +1176,53 @@ describe("every report names the kit that produced it", () => {
     expect(r.stdout.split("\n")[0]).toContain(`[acc ${VERSION}]`);
   });
 });
+
+// THE RENDERED REPORT, not the model behind it.
+//
+// `report.test.ts` asserts which rule ids land in `staleExpectations` and `inertExpectations`.
+// Nothing asserted what a reader actually sees, so the layout could regress with the gate green —
+// and it had regressed: an outside adopter found the inert line rendered as the last entry of the
+// SYMBOL LEGEND, indented like a glossary entry, when it is a finding about their own config.
+// A check nobody has seen fail is not a check, and this one had none.
+describe("the text report puts findings about the reader's config in sections", () => {
+  const configDir = (config: unknown): string => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-render-"));
+    writeFileSync(join(dir, "acc.config.json"), JSON.stringify(config));
+    return dir;
+  };
+  const CONFORMING = join(dirname(CLI), "kit/fixtures/conforming.ts");
+
+  test("each is a titled section, not a line trailing the legend", async () => {
+    // A1 passes on this fixture (stale); B3 is not applicable at L0 (inert).
+    const dir = configDir({ knownFailures: { A1: "tracked", B3: "tracked in #412" } });
+    try {
+      const r = await run(["check", CONFORMING, "--config-dir", dir, "--format", "text"]);
+      expect(r.code).toBe(0);
+      expect(r.stdout).toContain("STALE EXPECTATIONS (1)");
+      expect(r.stdout).toContain("NOT BEING EVALUATED (1)");
+
+      // The legend explains abbreviations. A finding about the reader's configuration is not an
+      // abbreviation, so both sections must come BEFORE it — which is the defect that was found.
+      const legend = r.stdout.indexOf("PASS pass · FAIL fail");
+      expect(legend).toBeGreaterThan(-1);
+      expect(r.stdout.indexOf("STALE EXPECTATIONS")).toBeLessThan(legend);
+      expect(r.stdout.indexOf("NOT BEING EVALUATED")).toBeLessThan(legend);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  // The two say opposite things and must not be merged: one means you fixed it, the other means
+  // the kit stopped looking and the defect may be intact.
+  test("the inert section says it is not evidence the defect is fixed", async () => {
+    const dir = configDir({ knownFailures: { B3: "tracked in #412" } });
+    try {
+      const r = await run(["check", CONFORMING, "--config-dir", dir, "--format", "text"]);
+      expect(r.stdout).toContain("NOT evidence the defect is fixed");
+      expect(r.stdout).toContain("still");
+      expect(r.stdout).not.toContain("STALE EXPECTATIONS");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+});

@@ -203,7 +203,19 @@ You are done when all of the following hold:
   names no **stale expectations** — those are entries that now pass and should be deleted:
 
   ```
-  stale expectations (now passing, remove them): C1
+    STALE EXPECTATIONS (1) — these rules now pass; remove them from knownFailures:
+      C1
+  ```
+
+  An entry for a rule the run never evaluated is reported separately, and the two call for
+  opposite actions — a stale entry means you fixed it, an inert one means the kit stopped
+  looking and the defect may be intact:
+
+  ```
+    NOT BEING EVALUATED (1) — these knownFailures entries suppress nothing:
+      B3
+      NOT evidence the defect is fixed — the kit stopped looking. Check it is still
+      tracked before removing them.
   ```
 
 - Every entry in `rules` carries a reason you would defend in review. Waived rules appear as
