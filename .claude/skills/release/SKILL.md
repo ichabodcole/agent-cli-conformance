@@ -67,6 +67,10 @@ defect class, shipped under its own name.
 
 Build **one file**: subject on line 1, blank line, then body.
 
+> **⚠ A `BREAKING CHANGE:` footer is a version instruction too.** release-please parses the body
+> as well as the subject, so dropping the `!` while leaving the footer still cuts the larger bump.
+> Grep the whole message before you trust the type you picked.
+
 > **⚠ The subject is a version instruction before it is a description.** Its Conventional Commit
 > type is parsed and it decides the released version. Pick the type from **what the range
 > contains**, not from how the release feels — a promotion carrying only fixes is not a `feat`

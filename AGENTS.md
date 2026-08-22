@@ -110,12 +110,20 @@ bumps the major even from `0.x` — measured, before they were set: `feat(kit)!`
 `v1.0.0`, not `v0.3.0`. **Both readings have now been wrong once**, so verify against the release
 rather than against this sentence.
 
-**Reserve `!` for the promised surface, which is narrow.** Rule ids, the exit-code taxonomy and
-`conformant` are stable; the report shape, `fullyVerified`, config keys and CLI flags are not, and
-the README states the split. A change to the right-hand column is a `feat` or a `fix`, not a
-break — the project is still deciding those, and typing every one of them `!` would make the
-version number meaningless rather than careful. Do not derive the version from configuration you
-have not run — a `!` here is a major, so pick the type knowing that;
+**Reserve `!` for the promised surface, which is narrow.** One question decides it:
+
+> **Did you change something in the STABLE column?** Rule ids, the exit-code taxonomy,
+> `conformant`. If not — the report shape, `fullyVerified`, `acc.config.json` keys, CLI flags, the
+> text layout — it is a `feat` or a `fix`, however large it felt to write.
+
+The README carries the same split, for adopters. Typing every design change `!` would make the
+version number meaningless rather than careful: this project is still deciding the right-hand
+column, and a number that moves on every decision measures nothing.
+
+**A `BREAKING CHANGE:` footer counts as much as the `!`.** release-please parses both, so removing
+the `!` from a subject while leaving the footer in the body still cuts the bigger bump. Check the
+whole message, not the first line.
+
 `docs`, `chore`, `ci`, `test` and `refactor` produce no version and no release PR at all. A
 docs-only merge to `main` that cuts no release is correct, not broken. Merge the promotion PR with a
 merge or rebase commit — a squash takes its headline from the PR title, and a title that is not a
