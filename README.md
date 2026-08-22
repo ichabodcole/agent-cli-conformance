@@ -6,8 +6,8 @@ and framework maintainers make ordinary command-line tools predictable, machine-
 safely operable by autonomous agents, using an executable specification and black-box evidence
 rather than documentation alone.
 
-> **Status: released, with an unfrozen report shape.** `v1.0.1` is installable today — 23 rules,
-> 22 of them with a registered checker, run against your CLI as black-box evidence. Rule ids are
+> **Status: released, with an unfrozen report shape.** `v1.0.1` is installable today, and runs
+> against your CLI as black-box evidence. Rule ids are
 > append-only and safe to depend on. **The report and schema shapes are not yet covered by that
 > promise and may still change.** Every checker covers only part of its rule; one of the 22
 > ([A4](docs/wiki/rules/parsing/unexpected-positionals-rejected.md)) reports `not applicable`
@@ -34,8 +34,9 @@ scheduled or promised.
 **Non-goals** — a passing report is **not a security certification**, does **not** prove
 domain-level correctness, and at `L0` does **not** prove a target is harmless to execute. It
 proves that no core rule the kit could apply was violated, which is a narrower claim than any of
-those and is deliberately reported as two separate booleans (see
-[conformance](docs/wiki/concepts/conformance.md)).
+those. That is deliberately reported as two booleans: `conformant` (nothing the kit applied was
+violated) and `fullyVerified` (every core rule was actually established) — see
+[conformance](docs/wiki/concepts/conformance.md).
 
 ## Getting started
 
@@ -197,7 +198,7 @@ where documentation would be read.
 
 ## The approach
 
-Three layers, each enforcing what the one below cannot:
+Three layers, each enforcing what the weaker layer cannot:
 
 1. **Impossible** — API shapes that make the violation unrepresentable.
 2. **Caught** — a conformance kit that fails CI when a violation ships.
@@ -215,9 +216,9 @@ recorded observations.
 consequences:
 
 - **A new rule is a new checker over data already collected** — not a new test in every
-  project. Learn a lesson once and every CLI is audited for it retroactively. _Planned:_ the
-  history is in-memory and dies with the process, so retroactive checking is a property of the
-  architecture rather than a workflow you can run.
+  project. _Planned:_ retroactive re-checking is a property of the architecture rather than a
+  workflow you can run today, because the history is in-memory and dies with the process. Once it
+  is durable, a lesson learned once audits every CLI already recorded.
 - **It is language-agnostic by construction**, because it only ever touches argv, streams, and
   exit codes. Rust, TypeScript, Go and Python CLIs are tested identically, and an executable
   target is launched as itself so the kernel honours its own shebang.
@@ -246,7 +247,7 @@ argv are all _planned_; none of them exist today.
 `L1` and `L2` are _planned_ — neither level runs today, and `acc check` is `L0` only. They will
 require the CLI to _declare_ what its commands do, and then try to falsify those claims: a
 command declaring `read_only` run in a snapshotted sandbox, with the filesystem diffed
-afterwards. A declaration that cannot be falsified is a comment that lies, which is the whole
+afterwards. A declaration nothing can falsify can be wrong without anything noticing, which is the whole
 argument for building them — and the reason the rules that need them
 ([A4](docs/wiki/rules/parsing/unexpected-positionals-rejected.md)) report `not applicable`
 rather than passing today.
@@ -272,7 +273,7 @@ shrink, and a rule that starts passing is reported under **STALE EXPECTATIONS** 
 delete. An entry for a rule the run never evaluated is reported under **NOT BEING EVALUATED**
 instead, and that one should not be deleted on sight: the kit stopped looking, so the defect may
 be entirely intact. That report is a reminder, not a gate: `acc` still exits `0`, because a target with a
-stale expectation is conformant and an exit code that said otherwise would be lying. Enforcing
+stale expectation is conformant and any other exit code would contradict that verdict. Enforcing
 removal needs an outcome code of its own and is
 [on the roadmap](docs/roadmap.md#a-ratchet-the-tool-does-not-turn), not in the tool today.
 
@@ -282,7 +283,7 @@ and `off` is a **waiver**, which never goes stale, because passing was never the
 `reason` is required on both, and rule ids are validated, so a mistyped id is an error rather
 than a line that quietly does nothing.
 
-A waiver can buy `conformant: true`. It can never buy `fullyVerified` — a waived core rule
+A waiver can make a target `conformant: true`. It can never make it `fullyVerified` — a waived core rule
 blocks the evidence claim even when it would have passed, because a rule you chose not to be
 measured against was not established. Waived rules are still **probed**, so the report shows
 what the verdict would have been. The full argument, including why an unwaivable spec is worse
@@ -388,7 +389,7 @@ never authored. The output is gitignored and needs no network — it reads from 
 `bun run check` is the whole gate and the only definition of it. [The CI
 workflow](.github/workflows/check.yml) runs that line and nothing else; the pre-commit hook runs
 it too, behind a `lint-staged` pass that applies the same rules to the staged files first for
-speed. Nothing the hook enforces is absent from `bun run check`, so a `--no-verify` commit cannot
+speed. Every rule the hook enforces is in `bun run check`, so a `--no-verify` commit cannot
 land something CI would have caught.
 
 The wiki lint is not optional decoration. It verifies that every rule page declares a checker
