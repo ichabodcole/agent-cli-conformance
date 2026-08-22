@@ -123,6 +123,12 @@ fixture saw it. That is the instrument reporting its own limit rather than blami
 and it is the distinction the whole report is built around — see
 [conformance](../concepts/conformance.md) when you want the full treatment.
 
+> **This detection has a hole, and it is worth knowing before you trust an A6 line.** The kit
+> recognises a Bun launcher from the target's own shebang. If you point it at a **wrapper script**
+> that `exec`s bun — the usual way to check an interpreted CLI — the wrapper's shebang is a shell,
+> the detection misses, and A6 reports a `FAIL` your tool did not earn. A6 is `diagnostic` and
+> never affects the exit code.
+
 Now the sentence from Step 1 should land. Our conforming fixture had `0` violated and `0`
 unverified — and still every rule was `PASS+`. It passed the gate; it did not establish the
 whole catalogue.

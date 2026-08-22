@@ -26,16 +26,17 @@ wiki.
 The catalogue below is organised by what a page **is**. This is the same wiki organised by what
 you are **doing**, which is usually the faster way in.
 
-| If you are…                        | Start at                                                                                                                                 |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| meeting the kit for the first time | [Check your first CLI](./guides/check-your-first-cli.md) — run it against a target, read a real verdict                                  |
-| making your own CLI pass           | [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — triage each failure into a fix, a waiver, or named debt |
-| holding a failing rule id          | `acc show <id>`, or find it in [the rules table](#coverage-at-a-glance) below                                                            |
-| wondering what a verdict means     | [Conformance](./concepts/conformance.md) for `pass`/`fail`/`unverified`, [probing](./concepts/probing.md) for what produced it           |
-| looking up an exit code            | [the taxonomy](./concepts/exit-codes.md#the-taxonomy)                                                                                    |
-| looking up an error shape          | [the error envelope](./concepts/error-envelope.md#two-shapes-and-confirmation_required-is-one-of-the-errors)                             |
-| writing a checker                  | [How to add a checker](./guides/how-to-add-a-checker.md)                                                                                 |
-| editing these pages                | [SCHEMA.md](./SCHEMA.md) for the contract, [STYLE.md](./STYLE.md) for how they are written                                               |
+| If you are…                              | Start at                                                                                                                                 |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| an install that gave you the wrong bytes | [How to fix a broken install](./guides/how-to-fix-a-broken-install.md) — three failures, two of them silent at exit `0`                  |
+| meeting the kit for the first time       | [Check your first CLI](./guides/check-your-first-cli.md) — run it against a target, read a real verdict                                  |
+| making your own CLI pass                 | [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — triage each failure into a fix, a waiver, or named debt |
+| holding a failing rule id                | `acc show <id>`, or find it in [the rules table](#coverage-at-a-glance) below                                                            |
+| wondering what a verdict means           | [Conformance](./concepts/conformance.md) for `pass`/`fail`/`unverified`, [probing](./concepts/probing.md) for what produced it           |
+| looking up an exit code                  | [the taxonomy](./concepts/exit-codes.md#the-taxonomy)                                                                                    |
+| looking up an error shape                | [the error envelope](./concepts/error-envelope.md#two-shapes-and-confirmation_required-is-one-of-the-errors)                             |
+| writing a checker                        | [How to add a checker](./guides/how-to-add-a-checker.md)                                                                                 |
+| editing these pages                      | [SCHEMA.md](./SCHEMA.md) for the contract, [STYLE.md](./STYLE.md) for how they are written                                               |
 
 ## Concepts
 
