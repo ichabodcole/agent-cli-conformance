@@ -44,26 +44,26 @@ Neither needs re-deciding. They need doing.
 
 ## Triage
 
-| finding                                                                       | kind of change      | workstream |
-| ----------------------------------------------------------------------------- | ------------------- | ---------- |
-| evidence ids resolve to nothing                                               | report schema       | **A**      |
-| an evidence id "reads like there is a `--verbose` I failed to find"           | CLI surface         | **A**      |
-| the target is identified only by the path we were handed                      | report schema       | **A**      |
-| an interpreted target needs a wrapper, undocumented                           | docs                | **B**      |
-| the A6 bun guard misses through a shell wrapper                               | checker defect      | **C**      |
-| install prose is read-later material in read-now position                     | docs                | **B**      |
-| eight verified self-contradictions in the README                              | docs                | **B**      |
-| half the README restates the guides, and the best orientation is only in them | docs                | **B**      |
-| no page says what to pass as the target for an interpreted CLI                | docs                | **B**      |
-| `README` says pre-1.0 while `v1.0.1` is tagged                                | docs                | **B**      |
-| the pinning example is one release stale                                      | docs                | **B**      |
-| `--json` with `2>&1` corrupts the document                                    | docs                | **B**      |
-| a checker's least interesting finding hides its most interesting              | catalogue behaviour | **D**      |
-| a rule passing because a neighbouring rule fails                              | catalogue behaviour | **D**      |
-| the verdict line under-delivers against the rule page                         | catalogue behaviour | **D**      |
-| bare invocation returning a manifest is a _request_ (their D2)                | rule premise        | **E**      |
-| committing `acc.config.json` for one waiver blocks CI adoption                | adoption            | **E**      |
-| usage errors and internal faults share exit `1` (their C2)                    | theirs, not ours    | none       |
+| finding                                                                       | kind of change        | workstream |
+| ----------------------------------------------------------------------------- | --------------------- | ---------- |
+| evidence ids resolve to nothing                                               | report schema         | **A**      |
+| an evidence id "reads like there is a `--verbose` I failed to find"           | CLI surface           | **A**      |
+| the target is identified only by the path we were handed                      | report schema         | **A**      |
+| an interpreted target needs a wrapper, undocumented                           | docs                  | **B**      |
+| the A6 bun guard misses through a shell wrapper                               | checker defect        | **C**      |
+| install prose is read-later material in read-now position                     | docs                  | **B**      |
+| eight verified self-contradictions in the README                              | docs                  | **B**      |
+| half the README restates the guides, and the best orientation is only in them | docs                  | **B**      |
+| no page says what to pass as the target for an interpreted CLI                | docs                  | **B**      |
+| `README` says pre-1.0 while `v1.0.1` is tagged                                | docs                  | **B**      |
+| the pinning example is one release stale                                      | docs                  | **B**      |
+| `--json` with `2>&1` corrupts the document                                    | **did not reproduce** | none       |
+| a checker's least interesting finding hides its most interesting              | catalogue behaviour   | **D**      |
+| a rule passing because a neighbouring rule fails                              | catalogue behaviour   | **D**      |
+| the verdict line under-delivers against the rule page                         | catalogue behaviour   | **D**      |
+| bare invocation returning a manifest is a _request_ (their D2)                | rule premise          | **E**      |
+| committing `acc.config.json` for one waiver blocks CI adoption                | adoption              | **E**      |
+| usage errors and internal faults share exit `1` (their C2)                    | theirs, not ours      | none       |
 
 ## What must not regress
 
@@ -190,6 +190,28 @@ measure.
 
 **Branch:** `docs/the-readme-is-a-front-door`. Type `docs`, so it cuts no release. Not a
 single-file branch: `docs/wiki/guides/check-your-first-cli.md` is on it.
+
+## Did not reproduce — `--json` with `2>&1`
+
+`sable` reported that `acc check target --json 2>&1` corrupted the document, conceding the tool was
+right and that it was worth knowing it bites. **It does not reproduce.** Measured against
+`v1.0.1`:
+
+| path                                  | stdout          | stderr                           | `2>&1` |
+| ------------------------------------- | --------------- | -------------------------------- | ------ |
+| a successful check                    | the JSON report | **0 bytes**                      | parses |
+| a failing invocation (missing target) | empty           | the 201-byte JSON error envelope | parses |
+
+`acc` keeps the two streams disjoint on both paths — which is what [B1](../wiki/rules/streams/stdout-carries-only-data.md)
+requires of everyone else — so folding them together still yields exactly one JSON document.
+
+**So the corrupting bytes came from somewhere between `acc` and their shell**, most likely the
+same interposed layer that produced the A6 false positive: their target ran behind a wrapper, and
+a launcher that writes to stderr would land inside the folded stream. That is worth telling them,
+because it is the second finding in their report that turns out to be about the wrapper rather
+than about `acc`.
+
+**Nothing to do here** unless it reproduces with a concrete invocation.
 
 ## B2 · The README's ordering — the follow-up
 
