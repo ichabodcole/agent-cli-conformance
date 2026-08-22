@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: F2
 tier: diagnostic
+deviation: design-choice
 probe_level: L0
 checker: src/acc/kit/checkers/safety/first-byte-prompt.ts
 checker_status: implemented
@@ -43,6 +44,11 @@ never polluting [stdout](../streams/stdout-carries-only-data.md), and without
 > one, and unlike [A6](../parsing/double-dash-terminator.md) nothing in the output says a layer was
 > measured. See
 > [what an interposed layer can distort](../../concepts/probing.md#what-an-interposed-layer-can-distort).
+
+> **A different design can be right here** (`deviation: design-choice`). A tool that legitimately
+> does expensive work before it can say anything — loading a model, opening a remote session — is
+> not defective for being slow to its first byte. What the rule is really after is that a caller
+> is not left staring at nothing, so a progress signal on stderr satisfies the intent.
 
 ## How to comply
 

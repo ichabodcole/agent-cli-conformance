@@ -11,6 +11,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: D2
 tier: core
+deviation: design-choice
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/bare-invocation.ts
 checker_status: implemented

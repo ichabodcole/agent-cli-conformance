@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: D3
 tier: diagnostic
+deviation: design-choice
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/advertises-machine-mode.ts
 checker_status: implemented
@@ -33,6 +34,11 @@ command (`schema`) where one exists.
 
 A CLI **SHOULD** make its structured surface discoverable from the surface a caller reaches
 first — which is `--help`, not documentation.
+
+> **A different design can be right here** (`deviation: design-choice`). A tool with no
+> machine-readable mode has nothing to advertise, and this rule does not ask you to build one.
+> What it asks is that a mode you DO have is discoverable from `--help`, because that is where an
+> agent looks and nothing else tells it.
 
 ## How to comply
 

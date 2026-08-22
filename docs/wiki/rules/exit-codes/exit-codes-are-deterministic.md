@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: C3
 tier: core
+deviation: defect
 probe_level: L0
 checker: src/acc/kit/checkers/exit-codes/deterministic.ts
 checker_status: implemented

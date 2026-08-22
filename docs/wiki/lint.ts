@@ -40,6 +40,20 @@ const COVERAGE_ESTABLISHED_BY_RULE_ID = new Map(
 const TIERS = new Set(["core", "diagnostic"]);
 const PROBE_LEVELS = new Set(["L0", "L1", "L2"]);
 const COVERAGES = new Set(["complete", "partial"]);
+/**
+ * Whether a tool that does NOT satisfy this rule has a DEFECT or a different, defensible DESIGN.
+ *
+ * Separate from `tier`, which answers a different question: `tier` decides whether a violation
+ * gates CI, and this decides what a violation MEANS. Most of the catalogue is `defect` — a CLI
+ * that exits `0` on an unknown flag is broken for an agent whatever its author intended, and
+ * waiving the rule suppresses a real failure rather than recording a preference. A handful of
+ * rules are not like that: a machine-first tool answering a bare invocation with a manifest of
+ * its own command surface has made a choice, not a mistake.
+ *
+ * The two axes cross: `D2` is `core` and `design-choice`, `D3` is `diagnostic` and still a
+ * `design-choice`, and a diagnostic rule can perfectly well be a `defect`.
+ */
+const DEVIATIONS = new Set(["defect", "design-choice"]);
 
 /**
  * Rule pages carry machine-readable frontmatter (`rule_id`, `tier`, `probe_level`,
@@ -73,6 +87,12 @@ export function ruleChecks(pages: LintPage[]): string[] {
     if (!tier || !TIERS.has(tier))
       problems.push(
         `BAD tier       ${page.rel}: "${tier ?? ""}" not in {${[...TIERS].join(", ")}}`,
+      );
+
+    const deviation = page.fields.get("deviation");
+    if (!deviation || !DEVIATIONS.has(deviation))
+      problems.push(
+        `BAD deviation  ${page.rel}: "${deviation ?? ""}" not in {${[...DEVIATIONS].join(", ")}}`,
       );
 
     const level = page.fields.get("probe_level");
@@ -515,6 +535,7 @@ export function coverageMatrix(pages: LintPage[]): string {
       id: p.fields.get("rule_id") ?? "",
       rel: p.rel,
       tier: p.fields.get("tier") ?? "",
+      deviation: p.fields.get("deviation") ?? "",
       level: p.fields.get("probe_level") ?? "",
       status: p.fields.get("checker_status") ?? "",
       coverage: p.fields.get("coverage") ?? "",
@@ -529,13 +550,15 @@ export function coverageMatrix(pages: LintPage[]): string {
     "Generated from rule frontmatter by `bun run docs:sync`; the lint fails when it drifts.",
     "**Checker** is presence — a checker file exists and is registered. **Coverage** answers the",
     "different question of how much of the page that checker actually establishes, and each rule",
-    "page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).",
+    "page names its own gaps. **Deviation** says what a violation MEANS — `defect` if there is no",
+    "defensible alternative, `design-choice` if a different design can be right and a waiver records",
+    "a decision rather than hiding a failure. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).",
     "",
-    "| Rule | Tier | Level | Checker | Coverage | Gaps |",
-    "| ---- | ---- | ----- | ------- | -------- | ---- |",
+    "| Rule | Tier | Deviation | Level | Checker | Coverage | Gaps |",
+    "| ---- | ---- | --------- | ----- | ------- | -------- | ---- |",
     ...rules.map(
       (r) =>
-        `| [${r.id}](./${r.rel}) | ${r.tier} | ${r.level} | ${r.status} | ${r.coverage} | ${r.gaps} |`,
+        `| [${r.id}](./${r.rel}) | ${r.tier} | ${r.deviation} | ${r.level} | ${r.status} | ${r.coverage} | ${r.gaps} |`,
     ),
     "",
     `${rules.length} rules · ${complete} \`complete\` · ${rules.length - complete} \`partial\` · ${gaps} named gaps.`,

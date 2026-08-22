@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-16 }
 rule_id: B5
 tier: core
+deviation: defect
 probe_level: L0
 checker: src/acc/kit/checkers/streams/machine-mode-holds-on-parser-error.ts
 checker_status: implemented

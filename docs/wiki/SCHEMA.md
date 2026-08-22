@@ -103,6 +103,7 @@ frontmatter is machine-read, and `lint.ts` cross-checks it against `src/acc/kit/
 ```yaml
 rule_id: A1 # stable, unique; cited verbatim in conformance output
 tier: core # core (binary pass/fail) | diagnostic (reported, non-fatal) — the BASELINE
+deviation: defect # defect | design-choice — what NOT satisfying this rule MEANS
 probe_level: L0 # L0 risk-reduced | L1 declared read-only | L2 contained mutating
 checker: src/acc/kit/checkers/parsing/unknown-flag.ts
 checker_status: planned # planned | implemented
@@ -112,6 +113,22 @@ coverage_gaps: # one phrase per normative clause the checker does not establish
 coverage_established: # one phrase per thing a PASS licenses, scoped to the paths sampled
   - one unknown long flag given at the root exits non-zero with stdout empty
 ```
+
+`deviation` answers a different question from `tier`, and the two cross rather than nest. **`tier`
+decides whether a violation gates CI. `deviation` decides what a violation means.**
+
+- **`defect`** — there is no defensible alternative. A CLI that exits `0` on an unknown flag is
+  broken for an agent whatever its author intended. Waiving one of these suppresses a real
+  failure; it does not record a preference, and the page should not imply otherwise.
+- **`design-choice`** — a different design can be right. A machine-first tool answering a bare
+  invocation with a manifest of its own command surface has made a choice, not a mistake. Here a
+  waiver records a decision, and the page owes the reader the reasoning behind the default rather
+  than a verdict on their design.
+
+Most of the catalogue is `defect`, which is what a conformance spec should look like. The
+classification exists so the handful that are not cannot be mistaken for it — and so a reader
+meeting a rule they disagree with can tell immediately whether the catalogue expects that
+disagreement or considers it a bug.
 
 `tier` is what the **catalogue** says, not the last word for any one adopter. A project may move
 a rule between the two tiers — in either direction — or waive it outright, in its own
