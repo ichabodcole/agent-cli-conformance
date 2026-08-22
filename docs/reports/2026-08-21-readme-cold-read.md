@@ -133,3 +133,77 @@ Also noted, ordinary editing rather than new kinds: a comma splice in the longes
 install block (`:58`); the rule counts stated twice twelve lines apart (`:9`, `:20`); a 45-word
 sentence at `:126` restating the 15-word sentence before it; a double negative at `:404`; a pronoun
 at `:316` separated from `defaultOutput` by an intervening paragraph.
+
+---
+
+## The third read — verifying the rewrite (2026-08-22)
+
+Same brief as the first-contact read above, verbatim, so the two are comparable. Run against the
+rewritten README.
+
+### What moved
+
+| measure                                    | before                 | after                                          |
+| ------------------------------------------ | ---------------------- | ---------------------------------------------- |
+| where the first command arrives            | line 119               | **line 48**                                    |
+| install-failure prose in the reader's path | ~70 lines, skimmed     | **4 lines, obeyed**                            |
+| "what do I pass as the target?"            | unanswered by any page | answered                                       |
+| the four-verdict table                     | tutorial only          | in the README — _"the best thing on the page"_ |
+
+On the install pointer: _"'A first install meets none of them; skip it for now,' which is exactly
+the right instruction and I obeyed it."_ That is the redirect working as designed.
+
+### What it caught that the rewrite had broken
+
+**The "what to pass" section recommended the defect it warned about.** It told TypeScript
+maintainers to write a shell wrapper — the one shape that defeats the A6 Bun-launcher guard.
+Measured, same CLI:
+
+```
+passed directly     UNVR  A6  cannot be probed through a `bun` launcher
+behind a wrapper    FAIL  A6  a value after `--` was still parsed as an option
+```
+
+`toTarget` already launches a non-executable `.ts` as `["bun", path]`, which is exactly what the
+guard keys on, so the direct path needs no wrapper and is the case the kit handles best. Fixed.
+
+The reader found it by noticing the README demanded an **executable file** while the tutorial's
+first command passes a non-executable `.ts`. Both were right; the rule was stated too narrowly.
+
+### Exit criterion: two of three
+
+Met: reaches the tutorial without scrolling past install prose; can say what to pass. **Not met:**
+the positive control was never reached on a natural read. It sits at `README.md` §"`acc`, the
+reference implementation", which this reader skipped — as the earlier one did. `sable` valued it
+specifically, so it remains a live non-regression constraint that is currently unverified.
+
+### The remaining problem is ordering, and it is larger than the install section
+
+> _"The README is defensive before it is useful. Four caveat blocks before the install line, three
+> warnings before the first run, and a 'Non-goals' section arguing about what a pass does not
+> prove — all before I have any experience of what a pass looks like. The honesty is the project's
+> best quality and it is deployed too early to be appreciated. A reader who has never run the tool
+> cannot be disappointed by it yet."_
+
+And it pushed them out of the document:
+
+> _"Because 'Where to go next' sits at line 147 and the substantive material starts at line 177, I
+> left the README at the exact moment it was about to tell me why the project exists. 'The
+> problem' — the fifteen-CLI survey, the citty finding, `docker inspect` printing `[]` to stdout —
+> is the most persuasive writing on the page, and it is below the exit door."_
+
+Two of the three pre-run warnings were added by this rewrite. The exit-door effect was not; it was
+uncovered by removing the install prose that had been hiding it.
+
+### Deferred to the follow-up
+
+1. **Four caveat blocks before the install line** — `Status`, `Today`, `Planned`, `Non-goals`.
+2. **`Where to go next` is an exit door above the best writing on the page.**
+3. **No successful run is ever shown.** The only sample output is `NOT CONFORMANT`.
+4. **Not one concrete rule.** _"I finished the README knowing the shape of the verdict and not one
+   concrete thing my CLI is required to do."_ Rule ids appear only as links, never as a list.
+5. **The duplication is worse than first measured.** `how-to-reach-l0-in-your-project.md` is now a
+   **strict superset** of the README's config material, same arguments nearly verbatim.
+6. **`Branches and releases`, `Layout`, `Commands`** — contributor reference, skipped by all three
+   readers, sitting between the user's quickstart and the user's motivation.
+7. **The positive control is unreachable on a natural read.**

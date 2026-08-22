@@ -191,6 +191,40 @@ measure.
 **Branch:** `docs/the-readme-is-a-front-door`. Type `docs`, so it cuts no release. Not a
 single-file branch: `docs/wiki/guides/check-your-first-cli.md` is on it.
 
+## B2 · The README's ordering — the follow-up
+
+**B is done and verified; this is what B uncovered.** Removing the install prose that sat between
+the reader and the first command exposed a second ordering problem, which the third cold read
+found and which is larger than the one just fixed. Recorded here rather than folded into B,
+because it needs its own read.
+
+The findings are in
+[the cold-read report](../reports/2026-08-21-readme-cold-read.md#the-third-read--verifying-the-rewrite-2026-08-22),
+with the reader's own words. In short:
+
+- **Four caveat blocks stand before the install line**, and three warnings before the first run —
+  _"defensive before it is useful… A reader who has never run the tool cannot be disappointed by
+  it yet."_ Two of those warnings were added by B.
+- **`Where to go next` is an exit door above the best writing on the page.** The reader left at
+  line 147; `The problem` — the fifteen-CLI survey, the `citty` finding, `docker inspect` printing
+  `[]` — starts at line 177 and was never read.
+- **No successful run is ever shown.** The only sample output is `NOT CONFORMANT`.
+- **Not one concrete rule appears.** Rule ids are links, never a list, so a reader finishes
+  knowing the shape of a verdict and nothing their CLI must actually do.
+- **`how-to-reach-l0-in-your-project.md` is a strict superset** of the README's config material.
+  The `acc.config.json` and `defaultOutput` sections are day-two material a reader cannot use
+  before their first finding.
+- **`Branches and releases`, `Layout` and `Commands`** are contributor reference, skipped by all
+  three readers, sitting between the user's quickstart and the user's motivation.
+- **The positive control is unreachable on a natural read** — an open item from
+  §"What must not regress", still unverified after three reads.
+
+**Exit criterion.** A reader reaches `The problem` before any exit door, meets a passing run, and
+can name at least one concrete thing their CLI has to do. The contributor sections are reachable
+but not in the newcomer's path.
+
+**Branch:** `docs/the-readme-stops-arguing-before-it-helps`. Type `docs`.
+
 ## C · The wrapper is not the target — and the guard we already built does not reach
 
 **This is no longer a wording change. It is a hole in a guard that exists and is correct.**
