@@ -10,7 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: A6
 tier: diagnostic
-deviation: design-choice
+deviation: defect
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/double-dash-terminator.ts
 checker_status: implemented
@@ -40,11 +40,6 @@ and **MUST** pass everything after `--` to the child unmodified.
 > launcher, the guard misses, and this rule reports a `fail` against an argv your tool never
 > received. See
 > [what an interposed layer can distort](../../concepts/probing.md#what-an-interposed-layer-can-distort).
-
-> **A different design can be right here** (`deviation: design-choice`). A tool with no options
-> at all has nothing for `--` to terminate, and this rule is a `SHOULD` rather than a `MUST` for
-> that reason. If your CLI does take options, honouring the terminator is what lets a caller pass
-> a value that begins with `-` without the parser claiming it.
 
 ## How to comply
 

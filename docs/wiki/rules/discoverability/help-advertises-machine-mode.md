@@ -35,10 +35,13 @@ command (`schema`) where one exists.
 A CLI **SHOULD** make its structured surface discoverable from the surface a caller reaches
 first — which is `--help`, not documentation.
 
-> **A different design can be right here** (`deviation: design-choice`). A tool with no
-> machine-readable mode has nothing to advertise, and this rule does not ask you to build one.
-> What it asks is that a mode you DO have is discoverable from `--help`, because that is where an
-> agent looks and nothing else tells it.
+> **A different design can be right here** (`deviation: design-choice`). A CLI may reasonably
+> decide its machine-readable path belongs in a manpage, a schema endpoint or a published contract
+> rather than in `--help` — and a tool that offers no machine-readable mode at all has made a
+> product decision, not a mistake. This rule reports `fail` in both cases, so the waiver is how
+> that decision gets recorded. What the rule is arguing is narrower than "you must do this": an
+> agent reads your help and nothing else tells it, so help is the one place where advertising
+> works without being told where to look.
 
 ## How to comply
 

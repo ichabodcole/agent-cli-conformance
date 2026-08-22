@@ -973,6 +973,44 @@ describe("evidence ids resolve", () => {
     expect(r.targetArgv0.length).toBe(2);
   }, 60_000);
 
+  test("repeated invocations are distinguishable — the repetition IS the subject for C3, D4, F2", async () => {
+    const r = await realRun();
+    const key = (o: (typeof r.observations)[number]) =>
+      JSON.stringify([o.args, o.env ?? null, o.inertness, o.repeat ?? null]);
+    const seen = new Map<string, number>();
+    for (const o of r.observations) seen.set(key(o), (seen.get(key(o)) ?? 0) + 1);
+    // Dropping `repeat` left 11 of 21 observations in indistinguishable groups, which defeats the
+    // point of resolving an id at all for the three rules that compare repetitions.
+    expect([...seen.values()].filter((n) => n > 1)).toEqual([]);
+  }, 60_000);
+
+  test("env is published when a probe imposed one, and omitted when it did not", async () => {
+    const r = await realRun();
+    // D1 probes `--version` under a hostile HOME; that is the only env override at L0.
+    const withEnv = r.observations.filter((o) => o.env !== undefined);
+    expect(withEnv.length).toBeGreaterThan(0);
+    for (const o of withEnv) expect(Object.keys(o.env ?? {}).length).toBeGreaterThan(0);
+  }, 60_000);
+
+  test("the projection copies rather than aliases the recording", async () => {
+    const p = join(HERE, "fixtures/conforming.ts");
+    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+    const r = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      { rules: {}, knownFailures: {} },
+      "L0",
+      VERSION,
+    );
+    const first = r.observations[0];
+    expect(first).toBeDefined();
+    const source = h.observations.find((o) => o.id === first?.id);
+    expect(source).toBeDefined();
+    expect(first?.args).not.toBe(source?.invocation.args);
+    expect(r.targetArgv0).not.toBe(h.target.argv0);
+  }, 60_000);
+
   test("the streams themselves are NOT published — the digest is the byte-level record", async () => {
     const r = await realRun();
     const withOutput = r.observations.find((o) => o.stdoutBytes > 0);

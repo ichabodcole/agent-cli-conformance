@@ -75,8 +75,15 @@ export interface ReportedFinding extends Finding {
  * byte-level record here, for the reason the durable-artifact work already settled: retaining the
  * bytes as well doubles the artifact for an equality question a 32-byte hash already answers, and
  * hands an unbounded binary field the redaction and retention problems that come with it. What a
- * reader needs to reconstruct a verdict is the ARGV — and that is small, structured, and carries
- * nothing the target did not already receive from us.
+ * reader needs to reconstruct a verdict is the ARGV, and it carries nothing the target did not
+ * already receive from us.
+ *
+ * **`args` is not bounded independently.** Several checkers build a probe from a flag discovered
+ * in the target's own `--help`, and that scan has no length limit of its own — so a pathological
+ * help screen produces a pathological argv, bounded only by `MAX_STREAM_BYTES` in `runner.ts`.
+ * The bytes are the target's own and F1 requires help to hold no secrets, so this is a size
+ * question rather than a disclosure one; it is written down because "argv is small" is an
+ * assumption a reader would otherwise make.
  */
 export interface ReportedObservation {
   /** Matches the ids in `ReportedFinding.evidence`. */
@@ -88,6 +95,15 @@ export interface ReportedObservation {
   inertness: Invocation["inertness"];
   /** Every checker that asked for this invocation — one observation can back several rules. */
   purposes: string[];
+  /**
+   * Which repetition this was, when the probe asked for several.
+   *
+   * Without it, the repeated invocations C3, D4 and F2 exist to compare project identically —
+   * four rows with the same argv and no way to say which run each verdict read. For those three
+   * rules the repetition IS the subject, so an evidence id that cannot name it does not answer
+   * the question the id was published to answer.
+   */
+  repeat?: number;
   exitCode: number | null;
   signal: string | null;
   crashed: boolean;
@@ -504,7 +520,7 @@ export function buildReport(
       notApplicable: notApplicable.length,
       waived: waived.length,
     },
-    targetArgv0: h.target.argv0,
+    targetArgv0: [...h.target.argv0],
     evidenceGaps,
     findings: reported,
     observations: h.observations.map(toReportedObservation),
@@ -561,10 +577,11 @@ export function buildReport(
 function toReportedObservation(o: Observation): ReportedObservation {
   return {
     id: o.id,
-    args: o.invocation.args,
-    ...(o.invocation.env ? { env: o.invocation.env } : {}),
+    args: [...o.invocation.args],
+    ...(Object.keys(o.invocation.env ?? {}).length > 0 ? { env: { ...o.invocation.env } } : {}),
     inertness: o.invocation.inertness,
-    purposes: o.purposes,
+    ...(o.invocation.repeat === undefined ? {} : { repeat: o.invocation.repeat }),
+    purposes: [...o.purposes],
     exitCode: o.exitCode,
     signal: o.signal,
     crashed: o.crashed,
