@@ -33,6 +33,13 @@ value, even if it begins with `-`.
 A CLI that [delegates to a child process](../../archetypes/delegator.md) **MUST** honour it,
 and **MUST** pass everything after `--` to the child unmodified.
 
+> **If you checked this rule through a wrapper, distrust the verdict.** Bun consumes a bare `--`
+> immediately after the script path, so the terminator never reaches the target. The kit detects
+> that when it can see the launcher and reports `unverified` — but a wrapper script hides the
+> launcher, the guard misses, and this rule reports a `fail` against an argv your tool never
+> received. See
+> [what an interposed layer can distort](../../concepts/probing.md#what-an-interposed-layer-can-distort).
+
 ## How to comply
 
 Free in most parsers — POSIX-conformant option parsing includes it, and `clap`, `commander`,

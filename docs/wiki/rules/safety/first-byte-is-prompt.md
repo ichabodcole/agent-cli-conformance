@@ -37,6 +37,13 @@ Where work genuinely takes longer, the command **SHOULD** signal that it started
 never polluting [stdout](../streams/stdout-carries-only-data.md), and without
 [ANSI animation when not a terminal](../streams/no-ansi-when-piped.md).
 
+> **A wrapper is measured alongside your tool here.** This rule times wall-clock to the first
+> byte, so a wrapper script's own startup lands inside the measurement — a consistent 2–3 ms,
+> measured. That is noise against the 100 ms threshold for a fast tool and is not noise for a slow
+> one, and unlike [A6](../parsing/double-dash-terminator.md) nothing in the output says a layer was
+> measured. See
+> [what an interposed layer can distort](../../concepts/probing.md#what-an-interposed-layer-can-distort).
+
 ## How to comply
 
 Do nothing before dispatch. The usual cause of a slow `--help` is initialisation that runs

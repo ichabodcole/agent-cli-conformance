@@ -166,8 +166,9 @@ page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-fron
   — Version is the cheapest possible probe of whether a tool is installed, reachable, and which
   contract it implements.
 - [D2 — Bare invocation is a usage error](./rules/discoverability/bare-invocation-is-a-usage-error.md)
-  — Running the tool with no arguments requested nothing and did nothing — reporting success for
-  that is how an unset shell variable becomes a silent no-op.
+  — Our default is that a bare invocation is a usage error, because an unset shell variable
+  expanding to nothing is indistinguishable from a deliberate bare call. A tool that answers with
+  a machine-readable manifest has made a different and defensible choice.
 - [D3 — Help advertises the machine-readable path](./rules/discoverability/help-advertises-machine-mode.md)
   _(diagnostic)_ — An agent reading help should not have to guess whether structured output exists
   — the human surface is where it looks first.
