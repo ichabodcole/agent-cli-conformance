@@ -68,25 +68,32 @@ Then point it at your CLI:
 bunx acc check ./your-cli
 ```
 
-**What to pass.** The target is a path to an **executable file**, and it is launched as itself so
-the kernel honours its own shebang. That covers a compiled binary, and any script whose shebang
-names its interpreter.
+**What to pass.** The target is a path. `acc` works out how to launch it, and gets this right for
+the three ordinary cases:
 
-**If your CLI is not one of those** — it runs as `bun cli.ts`, `node`, `python -m`, an npm script,
-or behind a launcher — write a one-line wrapper that `exec`s it, and point `acc` at the wrapper:
+| your CLI is…                                                     | pass                                                                                 |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| a compiled binary, or a script with the exec bit                 | the path — it is launched as itself, so the kernel honours its own shebang           |
+| a TypeScript source file (`.ts`) with no shebang, or a `bun` one | **the `.ts` file itself** — Bun is the documented fallback for running a source file |
+| a script whose shebang names an interpreter                      | the path                                                                             |
+
+**If you write TypeScript, pass the entry `.ts` file.** You do not need a wrapper, a shim, or a
+build step, and passing the source directly is the case `acc` handles best — it recognises Bun as
+the launcher and reports [A6](docs/wiki/rules/parsing/double-dash-terminator.md) as `unverified`
+rather than guessing, because Bun consumes a bare `--` before your tool can see it.
+
+**Only if none of those fit** — an npm script, `python -m`, a CLI behind a launcher — write a
+one-line wrapper and point `acc` at that:
 
 ```sh
 #!/bin/sh
 exec bun /abs/path/to/cli.ts "$@"
 ```
 
-⚠ **A wrapper can change the argv your CLI receives, and one currently affects a verdict.** Bun
-consumes a bare `--` immediately after the script path, so through a `bun` launcher your tool never
-receives the terminator. `acc` detects this when it runs the target through Bun itself and reports
-[A6](docs/wiki/rules/parsing/double-dash-terminator.md) as `unverified` — but **it cannot see
-through a wrapper**, so behind one that rule reports a failure your CLI did not commit. A6 is
-`diagnostic` and never affects your exit code. Treat an A6 failure on a wrapped Bun target as an
-instrument limit, not a finding.
+⚠ **A wrapper hides the launcher from `acc`, and one verdict depends on seeing it.** Measured: the
+same CLI passed directly reports `UNVR A6`, and behind a shell wrapper reports `FAIL A6 — a value
+after \`--\` was still parsed as an option`, which the tool did not do. A6 is `diagnostic` and
+never affects your exit code. **Prefer the direct path wherever you have one.**
 
 ⚠ **Point it at your working tree, not an installed copy.** `acc check $(which your-cli)` will
 happily measure whatever is on your `PATH` — a globally installed build, a plugin cache — and every
