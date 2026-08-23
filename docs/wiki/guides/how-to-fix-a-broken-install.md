@@ -34,9 +34,15 @@ clean install.
 
 If it matches what you asked for, your install is fine.
 
-⚠ **While no release has been tagged, this step distinguishes nothing.** Every ref reports the
-same version, so a stale copy and a fresh one answer identically — see
-[how far the version check reaches](#how-far-the-version-check-reaches) below, and clear the
+⚠ **Compare against the version you _expect_, never against the one you had.** The number can
+legitimately go **down**: this project reset its version line, so the upgrade everyone is
+currently being asked to make runs `1.0.1` → `0.1.0` — measured, by an adopter making exactly that
+move. A "did it go up" check reads that successful upgrade as a failure, and reads the stale
+`1.0.1` that a silent no-op leaves behind as the newer kit.
+
+And it only distinguishes anything if you pinned a **tag**. The version changes when a release is
+cut and not otherwise, so on a **branch** pin a stale copy and a fresh one answer identically —
+see [how far the version check reaches](#how-far-the-version-check-reaches) below, and clear the
 cache before installing rather than trusting the number.
 
 ### The remedy, if you just want the command

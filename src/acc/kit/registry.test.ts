@@ -13,7 +13,8 @@
 // property and watching the checker catch it. See docs/roadmap.md, R4-8.
 
 import { describe, expect, test } from "bun:test";
-import { CHECKERS } from "./registry.ts";
+import { loadGraph } from "../graph.ts";
+import { CHECKERS, UNCHECKED_RULES } from "./registry.ts";
 
 describe("every checker declares its coverage, and accounts for it", () => {
   test("the walk found checkers to check", () => {
@@ -91,6 +92,58 @@ describe("every checker declares its coverage, and accounts for it", () => {
     (ruleId, checker) => {
       const empty = checker.coverageEstablished.filter((e) => e.trim() === "");
       expect({ ruleId, empty }).toEqual({ ruleId, empty: [] });
+    },
+  );
+});
+
+// The OTHER half of the corpus: rules the catalogue declares and no checker answers to.
+//
+// `UNCHECKED_RULES` is what lets a check report say `N/A B4  no checker exists…` instead of
+// omitting the rule altogether, which is what it did — `acc rules` listed B4, `acc show B4`
+// rendered its page, and every report was silent about it. A declaration nothing compares to its
+// other half drifts, so this is the comparison: the wiki's rule pages are the source of truth for
+// which rules exist, `CHECKERS` for which are checked, and the difference between them must be
+// exactly this list. Land a new rule page whose checker is still planned and the gate goes red
+// until the report can account for it — which is what makes the disclosure general rather than a
+// fix for one rule id.
+//
+// The wiki is read here and nowhere in `kit/` itself, deliberately: the kit runs against a target
+// without needing the spec on disk, and only the test that binds the two needs both.
+describe("rules the catalogue declares and no checker answers to", () => {
+  const graph = loadGraph();
+  const checked = new Set(CHECKERS.map((c) => c.ruleId));
+  const pages = graph.pages.filter(
+    (p): p is (typeof graph.pages)[number] & { ruleId: string } =>
+      p.type === "rule" && Boolean(p.ruleId),
+  );
+  const declared = new Map(UNCHECKED_RULES.map((u) => [u.ruleId, u]));
+
+  test("the walk found rule pages to compare against", () => {
+    // Guards the degenerate pass: an empty wiki would make every case below vacuous.
+    expect(pages.length).toBeGreaterThan(CHECKERS.length);
+  });
+
+  test("every rule page with no checker is declared, and nothing else is", () => {
+    const missing = pages.filter((p) => !checked.has(p.ruleId)).map((p) => p.ruleId);
+    expect([...declared.keys()].sort()).toEqual(missing.sort());
+  });
+
+  test.each(UNCHECKED_RULES.map((u) => [u.ruleId, u] as const))(
+    "%s: the declaration matches the rule page it stands in for",
+    (ruleId, rule) => {
+      const page = graph.byRuleId.get(ruleId);
+      expect({ ruleId, page: page !== undefined }).toEqual({ ruleId, page: true });
+      expect({
+        rulePath: rule.rulePath,
+        tier: rule.tier,
+        deviation: rule.deviation,
+        probeLevel: rule.probeLevel,
+      }).toEqual({
+        rulePath: `docs/wiki/${page?.path}`,
+        tier: page?.tier as "core" | "diagnostic",
+        deviation: page?.deviation as "defect" | "design-choice",
+        probeLevel: page?.probeLevel as "L0" | "L1" | "L2",
+      });
     },
   );
 });

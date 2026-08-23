@@ -1,7 +1,35 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 export const CONFIG_FILE = "acc.config.json";
+
+/**
+ * WHERE THE DECLARATIONS CAME FROM — reported, never inferred.
+ *
+ * `origin` is the field that matters, and it exists because the two file-backed cases are not
+ * equally visible to the caller. A config named with `--config-dir` is in the command they
+ * typed; a config DISCOVERED in the working directory is in nothing they can see. An adopter
+ * found this the expensive way: the same command, the same absolute target, two directories, two
+ * verdicts, and no line on either screen accounting for the difference. CI runs from the repo
+ * root and an engineer runs from a subdirectory, so the disagreement is the normal case rather
+ * than a corner of one.
+ *
+ * `dir` is carried for ALL THREE origins, including `none`. "No config was loaded" is only half
+ * an answer — the other half is where the kit looked, which is what tells a caller whose file
+ * sits one directory up why their waivers did nothing.
+ */
+export interface ConfigSource {
+  /**
+   * - `flag` — the caller named the directory with `--config-dir`;
+   * - `discovered` — a file was found in the working directory that nobody named;
+   * - `none` — the working directory was searched and held no `acc.config.json`.
+   */
+  origin: "flag" | "discovered" | "none";
+  /** Absolute path of the file that was read, or `null` when none was. */
+  path: string | null;
+  /** Absolute directory the kit looked in. Always present — for `none` it IS the disclosure. */
+  dir: string;
+}
 
 /**
  * How hard a rule binds for THIS project.
@@ -83,6 +111,16 @@ export interface AccConfig {
    * `unverified` and name this key as the remedy.
    */
   defaultOutput?: "json";
+  /**
+   * WHERE THIS CONFIG CAME FROM. Always set by `loadConfig`; see `ConfigSource`.
+   *
+   * Optional because a config assembled in memory — by a kit consumer, or by a test — came from
+   * no file at all, and a required field would force every such caller to invent an answer. A
+   * report built from one says `origin: "none"`, which is the truth about the FILE: none was
+   * read. What it cannot say is where the declarations came from instead, and that is a question
+   * only the caller who assembled them can answer.
+   */
+  source?: ConfigSource;
 }
 
 /**
@@ -169,16 +207,32 @@ export function loadConfig(
   knownRuleIds: readonly string[] = [],
 ): AccConfig {
   const explicit = dir !== undefined;
-  const path = join(dir ?? ".", CONFIG_FILE);
+  // ABSOLUTE, because both things that publish it — the report's `config:` line and every
+  // `ConfigError` — are read somewhere other than the shell that produced them, and a relative
+  // path is only meaningful beside the working directory it was resolved against. That directory
+  // is the very thing the disclosure exists to stop the reader having to guess, so resolving here
+  // once is what keeps the error path and the success path saying the same kind of thing.
+  const path = resolve(join(dir ?? ".", CONFIG_FILE));
+  const source: ConfigSource = {
+    origin: explicit ? "flag" : "discovered",
+    path,
+    dir: resolve(dir ?? "."),
+  };
 
   if (!existsSync(path)) {
-    if (!explicit) return { rules: {}, knownFailures: {} };
+    if (!explicit)
+      return { rules: {}, knownFailures: {}, source: { ...source, origin: "none", path: null } };
 
+    // Both messages are read with `path` glued to their front, so both are written as predicates
+    // of that path rather than as standalone sentences — `no acc.config.json in the requested
+    // directory` rendered as `/tmp/acc.config.json no acc.config.json in the requested
+    // directory`, which is not one. Which of the two the caller gets is the whole distinction
+    // between "the directory is fine and empty" and "the directory is not there".
     throw new ConfigError(
       path,
       existsSync(dir) && statSync(dir).isDirectory()
-        ? `no ${CONFIG_FILE} in the requested directory`
-        : `no such directory: ${dir}`,
+        ? "does not exist"
+        : `does not exist — no such directory: ${resolve(dir)}`,
     );
   }
 
@@ -213,7 +267,7 @@ export function loadConfig(
   const rules = parseRules(path, parsed.rules, known);
   const knownFailures = parseKnownFailures(path, parsed.knownFailures, known);
   requireNoContradiction(path, rules, knownFailures);
-  return { rules, knownFailures, ...parseDefaultOutput(path, parsed.defaultOutput) };
+  return { rules, knownFailures, ...parseDefaultOutput(path, parsed.defaultOutput), source };
 }
 
 /** The keys a rule entry may carry. An unrecognised one is a typo doing nothing, silently. */
@@ -325,16 +379,29 @@ function requireNoContradiction(
  */
 function requireKnownId(path: string, section: string, ruleId: string, known: Set<string>): void {
   if (known.size > 0 && !known.has(ruleId)) {
+    // The message is read with the file's path glued to its front — `check.ts` reports a
+    // ConfigError as `${err.path} ${err.message}` — so a message opening with a bare section
+    // name produced `acc.config.json rules names "Z9"`, which is not a sentence. Naming the
+    // section as a key of the file it belongs to reads correctly in both places.
     throw new ConfigError(
       path,
-      `${section} names "${ruleId}", which is not a rule this kit checks (known: ${[...known].sort().join(", ")})`,
+      `has an entry under "${section}" for "${ruleId}", which is not a rule this kit checks (known: ${[...known].sort().join(", ")})`,
     );
   }
 }
 
-/** A value's shape, for an error message. `null` and `[]` are the two that matter. */
+/**
+ * A value's shape, for an error message.
+ *
+ * `null` and `[]` are the two that matter — both are objects to `typeof` and neither is the one
+ * a config author meant. `undefined` and `object` are here because the article is part of the
+ * message: `found a undefined` and `found a object` are both reachable from a real config file
+ * (a rule entry with a missing key, a `knownFailures` reason written as `{}`), and a tool that
+ * emits broken English about a mistake is a tool the reader trusts less about the mistake.
+ */
 function describe(v: unknown): string {
   if (v === null) return "null";
+  if (v === undefined) return "undefined";
   if (Array.isArray(v)) return "an array";
-  return `a ${typeof v}`;
+  return typeof v === "object" ? "an object" : `a ${typeof v}`;
 }

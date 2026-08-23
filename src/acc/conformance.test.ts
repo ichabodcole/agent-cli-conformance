@@ -10,7 +10,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
-import { chmodSync, copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -77,11 +77,15 @@ interface Run {
  * rather than 128+n — it did not choose that status, and recording it as an exit code would
  * fabricate evidence.
  */
-function run(args: string[], env: Record<string, string> = {}): Promise<Run> {
+function run(args: string[], env: Record<string, string> = {}, cwd?: string): Promise<Run> {
   return new Promise((resolve) => {
     const child = spawn("bun", [CLI, ...args], {
       stdio: ["pipe", "pipe", "pipe"],
       env: { ...process.env, ...env },
+      // The WORKING DIRECTORY is a parameter of `acc check`, whether or not the caller thinks of
+      // it as one: `acc.config.json` is looked for here when `--config-dir` is not passed. Tests
+      // that do not pass it inherit this process's directory, exactly as before.
+      ...(cwd === undefined ? {} : { cwd }),
     });
     let stdout = "";
     let stderr = "";
@@ -949,6 +953,207 @@ describe("acc check — the outcome exit code", () => {
     expect(env.error.kind).toBe("usage");
     expect(env.error.details.path).toContain("/no/such/dir-xyz");
   }, 30_000);
+
+  // THE TRAP, end to end. `acc.config.json` is read from the working directory when
+  // `--config-dir` is not passed, and until now nothing said so: an adopter ran one command
+  // against one absolute target path from two directories, got two verdicts, and worked out why
+  // only because residue from an earlier run happened to be on disk. CI runs from the repo root
+  // and an engineer runs from a subdirectory, so the disagreement is the ordinary case.
+  describe("the report names the config it loaded, and where from", () => {
+    const CONFORMING = join(dirname(CLI), "kit/fixtures/conforming.ts");
+
+    /**
+     * A directory holding a config that is valid and does something observable.
+     *
+     * `realpathSync` because macOS puts the temp directory behind a symlink (`/var` ->
+     * `/private/var`) and a child process reports the resolved path as its cwd. Without it these
+     * tests compare two spellings of one directory and fail for a reason that has nothing to do
+     * with the disclosure they exist to check.
+     */
+    function withConfig(): string {
+      const dir = realpathSync(mkdtempSync(join(tmpdir(), "acc-config-cwd-")));
+      writeFileSync(
+        join(dir, "acc.config.json"),
+        JSON.stringify({ rules: { A6: { severity: "off", reason: "found from the cwd" } } }),
+      );
+      return dir;
+    }
+
+    test("a config DISCOVERED in the working directory is named, and marked as discovered", async () => {
+      const dir = withConfig();
+      try {
+        const r = await run(["check", CONFORMING, "--json"], {}, dir);
+        const { data } = JSON.parse(r.stdout);
+        expect(data.configSource.origin).toBe("discovered");
+        expect(data.configSource.path).toBe(join(dir, "acc.config.json"));
+        // ...and it really did apply, or the disclosure would be describing a file the run
+        // ignored — which is the same defect wearing the opposite sign.
+        expect(data.waivers.map((w: { ruleId: string }) => w.ruleId)).toEqual(["A6"]);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    test("the identical command from a directory with no config says so, naming that directory", async () => {
+      const dir = realpathSync(mkdtempSync(join(tmpdir(), "acc-config-none-")));
+      try {
+        const r = await run(["check", CONFORMING, "--json"], {}, dir);
+        const { data } = JSON.parse(r.stdout);
+        expect(data.configSource).toEqual({ origin: "none", path: null, dir });
+        expect(data.waivers).toEqual([]);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    test("a directory named with --config-dir is marked as asked-for, not discovered", async () => {
+      const dir = withConfig();
+      try {
+        const r = await run(["check", CONFORMING, "--config-dir", dir, "--json"]);
+        const { data } = JSON.parse(r.stdout);
+        expect(data.configSource.origin).toBe("flag");
+        expect(data.configSource.path).toBe(join(dir, "acc.config.json"));
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    // The disclosure has to survive into the TEXT report, which is where the adopter was
+    // reading. The discovered case says more than the other two on purpose: it is the only one
+    // whose cause is invisible in the command that produced it.
+    test("the text report carries the line, and shouts only for the discovered case", async () => {
+      const dir = withConfig();
+      try {
+        const found = await run(["check", CONFORMING, "--format", "text"], {}, dir);
+        expect(found.stdout).toContain(`config: ${join(dir, "acc.config.json")}`);
+        expect(found.stdout).toContain("DISCOVERED in the working directory");
+
+        const asked = await run(["check", CONFORMING, "--format", "text", "--config-dir", dir]);
+        expect(asked.stdout).toContain("(--config-dir)");
+        expect(asked.stdout).not.toContain("DISCOVERED");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    test("the text report says so when no config was found, and where it looked", async () => {
+      const dir = realpathSync(mkdtempSync(join(tmpdir(), "acc-config-none-")));
+      try {
+        const r = await run(["check", CONFORMING, "--format", "text"], {}, dir);
+        expect(r.stdout).toContain(`config: none — no acc.config.json in ${dir}`);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    // THE ERROR PATH DISCLOSES TOO, and it is the path where the caller most needs it: no report
+    // is printed, so the error message is the only thing that can say which file failed and how
+    // the kit reached it. It used to say `acc.config.json <message>` — the file named without its
+    // directory — and offer "drop --config-dir" to a caller who had typed no such flag.
+    test("a malformed config found in the cwd names it absolutely, and does not blame a flag nobody passed", async () => {
+      const dir = realpathSync(mkdtempSync(join(tmpdir(), "acc-config-bad-")));
+      writeFileSync(join(dir, "acc.config.json"), JSON.stringify({ rules: { A1: {} } }));
+      try {
+        const r = await run(["check", CONFORMING, "--json"], {}, dir);
+        expect(r.code).toBe(2);
+        const env = JSON.parse(r.stderr);
+        expect(env.error.kind).toBe("usage");
+        expect(env.error.message).toContain(`${join(dir, "acc.config.json")} rules.A1.severity`);
+        expect(env.error.details.path).toBe(join(dir, "acc.config.json"));
+        expect(env.error.hint).not.toContain("--config-dir");
+        expect(env.error.hint).toContain("DISCOVERED in the working directory");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
+    // ...and the flag case keeps the remedy that fits it, which is the reason the two are told
+    // apart rather than given one message that is true of neither.
+    test("a malformed config named with --config-dir keeps the remedy that fits it", async () => {
+      const dir = realpathSync(mkdtempSync(join(tmpdir(), "acc-config-bad-flag-")));
+      writeFileSync(join(dir, "acc.config.json"), JSON.stringify({ rules: { A1: {} } }));
+      try {
+        const r = await run(["check", CONFORMING, "--config-dir", dir, "--json"]);
+        expect(r.code).toBe(2);
+        const env = JSON.parse(r.stderr);
+        expect(env.error.hint).toContain("drop --config-dir");
+        expect(env.error.hint).not.toContain("DISCOVERED");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+  });
+
+  // `B4` is in the catalogue, has no checker, and used to appear in no report at all — not as a
+  // finding, not as N/A, not in `notApplicable` — while A4, one rule away, printed an explicit
+  // N/A explaining itself. A conformance kit that omits what it did not check is the defect its
+  // own catalogue is about.
+  describe("a rule with no checker is reported rather than omitted", () => {
+    const CONFORMING = join(dirname(CLI), "kit/fixtures/conforming.ts");
+
+    test("it appears as N/A with a reason, and gates nothing", async () => {
+      const r = await run(["check", CONFORMING, "--json"]);
+      const { data } = JSON.parse(r.stdout);
+      const b4 = data.findings.find((f: { ruleId: string }) => f.ruleId === "B4");
+      expect(b4?.applicable).toBe(false);
+      expect(b4?.detail).toContain("no checker exists");
+      expect(data.notApplicable).toContain("B4");
+      expect(r.code).toBe(0);
+    }, 60_000);
+
+    // Every rule the catalogue publishes is accounted for in the report. This is the assertion
+    // that generalises: a new rule page whose checker is still planned fails here too, rather
+    // than quietly disappearing the way B4 did.
+    test("every rule `acc rules` lists appears in the report", async () => {
+      const listed = JSON.parse((await run(["rules", "--json"])).stdout).data.rules.map(
+        (r: { rule_id: string }) => r.rule_id,
+      );
+      const reported = JSON.parse((await run(["check", CONFORMING, "--json"])).stdout)
+        .data.findings.map((f: { ruleId: string }) => f.ruleId)
+        .sort();
+      expect(reported).toEqual([...listed].sort());
+    }, 60_000);
+
+    test("the text report prints the N/A line with its reason", async () => {
+      const r = await run(["check", CONFORMING, "--format", "text"]);
+      expect(r.stdout).toMatch(/N\/A\s+B4\s+no checker exists/);
+      // The legend has to cover both reasons a rule can be N/A, or one reads as the other.
+      expect(r.stdout).toContain("no checker exists for the rule at any level");
+    }, 60_000);
+  });
+
+  // Finding 2 of the blind trial: the evidence ids resolved and nothing said where. The agent
+  // guessed `acc show <id>`, was told to pass a rule id or a page slug, and reconstructed the
+  // probes by hand — hanging its own shell for two minutes and producing a wrong reproduction.
+  describe("the evidence ids are reachable by someone who does not already know", () => {
+    const CONFORMING = join(dirname(CLI), "kit/fixtures/conforming.ts");
+
+    test("the text report says once where the ids it cites resolve", async () => {
+      const r = await run(["check", CONFORMING, "--format", "text"]);
+      expect(r.stdout).toContain("observations");
+      expect(r.stdout).toContain("--json");
+    }, 60_000);
+
+    test("acc show on a real evidence id names where to look instead of pointing away", async () => {
+      const check = await run(["check", CONFORMING, "--json"]);
+      const { data } = JSON.parse(check.stdout);
+      const id: string = data.observations[0].id;
+      // The premise of the test: the id came out of a report, and it does resolve there.
+      expect(data.findings.some((f: { evidence: string[] }) => f.evidence.includes(id))).toBe(true);
+
+      const r = await run(["show", id, "--json"]);
+      expect(r.code).toBe(5);
+      const env = JSON.parse(r.stderr);
+      expect(env.error.message).toContain("evidence id");
+      expect(env.error.hint).toContain("observations");
+      expect(env.error.hint).toContain("acc check");
+    }, 60_000);
+
+    test("acc check --help mentions the observations array", async () => {
+      const r = await run(["check", "--help", "--format", "text"]);
+      expect(r.stdout).toContain("observations");
+    }, 30_000);
+  });
 
   // Waivers, end to end, against the fixture that motivated them. `exits-zero-on-unknown-flag.ts`
   // violates six core rules including D2 — the rule dogfooding found three of four real CLIs
