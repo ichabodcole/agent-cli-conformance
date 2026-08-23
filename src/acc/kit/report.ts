@@ -311,6 +311,13 @@ export interface Report {
     reason: string;
     verdict: Verdict;
     tier: "core" | "diagnostic";
+    /**
+     * What this waiver COST, which is the question a reader of the waiver list is actually
+     * asking. A `defect` waiver also blocked `fullyVerified` and put the rule in `evidenceGaps`;
+     * a `design-choice` waiver did neither. Without it the list shows two entries that look
+     * identical and are not.
+     */
+    deviation: "defect" | "design-choice";
     applicable: boolean;
   }>;
   /**
@@ -578,6 +585,7 @@ export function buildReport(
         reason: config.rules[f.ruleId]?.reason ?? "",
         verdict: f.verdict,
         tier: f.tier,
+        deviation: f.deviation,
         applicable: f.applicable,
       })),
     severityOverrides: reported

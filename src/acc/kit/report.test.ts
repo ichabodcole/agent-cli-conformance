@@ -537,6 +537,7 @@ describe("buildReport", () => {
           reason: "human-first CLI; bare help is deliberate",
           verdict: "fail",
           tier: "core",
+          deviation: "defect",
           applicable: true,
         },
       ]);
