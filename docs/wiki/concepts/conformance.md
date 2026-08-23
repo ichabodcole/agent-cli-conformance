@@ -213,6 +213,13 @@ tool can honestly do.
 
 ## The details
 
+`acc check` reads `acc.config.json` from the **current working directory** unless `--config-dir`
+names another one — that directory only, and finding nothing there is the normal case. So two runs
+of the same command against the same absolute target path can reach different verdicts from
+different directories, and
+[how to reach L0](../guides/how-to-reach-l0-in-your-project.md#4-write-accconfigjson) says what to
+do about it.
+
 Two mechanisms live in `acc.config.json` that make **different statements about rules**. Keeping
 them apart is load-bearing: fold one into the other and the ratchet stops meaning anything.
 

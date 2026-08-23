@@ -219,7 +219,21 @@ export const COMMANDS: CommandSpec[] = [
       {
         name: "--config-dir",
         type: "string",
-        description: "Directory holding acc.config.json.",
+        // WHAT OMITTING IT DOES is half the description, and the half that was missing. Without
+        // the flag the CURRENT WORKING DIRECTORY is searched, and a file found there is loaded —
+        // so the same command against the same absolute target gives two verdicts from two
+        // directories. An adopter hit exactly that and worked it out only because residue from an
+        // earlier run was on disk. A flag description that documents the flag and not its absence
+        // leaves the default undocumented everywhere.
+        //
+        // "That directory only, with no search upward" is carried here as well as in the README,
+        // the guide and the concept page, because this is the text `acc check --help` prints and
+        // so the one a reader reaches without leaving their shell. "The working directory is
+        // searched" on its own invites the wrong picture — a walk up to the repo root, the way
+        // most tools resolve their config — and a reader holding it would leave a config one
+        // directory up and never learn why their waivers did nothing.
+        description:
+          "Directory holding acc.config.json. Omitted, the current working directory is searched — that directory only, with no search upward — and a file found there is loaded; the report names whichever was used.",
         valueHint: "dir",
       },
     ],
@@ -251,6 +265,9 @@ export const COMMANDS: CommandSpec[] = [
       "thing: it names no declared verb and no declared flag. That buys least against a CLI whose",
       "first positional is free-form text (claude, llm, aider), where the token is a prompt.",
       "Point this only at a binary you are willing to run.",
+      "EVIDENCE: --json adds an `observations` array under .data — every probe that ran, with its",
+      "argv, exit code and timings. The ids each finding cites in `evidence` index it. `acc show`",
+      "does not resolve them; they exist only in the report the run produced.",
     ],
     examples: ["acc check ./mycli", "acc check $(which gh) --json"],
   },

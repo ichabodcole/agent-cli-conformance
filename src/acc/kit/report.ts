@@ -1,4 +1,4 @@
-import type { AccConfig } from "./config.ts";
+import type { AccConfig, ConfigSource } from "./config.ts";
 import type {
   Checker,
   Coverage,
@@ -7,6 +7,7 @@ import type {
   Invocation,
   Observation,
   ProbeLevel,
+  UncheckedRule,
   Verdict,
 } from "./types.ts";
 
@@ -62,10 +63,11 @@ export interface ReportedFinding extends Finding {
   /** The assertions `coverage: "partial"` is referring to. Empty when coverage is complete. */
   coverageGaps: string[];
   /**
-   * False when `probeLevel` exceeds the level this report was run at. This is "out of scope
-   * here", a different claim from `unverified`'s "tried and could not establish it" — conflating
-   * them would make a report unable to say whether a rule was skipped or actually attempted.
-   * Not-applicable findings are excluded from `conformant` and from `counts.core`.
+   * False when `probeLevel` exceeds the level this report was run at, and false for a rule no
+   * checker answers to at any level. This is "out of scope here", a different claim from
+   * `unverified`'s "tried and could not establish it" — conflating them would make a report
+   * unable to say whether a rule was skipped or actually attempted. Not-applicable findings are
+   * excluded from `conformant` and from `counts.core`.
    */
   applicable: boolean;
 }
@@ -159,6 +161,17 @@ export interface Report {
    * absence was measured.
    */
   kitVersion: string;
+  /**
+   * WHICH `acc.config.json` WAS LOADED, AND WHERE FROM — including when none was.
+   *
+   * The config decides waivers, severities and `defaultOutput`, so it can move the verdict; and
+   * one of the three ways it arrives is invisible in the command that produced the report. An
+   * adopter ran the identical command against the identical absolute path from two directories
+   * and got two verdicts, with nothing on either screen to explain the difference — they only
+   * worked it out because residue from an earlier run happened to be on disk. This field is that
+   * explanation, published rather than left to be reconstructed. See `ConfigSource`.
+   */
+  configSource: ConfigSource;
   /** The probe level this report was built at. Determines which findings are `applicable`. */
   level: ProbeLevel;
   /**
@@ -268,9 +281,16 @@ export interface Report {
    * when it was a filtered one.
    */
   observations: ReportedObservation[];
-  /** Rule ids excluded from this run because their `probeLevel` exceeds `level`. Surfaced by
-   *  name, not just by count, so a rule mislabelled with too high a `probeLevel` is visible
-   *  rather than silently missing from the conformance verdict. */
+  /**
+   * Rule ids excluded from this run: their `probeLevel` exceeds `level`, or no checker exists
+   * for them at all (see `UncheckedRule`). Surfaced by name, not just by count, so a rule
+   * mislabelled with too high a `probeLevel` — or one the kit has never been able to check — is
+   * visible rather than silently missing from the conformance verdict.
+   *
+   * The two reasons are told apart on the finding, not here: an unchecked rule's `detail` says
+   * so in words, and its `coverageGaps` say so again. A reader scanning the ids is asking which
+   * rules this run did not judge, and that answer is the same for both.
+   */
   notApplicable: string[];
   knownFailures: Array<{ ruleId: string; reason: string }>;
   /** Excused rules that now pass. The ratchet: remove these from `knownFailures`. */
@@ -418,10 +438,45 @@ export function buildReport(
    * and `config` arrive the same way and for the same reason.
    */
   kitVersion: string,
+  /**
+   * Rules the catalogue declares and no checker answers to. Optional, and empty by default, for
+   * the reason `level` is a parameter: a caller checking a partial corpus — a test, a consumer
+   * running three checkers of its own — has no unchecked rules to report, and would otherwise
+   * have to pass a list saying so.
+   */
+  uncheckedRules: readonly UncheckedRule[] = [],
 ): Report {
-  const byId = new Map(checkers.map((c) => [c.ruleId, c]));
+  const byId = new Map<string, Checker | UncheckedRule>(checkers.map((c) => [c.ruleId, c]));
+  // A REAL CHECKER WINS over a declaration for the same id. The declaration is the kit's copy of
+  // the rule pages and can go stale by one commit — the commit that lands the checker — and a
+  // stale entry must not turn a live verdict into "nothing looked at this".
+  const unchecked = new Set(uncheckedRules.map((u) => u.ruleId).filter((id) => !byId.has(id)));
+  // A rule with no checker produces no finding, so one is synthesised here — the alternative is
+  // the rule disappearing from the report altogether, which is what used to happen. `unverified`
+  // rather than a fourth verdict: the three-verdict vocabulary is a contract stored reports
+  // carry, and `applicable: false` below is what separates "nothing looked" from "looked and
+  // could not tell". A reader sees `N/A` with the reason on the same line.
+  for (const u of uncheckedRules) if (!byId.has(u.ruleId)) byId.set(u.ruleId, u);
+  const synthesised: Finding[] = uncheckedRules
+    .filter((u) => unchecked.has(u.ruleId) && !findings.some((f) => f.ruleId === u.ruleId))
+    .map((u) => ({
+      ruleId: u.ruleId,
+      verdict: "unverified" as const,
+      // Stated in terms of the KIT rather than of this rule, because the sentence has to be
+      // true of the next rule to arrive here as well as of the one that prompted it.
+      detail: "no checker exists for this rule yet, so this run establishes nothing about it",
+      evidence: [],
+    }));
+  // Merged in rule-id order rather than appended, so the findings list reads as one sequence.
+  // Insertion rather than a sort of the whole list: `findings` arrives in the caller's order and
+  // a sort would silently rewrite it.
+  const merged = [...findings];
+  for (const f of synthesised) {
+    const at = merged.findIndex((existing) => existing.ruleId > f.ruleId);
+    merged.splice(at === -1 ? merged.length : at, 0, f);
+  }
 
-  const reported: ReportedFinding[] = findings.map((f) => {
+  const reported: ReportedFinding[] = merged.map((f) => {
     const c = byId.get(f.ruleId);
     // A checker not found in `checkers` (shouldn't happen outside tests) defaults to core/L0 —
     // the least forgiving assumption, so a wiring bug shows up as a conformance blocker rather
@@ -450,12 +505,22 @@ export function buildReport(
       deviation,
       rulePath: c?.rulePath ?? "",
       probeLevel,
-      coverage: c?.coverage ?? "partial",
+      // An unchecked rule has no coverage of its own to declare, so it takes the unforgiving
+      // default with everything else that is unknown here.
+      coverage: (c && "coverage" in c ? c.coverage : undefined) ?? "partial",
       // COPIED, not aliased. `c` is an entry in the module-level `CHECKERS` registry, which
       // lives for the whole process — a consumer mutating a finding would otherwise rewrite the
       // checker definition every later run reads.
-      coverageGaps: [...(c?.coverageGaps ?? ["no checker was found for this rule id"])],
-      applicable: LEVEL_RANK[probeLevel] <= LEVEL_RANK[level],
+      coverageGaps: [
+        ...(c && "coverageGaps" in c
+          ? c.coverageGaps
+          : ["no checker exists for this rule so nothing about it is established"]),
+      ],
+      // A rule with no checker is out of scope at EVERY level, not just below its declared one:
+      // there is nothing that would run at `L1` either until the checker is written. Deciding it
+      // on `probeLevel` alone would put the rule back in scope the day `L1` ships and report it
+      // `unverified` — "we looked and could not tell" — over a probe that does not exist.
+      applicable: !unchecked.has(f.ruleId) && LEVEL_RANK[probeLevel] <= LEVEL_RANK[level],
       // `unverified` is excusable too, not just `fail`. Excusing only failures left a project
       // blocked by an unverified core rule with no path to green: nothing it could change
       // would clear the rule, and the ratchet had no way to acknowledge that.
@@ -540,6 +605,9 @@ export function buildReport(
   return {
     target: h.target.path,
     kitVersion,
+    // A config assembled in memory rather than read from a file reports `none`, which is what
+    // `AccConfig.source` being optional means — see the field, where the boundary is argued.
+    configSource: config.source ?? { origin: "none", path: null, dir: process.cwd() },
     level,
     conformant,
     fullyVerified:

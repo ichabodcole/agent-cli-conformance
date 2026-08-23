@@ -21,6 +21,13 @@ function write(content: string): void {
 
 const IDS = ["A1", "A2", "B1"];
 
+/** The provenance a config read from an explicitly named directory carries. See `ConfigSource`. */
+const namedByFlag = (d: string) => ({
+  origin: "flag" as const,
+  path: join(d, CONFIG_FILE),
+  dir: d,
+});
+
 describe("loadConfig", () => {
   // The declaration a machine-first CLI makes about itself (EXT-4). Named for what is CHECKED:
   // the kit accepts JSON and only JSON — not YAML, CSV, TSV or XML — so a broader word would
@@ -63,17 +70,29 @@ describe("loadConfig", () => {
 
   test("a present file is parsed", () => {
     write(JSON.stringify({ knownFailures: { A1: "legacy parser" } }));
-    expect(loadConfig(dir, IDS)).toEqual({ rules: {}, knownFailures: { A1: "legacy parser" } });
+    expect(loadConfig(dir, IDS)).toEqual({
+      rules: {},
+      knownFailures: { A1: "legacy parser" },
+      source: namedByFlag(dir),
+    });
   });
 
   test("a file missing knownFailures still yields an empty object rather than undefined", () => {
     write(JSON.stringify({}));
-    expect(loadConfig(dir, IDS)).toEqual({ rules: {}, knownFailures: {} });
+    expect(loadConfig(dir, IDS)).toEqual({
+      rules: {},
+      knownFailures: {},
+      source: namedByFlag(dir),
+    });
   });
 
   test("an empty knownRuleIds list disables the id check, for a partial corpus", () => {
     write(JSON.stringify({ knownFailures: { Z9: "not a rule here" } }));
-    expect(loadConfig(dir, [])).toEqual({ rules: {}, knownFailures: { Z9: "not a rule here" } });
+    expect(loadConfig(dir, [])).toEqual({
+      rules: {},
+      knownFailures: { Z9: "not a rule here" },
+      source: namedByFlag(dir),
+    });
   });
 
   test("a file missing rules yields an empty object rather than undefined", () => {
@@ -96,6 +115,7 @@ describe("rules: per-project severity", () => {
     expect(loadConfig(dir, IDS)).toEqual({
       rules: { A1: { severity: "off", reason: "human-first CLI; bare help is deliberate" } },
       knownFailures: {},
+      source: namedByFlag(dir),
     });
   });
 
@@ -117,6 +137,7 @@ describe("rules: per-project severity", () => {
     expect(loadConfig(dir, IDS)).toEqual({
       rules: { A1: { severity: "off", reason: "does not apply" } },
       knownFailures: { B1: "tracked in #412" },
+      source: namedByFlag(dir),
     });
   });
 });
@@ -193,7 +214,9 @@ describe("rules: shape validation", () => {
 
   test("an unknown rule id under rules is rejected, quoting the ids that exist", () => {
     write(JSON.stringify({ rules: { Z9: { severity: "off", reason: "r" } } }));
-    expect(() => loadConfig(dir, IDS)).toThrow(/rules names "Z9", which is not a rule this kit/);
+    expect(() => loadConfig(dir, IDS)).toThrow(
+      /has an entry under "rules" for "Z9", which is not a rule this kit/,
+    );
     expect(() => loadConfig(dir, IDS)).toThrow(/A1, A2, B1/);
   });
 
@@ -256,17 +279,42 @@ describe("an id in both sections", () => {
 // had excused — the silent-failure shape the catalogue exists to catch (review R2-4).
 describe("which missing file is an error", () => {
   test("no default file in the cwd is not an error", () => {
-    expect(loadConfig(undefined, IDS)).toEqual({ rules: {}, knownFailures: {} });
+    expect(loadConfig(undefined, IDS)).toEqual({
+      rules: {},
+      knownFailures: {},
+      source: { origin: "none", path: null, dir: process.cwd() },
+    });
   });
 
   test("an explicitly requested directory that does not exist is an error naming it", () => {
     const missing = join(dir, "nope");
     expect(() => loadConfig(missing, IDS)).toThrow(ConfigError);
-    expect(() => loadConfig(missing, IDS)).toThrow(/no such directory/);
+    expect(() => loadConfig(missing, IDS)).toThrow(/no such directory: /);
   });
 
   test("an explicitly requested directory with no config file is an error", () => {
-    expect(() => loadConfig(dir, IDS)).toThrow(/no acc\.config\.json/);
+    expect(() => loadConfig(dir, IDS)).toThrow(/does not exist/);
+  });
+
+  // Both of the above are read with the path glued to their front by the command layer, and
+  // `no acc.config.json in the requested directory` rendered as
+  // `/tmp/x/acc.config.json no acc.config.json in the requested directory` — a fragment, and the
+  // third of its kind in this file. Asserted on the rendered string rather than on the message
+  // alone, because the message alone is not where the defect was visible.
+  test.each([
+    ["the directory exists and is empty", (d: string) => d],
+    ["the directory does not exist", (d: string) => join(d, "nope")],
+  ])("the message reads as a sentence once the path is prefixed — %s", (_name, pick) => {
+    try {
+      loadConfig(pick(dir), IDS);
+      throw new Error("expected a throw");
+    } catch (err) {
+      expect(err).toBeInstanceOf(ConfigError);
+      const rendered = `${(err as ConfigError).path} ${(err as ConfigError).message}`;
+      expect(rendered).toMatch(/^\/.*\/acc\.config\.json does not exist/);
+      // The file is named once. Naming it twice is what made the old message unreadable.
+      expect(rendered.match(/acc\.config\.json/g)).toHaveLength(1);
+    }
   });
 
   test("the error carries the offending path as a field, not only in the message", () => {
@@ -336,6 +384,9 @@ describe("rule ids are checked against the active registry", () => {
   test("an unknown id is rejected, quoting the ids that exist", () => {
     write(JSON.stringify({ knownFailures: { Z9: "a rule that does not exist" } }));
     expect(() => loadConfig(dir, IDS)).toThrow(/"Z9", which is not a rule this kit checks/);
+    // The message is glued to the file path by the command layer, so it has to read as a
+    // sentence there too: `acc.config.json rules names "Z9"` was the garbled result.
+    expect(() => loadConfig(dir, IDS)).toThrow(/has an entry under "knownFailures" for "Z9"/);
     expect(() => loadConfig(dir, IDS)).toThrow(/A1, A2, B1/);
   });
 
@@ -347,5 +398,64 @@ describe("rule ids are checked against the active registry", () => {
   test("every valid id is accepted", () => {
     write(JSON.stringify({ knownFailures: { A1: "one", A2: "two", B1: "three" } }));
     expect(Object.keys(loadConfig(dir, IDS).knownFailures)).toEqual(["A1", "A2", "B1"]);
+  });
+});
+
+// WHERE THE CONFIG CAME FROM, which the report publishes and which an adopter had to reconstruct
+// from disk residue. The three origins are not interchangeable: one is on the caller's command
+// line, one is in a directory nobody mentioned, and one is nothing at all.
+describe("the provenance every load carries", () => {
+  test("a directory named with --config-dir reports origin flag, with an absolute path", () => {
+    write(JSON.stringify({}));
+    const { source } = loadConfig(dir, IDS);
+    expect(source).toEqual({ origin: "flag", path: join(dir, CONFIG_FILE), dir });
+    expect(source?.path?.startsWith("/")).toBe(true);
+  });
+
+  // THE TRAP, reproduced: nothing named this file and it was loaded anyway. Two runs of one
+  // command from two directories reached two verdicts for an adopter, with nothing on either
+  // screen accounting for it, so this origin is the one the report must be able to shout about.
+  test("a file found in the working directory reports origin discovered", () => {
+    write(JSON.stringify({ knownFailures: { A1: "found without being asked for" } }));
+    const cwd = process.cwd();
+    try {
+      process.chdir(dir);
+      const config = loadConfig(undefined, IDS);
+      // The declarations really did take effect — otherwise this test would pass over a config
+      // that was reported and then ignored.
+      expect(config.knownFailures).toEqual({ A1: "found without being asked for" });
+      expect(config.source?.origin).toBe("discovered");
+      expect(config.source?.path).toBe(join(process.cwd(), CONFIG_FILE));
+    } finally {
+      process.chdir(cwd);
+    }
+  });
+
+  // "None" still answers WHERE, because "no config was loaded" is half an answer: a project whose
+  // file sits one directory up needs to know which directory was searched to see why.
+  test("no file at all reports origin none, and still names the directory searched", () => {
+    const cwd = process.cwd();
+    try {
+      process.chdir(dir);
+      const { source } = loadConfig(undefined, IDS);
+      expect(source).toEqual({ origin: "none", path: null, dir: process.cwd() });
+    } finally {
+      process.chdir(cwd);
+    }
+  });
+});
+
+// Two malformed messages, both reachable from a real config file. A tool that emits broken
+// English about a mistake is a tool the reader trusts less about the mistake.
+describe("the shapes named in a rejection are named in English", () => {
+  test("a missing key is reported as `undefined`, not `a undefined`", () => {
+    write(JSON.stringify({ rules: { A1: { severity: "off" } } }));
+    expect(() => loadConfig(dir, IDS)).toThrow(/found undefined/);
+    expect(() => loadConfig(dir, IDS)).not.toThrow(/a undefined/);
+  });
+
+  test("an object is reported as `an object`, not `a object`", () => {
+    write(JSON.stringify({ knownFailures: { A1: {} } }));
+    expect(() => loadConfig(dir, IDS)).toThrow(/found an object/);
   });
 });

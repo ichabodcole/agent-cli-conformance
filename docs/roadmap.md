@@ -499,9 +499,13 @@ at runtime, and `prepare` ran `husky` unguarded. Both worked perfectly in this r
 would have failed on the consumer's first import. Both were found by hand, once, on the day the
 package was first installed anywhere — which is not a mechanism.
 
-**Also here.** A git install currently prints `Blocked 1 postinstall`, because the `prepare`
-script that sets up this repository's own hooks is shipped inside the consumer's artifact. It is
-harmless and it is noise a consumer should not have to interpret.
+**Also here.** ~~A git install prints `Blocked 1 postinstall`, because the `prepare` script that
+sets up this repository's own hooks is shipped inside the consumer's artifact.~~ _Resolved
+2026-08-23_: the script is now `hooks`, run once per clone, so nothing runs on a consumer's
+install and a git install prints no block. Kept for the record, because it is this section's own
+argument in miniature: it was harmless, it was invisible from a source checkout, three separate
+readers stopped at it on first contact, and it took someone installing the package the way an
+adopter does to see it at all.
 
 **Blocked on** nothing. The cost is one CI job and a fixture; the reason it is not done is that
 the release story is a day old.

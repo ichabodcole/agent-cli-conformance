@@ -176,8 +176,19 @@ you never have to look it up twice:
 
 ### 4. Write `acc.config.json`
 
-Put it at your project root. `acc check` reads it from the working directory automatically; pass
-`--config-dir` only when running from somewhere else.
+Put it at your project root. `acc check` reads it from the **current working directory** — that
+directory only, with no search upward — and a missing file there is the normal case rather than an
+error. Pass `--config-dir` when you run from somewhere else.
+
+**That makes the directory you run from part of the verdict.** From your project root the run sees
+your waivers; the same command with the same absolute target path, run from a subdirectory, sees
+none and can fail rules you waived. It goes the other way too — a stray `acc.config.json` in the
+directory you happen to be in will excuse rules you did not mean to excuse. Each report names the
+config it read, including when it read none — the text report on its `config:` line, `--json` in
+its `configSource` field — so the two runs disagree in the open rather than silently, but somebody
+still has to read both. Pass `--config-dir` wherever CI
+and a developer need to reach the same verdict, rather than relying on someone noticing that they
+did not.
 
 ```json
 {

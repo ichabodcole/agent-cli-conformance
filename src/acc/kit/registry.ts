@@ -20,7 +20,7 @@ import { machineModeHoldsOnParserErrorChecker } from "./checkers/streams/machine
 import { machineOutputParseableChecker } from "./checkers/streams/machine-output-parseable.ts";
 import { noAnsiWhenPipedChecker } from "./checkers/streams/no-ansi-when-piped.ts";
 import { stdoutCarriesOnlyDataChecker } from "./checkers/streams/stdout-carries-only-data.ts";
-import type { Checker } from "./types.ts";
+import type { Checker, UncheckedRule } from "./types.ts";
 
 /**
  * Every checker, in rule-id order.
@@ -52,4 +52,24 @@ export const CHECKERS: Checker[] = [
   noSecretsInHelpChecker,
   firstBytePromptChecker,
   doesNotCrashChecker,
+];
+
+/**
+ * Every rule the catalogue declares that NO checker in `CHECKERS` answers to — the other half of
+ * the corpus, and the half a report used to leave out entirely. See `UncheckedRule`.
+ *
+ * This list is not the source of truth for which rules those are; the rule pages are, through
+ * their `checker_status`. It is the kit's copy, kept here so `kit/` stays free of the wiki, and
+ * `registry.test.ts` fails the gate whenever the two disagree in either direction. That is what
+ * makes the disclosure general rather than a fix for `B4`: land a new rule page whose checker is
+ * still planned, and the suite goes red until the report can say so.
+ */
+export const UNCHECKED_RULES: UncheckedRule[] = [
+  {
+    ruleId: "B4",
+    rulePath: "docs/wiki/rules/streams/output-is-delivered-whole.md",
+    tier: "core",
+    deviation: "defect",
+    probeLevel: "L1",
+  },
 ];

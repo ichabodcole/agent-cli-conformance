@@ -371,6 +371,38 @@ export interface Checker {
 }
 
 /**
+ * A rule the catalogue DECLARES and no checker answers to yet.
+ *
+ * It exists because the alternative is silence, and silence is the defect this catalogue is
+ * about. `B4` was listed by `acc rules`, rendered by `acc show B4`, and absent from every check
+ * report — not a finding, not `N/A`, not in `notApplicable` — while `A4`, one rule away, printed
+ * an explicit `N/A` saying why it was out of scope. A reader comparing the two learns that the
+ * kit reports some of what it did not do.
+ *
+ * Declared as DATA rather than as a `Checker` with an empty `probes` and a fixed `unverified`,
+ * because those are two different sentences. A checker that reports `unverified` looked and
+ * could not establish the rule; there is nothing here that looks. And a rule with no checker is
+ * out of scope at EVERY level, not merely at the one below its `probeLevel` — which is why
+ * `buildReport` marks these not-applicable regardless of `level`, and why a `Checker` carrying
+ * a real `probeLevel` would start claiming to be in scope the moment `L1` arrives.
+ *
+ * The fields mirror `Checker`'s so `buildReport` can read either through one lookup. They are
+ * held to the rule page they belong to by `registry.test.ts`, in both directions — the same
+ * discipline `docs/wiki/lint.ts` applies to a real checker, and for the same reason: a
+ * declaration with nothing comparing it to its other half is how the two drift.
+ */
+export interface UncheckedRule {
+  ruleId: string;
+  /** Wiki path, so the report can still point at the page that explains the rule. */
+  rulePath: string;
+  tier: "core" | "diagnostic";
+  deviation: "defect" | "design-choice";
+  /** The level the rule page declares its future checker will need. Reported, never acted on —
+   *  see the note above about why it does not decide `applicable`. */
+  probeLevel: ProbeLevel;
+}
+
+/**
  * Find a recorded observation by the exact args it was run with.
  *
  * Matches on `args` only — `env` AND `repeat` are ignored, and both are ways to produce the

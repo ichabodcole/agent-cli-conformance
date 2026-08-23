@@ -12,9 +12,9 @@ import { basename, resolve } from "node:path";
 import { emit, type OutputMode, useColor } from "../envelope.ts";
 import { notFoundError, usageError } from "../errors.ts";
 import { Outcome } from "../exit-codes.ts";
-import { type AccConfig, ConfigError, loadConfig } from "../kit/config.ts";
+import { type AccConfig, CONFIG_FILE, ConfigError, loadConfig } from "../kit/config.ts";
 import { record, TargetNotExecutableError } from "../kit/record.ts";
-import { CHECKERS } from "../kit/registry.ts";
+import { CHECKERS, UNCHECKED_RULES } from "../kit/registry.ts";
 import { buildReport, primaryProblem, type ReportedFinding, runCheckers } from "../kit/report.ts";
 import type { History, TargetInfo } from "../kit/types.ts";
 import { VERSION } from "../version.ts";
@@ -137,9 +137,23 @@ export async function checkCommand(
     // `usage`, not `internal`: every one of these is something the caller can fix by editing a
     // file they own. Reported as `internal` it would read as a defect in acc.
     if (err instanceof ConfigError) {
+      // THE ERROR PATH DISCLOSES WHAT THE SUCCESS PATH DOES. A report names the config it read
+      // and how the kit reached it; a config that fails to load is the one moment the caller most
+      // needs both, and it used to give neither — the file was named without its directory, and
+      // the remedy offered was to drop a flag that a caller who had not typed `--config-dir`
+      // could not drop. `err.path` is absolute (see `loadConfig`), so the file is now identified
+      // the same way the `config:` line identifies it, and the hint tells a caller who named the
+      // directory something different from a caller for whom the working directory chose it.
       throw usageError(`${err.path} ${err.message}`, {
-        hint: "Fix acc.config.json, or drop --config-dir to skip it.",
-        details: { path: err.path },
+        hint:
+          opts.configDir === undefined
+            ? // Reachable only for a file that EXISTS — a missing one in the working directory is
+              // the normal case and never an error — so "fix it" is always the right verb here,
+              // and what the caller is missing is how the kit ever reached it.
+              `Fix that file. It was DISCOVERED in the working directory, not named on the command line, so nothing but the directory you ran from selected it.`
+            : // Reachable for a missing file too, which is why this does not only say "fix".
+              `Fix or create that file, or drop --config-dir — the working directory is searched instead, and no ${CONFIG_FILE} there is not an error.`,
+        details: { path: err.path, origin: opts.configDir === undefined ? "discovered" : "flag" },
       });
     }
     throw err;
@@ -178,7 +192,10 @@ export async function checkCommand(
   // missing file in the cwd is normal) from "the caller named a path" (a missing one is their
   // mistake, and continuing with an empty set would fail rules they believed were excused).
   // The registry goes in so a mistyped id is rejected rather than silently excusing nothing.
-  const report = buildReport(history, findings, CHECKERS, config, "L0", VERSION);
+  //
+  // `UNCHECKED_RULES` goes in so the rules the catalogue declares and the kit cannot yet check
+  // appear as `N/A` with their reason, rather than being absent from the report entirely.
+  const report = buildReport(history, findings, CHECKERS, config, "L0", VERSION, UNCHECKED_RULES);
 
   // The rule that actually explains the report's headline — see primaryProblem, which owns the
   // ranking (violations before gaps, and the rule that owns a failure mode before whatever
@@ -281,6 +298,21 @@ export async function checkCommand(
       // summarised because these ARE the report's caveats; the JSON carries the same list under
       // `evidenceGaps`.
       const gaps = r.evidenceGaps.map((e) => `    ${e.ruleId.padEnd(3)} ${e.gaps.join("; ")}`);
+      // WHERE THE CONFIG CAME FROM, on every run, in the same shape every time — a line that
+      // changes shape between runs is one a reader has to re-read. It sits directly under the
+      // headline because it is the frame the headline was reached inside: waivers, severity
+      // moves and `defaultOutput` all arrive through it.
+      //
+      // The DISCOVERED case says more than the other two, and deliberately. A `--config-dir` the
+      // caller typed is already on their screen, and "none" is the absence of a frame; a file
+      // picked up from the working directory is the only one that can change the verdict with
+      // nothing visible anywhere to say so — which is exactly how two runs of one command
+      // disagreed for an adopter, absolute target path and all.
+      const configLine = ((c) => {
+        if (c.origin === "none") return `  config: none — no ${CONFIG_FILE} in ${c.dir}`;
+        if (c.origin === "flag") return `  config: ${c.path}  (--config-dir)`;
+        return `  config: ${c.path}  (DISCOVERED in the working directory, not named on the command line — the same command run from elsewhere can reach a different verdict)`;
+      })(r.configSource);
       // Both claims, on one line, always. The verdict answers "did anything VIOLATE a core
       // rule"; the counts beside it answer "and was everything actually established". Naming
       // the level is part of the claim, not decoration — A4 is core and silently excluded as
@@ -305,6 +337,7 @@ export async function checkCommand(
         // success and puts an older commit on disk, and this is the only line every reader
         // certainly sees — the alternative was `acc --version`, which nobody thinks to check.
         `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}  ${r.target}  [acc ${r.kitVersion}]`,
+        configLine,
         "",
         ...lines,
         "",
@@ -357,8 +390,21 @@ export async function checkCommand(
             ]
           : []),
         "",
-        "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable at this level",
+        // WHERE THE EVIDENCE IS, said once, on every report. The ids each finding cites have
+        // resolved since 0.1.0 and a blind reader never found out: they tried `acc show <id>` —
+        // the obvious guess — got a hint naming rule ids and page slugs, and reconstructed the
+        // probes by hand instead, producing a wrong reproduction that nearly became a wrong bug
+        // report. A mechanism nobody can reach is not shipped. The command is written out with
+        // this run's own target rather than described, because the reader is holding the report
+        // and not the manual.
+        "  EVIDENCE — every finding cites observation ids, which resolve in the JSON report:",
+        `    acc check ${r.target} --json  →  .data.observations[]  (acc show resolves wiki pages, not these ids)`,
+        "",
+        "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable to this run",
         "  PASS+ passed, but the checker establishes only part of its rule — see the gaps above",
+        // N/A now covers two reasons and the legend has to say both, or a rule with no checker
+        // reads as one that was merely deferred to a higher level and will be picked up there.
+        "  N/A   out of scope at this level, or no checker exists for the rule at any level",
         // The glyph is explained even when nothing carries it, exactly as the four above are: a
         // legend that changes shape between runs is one a reader has to re-read.
         "  WVD  waived by config — the probe still ran, and the verdict it reached binds nothing",

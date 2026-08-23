@@ -338,6 +338,19 @@ acc check ./mycli --config-dir .    # look for acc.config.json in this directory
 
 The flag names a **directory**, not a file, which is why it is not called `--config`.
 
+**Without the flag, `acc` reads `acc.config.json` from the current working directory** — that
+directory only, with no search upward — and a missing file there is the normal case, not an error.
+Naming a directory that holds no config file _is_ an error, because you asked for one.
+
+⚠ **So the directory you run from is an input to the verdict.** Measured: the same command with the
+same absolute target path reported `NOT CONFORMANT` from one directory and `CONFORMANT` from
+another, because a config file was sitting in the second. CI runs from the repo root and an
+engineer runs from a subdirectory, so the disagreement is the ordinary case rather than a corner
+of one. Every report names the config it read, including when it read none — the text report on
+its `config:` line, `--json` in its `configSource` field — so a difference is visible to whoever
+reads the two runs, but only then. **Pass `--config-dir`
+wherever the two need to agree**, and it never arises.
+
 ### `acc`, the reference implementation
 
 `acc` explores the spec — and is built to satisfy it. That second part is the reason it
@@ -437,6 +450,7 @@ scripts/
 ### Commands
 
 ```bash
+bun run hooks                  # install the git hooks — once per clone, see below
 bun run check                  # THE gate: typecheck, lint, wiki lint, tests
 bun docs/wiki/lint.ts          # link, anchor, frontmatter, orphan and rule checks
 bun docs/wiki/lint.ts --json   # emit the knowledge graph
@@ -453,6 +467,15 @@ workflow](.github/workflows/check.yml) runs that line and nothing else; the pre-
 it too, behind a `lint-staged` pass that applies the same rules to the staged files first for
 speed. Every rule the hook enforces is in `bun run check`, so a `--no-verify` commit cannot
 land something CI would have caught.
+
+**`bun install` does not install the hooks — `bun run hooks` does, once per clone.** Setting them
+up automatically means a `prepare` script, and a `prepare` script belongs to the package, not to
+the checkout: every project that installs `acc` as a dependency is told `Blocked 1 postinstall`,
+which resolves to our `husky`. Bun blocks it, so it never ran for them in the first place — it was
+a warning about nothing, and three readers stopped to check it on first contact before it was
+removed. What that costs us is a fresh clone with no pre-commit hook until someone runs the
+command; CI runs the same `bun run check` either way, so the gate holds while the shortcut is
+missing.
 
 The wiki lint is not optional decoration. It verifies that every rule page declares a checker
 that exists, that every checker has a rule page, and that each page's `tier`, `probe_level`,
