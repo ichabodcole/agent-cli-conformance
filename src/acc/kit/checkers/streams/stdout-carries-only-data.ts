@@ -18,6 +18,7 @@ export const stdoutCarriesOnlyDataChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/streams/stdout-carries-only-data.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // Both probes are usage errors, which is the cheapest failure to provoke and the least like
   // the one that matters: a command that half-completes and then writes a placeholder result is

@@ -24,6 +24,7 @@ export const machineOutputParseableChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/streams/machine-output-is-parseable.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L1",
   // The page says an undeclared `output_kind` defaults to `data`, which makes NDJSON a
   // violation; the NDJSON branch below returns `unverified` instead, because nothing was

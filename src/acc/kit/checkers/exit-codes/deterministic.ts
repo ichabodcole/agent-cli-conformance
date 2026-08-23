@@ -25,6 +25,7 @@ export const deterministicChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/exit-codes/exit-codes-are-deterministic.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // The probe now repeats one invocation, so "three distinct flags are compared" is no longer
   // a gap. What remains is scope: one inert invocation shape, three times, which is a smoke

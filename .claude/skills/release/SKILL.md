@@ -35,6 +35,38 @@ tail` reports **`tail`'s** status, not the gate's — `sh -c 'exit 7' | tail -5;
 > rely on: piped into `tail` or `head`, a failure exits `0`, and an `&&` after it runs anyway on a
 > branch you never switched to. Redirect, then read `$?`.
 
+## 0.5 · Measure the version before you promote
+
+Do not reason about what release-please will do. Ask it:
+
+```bash
+npx --yes release-please@latest release-pr \
+  --token="$(gh auth token)" --repo-url=<owner>/<repo> \
+  --target-branch=develop --dry-run 2>&1 | grep -E 'updating from|Considering:'
+```
+
+It prints `updating from X to Y` and how many commits it considered. Both matter — a commit count
+far larger than your range means it has lost its anchor and will regenerate the changelog from
+much further back.
+
+> **⚠ It reads the config and manifest from the TARGET branch**, not from your working tree. So it
+> measures what that branch would release, and a change to `release-please-config.json` or
+> `.release-please-manifest.json` still sitting on a feature branch is invisible to it. When the
+> thing you want measured is not merged yet, push the would-be state to a scratch branch and
+> target that instead — then delete the branch.
+
+**To force a specific version**, put a `Release-As:` footer on a commit in the range:
+
+```
+chore: pin the first release of the reset line
+
+Release-As: 0.1.0
+```
+
+Measured: with that footer the dry run reports `updating from 0.1.0 to 0.1.0` rather than bumping.
+Use it when the number matters for a reason release-please cannot know — a first release after a
+version-line reset, or a number already promised in the docs.
+
 Then look at what is actually going to `main`, because it decides whether there is a release at all:
 
 ```bash
@@ -66,6 +98,10 @@ saying a checker "now catches X" while that checker reports `unverified` for X i
 defect class, shipped under its own name.
 
 Build **one file**: subject on line 1, blank line, then body.
+
+> **⚠ A `BREAKING CHANGE:` footer is a version instruction too.** release-please parses the body
+> as well as the subject, so dropping the `!` while leaving the footer still cuts the larger bump.
+> Grep the whole message before you trust the type you picked.
 
 > **⚠ The subject is a version instruction before it is a description.** Its Conventional Commit
 > type is parsed and it decides the released version. Pick the type from **what the range

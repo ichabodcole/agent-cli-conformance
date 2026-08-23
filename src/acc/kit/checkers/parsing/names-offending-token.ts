@@ -42,6 +42,7 @@ export const namesOffendingTokenChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/errors-name-the-offending-token.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // The rule has three clauses and this checker now reads two: the token appears verbatim in the
   // prose diagnostic, and — for a target that advertises a machine-mode flag — it appears inside

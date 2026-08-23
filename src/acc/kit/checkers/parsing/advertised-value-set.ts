@@ -32,6 +32,7 @@ export const advertisedValueSetChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/advertised-value-set-is-enforced.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // BOTH SPELLINGS, and the second one is not symmetry for its own sake.
   //

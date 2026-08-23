@@ -20,6 +20,7 @@ export const neverBlockChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/interactivity/never-block-without-a-tty.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // Every probe below is inert BY CONSTRUCTION, and an operation that genuinely requires a
   // decision is by definition not inert — so the paths where a CLI would actually prompt are

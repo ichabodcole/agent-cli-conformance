@@ -28,6 +28,7 @@ export const usageDistinguishableChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/exit-codes/usage-errors-are-distinguishable.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // The rule is a CONTRAST — 2 for the caller's mistake, 1 for ours — and only one side of it
   // is reachable here. The pass detail has always said so ("internal-fault contrast unverified

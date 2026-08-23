@@ -23,6 +23,7 @@ function stubChecker(ruleId: string, probes: Invocation[]): Checker {
     ruleId,
     rulePath: `docs/wiki/rules/stub/${ruleId}.md`,
     tier: "core",
+    deviation: "defect",
     probeLevel: "L0",
     // Irrelevant to recording — this file is about dedup and history construction, and nothing
     // downstream of `record()` reads coverage. Declared `complete` so a stub can never be

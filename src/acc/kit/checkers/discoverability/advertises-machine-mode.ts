@@ -59,6 +59,7 @@ export const advertisesMachineModeChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/discoverability/help-advertises-machine-mode.md",
   tier: "diagnostic",
+  deviation: "design-choice",
   probeLevel: "L0",
   // The rule asks for the flag AND the `schema` command "where one exists"; the verdict below
   // is a disjunction, so a CLI with an unadvertised `schema` command passes on `--json` alone.

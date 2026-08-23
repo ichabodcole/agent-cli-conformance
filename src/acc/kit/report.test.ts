@@ -35,10 +35,12 @@ const checker = (
   tier: "core" | "diagnostic",
   probeLevel: ProbeLevel = "L0",
   coverage: Coverage = "complete",
+  deviation: Checker["deviation"] = "defect",
 ): Checker => ({
   ruleId,
   rulePath: `docs/wiki/rules/x/${ruleId}.md`,
   tier,
+  deviation,
   probeLevel,
   coverage,
   coverageGaps: coverage === "partial" ? [`${ruleId} does not probe the nested case`] : [],
@@ -535,6 +537,7 @@ describe("buildReport", () => {
           reason: "human-first CLI; bare help is deliberate",
           verdict: "fail",
           tier: "core",
+          deviation: "defect",
           applicable: true,
         },
       ]);
@@ -931,6 +934,55 @@ describe("an excuse the run did not evaluate is reported as inert, not stale", (
 // The promise `types.ts` makes about `Finding.evidence` — "any finding can be traced to raw
 // evidence" — used to be untrue: the ids shipped and nothing resolved them. These tests bind the
 // promise, so it cannot quietly become false again.
+describe("a waived design-choice keeps fullyVerified", () => {
+  // Driven through complete-coverage stubs on purpose: every shipped checker declares
+  // `coverage: "partial"`, so `fullyVerified` is false on any real target for a reason that has
+  // nothing to do with waivers. Asserting this against a live run would prove nothing.
+  const waive = (ruleId: string) => ({
+    rules: { [ruleId]: { severity: "off" as const, reason: "by design" } },
+    knownFailures: {},
+  });
+
+  test("waiving a DESIGN-CHOICE rule leaves the evidence claim intact", () => {
+    const c = [checker("D2", "core", "L0", "complete", "design-choice")];
+    const r = buildReport(H, [finding("D2", "pass")], c, waive("D2"), "L0", VERSION);
+    expect(r.conformant).toBe(true);
+    expect(r.fullyVerified).toBe(true);
+    expect(r.evidenceGaps.map((g) => g.ruleId)).not.toContain("D2");
+  });
+
+  test("waiving a DEFECT rule still blocks it — the project chose not to be measured", () => {
+    const c = [checker("A1", "core", "L0", "complete", "defect")];
+    const r = buildReport(H, [finding("A1", "pass")], c, waive("A1"), "L0", VERSION);
+    expect(r.conformant).toBe(true);
+    expect(r.fullyVerified).toBe(false);
+    expect(r.evidenceGaps.map((g) => g.ruleId)).toContain("A1");
+  });
+
+  test("a design-choice waiver does not rescue an UNRELATED defect waiver", () => {
+    const c = [
+      checker("D2", "core", "L0", "complete", "design-choice"),
+      checker("A1", "core", "L0", "complete", "defect"),
+    ];
+    const cfg = {
+      rules: {
+        D2: { severity: "off" as const, reason: "by design" },
+        A1: { severity: "off" as const, reason: "known" },
+      },
+      knownFailures: {},
+    };
+    const r = buildReport(H, [finding("D2", "pass"), finding("A1", "pass")], c, cfg, "L0", VERSION);
+    expect(r.fullyVerified).toBe(false);
+    expect(r.evidenceGaps.map((g) => g.ruleId)).toEqual(["A1"]);
+  });
+
+  test("an unregistered checker's waiver is treated as a defect, not a free pass", () => {
+    const r = buildReport(H, [finding("ZZ", "pass")], [], waive("ZZ"), "L0", VERSION);
+    expect(r.findings[0]?.deviation).toBe("defect");
+    expect(r.fullyVerified).toBe(false);
+  });
+});
+
 describe("evidence ids resolve", () => {
   const realRun = async () => {
     const p = join(HERE, "fixtures/conforming.ts");

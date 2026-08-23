@@ -254,6 +254,7 @@ for (const spec of COMMANDS) {
         return rulesCommand(
           {
             tier: opts.tier as string | undefined,
+            deviation: opts.deviation as string | undefined,
             tag: opts.tag as string | undefined,
             probeLevel: opts.probeLevel as string | undefined,
           },

@@ -71,8 +71,13 @@ route, and the test as written lets it through.
 
 ## What it costs today
 
-A tool that declares its difference through the only mechanism available — a waiver — is marked
-for it. Measured, on a target that waives D2 with a stated reason:
+> **Resolved 2026-08-22, in the direction this section argued.** A waived `design-choice` no longer
+> blocks `fullyVerified` and no longer enters `evidenceGaps`; a waived `defect` still does both.
+> The section is kept as written because the argument is what produced the change, and the rest of
+> the report stands on it.
+
+A tool that declared its difference through the only mechanism available — a waiver — was marked
+for it. Measured at the time, on a target that waives D2 with a stated reason:
 
 ```
 conformant: true    fullyVerified: false    D2 listed in evidenceGaps
@@ -110,8 +115,10 @@ Under that reading:
 2. **Can each of the four be written as a declaration** that a checker could falsify — not just
    phrased as one? D3 is the interesting case: "I have no machine-readable mode" is a declaration
    whose falsification is trivial, while A6's grammar claim may need probes `L0` cannot send.
-3. **Should `fullyVerified` distinguish a waived `defect` from a waived `design-choice`?** That is
-   answerable now, independently of `L1`, and it is the part costing an adopter today.
+3. ~~**Should `fullyVerified` distinguish a waived `defect` from a waived `design-choice`?**~~
+   **Answered: yes**, and shipped. It did not need `L1` — which is itself evidence for this
+   report's thesis, since the fix was to treat a waiver as the nearest thing `L0` has to a
+   declaration.
 
 ## What this does not say
 

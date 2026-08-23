@@ -81,7 +81,9 @@ Generated from rule frontmatter by `bun run docs:sync`; the lint fails when it d
 different question of how much of the page that checker actually establishes, and each rule
 page names its own gaps. **Deviation** says what a violation MEANS — `defect` if there is no
 defensible alternative, `design-choice` if a different design can be right and a waiver records
-a decision rather than hiding a failure. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).
+a decision rather than hiding a failure — and it decides what a waiver costs: waiving a
+`design-choice` keeps `fullyVerified`, waiving a `defect` does not. See
+[SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).
 
 | Rule                                                              | Tier       | Deviation     | Level | Checker     | Coverage | Gaps |
 | ----------------------------------------------------------------- | ---------- | ------------- | ----- | ----------- | -------- | ---- |
@@ -207,6 +209,7 @@ cancellation, bounded shutdown, `SIGPIPE`, resumability.
 
 Why we chose what we chose, citing the research.
 
+- [Stay pre-1.0 while the design is still moving](./decisions/pre-1-0-while-the-design-moves.md) — A version number is a claim about stability, and this project was making one it could not keep — so the 1.x line was withdrawn, the tags deleted, and the promised surface narrowed to what is actually settled.
 - [Exit codes stay below 125](./decisions/exit-codes-below-125.md) — Reserving the band POSIX and
   the delegators already use, rather than inventing a new one, keeps our domain codes clear of the
   shell's — on POSIX, and not without residue.

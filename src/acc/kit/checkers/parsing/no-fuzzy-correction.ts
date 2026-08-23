@@ -23,6 +23,7 @@ export const noFuzzyCorrectionChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/no-fuzzy-auto-correction.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // "Performed no work" is the clause that matters and the one L0 cannot see: the runner
   // records argv, streams, status and timing, so a non-zero exit is the only proxy available
