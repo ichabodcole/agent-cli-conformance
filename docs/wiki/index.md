@@ -81,7 +81,9 @@ Generated from rule frontmatter by `bun run docs:sync`; the lint fails when it d
 different question of how much of the page that checker actually establishes, and each rule
 page names its own gaps. **Deviation** says what a violation MEANS — `defect` if there is no
 defensible alternative, `design-choice` if a different design can be right and a waiver records
-a decision rather than hiding a failure. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).
+a decision rather than hiding a failure — and it decides what a waiver costs: waiving a
+`design-choice` keeps `fullyVerified`, waiving a `defect` does not. See
+[SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).
 
 | Rule                                                              | Tier       | Deviation     | Level | Checker     | Coverage | Gaps |
 | ----------------------------------------------------------------- | ---------- | ------------- | ----- | ----------- | -------- | ---- |

@@ -115,7 +115,9 @@ names an output _file_ at least as often as a format, and a probe whose meaning 
 sense your tool implements is not a probe. The report says so out loud:
 
 ```
-FAIL  D3  help names no machine-mode flag or schema command; B3 will be unverified as a result
+FAIL  D3  help names no machine-mode flag a caller could flip and no schema command: --json,
+          --format and --output are looked for as bare switches, and one documented with a value
+          slot is a flag that takes a value rather than one that selects a mode
 ```
 
 One line in help moves three findings.
@@ -152,6 +154,25 @@ Do not reach for a waiver because a rule is inconvenient. Reach for it when the 
 does not bind your tool — the canonical case is
 [D2](../rules/discoverability/bare-invocation-is-a-usage-error.md), where printing help on a
 bare invocation is a defensible design position that dogfooding found in three of four real CLIs.
+
+**What a waiver costs depends on the rule's `deviation`.** Every rule is classified `defect` or
+`design-choice`, and the two are not waived at the same price:
+
+- **`design-choice` — the waiver costs nothing.** The rule leaves no `evidenceGaps` entry and
+  `fullyVerified` is unaffected. You are stating a design the catalogue never required, not
+  hiding a failure. D2 above is one of these, so waiving it costs you nothing at all.
+- **`defect` — the waiver also costs `fullyVerified`,** and puts the rule in `evidenceGaps`, even
+  where the probe would have passed. It still buys the gate: `conformant` excludes the rule
+  either way. What it cannot buy is the evidence claim, because a rule you chose not to be
+  measured against was not established.
+
+`acc rules --deviation defect` lists the ones that cost. The report names the cost per waiver, so
+you never have to look it up twice:
+
+```
+  WAIVED (1) — declared not applicable to this tool, by config:
+    D2  bare invocation prints help by design  (would FAIL; design choice, costs nothing)
+```
 
 ### 4. Write `acc.config.json`
 
@@ -199,8 +220,16 @@ You are done when all of the following hold:
 
 - `bunx acc check ./your-cli` exits `0`.
 - The verdict line reads `CONFORMANT (L0)`.
-- Every entry in `knownFailures` corresponds to a failure you intend to fix, and the report
-  names no **stale expectations** — those are entries that now pass and should be deleted:
+- Every entry in `knownFailures` corresponds to a failure you intend to fix. An excused rule
+  still runs, still reports its verdict, and is marked `(excused)` in the findings list — the
+  failure is suppressed for the gate, never hidden:
+
+  ```
+  FAIL  D3  help names no machine-mode flag a caller could flip and no schema command: … (excused)
+  ```
+
+  The report also names no **stale expectations** — those are entries that now pass and should be
+  deleted:
 
   ```
     STALE EXPECTATIONS (1) — these rules now pass; remove them from knownFailures:
@@ -223,6 +252,14 @@ You are done when all of the following hold:
 
   ```
   WVD   D2  bare invocation exited 0; bare invocation wrote 24 bytes to stdout (waived; would FAIL)
+  ```
+
+- Every rule whose `severity` you moved — in either direction — is echoed back with the tier it
+  came from, the tier it now binds at, and your reason:
+
+  ```
+    SEVERITY MOVED (1) — this project binds differently:
+      D3  diagnostic -> core  our agents depend on discovering machine mode from help
   ```
 
 **Do not chase `fullyVerified` at L0.** Every core checker in the catalogue currently declares

@@ -186,14 +186,16 @@ export interface Report {
    * EVERY APPLICABLE CORE RULE WAS ACTUALLY ESTABLISHED, at this run's probe level. Four
    * conditions, all required:
    *
-   * 0. NO APPLICABLE CORE RULE WAS WAIVED. This is the one claim the config frame must not be
-   *    able to move, and it is the mirror of condition 2 below: an excuse suppresses the
-   *    conformance GATE but never the evidence CLAIM (review R3-4), and a waiver is a stronger
-   *    statement than an excuse, so it can buy no more. A rule the project chose not to be
-   *    measured against was not established — "does not apply to my tool" is a claim about the
-   *    tool's design, not evidence about its behaviour. Precisely BECAUSE `conformant` is
-   *    frame-relative, one boolean has to be measured against the whole catalogue, or the frame
-   *    swallows the verdict entirely;
+   * 0. NO APPLICABLE CORE RULE CLASSIFIED `defect` WAS WAIVED. A `defect` waiver is what the
+   *    config frame must not be able to buy, and the rule is the mirror of condition 2 below: an
+   *    excuse suppresses the conformance GATE but never the evidence CLAIM (review R3-4), and a
+   *    project that waived a real failure was not measured against it — "does not apply to my
+   *    tool" is a claim about the tool's design, not evidence about its behaviour. Precisely
+   *    BECAUSE `conformant` is frame-relative, one boolean has to be measured against the whole
+   *    catalogue, or the frame swallows the verdict entirely. A waived `design-choice` is the
+   *    deliberate exception: waiving one is the nearest thing L0 has to the target declaring its
+   *    own design, and a design the target declares and the kit accepts is verification, not a
+   *    hole in it;
    * 1. `conformant` — nothing core was violated;
    * 2. every applicable core finding has verdict `pass` — INCLUDING excused ones. An excuse is
    *    an organisation deciding it can live with a defect; it is not evidence. Filtering
@@ -245,9 +247,12 @@ export interface Report {
    * applicable core rule that blocks the claim, carrying the checker's declared `coverageGaps`
    * and — for a rule that did not pass — the verdict and detail that stopped it.
    *
-   * A waived core rule appears here too, because it blocks the claim: the gap it names is the
-   * waiver itself, beside the verdict the probe reached anyway. That is a statement of what the
-   * evidence does not cover, not a request to go and fix the rule.
+   * A waived core rule classified `defect` appears here too, because it blocks the claim: the gap
+   * it names is the waiver itself, beside the verdict the probe reached anyway. That is a
+   * statement of what the evidence does not cover, not a request to go and fix the rule. A waived
+   * `design-choice` does NOT appear: it costs the evidence claim nothing, because the target
+   * declaring its own design is something the kit accepts rather than a hole in what was
+   * established.
    *
    * Empty exactly when `fullyVerified` is true. A bare `false` would be the same
    * information-free verdict this project criticises a CLI for emitting: the caller learns that

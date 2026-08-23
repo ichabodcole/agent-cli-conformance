@@ -71,9 +71,11 @@ project is still designing is in the right.
 [the install guide](../guides/how-to-fix-a-broken-install.md) describes as looking like a missing
 tag. Here it genuinely is one. Pin a commit SHA until the line settles.
 
-**Version numbers went backwards.** `v1.0.1` existed and `v0.1.0` follows it. Nothing resolves by
-semver ordering here — Bun does not support `#semver:` ranges against a git dependency — so this
-is a cosmetic oddity in the tag list rather than a functional one.
+**Version numbers went backwards.** `v1.0.1` shipped and the line restarts below it. Nothing
+resolves by semver ordering here — Bun does not support `#semver:` ranges against a git
+dependency — so what the reordering costs is legibility in the record, not resolution: the
+archived notes and this page have to say why the numbers descend, because there is no tag list
+left in which a reader could see it for themselves.
 
 **A narrow contract can be a way to avoid admitting a break.** It is only honest if the right-hand
 column is genuinely unsettled and says so where adopters read it, which is why the same split is

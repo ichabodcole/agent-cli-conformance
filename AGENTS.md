@@ -30,8 +30,8 @@ preference. Read the one you are writing into. `docs/wiki/` uses `SCHEMA.md` for
 ## What's not obvious
 
 - **The rule page and the checker are two halves of one declaration, and the lint compares them
-  verbatim in both directions.** `tier`, `probe_level`, `coverage`, `coverage_gaps` and
-  `coverage_established` must be identical on the page and in the checker. Change one, change the
+  verbatim in both directions.** `tier`, `deviation`, `probe_level`, `coverage`, `coverage_gaps`
+  and `coverage_established` must be identical on the page and in the checker. Change one, change the
   other, or `bun run check` fails. Gap phrases may contain **no comma and no space-hyphen-space** —
   the frontmatter parser splits on both.
 

@@ -45,8 +45,11 @@ first — which is `--help`, not documentation.
 > and makes no claim about one reports `fail`. Help whose PROSE claims machine-readable output is
 > the default reports **`unverified`** instead — the claim downgrades the verdict rather than
 > satisfying the rule, because prose is not a token a caller can flip. Waiving an `unverified` does
-> not record a design decision; it converts a gap in the evidence into a waived core rule, which
-> is strictly worse. That shape is a named gap on this page, not something a waiver fixes. What the rule is arguing is narrower than "you must do this": an
+> not record a design decision, and it costs nothing in the report — this rule is `diagnostic`, so
+> it never bound the gate, and it is a `design-choice`, so the waiver blocks no evidence claim and
+> enters no gap list. Costing nothing is exactly the problem: the `unverified` disappears from
+> view without anything having been established in its place. That shape is a named gap on this
+> page, not something a waiver fixes. What the rule is arguing is narrower than "you must do this": an
 > agent reads your help and nothing else tells it, so help is the one place where advertising
 > works without being told where to look.
 

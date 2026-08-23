@@ -125,6 +125,15 @@ decides whether a violation gates CI. `deviation` decides what a violation means
   waiver records a decision, and the page owes the reader the reasoning behind the default rather
   than a verdict on their design.
 
+**And it is read at runtime, not only by a reader.** Waiving a `defect` blocks `fullyVerified` and
+keeps the rule in `evidenceGaps`; waiving a `design-choice` does neither, because a design the
+target declares is something the kit accepts rather than a hole in what was established — see
+[the asymmetry](./concepts/conformance.md#the-asymmetry-a-waiver-buys-the-gate-and-the-evidence-only-when-the-rule-is-a-defect).
+So this field is cross-checked against the checker in both directions, exactly as `tier` is: a page
+declaring `design-choice` over a checker that says `defect` would offer a waiver that costs more
+than the page promises, and the reverse would quietly spend an evidence claim the reader was told
+they could keep.
+
 **A default is not a verdict.** `L0` is mostly error-checking — a tool that exits `0` on an unknown
 flag is broken for an agent and the catalogue should say so. But some rules encode a **design
 preference** rather than a defect, and there the catalogue's job changes: state the default, give

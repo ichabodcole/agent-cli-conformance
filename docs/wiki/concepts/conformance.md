@@ -145,11 +145,14 @@ its usage text to stdout, where a consumer reads it as output, rather than to st
 B3's line is not a violation of anything. `git` advertises no machine-mode flag, so
 [B3](../rules/streams/machine-output-is-parseable.md) had nothing to parse and said so — "could
 not establish it", not "broke it". The same is true of the other two: `A7` found no advertised
-value set to falsify, and `B5` no machine mode it could select. (The capture is from 2026-08-19.
-B3 has since moved to `L1` and reports not-applicable for every target at `L0`, and `B5` now
+value set to falsify, and `B5` no machine mode it could select. (The capture predates several of
+these. B3 has since moved to `L1` and reports not-applicable for every target at `L0`, and `B5` now
 answers only to a declaration — the reasoning is
-[the `L0` admission test](./probing.md#what-l0-may-assume--the-admission-test). The point the
-capture makes about `unverified` is unchanged.) Counted as failures,
+[the `L0` admission test](./probing.md#what-l0-may-assume--the-admission-test). `D3`'s line has
+moved too: it no longer promises that `B3` will be unverified as a result, because that knock-on
+stopped being true once B3 became an `L1` rule reachable only through a declaration, and the
+message now names the bare switches it looked for instead. The point the capture makes about
+`unverified` is unchanged.) Counted as failures,
 those three would have told git's maintainers they had broken five rules — three of which name
 nothing they did wrong — mixed in with two they can act on today. The first thing a maintainer does with a gate that cannot tell
 those apart is turn it off.
@@ -435,14 +438,16 @@ NOT CONFORMANT (L0) — 3 core violated, 3 core unverified, 9 core partially cov
   WVD   D2  bare invocation exited 0; bare invocation wrote 13827 bytes to stdout (waived; would FAIL)
 
   WAIVED (1) — declared not applicable to this tool, by config:
-    D2  human-first CLI; bare invocation prints the team overview on purpose  (would FAIL)
+    D2  human-first CLI; bare invocation prints the team overview on purpose  (would FAIL; design choice, costs nothing)
 ```
 
 The violation count drops by one and the rest of the report is untouched — a waiver is targeted,
 not a global mute. The finding keeps its detail and gains the verdict it would have carried, so
-the reader can still see exactly what the probe found. `D2` also enters `evidenceGaps` as
-`waived by config: …` beside `the probe ran anyway and returned fail: …`, which is why
-`fullyVerified` stays `false` however many rules are waived away.
+the reader can still see exactly what the probe found. `D2` is a `design-choice`, so the waiver
+costs nothing beyond the gate — the rule stays out of `evidenceGaps` and `fullyVerified` survives
+it, which is what `design choice, costs nothing` on the waiver line is telling the reader. Waiving
+a `defect` does the opposite: that rule enters `evidenceGaps` as `waived by config: …` beside
+`the probe ran anyway and returned fail: …`, and `fullyVerified` goes `false` and stays there.
 
 ### What the counts mean
 

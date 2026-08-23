@@ -34,6 +34,11 @@ clean install.
 
 If it matches what you asked for, your install is fine.
 
+⚠ **While no release has been tagged, this step distinguishes nothing.** Every ref reports the
+same version, so a stale copy and a fresh one answer identically — see
+[how far the version check reaches](#how-far-the-version-check-reaches) below, and clear the
+cache before installing rather than trusting the number.
+
 ### The remedy, if you just want the command
 
 ```sh
@@ -66,7 +71,7 @@ it**. Measured, after re-pointing at a ref:
 
 ```json
 "agent-cli-conformance": "git+ssh://…/agent-cli-conformance.git",
-"agent-cli-conformance": "git+ssh://…/agent-cli-conformance.git#v0.2.0"
+"agent-cli-conformance": "git+ssh://…/agent-cli-conformance.git#4e740f7"
 ```
 
 **Remedy:** `bun remove` before `bun add`. If your `package.json` already has two, fix the file
