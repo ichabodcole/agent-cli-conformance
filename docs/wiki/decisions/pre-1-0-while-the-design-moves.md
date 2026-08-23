@@ -20,7 +20,10 @@ Four releases went out in three days while the catalogue was still deciding what
 
 ## Decision
 
-The version line restarts at `0.1.0`. Tags `v0.1.0`, `v0.1.1`, `v0.2.0`, `v1.0.0` and `v1.0.1`
+The version line restarts at `0.1.0`. **The first release carries a `Release-As: 0.1.0` footer**,
+because release-please treats the manifest as the _last released_ version and would otherwise bump
+past it — measured, the pending features would have made the first tag `v0.1.1`, leaving a line
+that starts at `0.1.1` with no `0.1.0` behind it. Tags `v0.1.0`, `v0.1.1`, `v0.2.0`, `v1.0.0` and `v1.0.1`
 and their GitHub Releases are deleted. While the major stays at `0`, a breaking change bumps the
 **minor** and a feature bumps the **patch** — `bump-minor-pre-major` and
 `bump-patch-for-minor-pre-major` in `release-please-config.json`.
