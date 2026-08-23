@@ -142,6 +142,10 @@ Judge each finding by whether it names something **wrong**, not by whether it is
 often objects to a fix an earlier one asked for; that is two readers disagreeing about taste, and
 resolving it costs a round trip and buys nothing.
 
+**Finish on a read of the edited note, not of the note that earned the last fix.** Whatever ended
+the cycle, give the final text one more cold read before §3. Good practice: your last edits are the
+only ones nothing has checked.
+
 **Watch for the note arguing with its own previous reader** — a term explained three times, a
 paragraph defending against an objection this reader never raised. That is a hazard of reading it
 more than once, and only a fresh pair of eyes will see it, because the person editing remembers
