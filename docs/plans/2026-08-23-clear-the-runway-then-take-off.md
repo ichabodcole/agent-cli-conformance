@@ -64,11 +64,11 @@ description, which says `Directory holding acc.config.json.` and never says what
 **Why it outranks the rest.** CI runs from the repo root; an engineer runs from a subdirectory.
 They get different verdicts from an identical command and neither output explains why.
 
-- [ ] Document the default in the README, in `--config-dir`'s own description, and wherever the
+- [x] Document the default in the README, in `--config-dir`'s own description, and wherever the
       config file is introduced.
-- [ ] **The report names the config it loaded and where from** — including "none". The disclosure
+- [x] **The report names the config it loaded and where from** — including "none". The disclosure
       that saved `sable` a minute should not depend on reading the headline carefully.
-- [ ] Decide whether a config discovered from the cwd, rather than named by a flag, deserves a
+- [x] Decide whether a config discovered from the cwd, rather than named by a flag, deserves a
       louder line than one that was asked for. Leaning yes.
 
 ### 2. Evidence is unreachable for the reader who does not already know it is there
@@ -85,10 +85,13 @@ The blind agent then hung its own shell for two minutes reconstructing probes by
 a **wrong reproduction** that nearly became a wrong bug report. The 0.1.0 release note says
 _"Evidence ids now resolve."_ True, and unactionable.
 
-- [ ] `acc show <observation-id>` resolves an observation, or says plainly where to look. Its
+- [x] `acc show <observation-id>` resolves an observation, or says plainly where to look. Its
       current error hint is a signpost pointing away from the answer.
-- [ ] The text report says, once, how to resolve the ids it prints.
-- [ ] `acc check --help` mentions the observations array exists.
+- [x] ~~The text report says, once, how to resolve the ids it prints.~~ **The premise was wrong** —
+      the text report prints no evidence ids at all; they exist only in the JSON report. Found by
+      the implementer while building it. What shipped instead: the text report says where the
+      observations are.
+- [x] `acc check --help` mentions the observations array exists.
 
 ### 3. `B4` vanishes from the report
 
@@ -97,7 +100,7 @@ mentions it — not as a finding, not as `N/A`, not in `notApplicable`. `A4` get
 line explaining itself. The README does say 22 of 23 rules have a checker, so this is consistent
 with the docs, and it is still a silence in a project about tools that go quiet.
 
-- [ ] `B4` appears as `N/A` with a stated reason, and the reason generalises to any future rule
+- [x] `B4` appears as `N/A` with a stated reason, and the reason generalises to any future rule
       without a checker.
 
 ### 4. The install guide's check does not cover the upgrade we asked everyone to make
@@ -108,7 +111,7 @@ The documented remedy then worked cleanly. But they moved `1.0.1` → `0.1.0`: *
 down.** Every "did the number go up" heuristic gives the wrong answer for the version-line reset,
 and the guide's ⚠ covers the untagged case, not this one.
 
-- [ ] Extend [the guide](../wiki/guides/how-to-fix-a-broken-install.md)'s ⚠ to the reset case:
+- [x] Extend [the guide](../wiki/guides/how-to-fix-a-broken-install.md)'s ⚠ to the reset case:
       the number can legitimately go **down**, so compare against the version you expect, not
       against the one you had.
 
@@ -122,14 +125,20 @@ Blocked 1 postinstall. Run `bun pm untrusted` for details.   →   » [prepare]:
 blocked script on a security-adjacent tool is where a careful person pauses. `sable` flagged it in
 their first trial too, so this is its third appearance.
 
-- [ ] Either stop shipping the `prepare` hook to consumers, or say in Getting Started that a
+- [x] Either stop shipping the `prepare` hook to consumers, or say in Getting Started that a
       blocked `husky` script is expected and inert. Preference for the former: the best disclosure
       is not needing one.
 
 ### 6. Two malformed messages
 
-- [ ] `acc.config.json rules names "Z9"` — garbled.
-- [ ] `found a undefined` — should be `found undefined`.
+- [x] `acc.config.json rules names "Z9"` — garbled.
+- [x] `found a undefined` — should be `found undefined`.
+
+> **Part 1 discharged 2026-08-23**, in commit `1a23fb7`. The boxes above are ticked on the verdict
+> of the reviewing agent that wrote none of the change — every repair re-run rather than re-read —
+> not on the word of the agents that implemented it. Two items grew in the doing: a **third**
+> malformed string was found one branch from the second, and `AGENTS.md` needed the hook
+> instructions that removing the `prepare` script had made necessary.
 
 ## Part 2 — `L1`'s opening scope, which is where the other three belong
 

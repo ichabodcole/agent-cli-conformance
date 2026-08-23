@@ -168,9 +168,12 @@ round, one re-review, in exchange for about eight minutes of saved wall clock.
    reviewer is wrong, or the repairer disagrees, has no procedure yet.
 4. **Ask for uncertainty explicitly.** Every agent returned something useful under it, and one of
    those entries was a live defect.
-5. **Hand over judgements the manager cannot make.** Two of the better decisions in this diff came
+5. **Completion is a claim, and claims need someone who did not make them.** The reviewer says what
+   a round discharged; the manager writes it down. No extra agent — the job is transcription once
+   somebody independent has established the fact.
+6. **Hand over judgements the manager cannot make.** Two of the better decisions in this diff came
    from an implementer being asked to decide rather than told what to do.
-6. **The manager reads, but is not the gate.** Reading the diff was still worth it — it is where
+7. **The manager reads, but is not the gate.** Reading the diff was still worth it — it is where
    the false-premise finding got confirmed — but the verdict came from an agent that had written
    none of it.
 
@@ -237,9 +240,12 @@ a preference, and recorded as one).
 - **When is one implementer better than two?** The parallel split cost a defect and saved perhaps
   eight minutes of wall clock. The repair round used a single implementer over the whole tree
   precisely because the items were cross-cutting, and produced no contradiction.
-- **Who checks off the plan?** The repairer explicitly declined to, on the grounds that nobody asked
-  and it was mid-repair. Correct instinct, unassigned job — and the process as run therefore has no
-  defined completion, which an adopter would inherit.
+- ~~**Who checks off the plan?**~~ **Settled.** It is an unowned _task_, not a missing role, and it
+  does not want an agent of its own. **Completion is a claim, so it is established by the reviewer —
+  who did not make it — and recorded by the manager, who is only transcribing at that point.** The
+  reviewer's brief gains an explicit output: _say which plan boxes this run discharges_. Ticking a
+  box as the last step of one's own round was rejected: that is an author asserting their own
+  completion, which is the failure the whole arrangement exists to prevent.
 - **The reviewer is the least specified role and it carries the method.** This report says what the
   reviewer was told not to do far more precisely than what it was given, what counts as a defect, or
   how it knows when to stop. An adopter can copy the org chart and not reproduce the thing that
