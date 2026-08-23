@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "node",
   "include-component-in-tag": false,
-  "bootstrap-sha": "fda2be7971405af677aef9c126163dd8af536972",
+  "bootstrap-sha": "b0d3aa4a5de743cd4cf82bc8b5b7f8f6900b3a0c",
   "packages": {
     ".": {
       "extra-files": [
@@ -10,7 +10,9 @@
           "type": "generic",
           "path": "README.md"
         }
-      ]
+      ],
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true
     }
   }
 }

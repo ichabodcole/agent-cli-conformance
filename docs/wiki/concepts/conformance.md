@@ -27,9 +27,11 @@ could apply at this probe level either passed, was excused under `knownFailures`
 in the project's `acc.config.json`. This is the headline verdict, and it is what the exit code
 reflects: a non-conformant target exits `9`.
 
-**Fully verified** — conformant, **and no applicable core rule was waived, and every applicable
-core rule passed, and every applicable core checker declares `coverage: complete`.** Every core
-rule was actually established, not merely left unfalsified.
+**Fully verified** — conformant, **and no applicable core rule classified `defect` was waived, and
+every applicable core rule passed, and every applicable core checker declares `coverage:
+complete`.** Every core rule that binds for this tool was actually established, not merely left
+unfalsified. A waived `design-choice` does not block it — see
+[below](#a-waiver-costs-the-evidence-claim-only-when-the-rule-is-a-defect).
 
 The difference between those two lists is the whole design. `conformant` is a claim **inside a
 declared frame**; `fullyVerified` is measured against the catalogue, whatever the frame says.
@@ -55,6 +57,26 @@ the three above; the waiver changes only what that verdict is allowed to bind. S
 **Full verification is scoped to the run's probe level, always.** "Fully verified at `L0`" is a
 claim about the rules `L0` can reach, not about the catalogue — which is why the level is
 printed beside the verdict rather than left implicit.
+
+### A waiver costs the evidence claim only when the rule is a `defect`
+
+Every rule page carries a [`deviation`](../SCHEMA.md#rule-pages-carry-extra-frontmatter):
+`defect` where no defensible alternative exists, `design-choice` where a different design can be
+right. `fullyVerified` reads it.
+
+| waived rule is… | `conformant` | `fullyVerified` | why                                                                 |
+| --------------- | ------------ | --------------- | ------------------------------------------------------------------- |
+| `defect`        | unaffected   | **blocked**     | the project chose not to be measured against a real failure         |
+| `design-choice` | unaffected   | **kept**        | the target is stating a design the catalogue does not require of it |
+
+**The asymmetry is the point.** Waiving a `design-choice` is the nearest thing `L0` has to a
+target declaring its own contract — "a bare invocation returns my command manifest" — and a claim
+the target makes and the kit accepts is verification, not a gap in it. Waiving a `defect` is the
+opposite: an evidence claim that survived it would be worth nothing.
+
+This distinction only became expressible once every rule was classified. Before that both waivers
+looked identical, and a tool with a deliberate design paid the same price as one suppressing a
+known bug. `acc rules --deviation defect` lists the rules where a waiver still costs.
 
 ### Coverage: a pass can be narrower than its rule
 
@@ -123,11 +145,14 @@ its usage text to stdout, where a consumer reads it as output, rather than to st
 B3's line is not a violation of anything. `git` advertises no machine-mode flag, so
 [B3](../rules/streams/machine-output-is-parseable.md) had nothing to parse and said so — "could
 not establish it", not "broke it". The same is true of the other two: `A7` found no advertised
-value set to falsify, and `B5` no machine mode it could select. (The capture is from 2026-08-19.
-B3 has since moved to `L1` and reports not-applicable for every target at `L0`, and `B5` now
+value set to falsify, and `B5` no machine mode it could select. (The capture predates several of
+these. B3 has since moved to `L1` and reports not-applicable for every target at `L0`, and `B5` now
 answers only to a declaration — the reasoning is
-[the `L0` admission test](./probing.md#what-l0-may-assume--the-admission-test). The point the
-capture makes about `unverified` is unchanged.) Counted as failures,
+[the `L0` admission test](./probing.md#what-l0-may-assume--the-admission-test). `D3`'s line has
+moved too: it no longer promises that `B3` will be unverified as a result, because that knock-on
+stopped being true once B3 became an `L1` rule reachable only through a declaration, and the
+message now names the bare switches it looked for instead. The point the capture makes about
+`unverified` is unchanged.) Counted as failures,
 those three would have told git's maintainers they had broken five rules — three of which name
 nothing they did wrong — mixed in with two they can act on today. The first thing a maintainer does with a gate that cannot tell
 those apart is turn it off.
@@ -176,8 +201,9 @@ level?"
 
 That **strengthens** the `fullyVerified` ruling rather than softening it. Precisely because
 `conformant` is frame-relative, the kit needs one claim that is not — measured against the full
-catalogue, whatever the config says. A waived core rule blocking `fullyVerified` is what stops
-the frame from swallowing the whole verdict.
+catalogue, whatever the config says. A waived `defect` blocking `fullyVerified` is what stops the
+frame from swallowing the whole verdict. A waived `design-choice` does not, because there the
+frame is not swallowing anything: the catalogue never required that shape of the tool.
 
 None of which makes a waiver safe. **A waiver is still a place a tool can be wrong**, and the
 `reason` string is the only thing standing between a considered design decision and "this rule
@@ -360,22 +386,29 @@ would silently delete whichever line lost. A severity _move_ alongside a known f
 different matter and is allowed: "I hold myself to core on A6, and I currently fail it" is the
 aspirational half of the same ratchet.
 
-### The asymmetry: a waiver buys the gate, never the evidence
+### The asymmetry: a waiver buys the gate, and the evidence only when the rule is a `defect`
 
-| Field                    | Effect of a waiver                                                    |
-| ------------------------ | --------------------------------------------------------------------- |
-| `conformant`             | the rule is excluded, so a waived `fail` no longer blocks it          |
-| `counts.*` (core, tiers) | the rule is excluded from all of them, and counted under `waived`     |
-| `fullyVerified`          | **BLOCKED** by any waived core rule — even one that would have passed |
-| `evidenceGaps`           | gains the rule, naming the waiver and the verdict the probe reached   |
-| `staleExpectations`      | **never** — a declaration does not go stale                           |
-| `waivers`                | the full list, with reason, would-be verdict, tier and applicability  |
+| Field                    | Effect of a waiver                                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `conformant`             | the rule is excluded, so a waived `fail` no longer blocks it                                                        |
+| `counts.*` (core, tiers) | the rule is excluded from all of them, and counted under `waived`                                                   |
+| `fullyVerified`          | **BLOCKED** by a waived core `defect` — even one that would have passed. A waived `design-choice` does not block it |
+| `evidenceGaps`           | gains the rule only when it is a `defect`, naming the waiver and the verdict the probe reached                      |
+| `staleExpectations`      | **never** — a declaration does not go stale                                                                         |
+| `waivers`                | the full list, with reason, would-be verdict, tier and applicability, whatever the classification                   |
 
-The third row is the ruling that matters, and it is the same precedent set for excuses one
-section above: **an excuse suppresses the conformance _gate_ but never the evidence _claim_**. A
-waiver is the stronger statement, so it can buy no more. A rule the project chose not to be
-measured against was not established — "does not apply to my tool" is a claim about the tool's
-design, not evidence about its behaviour. Config must never be able to buy the strong claim.
+The third row is the ruling that matters. For a `defect` it is the same precedent set for excuses
+one section above: **an excuse suppresses the conformance _gate_ but never the evidence _claim_**,
+and a waiver is the stronger statement so it can buy no more. A `defect` the project chose not to
+be measured against was not established, and config must never buy the strong claim.
+
+**A `design-choice` is not that.** There "does not apply to my tool" is not config buying an
+evidence claim — it is the target stating a design the catalogue never required, and the kit
+accepting a statement it has no grounds to falsify. That is what verification is. The rule the
+tool declined was never binding on it, so nothing about it went unestablished.
+
+The `waivers` list carries both kinds either way, so a reader who disagrees with a project's
+classification of its own waiver can see it and judge.
 
 Waiving a `diagnostic` rule changes neither boolean, because a diagnostic rule was never binding
 one. The asymmetry is about what the rule bound, not about the waiver.
@@ -405,14 +438,16 @@ NOT CONFORMANT (L0) — 3 core violated, 3 core unverified, 9 core partially cov
   WVD   D2  bare invocation exited 0; bare invocation wrote 13827 bytes to stdout (waived; would FAIL)
 
   WAIVED (1) — declared not applicable to this tool, by config:
-    D2  human-first CLI; bare invocation prints the team overview on purpose  (would FAIL)
+    D2  human-first CLI; bare invocation prints the team overview on purpose  (would FAIL; design choice, costs nothing)
 ```
 
 The violation count drops by one and the rest of the report is untouched — a waiver is targeted,
 not a global mute. The finding keeps its detail and gains the verdict it would have carried, so
-the reader can still see exactly what the probe found. `D2` also enters `evidenceGaps` as
-`waived by config: …` beside `the probe ran anyway and returned fail: …`, which is why
-`fullyVerified` stays `false` however many rules are waived away.
+the reader can still see exactly what the probe found. `D2` is a `design-choice`, so the waiver
+costs nothing beyond the gate — the rule stays out of `evidenceGaps` and `fullyVerified` survives
+it, which is what `design choice, costs nothing` on the waiver line is telling the reader. Waiving
+a `defect` does the opposite: that rule enters `evidenceGaps` as `waived by config: …` beside
+`the probe ran anyway and returned fail: …`, and `fullyVerified` goes `false` and stays there.
 
 ### What the counts mean
 

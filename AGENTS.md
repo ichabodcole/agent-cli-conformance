@@ -30,8 +30,8 @@ preference. Read the one you are writing into. `docs/wiki/` uses `SCHEMA.md` for
 ## What's not obvious
 
 - **The rule page and the checker are two halves of one declaration, and the lint compares them
-  verbatim in both directions.** `tier`, `probe_level`, `coverage`, `coverage_gaps` and
-  `coverage_established` must be identical on the page and in the checker. Change one, change the
+  verbatim in both directions.** `tier`, `deviation`, `probe_level`, `coverage`, `coverage_gaps`
+  and `coverage_established` must be identical on the page and in the checker. Change one, change the
   other, or `bun run check` fails. Gap phrases may contain **no comma and no space-hyphen-space** —
   the frontmatter parser splits on both.
 
@@ -102,12 +102,28 @@ Cutting a release runs the [`release` skill](.claude/skills/release/SKILL.md) �
 by a fresh agent from the tree, cold-read, and carried through to the published GitHub Release,
 which otherwise shows only a list of commit subjects.
 
-**Most commit types do not release.** With `release-type: node` and no `changelog-sections`
-override, `feat` bumps the minor, `fix` bumps the patch and **a breaking change bumps the major,
-including below `1.0.0`** — measured: `feat(kit)!` on `0.2.0` shipped `v1.0.0`, not `v0.3.0`. This
-sentence briefly said the opposite, on the reasoning that release-please treats `0.x` as
-pre-stable; the release falsified it the same day. Do not derive the version from configuration you
-have not run — a `!` here is a major, so pick the type knowing that;
+**This is a pre-1.0 line, deliberately** — see
+[stay pre-1.0 while the design is still moving](docs/wiki/decisions/pre-1-0-while-the-design-moves.md).
+`bump-minor-pre-major` and `bump-patch-for-minor-pre-major` are set, so while the major is `0` a
+**breaking change bumps the MINOR** and a **feature bumps the PATCH**. Without those options a `!`
+bumps the major even from `0.x` — measured, before they were set: `feat(kit)!` on `0.2.0` shipped
+`v1.0.0`, not `v0.3.0`. **Both readings have now been wrong once**, so verify against the release
+rather than against this sentence.
+
+**Reserve `!` for the promised surface, which is narrow.** One question decides it:
+
+> **Did you change something in the STABLE column?** Rule ids, the exit-code taxonomy,
+> `conformant`. If not — the report shape, `fullyVerified`, `acc.config.json` keys, CLI flags, the
+> text layout — it is a `feat` or a `fix`, however large it felt to write.
+
+The README carries the same split, for adopters. Typing every design change `!` would make the
+version number meaningless rather than careful: this project is still deciding the right-hand
+column, and a number that moves on every decision measures nothing.
+
+**A `BREAKING CHANGE:` footer counts as much as the `!`.** release-please parses both, so removing
+the `!` from a subject while leaving the footer in the body still cuts the bigger bump. Check the
+whole message, not the first line.
+
 `docs`, `chore`, `ci`, `test` and `refactor` produce no version and no release PR at all. A
 docs-only merge to `main` that cuts no release is correct, not broken. Merge the promotion PR with a
 merge or rebase commit — a squash takes its headline from the PR title, and a title that is not a

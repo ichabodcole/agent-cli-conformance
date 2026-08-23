@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: A6
 tier: diagnostic
+deviation: design-choice
 probe_level: L0
 checker: src/acc/kit/checkers/parsing/double-dash-terminator.ts
 checker_status: implemented
@@ -32,6 +33,24 @@ value, even if it begins with `-`.
 
 A CLI that [delegates to a child process](../../archetypes/delegator.md) **MUST** honour it,
 and **MUST** pass everything after `--` to the child unmodified.
+
+> **A different design can be right here** (`deviation: design-choice`). A CLI may deliberately
+> adopt a position-independent grammar — every `-`-leading token is an option wherever it appears,
+> and values arrive only as `--key=value`. Such a tool has no positionals for `--` to introduce, so
+> it rejects a post-terminator value as an unknown option and fails this rule. That is a coherent
+> choice about the shape of an interface, not a parser bug, and the waiver is how it gets recorded.
+>
+> Note which clause you are being judged on. The checkable half of this rule is the **SHOULD**; the
+> **MUST** — a delegator passing everything after `--` to its child unmodified — is not exercised
+> at `L0` and is named in this rule's own coverage gaps. If your CLI wraps another program, the
+> clause that admits no alternative is the one nothing here has tested.
+
+> **If you checked this rule through a wrapper, distrust the verdict.** Bun consumes a bare `--`
+> immediately after the script path, so the terminator never reaches the target. The kit detects
+> that when it can see the launcher and reports `unverified` — but a wrapper script hides the
+> launcher, the guard misses, and this rule reports a `fail` against an argv your tool never
+> received. See
+> [what an interposed layer can distort](../../concepts/probing.md#what-an-interposed-layer-can-distort).
 
 ## How to comply
 

@@ -18,6 +18,7 @@ export const versionFlagChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/discoverability/version-flag-exists.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // The hostile-HOME probe establishes exactly one of the four "no work" clauses: no
   // configuration. No network, no credentials and no side effects are unobservable from what

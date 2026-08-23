@@ -39,6 +39,7 @@ export const noSecretsInHelpChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/safety/no-secrets-in-help-or-schema.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // The rule names three surfaces — help, schema output, error messages — and one probe reads
   // the first. `schema` is a verb this kit will not invoke blind at L0, and the error surface

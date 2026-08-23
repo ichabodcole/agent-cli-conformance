@@ -25,10 +25,18 @@ classes and the signal taxonomy are that page's subject and are not repeated her
 ### 1. Write the rule page first, and let it be the specification
 
 The page is not documentation of the checker; the checker is an implementation of the page. Write
-the normative text, decide the tier and probe level, and only then write code against it. A
+the normative text, decide the tier, the deviation class and the probe level, and only then write
+code against it. A
 checker whose scope quietly differs from its page is the defect that produced the G1 signal split
 — the page excluded externally-ambiguous signals while the checker failed on any signal the kit
 did not send, so G1 could set `conformant: false` for an event its own rule text put out of scope.
+
+`deviation` is the least familiar of the three and `defect` is its unforgiving default: it says a
+tool violating this rule is broken. `design-choice` says the opposite — a different design can be
+right here — and what it changes is the price of a waiver. A waived `design-choice` costs nothing
+in the report; a waived `defect` blocks `fullyVerified` and enters `evidenceGaps`, even where the
+rule would have passed. Choose `design-choice` only when you would defend the other design, not
+because the rule is hard to satisfy.
 
 Mint the `rule_id` at this point and never renumber it. Ids appear in conformance reports that
 outlive any release; renumbering one silently invalidates every stored report. Same discipline as
@@ -200,8 +208,8 @@ bun run check
 
 That runs the typecheck, the linter, both docs lints and the suite. Specifically it establishes:
 
-- the rule page and the checker agree on `tier`, `probe_level`, `coverage`, `coverage_gaps` and
-  `coverage_established`, in both directions;
+- the rule page and the checker agree on `tier`, `deviation`, `probe_level`, `coverage`,
+  `coverage_gaps` and `coverage_established`, in both directions;
 - every `implemented` rule has a checker file and every checker has a rule page;
 - the page carries its required sections, in the order SCHEMA declares.
 

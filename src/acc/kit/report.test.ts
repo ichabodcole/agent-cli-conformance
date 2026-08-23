@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { VERSION } from "../version.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
-import { buildReport, primaryProblem, runCheckers } from "./report.ts";
+import { buildReport, primaryProblem, runCheckers, toReportedObservation } from "./report.ts";
 import { digestOfText } from "./runner.ts";
 import type { Checker, Coverage, Finding, History, Observation, ProbeLevel } from "./types.ts";
 
@@ -35,10 +35,12 @@ const checker = (
   tier: "core" | "diagnostic",
   probeLevel: ProbeLevel = "L0",
   coverage: Coverage = "complete",
+  deviation: Checker["deviation"] = "defect",
 ): Checker => ({
   ruleId,
   rulePath: `docs/wiki/rules/x/${ruleId}.md`,
   tier,
+  deviation,
   probeLevel,
   coverage,
   coverageGaps: coverage === "partial" ? [`${ruleId} does not probe the nested case`] : [],
@@ -535,6 +537,7 @@ describe("buildReport", () => {
           reason: "human-first CLI; bare help is deliberate",
           verdict: "fail",
           tier: "core",
+          deviation: "defect",
           applicable: true,
         },
       ]);
@@ -925,5 +928,195 @@ describe("an excuse the run did not evaluate is reported as inert, not stale", (
     );
     expect(r.staleExpectations).toContain("A1");
     expect(r.inertExpectations.map((e) => e.ruleId)).not.toContain("A1");
+  }, 60_000);
+});
+
+// The promise `types.ts` makes about `Finding.evidence` — "any finding can be traced to raw
+// evidence" — used to be untrue: the ids shipped and nothing resolved them. These tests bind the
+// promise, so it cannot quietly become false again.
+describe("a waived design-choice keeps fullyVerified", () => {
+  // Driven through complete-coverage stubs on purpose: every shipped checker declares
+  // `coverage: "partial"`, so `fullyVerified` is false on any real target for a reason that has
+  // nothing to do with waivers. Asserting this against a live run would prove nothing.
+  const waive = (ruleId: string) => ({
+    rules: { [ruleId]: { severity: "off" as const, reason: "by design" } },
+    knownFailures: {},
+  });
+
+  test("waiving a DESIGN-CHOICE rule leaves the evidence claim intact", () => {
+    const c = [checker("D2", "core", "L0", "complete", "design-choice")];
+    const r = buildReport(H, [finding("D2", "pass")], c, waive("D2"), "L0", VERSION);
+    expect(r.conformant).toBe(true);
+    expect(r.fullyVerified).toBe(true);
+    expect(r.evidenceGaps.map((g) => g.ruleId)).not.toContain("D2");
+  });
+
+  test("waiving a DEFECT rule still blocks it — the project chose not to be measured", () => {
+    const c = [checker("A1", "core", "L0", "complete", "defect")];
+    const r = buildReport(H, [finding("A1", "pass")], c, waive("A1"), "L0", VERSION);
+    expect(r.conformant).toBe(true);
+    expect(r.fullyVerified).toBe(false);
+    expect(r.evidenceGaps.map((g) => g.ruleId)).toContain("A1");
+  });
+
+  test("a design-choice waiver does not rescue an UNRELATED defect waiver", () => {
+    const c = [
+      checker("D2", "core", "L0", "complete", "design-choice"),
+      checker("A1", "core", "L0", "complete", "defect"),
+    ];
+    const cfg = {
+      rules: {
+        D2: { severity: "off" as const, reason: "by design" },
+        A1: { severity: "off" as const, reason: "known" },
+      },
+      knownFailures: {},
+    };
+    const r = buildReport(H, [finding("D2", "pass"), finding("A1", "pass")], c, cfg, "L0", VERSION);
+    expect(r.fullyVerified).toBe(false);
+    expect(r.evidenceGaps.map((g) => g.ruleId)).toEqual(["A1"]);
+  });
+
+  test("an unregistered checker's waiver is treated as a defect, not a free pass", () => {
+    const r = buildReport(H, [finding("ZZ", "pass")], [], waive("ZZ"), "L0", VERSION);
+    expect(r.findings[0]?.deviation).toBe("defect");
+    expect(r.fullyVerified).toBe(false);
+  });
+});
+
+describe("evidence ids resolve", () => {
+  const realRun = async () => {
+    const p = join(HERE, "fixtures/conforming.ts");
+    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+    return buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      { rules: {}, knownFailures: {} },
+      "L0",
+      VERSION,
+    );
+  };
+
+  test("every id a finding cites resolves to a published observation", async () => {
+    const r = await realRun();
+    const published = new Set(r.observations.map((o) => o.id));
+    // Guard the guard: a run whose findings cite nothing would pass the assertion below
+    // vacuously, which is exactly how this promise went unnoticed in the first place.
+    const cited = r.findings.flatMap((f) => f.evidence);
+    expect(cited.length).toBeGreaterThan(0);
+    const dangling = [...new Set(cited)].filter((id) => !published.has(id));
+    expect(dangling).toEqual([]);
+  }, 60_000);
+
+  test("a published observation carries the argv that produced it", async () => {
+    const r = await realRun();
+    // `--help` is requested by several checkers, so it is the safest invocation to pin without
+    // asserting over the whole probe set.
+    const help = r.observations.find((o) => o.args.includes("--help"));
+    expect(help).toBeDefined();
+    expect(help?.purposes.length).toBeGreaterThan(0);
+    expect(typeof help?.exitCode === "number" || help?.exitCode === null).toBe(true);
+    expect(help?.stdoutDigest).toMatch(/^[0-9a-f]{8,}$/);
+  }, 60_000);
+
+  test("the target's launcher reaches the report, not just its path", async () => {
+    const r = await realRun();
+    expect(r.targetArgv0[0]).toBe("bun");
+    expect(r.targetArgv0.length).toBe(2);
+  }, 60_000);
+
+  test("repeated invocations are distinguishable — the repetition IS the subject for C3, D4, F2", async () => {
+    const r = await realRun();
+    const key = (o: (typeof r.observations)[number]) =>
+      JSON.stringify([o.args, o.env ?? null, o.inertness, o.repeat ?? null]);
+    const seen = new Map<string, number>();
+    for (const o of r.observations) seen.set(key(o), (seen.get(key(o)) ?? 0) + 1);
+    // Dropping `repeat` left 11 of 21 observations in indistinguishable groups, which defeats the
+    // point of resolving an id at all for the three rules that compare repetitions.
+    expect([...seen.values()].filter((n) => n > 1)).toEqual([]);
+  }, 60_000);
+
+  // Driven through `toReportedObservation` directly, because the condition these assert cannot be
+  // produced by any probe that exists: no checker asks for `env: {}`, and copy-versus-alias is
+  // byte-identical in every output. An earlier version of these tests asserted over a real run
+  // and passed with the bugs present, which is no test at all.
+  const observationOf = (over: Partial<Observation> = {}): Observation => ({
+    id: "obs-1",
+    invocation: { args: ["--help"], inertness: "help-path", purpose: "p" },
+    purposes: ["p"],
+    stdout: "out",
+    stderr: "",
+    stdoutBytes: 3,
+    stderrBytes: 0,
+    stdoutDigest: digestOfText("out"),
+    stderrDigest: digestOfText(""),
+    stdoutLossy: false,
+    stderrLossy: false,
+    truncated: false,
+    exitCode: 0,
+    signal: null,
+    crashed: false,
+    timedOut: false,
+    spawnFailed: false,
+    durationMs: 1,
+    timeToFirstByteMs: 1,
+    ...over,
+  });
+
+  test("an EMPTY env is omitted — the field means the probe imposed one", () => {
+    const o = observationOf({
+      invocation: { args: [], inertness: "bare", purpose: "p", env: {} },
+    });
+    expect(Object.hasOwn(toReportedObservation(o), "env")).toBe(false);
+  });
+
+  test("a non-empty env is published, and copied rather than aliased", () => {
+    const env = { HOME: "/nonexistent" };
+    const o = observationOf({
+      invocation: { args: ["--version"], inertness: "help-path", purpose: "p", env },
+    });
+    const projected = toReportedObservation(o);
+    expect(projected.env).toEqual(env);
+    expect(projected.env).not.toBe(env);
+  });
+
+  test("purposes is copied, not aliased — mutating a report must not rewrite the recording", () => {
+    const o = observationOf({ purposes: ["a", "b"] });
+    const projected = toReportedObservation(o);
+    expect(projected.purposes).toEqual(["a", "b"]);
+    expect(projected.purposes).not.toBe(o.purposes);
+    projected.purposes.push("c");
+    expect(o.purposes).toEqual(["a", "b"]);
+  });
+
+  test("the projection copies rather than aliases the recording", async () => {
+    const p = join(HERE, "fixtures/conforming.ts");
+    const h = await record({ path: p, argv0: ["bun", p] }, CHECKERS);
+    const r = buildReport(
+      h,
+      runCheckers(h, CHECKERS),
+      CHECKERS,
+      { rules: {}, knownFailures: {} },
+      "L0",
+      VERSION,
+    );
+    const first = r.observations[0];
+    expect(first).toBeDefined();
+    const source = h.observations.find((o) => o.id === first?.id);
+    expect(source).toBeDefined();
+    expect(first?.args).not.toBe(source?.invocation.args);
+    expect(r.targetArgv0).not.toBe(h.target.argv0);
+  }, 60_000);
+
+  test("the streams themselves are NOT published — the digest is the byte-level record", async () => {
+    const r = await realRun();
+    const withOutput = r.observations.find((o) => o.stdoutBytes > 0);
+    expect(withOutput).toBeDefined();
+    // Adding `stdout`/`stderr` to the projection would double the artifact and hand an unbounded
+    // binary field the redaction problem the digest exists to avoid.
+    for (const o of r.observations) {
+      expect(Object.hasOwn(o, "stdout")).toBe(false);
+      expect(Object.hasOwn(o, "stderr")).toBe(false);
+    }
   }, 60_000);
 });

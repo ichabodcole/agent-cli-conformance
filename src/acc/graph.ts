@@ -38,6 +38,8 @@ export interface WikiPage {
   /** `complete` | `partial` — how much of the page its checker establishes. Read here as well
    *  as by the lint so `acc rules` can say it without a second parse of the same frontmatter. */
   coverage?: string;
+  /** What NOT satisfying this rule means: `defect` | `design-choice`. See SCHEMA.md. */
+  deviation?: string;
   /** One phrase per normative clause the checker does not establish. Empty for a non-rule page
    *  and for `complete` coverage. */
   coverageGaps: string[];
@@ -108,6 +110,8 @@ export function loadGraph(root: string = defaultWikiRoot()): WikiGraph {
     if (checker) page.checker = checker;
     const coverage = fields.get("coverage");
     if (coverage) page.coverage = coverage;
+    const deviation = fields.get("deviation");
+    if (deviation) page.deviation = deviation;
 
     pages.push(page);
 

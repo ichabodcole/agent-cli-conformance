@@ -31,6 +31,7 @@ export const unknownCommandChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/parsing/unknown-command-exits-nonzero.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // The nested gap is the one the class comment above spends its length on; the next two are
   // clauses the page states flatly and this checker never reads. It asserts `exitCode !== 0`,

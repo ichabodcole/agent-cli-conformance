@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-15 }
 rule_id: C1
 tier: core
+deviation: defect
 probe_level: L0
 checker: src/acc/kit/checkers/exit-codes/help-exits-zero.ts
 checker_status: implemented

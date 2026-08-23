@@ -31,6 +31,7 @@ const CHECKERS_DIR = join(REPO_ROOT, "src/acc/kit/checkers");
 // time — so this import has no side effects and is safe from a lint entry point.
 const PROBE_LEVEL_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.probeLevel]));
 const TIER_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.tier]));
+const DEVIATION_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.deviation]));
 const COVERAGE_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.coverage]));
 const COVERAGE_GAPS_BY_RULE_ID = new Map(CHECKERS.map((c) => [c.ruleId, c.coverageGaps]));
 const COVERAGE_ESTABLISHED_BY_RULE_ID = new Map(
@@ -40,6 +41,20 @@ const COVERAGE_ESTABLISHED_BY_RULE_ID = new Map(
 const TIERS = new Set(["core", "diagnostic"]);
 const PROBE_LEVELS = new Set(["L0", "L1", "L2"]);
 const COVERAGES = new Set(["complete", "partial"]);
+/**
+ * Whether a tool that does NOT satisfy this rule has a DEFECT or a different, defensible DESIGN.
+ *
+ * Separate from `tier`, which answers a different question: `tier` decides whether a violation
+ * gates CI, and this decides what a violation MEANS. Most of the catalogue is `defect` — a CLI
+ * that exits `0` on an unknown flag is broken for an agent whatever its author intended, and
+ * waiving the rule suppresses a real failure rather than recording a preference. A handful of
+ * rules are not like that: a machine-first tool answering a bare invocation with a manifest of
+ * its own command surface has made a choice, not a mistake.
+ *
+ * The two axes cross: `D2` is `core` and `design-choice`, `D3` is `diagnostic` and still a
+ * `design-choice`, and a diagnostic rule can perfectly well be a `defect`.
+ */
+const DEVIATIONS = new Set(["defect", "design-choice"]);
 
 /**
  * Rule pages carry machine-readable frontmatter (`rule_id`, `tier`, `probe_level`,
@@ -75,6 +90,12 @@ export function ruleChecks(pages: LintPage[]): string[] {
         `BAD tier       ${page.rel}: "${tier ?? ""}" not in {${[...TIERS].join(", ")}}`,
       );
 
+    const deviation = page.fields.get("deviation");
+    if (!deviation || !DEVIATIONS.has(deviation))
+      problems.push(
+        `BAD deviation  ${page.rel}: "${deviation ?? ""}" not in {${[...DEVIATIONS].join(", ")}}`,
+      );
+
     const level = page.fields.get("probe_level");
     if (!level || !PROBE_LEVELS.has(level))
       problems.push(
@@ -108,6 +129,19 @@ export function ruleChecks(pages: LintPage[]): string[] {
       if (checkerLevel && checkerLevel !== level)
         problems.push(
           `MISMATCH probe_level ${page.rel}: page declares "${level}", checker declares "${checkerLevel}"`,
+        );
+    }
+
+    // And for `deviation`, which is now consulted at runtime rather than being documentation:
+    // `buildReport` lets a WAIVED `design-choice` keep `fullyVerified`. A page saying
+    // `design-choice` while its checker says `defect` would offer a reader a waiver that does not
+    // cost what the page promises — or, the other way, silently spend an evidence claim the
+    // reader was told they could keep.
+    if (status === "implemented" && id && deviation && DEVIATIONS.has(deviation)) {
+      const checkerDeviation = DEVIATION_BY_RULE_ID.get(id);
+      if (checkerDeviation && checkerDeviation !== deviation)
+        problems.push(
+          `MISMATCH deviation ${page.rel}: page declares "${deviation}", checker declares "${checkerDeviation}"`,
         );
     }
 
@@ -515,6 +549,7 @@ export function coverageMatrix(pages: LintPage[]): string {
       id: p.fields.get("rule_id") ?? "",
       rel: p.rel,
       tier: p.fields.get("tier") ?? "",
+      deviation: p.fields.get("deviation") ?? "",
       level: p.fields.get("probe_level") ?? "",
       status: p.fields.get("checker_status") ?? "",
       coverage: p.fields.get("coverage") ?? "",
@@ -529,13 +564,17 @@ export function coverageMatrix(pages: LintPage[]): string {
     "Generated from rule frontmatter by `bun run docs:sync`; the lint fails when it drifts.",
     "**Checker** is presence — a checker file exists and is registered. **Coverage** answers the",
     "different question of how much of the page that checker actually establishes, and each rule",
-    "page names its own gaps. See [SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).",
+    "page names its own gaps. **Deviation** says what a violation MEANS — `defect` if there is no",
+    "defensible alternative, `design-choice` if a different design can be right and a waiver records",
+    "a decision rather than hiding a failure — and it decides what a waiver costs: waiving a",
+    "`design-choice` keeps `fullyVerified`, waiving a `defect` does not. See",
+    "[SCHEMA.md](./SCHEMA.md#rule-pages-carry-extra-frontmatter).",
     "",
-    "| Rule | Tier | Level | Checker | Coverage | Gaps |",
-    "| ---- | ---- | ----- | ------- | -------- | ---- |",
+    "| Rule | Tier | Deviation | Level | Checker | Coverage | Gaps |",
+    "| ---- | ---- | --------- | ----- | ------- | -------- | ---- |",
     ...rules.map(
       (r) =>
-        `| [${r.id}](./${r.rel}) | ${r.tier} | ${r.level} | ${r.status} | ${r.coverage} | ${r.gaps} |`,
+        `| [${r.id}](./${r.rel}) | ${r.tier} | ${r.deviation} | ${r.level} | ${r.status} | ${r.coverage} | ${r.gaps} |`,
     ),
     "",
     `${rules.length} rules · ${complete} \`complete\` · ${rules.length - complete} \`partial\` · ${gaps} named gaps.`,

@@ -79,8 +79,11 @@ break it, and none of them would show up as a failing test.
   materially raised my trust when a checker disagreed with me, and it is why I spent time
   disproving A6 instead of dismissing it."_ At risk from **B**, if a README trim drops the
   self-check.
-- **The waiver escape hatch behaving exactly as documented** — `conformant: true`,
-  `fullyVerified: false`. At risk from **E**, which reopens waiver ergonomics.
+- **The waiver escape hatch behaving as documented, and the report saying which.** Written
+  originally as "`conformant: true`, `fullyVerified: false`" — that half is **deliberately
+  changed**: a waived `design-choice` now keeps `fullyVerified`. What must not regress is the
+  property underneath, that a waiver stays visible in the report with its reason and its would-be
+  verdict rather than silently vanishing.
 
 **These are acceptance constraints, not commentary.** A cold reader of the rewritten README should
 still be able to find the positive control, and a reader of the changed report should still meet
@@ -276,6 +279,26 @@ hazard; have A6 decline to report when it cannot establish the launcher; or corr
 second probe that shows whether the terminator arrived at all. The third is the only one that
 scales past bun, and it is the most expensive.
 
+**A6 is not the only rule a wrapper moves — and the other one moves quietly.** Reported by
+`sable` on the confirmation run and reproduced here: a wrapper adds a consistent 2-3 ms to
+[F2](../wiki/rules/safety/first-byte-is-prompt.md), because F2 measures wall-clock to first byte
+and an `sh -c exec` is a real process.
+
+| target                        | F2                          |
+| ----------------------------- | --------------------------- |
+| the `.ts` file directly       | `15ms (runs: 16, 15, 15ms)` |
+| the same CLI behind a wrapper | `18ms (runs: 19, 18, 18ms)` |
+
+`THRESHOLD_MS` is 100 and the verdict takes the fastest of three runs, so 3 ms is 3% of the
+budget and noise at 15 ms. It is not noise for a target sitting near the threshold — and unlike
+A6, **this one moves toward `fail` rather than toward `unverified`.** A6 at least announces
+itself as undeliverable when the guard fires; F2 silently reports a slower tool than the one
+under test. Their words: _"F2 is the second rule a wrapper can move, and that one moves quietly
+in the direction of failing rather than of being unverifiable."_
+
+That reframes the workstream: the subject is **any rule whose measurement an interposed layer
+can distort**, not bun's `--` specifically. Enumerate those before designing a fix.
+
 **Widen before fixing.** `argv0` is consulted in only one checker today, so the blast radius is
 A6 alone — but the same reasoning ("we inferred the launcher from the target") is the shape the
 `L0` boundary work already ruled out for machine mode. Check that this guard is observation and
@@ -362,17 +385,81 @@ makes it smaller than it looked.
 
 Also live and unreconciled: `docs/plans/2026-08-20-second-adoption-release.md`.
 
-## Decisions needed before any of this gets detailed
+## Decisions — made 2026-08-22
 
-1. **Attach the observations, or drop the ids?** They offered both and said either beats today.
-   Attaching is more useful and grows the report; dropping is honest, free, and **breaking**.
-   This decides the shape _and the version type_ of **A**.
-2. **If we attach: does the digest suffice, or do we serialize bytes?** Roadmap item 4 has already
-   answered this once — digest, not bytes — so serializing raw streams means overturning a written
-   decision, with the redaction and size arguments answered.
-3. **Does `acc check` learn an argv prefix, or do we only document the wrapper?** Documenting is
-   nearly free. Supporting it is a new CLI surface every future probe has to respect.
-4. **Is D2's premise right for a CLI whose bare invocation returns a machine-readable manifest?**
-   The only spec-level challenge the trial produced.
-5. **Is L1 in scope for this cycle?** If out, say so — they named it as one of two conditions for
-   the adoption outcome this project presumably wants.
+1. **Evidence ids: attach.** _"Let's attach them, and just make sure they do and work as we say."_
+   The second clause is the harder half: the field's own doc comment promises any finding can be
+   traced to raw evidence, so the promise gets bound to a test, not just implemented.
+2. **What an observation carries: argv, exit status, signal, timing and the digests — not the
+   stream bytes.** Keeps [roadmap item 4](../roadmap.md#4-durable-observation-and-replay)'s written
+   decision intact (the digest is the byte-level record) while answering the question that cost the
+   adopter an hour: _what did you actually run?_
+3. **Interposed launchers: document only, for now.** Revisit once a non-bun CLI has actually been
+   put through the kit. Stated reason: the projects available to test with are bun-based, so the
+   argv-prefix surface would be designed against one case and no evidence. It becomes urgent if
+   this project goes public, where a non-bun CLI's first experience matters.
+4. **D2: keep the default, soften the language.** Not a rule change and not a checker change —
+   a **language** change, which is far smaller than this plan assumed. The rule stays: a bare
+   invocation is an error by default, and the config can already override it. What changes is the
+   register. Three things to carry:
+   - Frame it as **our default and the reasoning for it**, not as a verdict on the reader's design.
+   - **Give the why**, because a reader may not have met it: an unset shell variable expanding to
+     nothing is indistinguishable from a deliberate bare call, and exiting `0` there is how a
+     silent no-op ships.
+   - **Say plainly that a different design can be right.** Returning a machine-readable manifest
+     to inform an agent is a legitimate choice, and the page should not imply otherwise.
+5. **L1: in scope, and it is the point.** _"L0 is foundational… but it's not really where the user
+   is going to get value. L1 is really where you're going to get a lot more benefit — and you're
+   going to get benefit more from the guidance and the thinking we've done around it than from the
+   tooling."_ That last clause is the steer: L1's value is the declaration format and what it makes
+   sayable, not the checker count.
+
+   **A fair objection to the question as posed:** "this cycle" was never defined. Taken as _the
+   work following the anthill trial_, L1 is in it and is the largest item.
+
+6. **Sequencing: proceed on judgement.**
+
+### What this changes about the plan above
+
+- **E shrinks to a documentation task.** The D2 disposition is decided and needs no rule-premise
+  change, no checker change and no catalogue-lint change. What remains in E is the committed-waiver
+  CI blocker, which L1 may dissolve anyway.
+- **C shrinks to documentation** for now, with the enumeration of distortable rules — A6 and F2 so
+  far — kept as the record for when it is revisited.
+- **A is the near-term build**, and it is also infrastructure L1 needs: falsifying a declaration
+  means pointing at the observation that falsified it.
+
+> **A signal found while doing item 3, recorded before `L1` starts.** The `design-choice`
+> classification may be marking rules that belong at `L1` rather than rules that are permanently
+> different: every rule it labels is one a declaration would resolve, and no rule it does not label
+> is. That makes a `design-choice` rule at `L0` an instance of the defect class the machine-mode
+> work already removed — the kit supplying an assertion the target never made. See
+> [design-choice may be L1 leaking into L0](../reports/2026-08-22-design-choice-is-l1-leaking-into-l0.md).
+> Nothing to act on yet; it changes what `L1` is for.
+
+## The gate: what "ready for L1 takeoff" means
+
+Added 2026-08-22. `L1` is in scope and is the point; the blocker is that **the `L0` experience and
+the current documentation have to be somewhere L1 can take off cleanly.** So the remaining
+workstreams are not a queue of nice-to-haves — they are the gate, and it is worth writing down what
+passing it looks like.
+
+1. **A — a finding can be traced to its evidence.** The one functional defect an outside adopter
+   named, and it is also the first piece of `L1` rather than a detour before it: falsifying a
+   declaration means pointing at the observation that falsified it. Ship it at `L0` and `L1`
+   inherits a working mechanism instead of specifying a new one.
+2. **B2 — the README stops arguing before it helps.** Three cold readers left the page before
+   reaching what the project is for. A front door that loses readers at `L0` loses them for `L1`
+   too.
+3. **The catalogue's register — and this is bigger than D2.** The decision above was made about one
+   rule, but it generalises: a rule page should state **our default and the reasoning for it**, not
+   a verdict on the reader's design. That matters disproportionately at `L1`, because `L1` is
+   _"the tool declares what it does and the kit falsifies the declaration"_ — if the `L0` pages read
+   as judgements, a declaration format built on top of them reads as a trap rather than an
+   invitation. **Before writing L1's declaration format, sweep the catalogue for the same voice.**
+4. **C — the interposed-layer distortions are written down**, so a wrapper user knows which
+   verdicts to distrust: A6 loudly, F2 quietly.
+
+Not in the gate: **D**. Three catalogue questions whose output is a report, and at least one is
+probably [roadmap item 8](../roadmap.md#8-test-the-checker-as-a-measurement-instrument) rather than
+anything new. It can run alongside or after.

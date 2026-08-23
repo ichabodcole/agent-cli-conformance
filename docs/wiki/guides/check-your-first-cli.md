@@ -43,7 +43,7 @@ bun run acc check src/acc/kit/fixtures/conforming.ts
 The first line is the verdict:
 
 ```
-CONFORMANT (L0) — 0 core violated, 0 core unverified, 18 core partially covered
+CONFORMANT (L0) — 0 core violated, 1 core unverified, 16 core partially covered
 ```
 
 Three claims, and the first is the headline: no core rule was **violated**. Check what the
@@ -55,7 +55,7 @@ echo $?
 
 `0`. Conformance is the gate, and this target passed it.
 
-(The counts will grow as rules are added to the catalogue. `18` today, more later — the shape
+(The counts will grow as rules are added to the catalogue. `16` today, more later — the shape
 of the line is what matters, not the number.)
 
 Now look further down that report, at the last line before the gaps:
@@ -75,7 +75,7 @@ bun run acc check src/acc/kit/fixtures/broken/exits-zero-on-unknown-flag.ts
 ```
 
 ```
-NOT CONFORMANT (L0) — 8 core violated, 3 core unverified, 7 core partially covered
+NOT CONFORMANT (L0) — 6 core violated, 3 core unverified, 8 core partially covered
 ```
 
 And the exit code:
@@ -129,8 +129,10 @@ and it is the distinction the whole report is built around — see
 > and A6 reports a `FAIL` your tool did not earn — measured: the same CLI reports `UNVR` passed
 > directly and `FAIL` behind a wrapper. A6 is `diagnostic` and never affects the exit code.
 
-Now the sentence from Step 1 should land. Our conforming fixture had `0` violated and `0`
-unverified — and still every rule was `PASS+`. It passed the gate; it did not establish the
+Now the sentence from Step 1 should land. Our conforming fixture violated nothing — and still
+not one rule came back a plain `PASS`. Every rule it established is a `PASS+`; one core rule
+(`B5`) is `UNVR` for want of a declared machine mode, `A6` is `UNVR` too as a diagnostic, and
+two more (`A4`, `B3`) are `N/A` at this level. It passed the gate; it did not establish the
 whole catalogue.
 
 ## Step 4 — look up a rule you failed
@@ -170,7 +172,7 @@ bun run acc check "$(which git)"
 ```
 
 ```
-NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered
+NOT CONFORMANT (L0) — 2 core violated, 2 core unverified, 13 core partially covered
 ```
 
 Two real violations, on git 2.55.0 — not a toy result, and not a criticism of git either. Pick

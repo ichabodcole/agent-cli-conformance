@@ -1,5 +1,14 @@
 import type { AccConfig } from "./config.ts";
-import type { Checker, Coverage, Finding, History, ProbeLevel, Verdict } from "./types.ts";
+import type {
+  Checker,
+  Coverage,
+  Finding,
+  History,
+  Invocation,
+  Observation,
+  ProbeLevel,
+  Verdict,
+} from "./types.ts";
 
 /** Numeric order for comparing probe levels — L0 < L1 < L2. */
 const LEVEL_RANK: Record<ProbeLevel, number> = { L0: 0, L1: 1, L2: 2 };
@@ -15,6 +24,14 @@ export interface ReportedFinding extends Finding {
    * `waived`, which is what excludes it.
    */
   tier: "core" | "diagnostic";
+  /**
+   * `defect` | `design-choice`, carried through from the checker.
+   *
+   * Published because it decides what a WAIVER costs: waiving a `design-choice` keeps
+   * `fullyVerified`, waiving a `defect` does not. A consumer looking at a waived rule and asking
+   * why the evidence claim did or did not survive needs this in the same document.
+   */
+  deviation: "defect" | "design-choice";
   /** Where to read about the rule. A failure that does not point at its explanation is a chore. */
   rulePath: string;
   /** True when this failure is listed under `knownFailures` in the project's config. */
@@ -53,8 +70,79 @@ export interface ReportedFinding extends Finding {
   applicable: boolean;
 }
 
+/**
+ * One observation, as the report publishes it — what the kit RAN, not what it read back.
+ *
+ * `Finding.evidence` has always carried observation ids, and `types.ts` has always documented them
+ * as the way "any finding can be traced to raw evidence". Nothing resolved them: the ids shipped
+ * and the observations did not, so the report cited proof it could not produce. An outside adopter
+ * reported it as the single highest-value fix on their list, having spent an hour reconstructing a
+ * probe by hand that a resolvable id would have handed them.
+ *
+ * **The streams are deliberately absent.** `stdoutDigest` and `stderrDigest` are the whole
+ * byte-level record here, for the reason the durable-artifact work already settled: retaining the
+ * bytes as well doubles the artifact for an equality question a 32-byte hash already answers, and
+ * hands an unbounded binary field the redaction and retention problems that come with it. What a
+ * reader needs to reconstruct a verdict is the ARGV, and that carries nothing the target did not
+ * already receive from us.
+ *
+ * **`purposes` is the exception, and it is deliberate.** A7 builds its purpose string from the
+ * value set it read out of the target's own `--help`, so this field can contain target-derived
+ * text. That is the point — a purpose that named no specifics would not tell a reader why the
+ * probe was sent — but it means the projection is not strictly "only what we sent".
+ *
+ * **`args` is not bounded independently.** Several checkers build a probe from a flag discovered
+ * in the target's own `--help`, and that scan has no length limit of its own — so a pathological
+ * help screen produces a pathological argv, bounded only by `MAX_STREAM_BYTES` in `runner.ts`.
+ * The bytes are the target's own and F1 requires help to hold no secrets, so this is a size
+ * question rather than a disclosure one; it is written down because "argv is small" is an
+ * assumption a reader would otherwise make.
+ */
+export interface ReportedObservation {
+  /** Matches the ids in `ReportedFinding.evidence`. */
+  id: string;
+  /** The argv this probe sent, after `target.argv0`. The answer to "what did you actually run?" */
+  args: string[];
+  /** Environment overrides the probe imposed, when it imposed any. */
+  env?: Record<string, string>;
+  inertness: Invocation["inertness"];
+  /** Every checker that asked for this invocation — one observation can back several rules. */
+  purposes: string[];
+  /**
+   * Which repetition this was, when the probe asked for several.
+   *
+   * Without it, the repeated invocations C3, D4 and F2 exist to compare project identically —
+   * four rows with the same argv and no way to say which run each verdict read. For those three
+   * rules the repetition IS the subject, so an evidence id that cannot name it does not answer
+   * the question the id was published to answer.
+   */
+  repeat?: number;
+  exitCode: number | null;
+  signal: string | null;
+  crashed: boolean;
+  timedOut: boolean;
+  spawnFailed: boolean;
+  durationMs: number;
+  timeToFirstByteMs: number | null;
+  stdoutBytes: number;
+  stderrBytes: number;
+  stdoutDigest: string;
+  stderrDigest: string;
+  /** The decode threw information away, so a digest is the only faithful record of that stream. */
+  stdoutLossy: boolean;
+  stderrLossy: boolean;
+  truncated: boolean;
+}
+
 export interface Report {
   target: string;
+  /**
+   * How the target was actually launched, including any interpreter the kit resolved from its
+   * shebang. `target` alone is the least informative thing available about what was measured: a
+   * path says nothing about whether a `.ts` file ran under Bun or as itself, and that distinction
+   * decides several verdicts.
+   */
+  targetArgv0: string[];
   /**
    * The version of the kit that produced this report.
    *
@@ -98,14 +186,16 @@ export interface Report {
    * EVERY APPLICABLE CORE RULE WAS ACTUALLY ESTABLISHED, at this run's probe level. Four
    * conditions, all required:
    *
-   * 0. NO APPLICABLE CORE RULE WAS WAIVED. This is the one claim the config frame must not be
-   *    able to move, and it is the mirror of condition 2 below: an excuse suppresses the
-   *    conformance GATE but never the evidence CLAIM (review R3-4), and a waiver is a stronger
-   *    statement than an excuse, so it can buy no more. A rule the project chose not to be
-   *    measured against was not established — "does not apply to my tool" is a claim about the
-   *    tool's design, not evidence about its behaviour. Precisely BECAUSE `conformant` is
-   *    frame-relative, one boolean has to be measured against the whole catalogue, or the frame
-   *    swallows the verdict entirely;
+   * 0. NO APPLICABLE CORE RULE CLASSIFIED `defect` WAS WAIVED. A `defect` waiver is what the
+   *    config frame must not be able to buy, and the rule is the mirror of condition 2 below: an
+   *    excuse suppresses the conformance GATE but never the evidence CLAIM (review R3-4), and a
+   *    project that waived a real failure was not measured against it — "does not apply to my
+   *    tool" is a claim about the tool's design, not evidence about its behaviour. Precisely
+   *    BECAUSE `conformant` is frame-relative, one boolean has to be measured against the whole
+   *    catalogue, or the frame swallows the verdict entirely. A waived `design-choice` is the
+   *    deliberate exception: waiving one is the nearest thing L0 has to the target declaring its
+   *    own design, and a design the target declares and the kit accepts is verification, not a
+   *    hole in it;
    * 1. `conformant` — nothing core was violated;
    * 2. every applicable core finding has verdict `pass` — INCLUDING excused ones. An excuse is
    *    an organisation deciding it can live with a defect; it is not evidence. Filtering
@@ -157,9 +247,12 @@ export interface Report {
    * applicable core rule that blocks the claim, carrying the checker's declared `coverageGaps`
    * and — for a rule that did not pass — the verdict and detail that stopped it.
    *
-   * A waived core rule appears here too, because it blocks the claim: the gap it names is the
-   * waiver itself, beside the verdict the probe reached anyway. That is a statement of what the
-   * evidence does not cover, not a request to go and fix the rule.
+   * A waived core rule classified `defect` appears here too, because it blocks the claim: the gap
+   * it names is the waiver itself, beside the verdict the probe reached anyway. That is a
+   * statement of what the evidence does not cover, not a request to go and fix the rule. A waived
+   * `design-choice` does NOT appear: it costs the evidence claim nothing, because the target
+   * declaring its own design is something the kit accepts rather than a hole in what was
+   * established.
    *
    * Empty exactly when `fullyVerified` is true. A bare `false` would be the same
    * information-free verdict this project criticises a CLI for emitting: the caller learns that
@@ -167,6 +260,14 @@ export interface Report {
    */
   evidenceGaps: Array<{ ruleId: string; gaps: string[] }>;
   findings: ReportedFinding[];
+  /**
+   * Every observation any finding cites, resolvable by the ids in `ReportedFinding.evidence`.
+   *
+   * Observations no finding cites are included too: a probe that ran and backed nothing is itself
+   * information about the run, and omitting them would make the list look like the whole record
+   * when it was a filtered one.
+   */
+  observations: ReportedObservation[];
   /** Rule ids excluded from this run because their `probeLevel` exceeds `level`. Surfaced by
    *  name, not just by count, so a rule mislabelled with too high a `probeLevel` is visible
    *  rather than silently missing from the conformance verdict. */
@@ -215,6 +316,13 @@ export interface Report {
     reason: string;
     verdict: Verdict;
     tier: "core" | "diagnostic";
+    /**
+     * What this waiver COST, which is the question a reader of the waiver list is actually
+     * asking. A `defect` waiver also blocked `fullyVerified` and put the rule in `evidenceGaps`;
+     * a `design-choice` waiver did neither. Without it the list shows two entries that look
+     * identical and are not.
+     */
+    deviation: "defect" | "design-choice";
     applicable: boolean;
   }>;
   /**
@@ -322,6 +430,9 @@ export function buildReport(
     // silently upgrading a rule to "fully established".
     const probeLevel = c?.probeLevel ?? "L0";
     const declaredTier = c?.tier ?? "core";
+    // `defect` is the unforgiving default, for the same reason `core` is: an unregistered checker
+    // must not hand a waiver the cheaper treatment by accident.
+    const deviation = c?.deviation ?? "defect";
     // NOTE that nothing here decides whether to RUN a checker: every checker in the registry has
     // already run by the time `findings` reaches this function, waived rules included. That is
     // deliberate and it is free — probes are shared across checkers, so a waived rule costs no
@@ -332,13 +443,18 @@ export function buildReport(
     const waived = declaration?.severity === "off";
     return {
       ...f,
+      evidence: [...f.evidence],
       // `off` is not a tier, so a waived rule keeps the one it would have bound at — which is
       // exactly what `fullyVerified` needs to know about it below.
       tier: declaration && declaration.severity !== "off" ? declaration.severity : declaredTier,
+      deviation,
       rulePath: c?.rulePath ?? "",
       probeLevel,
       coverage: c?.coverage ?? "partial",
-      coverageGaps: c?.coverageGaps ?? ["no checker was found for this rule id"],
+      // COPIED, not aliased. `c` is an entry in the module-level `CHECKERS` registry, which
+      // lives for the whole process — a consumer mutating a finding would otherwise rewrite the
+      // checker definition every later run reads.
+      coverageGaps: [...(c?.coverageGaps ?? ["no checker was found for this rule id"])],
       applicable: LEVEL_RANK[probeLevel] <= LEVEL_RANK[level],
       // `unverified` is excusable too, not just `fail`. Excusing only failures left a project
       // blocked by an unverified core rule with no path to green: nothing it could change
@@ -387,7 +503,13 @@ export function buildReport(
   // A waived rule that WOULD have been core. Excluded from `core` above, and so from every
   // predicate built on it — which is why the evidence claim has to name it separately or the
   // config could buy `fullyVerified` outright. See the `fullyVerified` doc comment.
-  const waivedCore = waived.filter((f) => f.tier === "core");
+  // A waived `design-choice` does NOT block `fullyVerified`. Waiving one is the nearest thing
+  // `L0` has to the target declaring its own design — "a bare invocation returns my manifest" —
+  // and a claim the target makes and the kit accepts is verification, not a hole in it. Waiving a
+  // `defect` still blocks: there the project chose not to be measured against a real failure, and
+  // an evidence claim that stayed true through that would be worthless. The distinction is only
+  // expressible because the catalogue classifies every rule; before that, both looked the same.
+  const waivedCore = waived.filter((f) => f.tier === "core" && f.deviation === "defect");
 
   // ...and the same predicates, rendered as the reason. A rule can appear for more than one: a
   // non-pass verdict contributes what the checker said it could not establish, partial coverage
@@ -397,7 +519,7 @@ export function buildReport(
   const evidenceGaps = applicable
     .filter((f) =>
       f.waived
-        ? f.tier === "core"
+        ? f.tier === "core" && f.deviation === "defect"
         : f.tier === "core" && (f.verdict !== "pass" || f.coverage === "partial"),
     )
     .map((f) => ({
@@ -437,8 +559,10 @@ export function buildReport(
       notApplicable: notApplicable.length,
       waived: waived.length,
     },
+    targetArgv0: [...h.target.argv0],
     evidenceGaps,
     findings: reported,
+    observations: h.observations.map(toReportedObservation),
     notApplicable: notApplicable.map((f) => f.ruleId),
     knownFailures: Object.entries(config.knownFailures).map(([ruleId, reason]) => ({
       ruleId,
@@ -466,6 +590,7 @@ export function buildReport(
         reason: config.rules[f.ruleId]?.reason ?? "",
         verdict: f.verdict,
         tier: f.tier,
+        deviation: f.deviation,
         applicable: f.applicable,
       })),
     severityOverrides: reported
@@ -479,5 +604,37 @@ export function buildReport(
         to: f.tier,
         reason: config.rules[f.ruleId]?.reason ?? "",
       })),
+  };
+}
+
+/**
+ * Project an `Observation` onto what the report publishes.
+ *
+ * Written as an explicit field list rather than a spread-and-delete, so adding a field to
+ * `Observation` cannot silently publish it. The two that must never appear here are `stdout` and
+ * `stderr`: they are the target's own output, unbounded, and already represented by their digests.
+ */
+export function toReportedObservation(o: Observation): ReportedObservation {
+  return {
+    id: o.id,
+    args: [...o.invocation.args],
+    ...(Object.keys(o.invocation.env ?? {}).length > 0 ? { env: { ...o.invocation.env } } : {}),
+    inertness: o.invocation.inertness,
+    ...(o.invocation.repeat === undefined ? {} : { repeat: o.invocation.repeat }),
+    purposes: [...o.purposes],
+    exitCode: o.exitCode,
+    signal: o.signal,
+    crashed: o.crashed,
+    timedOut: o.timedOut,
+    spawnFailed: o.spawnFailed,
+    durationMs: o.durationMs,
+    timeToFirstByteMs: o.timeToFirstByteMs,
+    stdoutBytes: o.stdoutBytes,
+    stderrBytes: o.stderrBytes,
+    stdoutDigest: o.stdoutDigest,
+    stderrDigest: o.stderrDigest,
+    stdoutLossy: o.stdoutLossy,
+    stderrLossy: o.stderrLossy,
+    truncated: o.truncated,
   };
 }

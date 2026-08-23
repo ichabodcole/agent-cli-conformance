@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-16 }
 rule_id: B4
 tier: core
+deviation: defect
 probe_level: L1
 checker: src/acc/kit/checkers/streams/output-is-complete.ts
 checker_status: planned

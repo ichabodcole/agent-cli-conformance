@@ -29,6 +29,7 @@ export function showCommand(
     generated: page.generated,
     ...(page.ruleId ? { rule_id: page.ruleId } : {}),
     ...(page.tier ? { tier: page.tier } : {}),
+    ...(page.deviation ? { deviation: page.deviation } : {}),
     ...(page.probeLevel ? { probe_level: page.probeLevel } : {}),
     ...(page.checker ? { checker: page.checker } : {}),
     links_out: page.linksOut,

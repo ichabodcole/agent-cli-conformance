@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-15 }
 rule_id: G1
 tier: core
+deviation: defect
 probe_level: L0
 checker: src/acc/kit/checkers/lifecycle/does-not-crash.ts
 checker_status: implemented
@@ -119,6 +120,7 @@ Recording the signal fixed the evidence. Every checker now reports `unverified` 
 probe — honest, and not enough:
 
 ```
+[before G1 existed]
 CONFORMANT (L0) — 0 core violated, 11 core unverified, 4 core partially covered
 ```
 
@@ -217,15 +219,16 @@ The scope case, added when the checker was narrowed to match this page:
 Measured through the full registry at `L0`:
 
 ```
-CONFORMANT (L0) — 0 core violated, 16 core unverified, 0 core partially covered
+CONFORMANT (L0) — 0 core violated, 17 core unverified, 0 core partially covered
 
   UNVR  C1  2 of 2 probe(s) were killed by a signal the kit did not send (--help: SIGTERM,
             -h: SIGTERM) — a target that fell over while being asked established nothing
-  UNVR  G1  16 of 16 probe(s) ended on a signal the kit did not send and cannot attribute
+            about the rule
+  UNVR  G1  17 of 17 probe(s) ended on a signal the kit did not send and cannot attribute
             (…: SIGTERM) — an operator interrupt, an outer deadline and an OOM kill are
             outside this rule's scope
 
-  core 0/16 · violations 0 · unverified 19 (all tiers; 16 core)
+  core 0/17 · violations 0 · unverified 20 (all tiers; 17 core)
 ```
 
 `corePassed: 0`, **no rule reports `pass`**, and **no rule reports `fail`** either. `acc check`
@@ -252,7 +255,7 @@ The fixture is a control in three directions, which is why it is permanent. Wide
 non-kit signal and its line turns into a violation nobody can substantiate; widen C1 back and the
 same false violation reappears one rule over, exactly where it was; narrow `crashedUnverified` to
 the fault signals — "G1 doesn't fail `SIGTERM`, so why should anyone else care" — and those
-sixteen `unverified` lines start coming back as passes.
+seventeen `unverified` lines start coming back as passes.
 
 Both fixtures are POSIX shell rather than TypeScript on purpose: Bun installs its own `SIGSEGV`
 handler and converts the signal into an ordinary exit with a crash report on stderr, which is a

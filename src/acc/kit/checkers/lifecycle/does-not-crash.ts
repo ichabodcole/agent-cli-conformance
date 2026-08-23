@@ -68,6 +68,7 @@ export const doesNotCrashChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/lifecycle/inert-invocations-do-not-crash.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // A pass here means "nothing the kit happened to run fell over", which is a narrower sentence
   // than the page. The first gap is the direct consequence of declaring no probes: G1 sees the

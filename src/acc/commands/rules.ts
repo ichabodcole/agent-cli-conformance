@@ -3,6 +3,7 @@ import { loadGraph, type WikiPage } from "../graph.ts";
 
 export interface RulesOptions {
   tier?: string;
+  deviation?: string;
   tag?: string;
   probeLevel?: string;
   format?: string;
@@ -12,6 +13,15 @@ interface RuleRow {
   rule_id: string;
   title: string;
   tier: string;
+  /**
+   * `defect` | `design-choice` — what NOT satisfying this rule means.
+   *
+   * Listed beside `tier` because they answer different questions and a caller deciding whether to
+   * waive needs the second one. `tier` says whether a violation gates CI; this says whether
+   * waiving records a design decision or suppresses a real failure. Without it the classification
+   * exists only in the wiki, which is not the surface an agent reads.
+   */
+  deviation: string;
   probe_level: string;
   /**
    * `complete` | `partial`, carried through from the page's frontmatter — the same field
@@ -44,6 +54,7 @@ export function rulesCommand(opts: RulesOptions, mode: OutputMode, startedAt: nu
     .filter((p): p is WikiPage & { ruleId: string } => p.type === "rule" && Boolean(p.ruleId))
     .filter((p) => (tier ? p.tier === tier : true))
     .filter((p) => (probeLevel ? p.probeLevel === probeLevel : true))
+    .filter((p) => (opts.deviation ? p.deviation === opts.deviation : true))
     .filter((p) => (opts.tag ? p.tags.includes(opts.tag) : true))
     .sort((a, b) => a.ruleId.localeCompare(b.ruleId));
 
@@ -51,6 +62,7 @@ export function rulesCommand(opts: RulesOptions, mode: OutputMode, startedAt: nu
     rule_id: p.ruleId,
     title: p.title,
     tier: p.tier ?? "",
+    deviation: p.deviation ?? "",
     probe_level: p.probeLevel ?? "",
     coverage: p.coverage ?? "",
     coverage_gaps: p.coverageGaps,
@@ -80,7 +92,12 @@ export function rulesCommand(opts: RulesOptions, mode: OutputMode, startedAt: nu
         const n = r.coverage_gaps.length;
         const scope =
           r.coverage === "partial" ? `partial, ${n} gap${n === 1 ? "" : "s"}` : r.coverage;
-        return `  ${r.rule_id.padEnd(width)}  ${r.title}${dim} (${r.tier}, ${r.probe_level}, ${scope})${reset}`;
+        // Only `design-choice` is rendered. `defect` is what nineteen of twenty-three rules are,
+        // so printing it on every row would spend a column restating the default and bury the
+        // four rows where the reader's next action actually differs — waive and record a decision,
+        // rather than fix a bug. The JSON carries both, because a machine has no such budget.
+        const dev = r.deviation === "design-choice" ? ", design-choice" : "";
+        return `  ${r.rule_id.padEnd(width)}  ${r.title}${dim} (${r.tier}, ${r.probe_level}${dev}, ${scope})${reset}`;
       });
       return [`${d.count} rule${d.count === 1 ? "" : "s"}`, ...lines].join("\n");
     },

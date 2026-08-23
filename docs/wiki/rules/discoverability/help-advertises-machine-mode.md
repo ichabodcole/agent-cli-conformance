@@ -10,6 +10,7 @@ status: stable
 generated: { by: claude-opus-5, at: 2026-08-14 }
 rule_id: D3
 tier: diagnostic
+deviation: design-choice
 probe_level: L0
 checker: src/acc/kit/checkers/discoverability/advertises-machine-mode.ts
 checker_status: implemented
@@ -33,6 +34,24 @@ command (`schema`) where one exists.
 
 A CLI **SHOULD** make its structured surface discoverable from the surface a caller reaches
 first — which is `--help`, not documentation.
+
+> **A different design can be right here** (`deviation: design-choice`). A CLI may reasonably
+> decide its machine-readable path belongs in a manpage, a schema endpoint or a published contract
+> rather than in `--help` — and a tool that offers no machine-readable mode at all has made a
+> product decision, not a mistake. Where the verdict is `fail`, a waiver is how that decision gets
+> recorded.
+>
+> **Check which verdict you actually got before waiving.** Help that names no machine-mode flag
+> and makes no claim about one reports `fail`. Help whose PROSE claims machine-readable output is
+> the default reports **`unverified`** instead — the claim downgrades the verdict rather than
+> satisfying the rule, because prose is not a token a caller can flip. Waiving an `unverified` does
+> not record a design decision, and it costs nothing in the report — this rule is `diagnostic`, so
+> it never bound the gate, and it is a `design-choice`, so the waiver blocks no evidence claim and
+> enters no gap list. Costing nothing is exactly the problem: the `unverified` disappears from
+> view without anything having been established in its place. That shape is a named gap on this
+> page, not something a waiver fixes. What the rule is arguing is narrower than "you must do this": an
+> agent reads your help and nothing else tells it, so help is the one place where advertising
+> works without being told where to look.
 
 ## How to comply
 

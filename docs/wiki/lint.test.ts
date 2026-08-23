@@ -95,6 +95,7 @@ const OK_RULE: Record<string, string> = {
   type: "rule",
   rule_id: "A1",
   tier: "core",
+  deviation: "defect",
   probe_level: "L0",
   checker: "scripts/checkers/parsing/unknown-flag.ts",
   checker_status: "planned",
@@ -180,6 +181,25 @@ test("distinct rule_ids across many pages are fine", () => {
     rule(`rules/r${i}.md`, { rule_id: id, checker: `scripts/checkers/r${i}.ts` }),
   );
   expect(forward(pages)).toEqual([]);
+});
+
+test.each(["defect", "design-choice"])("deviation %s is accepted", (deviation) => {
+  expect(forward([rule("rules/a.md", { deviation })])).toEqual([]);
+});
+
+test.each(["", "Defect", "design choice", "designChoice", "none", "defect "])(
+  "deviation %j is rejected",
+  (deviation) => {
+    const problems = forward([rule("rules/a.md", { deviation })]);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("BAD deviation");
+  },
+);
+
+test("a rule page with no deviation is rejected — the classification is not optional", () => {
+  const problems = forward([pageOf("rules/a.md", without("deviation"))]);
+  expect(problems).toHaveLength(1);
+  expect(problems[0]).toContain("BAD deviation");
 });
 
 test.each(["core", "diagnostic"])("tier %s is accepted", (tier) => {
@@ -379,6 +399,7 @@ test("every defect on one page is reported, in field order", () => {
   expect(problems).toEqual([
     expect.stringContaining("MISSING rule_id"),
     expect.stringContaining("BAD tier"),
+    expect.stringContaining("BAD deviation"),
     expect.stringContaining("BAD probe_level"),
     expect.stringContaining("MISSING checker"),
   ]);
@@ -480,9 +501,10 @@ test("problems from several pages accumulate", () => {
     pageOf("rules/bad1.md", { type: "rule", rule_id: "B1", tier: "x", probe_level: "L1" }),
     pageOf("rules/bad2.md", { type: "rule", rule_id: "B2", tier: "core", probe_level: "L9" }),
   ]);
-  expect(problems).toHaveLength(4); // bad1: tier + missing checker; bad2: probe_level + checker
-  expect(problems.filter((p) => p.includes("bad1.md"))).toHaveLength(2);
-  expect(problems.filter((p) => p.includes("bad2.md"))).toHaveLength(2);
+  // bad1: tier + deviation + missing checker; bad2: deviation + probe_level + checker
+  expect(problems).toHaveLength(6);
+  expect(problems.filter((p) => p.includes("bad1.md"))).toHaveLength(3);
+  expect(problems.filter((p) => p.includes("bad2.md"))).toHaveLength(3);
 });
 
 // --- the stated gaps, in the page's own prose ---------------------------------------------
@@ -685,8 +707,8 @@ test("the matrix carries one row per rule page, sorted by rule id", () => {
   // property under test, and every honest addition to that list breaks a test about table
   // rendering. The equality is unchanged — this is still the exact rendered row.
   expect(rows).toEqual([
-    `| [A1](./rules/parsing/a1.md) | core | L0 | planned | partial | ${A1_GAPS.length} |`,
-    `| [B1](./rules/streams/b1.md) | core | L0 | planned | partial | ${A1_GAPS.length} |`,
+    `| [A1](./rules/parsing/a1.md) | core | defect | L0 | planned | partial | ${A1_GAPS.length} |`,
+    `| [B1](./rules/streams/b1.md) | core | defect | L0 | planned | partial | ${A1_GAPS.length} |`,
   ]);
 });
 

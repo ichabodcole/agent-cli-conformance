@@ -103,6 +103,7 @@ frontmatter is machine-read, and `lint.ts` cross-checks it against `src/acc/kit/
 ```yaml
 rule_id: A1 # stable, unique; cited verbatim in conformance output
 tier: core # core (binary pass/fail) | diagnostic (reported, non-fatal) — the BASELINE
+deviation: defect # defect | design-choice — what NOT satisfying this rule MEANS
 probe_level: L0 # L0 risk-reduced | L1 declared read-only | L2 contained mutating
 checker: src/acc/kit/checkers/parsing/unknown-flag.ts
 checker_status: planned # planned | implemented
@@ -112,6 +113,49 @@ coverage_gaps: # one phrase per normative clause the checker does not establish
 coverage_established: # one phrase per thing a PASS licenses, scoped to the paths sampled
   - one unknown long flag given at the root exits non-zero with stdout empty
 ```
+
+`deviation` answers a different question from `tier`, and the two cross rather than nest. **`tier`
+decides whether a violation gates CI. `deviation` decides what a violation means.**
+
+- **`defect`** — there is no defensible alternative. A CLI that exits `0` on an unknown flag is
+  broken for an agent whatever its author intended. Waiving one of these suppresses a real
+  failure; it does not record a preference, and the page should not imply otherwise.
+- **`design-choice`** — a different design can be right. A machine-first tool answering a bare
+  invocation with a manifest of its own command surface has made a choice, not a mistake. Here a
+  waiver records a decision, and the page owes the reader the reasoning behind the default rather
+  than a verdict on their design.
+
+**And it is read at runtime, not only by a reader.** Waiving a `defect` blocks `fullyVerified` and
+keeps the rule in `evidenceGaps`; waiving a `design-choice` does neither, because a design the
+target declares is something the kit accepts rather than a hole in what was established — see
+[the asymmetry](./concepts/conformance.md#the-asymmetry-a-waiver-buys-the-gate-and-the-evidence-only-when-the-rule-is-a-defect).
+So this field is cross-checked against the checker in both directions, exactly as `tier` is: a page
+declaring `design-choice` over a checker that says `defect` would offer a waiver that costs more
+than the page promises, and the reverse would quietly spend an evidence claim the reader was told
+they could keep.
+
+**A default is not a verdict.** `L0` is mostly error-checking — a tool that exits `0` on an unknown
+flag is broken for an agent and the catalogue should say so. But some rules encode a **design
+preference** rather than a defect, and there the catalogue's job changes: state the default, give
+the reasoning, and treat an override as a legitimate outcome rather than a failure to be argued
+out of. A reader who disagrees with a `design-choice` rule is not being non-conformant at us; they
+are doing what the field exists to permit.
+
+**This is most of the value for a CLI that does not exist yet.** A team starting a new tool can
+adopt the catalogue wholesale and get a coherent set of interface decisions without having to make
+each one — which is a better reason to read a spec than "you will be marked down otherwise". The
+`design-choice` rules are exactly the places where a mature project may already have decided
+differently, on purpose, and the page should meet them as a peer rather than as a defect report.
+
+**What follows for how these pages are written.** A `design-choice` page owes the reader three
+things: what our default is, why it is the default in terms they can evaluate, and what a
+different design would have to get right instead. It does not owe them a verdict, and it should
+not imply their interface is wrong for diverging.
+
+Most of the catalogue is `defect`, which is what a conformance spec should look like. The
+classification exists so the handful that are not cannot be mistaken for it — and so a reader
+meeting a rule they disagree with can tell immediately whether the catalogue expects that
+disagreement or considers it a bug.
 
 `tier` is what the **catalogue** says, not the last word for any one adopter. A project may move
 a rule between the two tiers — in either direction — or waive it outright, in its own

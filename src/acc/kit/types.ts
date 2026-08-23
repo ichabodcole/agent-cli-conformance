@@ -34,6 +34,12 @@ export interface Invocation {
    * variable would have been made faster or slower by the recorder's own dedup workaround. The
    * instrument was perturbing the quantity it measured. Nothing in the kit now puts a probe
    * identity where the target can see it (review R6-6).
+   *
+   * **Indices are 1-based, and that is a requirement rather than a convention.** `invocationId`
+   * folds `repeat ?? 0` into its material, so a checker numbering from zero would give its first
+   * run the same id as a probe that asked for no repetition — two different invocations, one
+   * recording, and a `repeat` published on an observation that was shared. The three repeating
+   * checkers start at 1 today; C3 and F2 use `[1, 2, 3]` and D4 uses `[1, 2]`.
    */
   repeat?: number;
 }
@@ -294,6 +300,18 @@ export interface Checker {
   /** Wiki path, quoted in output so a failure points at the rule that explains it. */
   rulePath: string;
   tier: "core" | "diagnostic";
+  /**
+   * What NOT satisfying this rule means: `defect` where no defensible alternative exists,
+   * `design-choice` where a different design can be right.
+   *
+   * Consulted at runtime, not decoration. `buildReport` lets a WAIVED `design-choice` rule keep
+   * `fullyVerified`, because waiving one is the closest thing `L0` has to a target declaring its
+   * own design — and falsifying a declaration is what verification means. Waiving a `defect` still
+   * blocks it: there you chose not to be measured against a real failure, and the evidence claim
+   * has to say so. Mirrored from the rule page's frontmatter and cross-checked by the wiki lint,
+   * for the same reason `tier` is.
+   */
+  deviation: "defect" | "design-choice";
   /** The lowest probe level at which this rule can be checked. A run at a lower level reports
    *  it as not-applicable rather than unverified — "out of scope here" is a different claim
    *  from "tried and could not establish it", and a report that conflates them cannot be acted

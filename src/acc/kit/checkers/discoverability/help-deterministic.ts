@@ -33,6 +33,7 @@ export const helpDeterministicChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/discoverability/help-output-is-deterministic.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // "The two runs are not identical invocations" is no longer among these: they are now the same
   // argv and the same environment, twice. What remains is the same nesting boundary C1 hits, and

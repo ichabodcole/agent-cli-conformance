@@ -137,6 +137,42 @@ describe("A — parsing", () => {
     expect(env.error.message).toContain("nonsense");
   });
 
+  test("`--deviation` filters, and every row carries the classification", async () => {
+    const all = await run(["rules", "--json"]);
+    const picked = await run(["rules", "--deviation", "design-choice", "--json"]);
+    const allRows = JSON.parse(all.stdout).data.rules;
+    const rows = JSON.parse(picked.stdout).data.rules;
+    // The point of publishing it: a caller deciding whether to waive can read the classification
+    // from the surface they already use, instead of opening the wiki.
+    for (const r of allRows) expect(["defect", "design-choice"]).toContain(r.deviation);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.length).toBeLessThan(allRows.length);
+    for (const r of rows) expect(r.deviation).toBe("design-choice");
+  });
+
+  test("a bad `--deviation` is refused with the valid set, like any other closed set", async () => {
+    const r = await run(["rules", "--deviation", "nonsense", "--json"]);
+    expect(r.code).toBe(2);
+    const env = JSON.parse(r.stderr);
+    expect(env.error.kind).toBe("usage");
+    expect(env.error.choices).toEqual(["defect", "design-choice"]);
+  });
+
+  test("`acc show` publishes the classification beside the tier", async () => {
+    const r = await run(["show", "A6", "--json"]);
+    const d = JSON.parse(r.stdout).data;
+    expect(d.tier).toBe("diagnostic");
+    expect(d.deviation).toBe("design-choice");
+  });
+
+  test("the text list names only `design-choice` — `defect` is the default and would be noise", async () => {
+    const r = await run(["rules", "--format", "text"]);
+    const a6 = r.stdout.split("\n").find((l) => l.includes("A6"));
+    const a1 = r.stdout.split("\n").find((l) => l.includes("A1"));
+    expect(a6).toContain("design-choice");
+    expect(a1).not.toContain("defect");
+  });
+
   test("A4 unexpected positionals are rejected", async () => {
     const r = await run(["tags", "unexpected-value-xyz"]);
     expect(r.code).toBe(2);
@@ -942,6 +978,28 @@ describe("acc check — the outcome exit code", () => {
       return dir;
     }
 
+    test("the text report says what each waiver COST, not just that it exists", async () => {
+      // D2 is `design-choice` and A1 is `defect`. The two lines must differ, because waiving one
+      // blocks the evidence claim and waiving the other does not.
+      const dir = configDir({
+        rules: {
+          D2: { severity: "off", reason: "manifest by design" },
+          A1: { severity: "off", reason: "known, tracked" },
+        },
+      });
+      try {
+        const r = await run(["check", BROKEN, "--config-dir", dir, "--format", "text"]);
+        // Scoped to the WAIVED block on purpose: a rule id also opens its line in the
+        // evidence-gaps block above, and matching the first hit tests the wrong section.
+        const waived = r.stdout.slice(r.stdout.indexOf("  WAIVED (")).split("\n");
+        const line = (id: string) => waived.find((l) => l.trim().startsWith(id));
+        expect(line("D2")).toContain("design choice, costs nothing");
+        expect(line("A1")).toContain("also blocks full verification");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }, 60_000);
+
     test("a waiver is targeted — waiving D2 alone leaves the other five violations", async () => {
       const dir = configDir({
         rules: { D2: { severity: "off", reason: "human-first CLI; bare help is deliberate" } },
@@ -970,8 +1028,10 @@ describe("acc check — the outcome exit code", () => {
         const { data } = JSON.parse(r.stdout);
         expect(data.conformant).toBe(true);
         expect(data.counts.coreFailures).toBe(0);
-        // THE RULING. Waivers buy the gate and never the evidence claim: every one of these was
-        // a core rule the project chose not to be measured against.
+        // THE RULING. A waived core `defect` buys the gate and never the evidence claim: the
+        // project chose not to be measured against a real failure. Five of the six waived here
+        // are `defect`, so `fullyVerified` stays false — D2 is `design-choice` and no longer
+        // contributes, which is why this asserts the boolean rather than counting the waivers.
         expect(data.fullyVerified).toBe(false);
         expect(data.waivers.map((w: { ruleId: string }) => w.ruleId).sort()).toEqual(VIOLATED);
       } finally {
@@ -995,6 +1055,7 @@ describe("acc check — the outcome exit code", () => {
             reason: "human-first CLI; bare help is deliberate",
             verdict: "fail",
             tier: "core",
+            deviation: "design-choice",
             applicable: true,
           },
         ]);
@@ -1015,7 +1076,9 @@ describe("acc check — the outcome exit code", () => {
         expect(r.stdout).toContain("WVD   D2");
         expect(r.stdout).toContain("(waived; would FAIL)");
         expect(r.stdout).toContain("WAIVED (1) — declared not applicable to this tool, by config:");
-        expect(r.stdout).toContain("human-first CLI; bare help is deliberate  (would FAIL)");
+        expect(r.stdout).toContain(
+          "human-first CLI; bare help is deliberate  (would FAIL; design choice, costs nothing)",
+        );
       } finally {
         rmSync(dir, { recursive: true, force: true });
       }

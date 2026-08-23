@@ -254,9 +254,21 @@ export async function checkCommand(
       // Not a nag, and worded so it cannot be read as one: `would PASS` is offered as information
       // — a waiver you could now delete — never as a stale entry to go and remove. Debt goes
       // stale; a declaration does not.
+      //
+      // The COST is named per line, because the two kinds of waiver look identical here and are
+      // not: waiving a `defect` also blocks `fullyVerified` and puts the rule in the gaps above,
+      // while waiving a `design-choice` does neither. A reader who cannot tell them apart cannot
+      // tell a suppressed failure from a declared design — which is the whole distinction the
+      // catalogue's classification exists to draw.
+      const cost = (w: (typeof r.waivers)[number]) =>
+        w.deviation === "design-choice"
+          ? "design choice, costs nothing"
+          : w.tier === "core"
+            ? "defect, also blocks full verification"
+            : "defect";
       const waivers = r.waivers.map(
         (w) =>
-          `    ${w.ruleId.padEnd(3)} ${w.reason}  (would ${w.verdict.toUpperCase()}${w.applicable ? "" : "; not applicable at this level"})`,
+          `    ${w.ruleId.padEnd(3)} ${w.reason}  (would ${w.verdict.toUpperCase()}; ${cost(w)}${w.applicable ? "" : "; not applicable at this level"})`,
       );
       // Severity moves, in both directions, for the same reason: `conformant` is a claim inside a
       // frame, and a raise is as much a part of that frame as a lowering.

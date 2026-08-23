@@ -21,6 +21,7 @@ export const noAnsiWhenPipedChecker: Checker = {
   ruleId: RULE_ID,
   rulePath: "docs/wiki/rules/streams/no-ansi-when-piped.md",
   tier: "core",
+  deviation: "defect",
   probeLevel: "L0",
   // The ANSI constant above is `ESC [` — the CSI introducer, and nothing else. That misses OSC
   // (`ESC ]`, used for hyperlinks and window titles), the single-character escapes (`ESC c`,
