@@ -12,7 +12,7 @@ not for agent applications that happen to have a CLI. If a person types your too
 also runs it, it is in scope.
 
 > **Status.** The kit runs today, and a release carries a tag of the form `v0.1.0` <!-- x-release-please-version -->
-> — **where no tag has been cut yet**, install from a branch or a commit SHA. `L0` is the
+> — until one is cut, install from a branch or a commit SHA. `L0` is the
 > only probe level that exists so far, and it is the shallow one — see
 > [where this is going](#where-this-is-going) for what it does and does not reach yet.
 >
