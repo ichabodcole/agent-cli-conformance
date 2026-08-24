@@ -35,8 +35,12 @@ Two clauses, and they are applied separately.
 **Where a rule's verdict depends on something only a declaration establishes, the answer is
 "declare it", not "here is what you get without one".** This binds the documentation: pages are
 written for the caller who has a config, and the unconfigured run is not maintained as a second
-documented mode with its own partial answers to interpret. What the kit itself should do on an
-unconfigured run is [not decided here](#what-the-kit-does-with-no-config-is-open).
+documented mode with its own partial answers to interpret.
+
+**And it binds the kit: `acc check` does not run without a declaration.** No config, no result —
+the run stops and tells the caller to write one. There is no reduced verdict for an unconfigured
+run, because a reduced verdict is the second mode arriving through the code instead of through
+the prose.
 
 **Who owns the target is not material, and the documentation does not raise it.** No audience
 split between adopters and third parties, no prose contrasting the maintainer of a CLI with
@@ -46,7 +50,8 @@ the same paragraph as taking a side.
 
 ## Rationale
 
-**The cost being avoided is documentation, not code.** Supporting an unconfigured run as a
+**The cost being avoided is a fork, in the code and in the prose, and it is one argument rather
+than two.** Supporting an unconfigured run as a
 documented mode means writing, and then maintaining, what it limits, what each partial answer
 means, and how to read one — beside every place the configured path is already explained. That is
 a second branch of explanation running the length of the guides, the concept pages and the rule
@@ -54,6 +59,14 @@ pages, and it is bought for a caller nobody has been able to describe: someone w
 verdict on a CLI, has cloned the repository to get it, and cannot write a JSON file. Requiring
 the file costs that caller a few minutes. Documenting its absence costs every reader of every
 page a fork in the prose.
+
+**The code half is the same sentence with a different noun.** A kit that answers both a
+configured and an unconfigured invocation has two behaviours to keep working, two sets of
+verdicts that have to stay consistent with each other, and an explanation of what the difference
+means that has to stay true of both. Every rule added later is added twice — once for the run
+that knows the target's shape and once for the run that does not — and every change to what a
+declaration establishes has to be checked against the branch where it establishes nothing. None
+of that exists if the first thing a caller does is write a config.
 
 **The use that does exist is one clone away and needs nothing from the target.** Clone, write a
 config, run the kit, read the report, open an issue with it. Whether that config is ever
@@ -90,6 +103,14 @@ plants the idea that permission was in question. The decision is not that both r
 welcome; it is that the categories do not appear. Where a page would name one, it names the
 person running the kit.
 
+**A partial run that skips the rules a declaration answers.** This is the strongest of the
+rejected options and it is not rejected for lack of value — a run that checks what it can and
+reports the rest as unreachable would tell a caller something true. It is rejected because it is
+a second maintained mode wearing a modest name: the same two behaviours, the same two sets of
+verdicts, and the additional job of explaining which rules fell out and why. The value it offers
+is smaller than the value of writing the file, which is minutes of work for anyone already
+holding a CLI they want checked.
+
 ## Consequences
 
 ### What now has to change
@@ -117,25 +138,65 @@ These are implications, not edits made here. Each is a separate change with its 
   spends money and can take actions. "This probe is unsafe against this shape of target" and
   "therefore never run the kit here" are two sentences, and only the second one is being
   withdrawn. Whoever edits that page separates them rather than deleting the paragraph.
+- **Two strings the shipped product prints are now false, and both were written yesterday.**
+  [`src/acc/commands/check.ts`](../../../src/acc/commands/check.ts) offers, as the hint on a
+  config error, "drop `--config-dir` — the working directory is searched instead, and no
+  `acc.config.json` there is not an error"; the `--config-dir` description in
+  [`src/acc/spec.ts`](../../../src/acc/spec.ts) says the same about the flag's absence, that the
+  working directory is searched and a file found there is loaded. Under a refusal, a run with no
+  config anywhere IS an error, so both sentences tell a caller the opposite of what will happen.
+  **Fix the `spec.ts` description first**: it is what `acc check --help` prints on every run, so a
+  caller meets it before they have any config at all, which is exactly the moment this decision
+  makes it wrong — where the hint is reachable only once a config exists and is broken, and so
+  misleads a narrower audience in a narrower moment. Neither is neglect: both arrived in the
+  change that made the kit disclose where its config came from, they were true when written, and
+  this decision falsified them a day later. That is how
+  documentation usually goes stale — a decision arriving after the prose — and it is why this
+  list exists rather than being left for a reader to find.
 
-### What the kit does with no config is open
+### What the refusal looks like is open, and the fact to start from
 
-Whether `acc check` should eventually **refuse** to run with no config, **warn** that some rules
-cannot be answered without one, or **stay silent** is undecided. Silence is the status quo — the
-report names the config source as `origin: "none"` and says nothing further — so this is a
-question about whether to add something, not about changing something.
+A missing config becomes a failure of the invocation rather than a verdict about the target, so
+it belongs in the `1`–`8` band and never at `9` — see
+[the taxonomy](../concepts/exit-codes.md#the-taxonomy). Today every `ConfigError` —
+a malformed file, an unparseable one, a `--config-dir` naming nothing — is translated in
+[`src/acc/commands/check.ts`](../../../src/acc/commands/check.ts) into a `usage` error, which
+[`src/acc/exit-codes.ts`](../../../src/acc/exit-codes.ts) pairs with exit `2`, on the stated
+reasoning that all of them are fixable by editing a file the caller owns. Whether "no config at
+all" is the same kind of mistake as "a broken config", and so shares `2`, is not decided here:
+the first is a step the caller has not taken yet and the second is a step they got wrong, and an
+agent branching on the code may want to tell those apart.
 
-### An open consequence, not decided here
+### `acc` self-applies, and does not currently ship a config
 
-A guided setup was raised alongside this — the kit noticing that no config was loaded and
-offering to help write one. It is in tension with the catalogue this kit applies to itself.
-`src/acc/conformance.test.ts` runs `acc check` against `acc`, so `acc` is bound by
-[E1](../rules/interactivity/never-block-without-a-tty.md): with stdin not a terminal, no waiting
-for input. A prompt is exactly what a harness cannot answer, and the guided path would live on
-the run where a caller is most likely to be a harness — an unconfigured one, in CI, on a first
-attempt. There are shapes that might resolve it (an offer printed rather than awaited, a
-subcommand a caller invokes deliberately), and none is chosen here. The tension is recorded so
-that whoever designs it starts from E1 rather than discovering it.
+[`src/acc/conformance.test.ts`](../../../src/acc/conformance.test.ts) checks `acc` against its
+own catalogue, and it does so through the kit API rather than the CLI — `record` and
+`buildReport` are handed an `AccConfig` assembled in memory, declaring `defaultOutput: "json"`.
+That file says why the declaration is not a root `acc.config.json`: `loadConfig` defaults to the
+working directory, and a file at the repo root would declare machine mode for every fixture the
+suite checks from there, most of which are not machine-first, making the declaration false of
+them. So the self-check itself is unaffected by a refusal at the CLI boundary — and the question
+of whether this repository must now ship a config for anyone running `acc check ./acc` by hand is
+live, with that side effect as the reason it has none.
+
+### An open consequence, not decided here — with a candidate resolution
+
+A guided setup was raised alongside this — the kit noticing that no config was loaded and helping
+the caller write one. It looked blocked: `acc` is bound by
+[E1](../rules/interactivity/never-block-without-a-tty.md), which is that with stdin not a
+terminal nothing waits for input, and the unconfigured run is exactly where the caller is most
+likely to be a harness in CI.
+
+Refusing to run makes a resolution available that prompting never had. The refusal already has to
+say something, and what it says can be a **starter config the caller saves** — printed, not
+awaited. Nothing blocks, nothing reads stdin, and a harness can drive it as easily as a person.
+That is the candidate, not the decision; nobody has chosen the shape, and this item stays open.
+
+### Also open: what a required config must contain
+
+Making the file mandatory raises what the minimum is — which keys a run needs before it can
+start, and whether an empty object counts as a declaration. That is being taken up separately and
+this record takes no position on it.
 
 ### Also open, and outside this record
 
@@ -148,11 +209,11 @@ position on what those rules report before one arrives.
 
 ## What would change our mind
 
-**The unconfigured run gets documented after all** if someone appears who genuinely cannot
-produce a config and still needs a verdict — a hosted runner pointed at an arbitrary binary, a
-package registry checking submissions at scale. That is a caller for whom "write a file first" is
-not a few minutes' work, and the second branch of explanation would then be bought by a real
-reader rather than a hypothetical one.
+**The unconfigured run gets supported after all** if someone appears who genuinely cannot produce
+a config and still needs a verdict — a hosted runner pointed at an arbitrary binary, a package
+registry checking submissions at scale. That is a caller for whom "write a file first" is not a
+few minutes' work, and the fork would then be bought by a real reader rather than a hypothetical
+one.
 
 **The silence about ownership was wrong** if third-party callers keep arriving with the same
 question anyway — asking in issues whether they are allowed to check a tool they do not maintain.
