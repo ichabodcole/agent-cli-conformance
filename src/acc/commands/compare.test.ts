@@ -265,6 +265,30 @@ describe("what does NOT count as a divergence", () => {
   });
 });
 
+// End to end: the capture is written by `acc check --json` and read back by `acc compare`. The
+// unit tests cover what it recognises; this covers that it survives the artifact.
+describe("self-declared flags across the population", () => {
+  test("every target gets a row, and none of these three enumerates", async () => {
+    const { c } = await compare();
+    expect(c.surfaces.map((s) => s.label).sort()).toEqual(Object.values(TARGETS).sort());
+    for (const row of c.surfaces) {
+      // These fixtures answer an unknown flag without naming what they accept — which is the
+      // ordinary case for a CLI, and the reason `not-enumerated` had to be a status rather than an
+      // empty array. `flags` is absent, not empty.
+      expect(row.status).toBe("not-enumerated");
+      expect(row.flags).toBeUndefined();
+      expect(row.probesRead).toBeGreaterThan(0);
+    }
+  }, 60_000);
+
+  test("the text form says the target did not enumerate, not that it has no flags", async () => {
+    const r = await run(["compare", ...all(), "--format", "text"]);
+    expect(r.stdout).toContain("SELF-DECLARED FLAGS");
+    expect(r.stdout).toContain("did not enumerate");
+    expect(r.stdout).toContain("NOT a tool with no flags");
+  }, 60_000);
+});
+
 describe("bad input", () => {
   test("one report is a usage error, not an empty comparison", async () => {
     const r = await run(["compare", reports[TARGETS.seven] as string, "--json"]);

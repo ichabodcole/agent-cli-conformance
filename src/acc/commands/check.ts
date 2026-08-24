@@ -16,6 +16,7 @@ import { type AccConfig, CONFIG_FILE, ConfigError, loadConfig } from "../kit/con
 import { record, TargetNotExecutableError } from "../kit/record.ts";
 import { CHECKERS, UNCHECKED_RULES } from "../kit/registry.ts";
 import { buildReport, primaryProblem, type ReportedFinding, runCheckers } from "../kit/report.ts";
+import { surfaceSummary } from "../kit/surface.ts";
 import type { History, TargetInfo } from "../kit/types.ts";
 import { VERSION } from "../version.ts";
 
@@ -389,6 +390,36 @@ export async function checkCommand(
               "    tracked before removing them.",
             ]
           : []),
+        "",
+        // THE TARGET'S OWN ACCOUNT OF ITS SURFACE, printed on every report including the ones
+        // where it is empty — because "this tool does not enumerate" is the finding for most
+        // tools, and a section that appears only on the tools that do would leave the reader
+        // unable to tell a silent target from a capture that never ran. Nothing here is a
+        // verdict, and the heading says so before the reader reaches the data.
+        "  SELF-DECLARED FLAGS — read back from the target's own rejection of an unknown flag.",
+        "  Evidence, not a rule: nothing in this report passes or fails on it.",
+        `    ${surfaceSummary(r.surface)}`,
+        // Where each list came from, so a reader can re-run the probe and see the same bytes
+        // rather than take the capture's word for it.
+        //
+        // FOLDED the way `acc compare` folds its repetition families, and for the same reason:
+        // three rules record the same unknown-flag argv several times to ask about determinism, so
+        // an unfolded list shows six identical rows and a reader counts six declarations where the
+        // target made one. The JSON keeps every row, because a repetition that answered
+        // DIFFERENTLY is a real thing to see — and it shows up here as a second, unfolded line.
+        ...[
+          ...new Map(
+            r.surface.evidence.map((e) => [
+              JSON.stringify([e.args, e.stream, e.shape, e.matched, e.flags]),
+              e,
+            ]),
+          ),
+        ].map(([key, e]) => {
+          const runs = r.surface.evidence.filter(
+            (o) => JSON.stringify([o.args, o.stream, o.shape, o.matched, o.flags]) === key,
+          ).length;
+          return `    from ${e.args.join(" ")}${runs > 1 ? ` (${runs} identical rejections)` : ""} · ${e.shape} ${JSON.stringify(e.matched)} on ${e.stream} · ${e.flags.join(" ")}`;
+        }),
         "",
         // WHERE THE EVIDENCE IS, said once, on every report. The ids each finding cites have
         // resolved since 0.1.0 and a blind reader never found out: they tried `acc show <id>` —

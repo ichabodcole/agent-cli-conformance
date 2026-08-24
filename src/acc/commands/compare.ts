@@ -9,8 +9,10 @@ import {
   compareReports,
   type LabelledReport,
   type ProbeComparison,
+  type SurfaceRow,
 } from "../kit/compare.ts";
 import type { Report } from "../kit/report.ts";
+import { type Surface, surfaceSummary } from "../kit/surface.ts";
 
 /**
  * `acc compare` — where several targets answer the same probe differently.
@@ -131,6 +133,22 @@ function rowLabel(probe: ProbeComparison, runs: number): string {
   return runs === 1 ? argvLabel(probe) : `${argvFamily(probe)}  (${runs} identical runs)`;
 }
 
+/**
+ * A `SurfaceRow` back in the shape `surfaceSummary` reads, so `check` and `compare` render the
+ * capture through ONE function. The `not-enumerated` sentence is the one this whole capture exists
+ * to get right, and two copies of it are two chances to get it wrong in one place only.
+ */
+function rowSurface(row: SurfaceRow): Surface | undefined {
+  if (row.status === "not-recorded") return undefined;
+  return {
+    status: row.status,
+    ...(row.flags ? { flags: row.flags } : {}),
+    ...(row.consistent === undefined ? {} : { consistent: row.consistent }),
+    evidence: [],
+    probesRead: row.probesRead,
+  };
+}
+
 function renderText(c: Comparison): string {
   const bold = useColor() ? "\x1b[1m" : "";
   const reset = useColor() ? "\x1b[0m" : "";
@@ -207,6 +225,17 @@ function renderText(c: Comparison): string {
           "",
         ]
       : []),
+    // WHAT EACH TARGET SAYS IT ACCEPTS, carried across from each report's own capture.
+    //
+    // Under the divergence blocks and not among them, because it is not one: no probe is being
+    // compared here and no target is in a group. It earns a place on this surface because the
+    // question it answers is a population question — an agent driving eight of these tools finds
+    // out from this column which of them will tell it what they accept when it gets a flag wrong.
+    // Printed for every target including the silent ones, since the silent ones are the finding.
+    `  ${bold}SELF-DECLARED FLAGS${reset} — what each target says it accepts, read from its own`,
+    "  rejection of an unknown flag. Evidence, not an axis: differing here is not diverging.",
+    ...c.surfaces.map((s) => `    ${pad(s.label, width)}  ${surfaceSummary(rowSurface(s))}`),
+    "",
     // THE LAST WORD, on every comparison, because the format invites the other reading. Rows,
     // groups and counts look like a scoreboard, and a reader who takes it for one will go and
     // "fix" the tool in the smaller group. The charter's position is that consistency is not

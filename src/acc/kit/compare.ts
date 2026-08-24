@@ -1,4 +1,5 @@
 import type { Report, ReportedObservation } from "./report.ts";
+import type { Surface, SurfaceStatus } from "./surface.ts";
 
 /**
  * COMPARISON, not judgement.
@@ -126,6 +127,26 @@ export interface ComparedTarget {
   configOrigin: string;
 }
 
+/**
+ * What one target says its own accepted flags are — carried across from that report's capture.
+ *
+ * DELIBERATELY NOT AN AXIS. Two tools accepting different flags is not a divergence, it is two
+ * tools; a comparison that grouped targets by flag set would mark every row divergent and mean
+ * nothing, which is the same mistake `Axis` rejects for byte counts. What IS worth seeing across a
+ * fleet is the STATUS column — which of these tools will tell an agent what they accept when it
+ * gets a flag wrong, and which will not — and that is a question no single report answers.
+ */
+export interface SurfaceRow {
+  label: string;
+  /** `not-recorded` when the report predates the capture, which is a fact about the file. */
+  status: SurfaceStatus | "not-recorded";
+  /** Present only for `enumerated`, on the same terms as `Surface.flags`. */
+  flags?: string[];
+  /** Carried across rather than assumed: see `Surface.consistent`. */
+  consistent?: boolean;
+  probesRead: number;
+}
+
 export interface Comparison {
   targets: ComparedTarget[];
   /** Distinct kit versions across the inputs, sorted. More than one is worth a reader's notice. */
@@ -150,6 +171,8 @@ export interface Comparison {
   divergent: ProbeComparison[];
   agreed: ProbeComparison[];
   unaligned: ProbeComparison[];
+  /** One row per input, in input order. See `SurfaceRow` for why it is not folded into `axes`. */
+  surfaces: SurfaceRow[];
 }
 
 /**
@@ -288,6 +311,19 @@ export function compareReports(inputs: LabelledReport[]): Comparison {
     divergent,
     agreed,
     unaligned,
+    surfaces: inputs.map(({ label, report }) => surfaceRow(label, report.surface)),
+  };
+}
+
+/** Tolerant of a report written before the capture existed: `surface` is absent, not empty. */
+function surfaceRow(label: string, surface: Surface | undefined): SurfaceRow {
+  if (!surface) return { label, status: "not-recorded", probesRead: 0 };
+  return {
+    label,
+    status: surface.status,
+    ...(surface.flags ? { flags: [...surface.flags] } : {}),
+    ...(surface.consistent === undefined ? {} : { consistent: surface.consistent }),
+    probesRead: surface.probesRead,
   };
 }
 

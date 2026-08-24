@@ -23,6 +23,15 @@ Every report must name **what it examined and at which commit or date**, and giv
 stable id (`R6-1`, `DTX-3`). The ids are load-bearing: findings get cited from the code they
 caused, so renumbering one invalidates a reference somewhere else.
 
+**That id carries a short prefix specific to the report**, as those examples do. A bare
+letter-number id collides with the rule ids in the catalogue — `A1`, `C2`, `D2`, `F2` — and most
+reports here discuss both, so an unprefixed finding puts two meanings of `D2` on one page. Two
+reports hit this on 2026-08-24: [wrong primitives in
+`acc`](./2026-08-24-wrong-primitives-in-acc.md) prefixed its findings `WP-`, and [the first drift
+trial](./2026-08-24-first-drift-trial-anthill-manifest.md) prefixed the trial's own `D1`–`D8` as
+`DT-` while quoting rule `D2` a few sections away. Prefix at publication: nothing cites the ids
+yet, so it costs nothing then and a rename later invalidates references.
+
 ## The line against `research/`
 
 Both look at something and write down what was found, so the boundary needs two tests. They

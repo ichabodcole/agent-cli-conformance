@@ -60,6 +60,66 @@ const EXIT_1 = report("one", [
   observation("p1", { args: ["--acc-probe-xyzzy-flag"], exitCode: 1, stderrBytes: 91 }),
 ]);
 
+// The flag-surface capture, carried across a comparison. It is not an axis and never marks anyone
+// divergent — see `SurfaceRow` — so what is asserted here is that it survives the trip and that a
+// report written before the capture existed says so instead of reading as a silent target.
+describe("self-declared flags", () => {
+  const withSurface = (label: string, surface: unknown) => {
+    const r = report(label, [observation("p1", { args: ["--acc-probe-xyzzy-flag"] })]);
+    (r.report as unknown as Record<string, unknown>).surface = surface;
+    return r;
+  };
+
+  test("each target's status and set travel across, and a missing capture is named", () => {
+    const c = compareReports([
+      withSurface("enumerates", {
+        status: "enumerated",
+        flags: ["--format"],
+        consistent: true,
+        evidence: [],
+        probesRead: 2,
+      }),
+      withSurface("silent", { status: "not-enumerated", evidence: [], probesRead: 3 }),
+      report("old", [observation("p1", { args: ["--acc-probe-xyzzy-flag"] })]),
+    ]);
+    expect(c.surfaces).toEqual([
+      {
+        label: "enumerates",
+        status: "enumerated",
+        flags: ["--format"],
+        consistent: true,
+        probesRead: 2,
+      },
+      { label: "silent", status: "not-enumerated", probesRead: 3 },
+      // NOT `not-enumerated`: this report predates the capture, which is a fact about the file and
+      // not about the tool. Collapsing the two would let an old artifact libel a tool that
+      // enumerates perfectly well.
+      { label: "old", status: "not-recorded", probesRead: 0 },
+    ]);
+  });
+
+  test("differing flag sets are not a divergence", () => {
+    const c = compareReports([
+      withSurface("a", {
+        status: "enumerated",
+        flags: ["--a"],
+        consistent: true,
+        evidence: [],
+        probesRead: 1,
+      }),
+      withSurface("b", {
+        status: "enumerated",
+        flags: ["--b"],
+        consistent: true,
+        evidence: [],
+        probesRead: 1,
+      }),
+    ]);
+    // Two tools accepting different flags is two tools. Only `ending` and `placement` decide.
+    expect(c.counts.divergent).toBe(0);
+  });
+});
+
 describe("alignment", () => {
   test("observations with the same probe id are one comparable row", () => {
     const c = compareReports([EXIT_2, EXIT_1]);
