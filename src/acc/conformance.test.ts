@@ -8,7 +8,7 @@
 // Probes are taken verbatim from the `## The probe` section of each rule page. When the kit
 // exists these move into it and this file becomes `acc check $(which acc)`.
 
-import { describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
 import { chmodSync, copyFileSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -509,6 +509,31 @@ describe("machine mode", () => {
 // a change elsewhere without going red here.
 describe("every published example runs as written", () => {
   const CONFORMING = join(dirname(CLI), "kit/fixtures/conforming.ts");
+  /**
+   * `acc compare`'s examples name two report FILES, which is a placeholder in the same sense
+   * `./mycli` is — nothing in this repository can know where a reader keeps their reports. Two
+   * are generated here from the population fixtures, and they are deliberately a DIVERGENT pair:
+   * the published `jq '.data.divergent[].args'` filter has to resolve, so an example that only
+   * works against tools that disagree must be run against tools that disagree.
+   */
+  const POPULATION = join(dirname(CLI), "kit/fixtures/population");
+  let compareDir: string;
+  let compareReports: string[] = [];
+
+  beforeAll(async () => {
+    compareDir = mkdtempSync(join(tmpdir(), "acc-examples-"));
+    for (const name of ["exits-2-no-version", "exits-1-with-version"]) {
+      const written = join(compareDir, `${name}.json`);
+      const r = await run(["check", join(POPULATION, `${name}.ts`), "--json"]);
+      writeFileSync(written, r.stdout);
+      compareReports.push(written);
+    }
+  }, 120_000);
+
+  afterAll(() => {
+    rmSync(compareDir, { recursive: true, force: true });
+    compareReports = [];
+  });
 
   /**
    * Resolve the object path a jq filter opens with: `.data.commands[].name` requires
@@ -563,6 +588,18 @@ describe("every published example runs as written", () => {
       if (spec?.positionals[0]?.name === "target") {
         const i = args.findIndex((a, n) => n > 0 && !a.startsWith("-"));
         if (i > 0) args[i] = CONFORMING;
+      }
+      // The same substitution for a VARIADIC positional, one step later in the pipeline: every
+      // placeholder file name in the example becomes one of the reports generated above, in
+      // order. Keyed on the declaration rather than on the example text, so a renamed example
+      // cannot quietly opt out of being run.
+      if (spec?.positionals[0]?.variadic) {
+        let n = 0;
+        for (let i = 1; i < args.length; i++) {
+          if (!(args[i] as string).startsWith("-") && n < compareReports.length) {
+            args[i] = compareReports[n++] as string;
+          }
+        }
       }
 
       const r = await run(args);
@@ -683,15 +720,27 @@ describe("every declared closed set is enforced", () => {
 // Provoked against EVERY command, both ways, because the parser runs before every handler:
 // nothing about `tags` made it immune, it simply never declared what it could already do.
 describe("the schema declares every error kind a command can produce", () => {
-  const provocations = COMMANDS.flatMap((c) => {
-    // One filler token per declared positional, so the extra one is the ONLY thing wrong —
-    // otherwise `acc show extra` is a missing-argument error, not a surplus-argument one.
-    const filler = c.positionals.map((_, i) => `acc-probe-positional-${i}`);
-    return [
-      [`${c.name}: unknown option`, c.name, [c.name, ...filler, "--acc-probe-bogus-xyz"]],
-      [`${c.name}: extra positional`, c.name, [c.name, ...filler, "acc-probe-extra-xyz"]],
-    ] as const;
-  });
+  // Typed rather than inferred: the variadic branch below makes the two entries different tuple
+  // shapes to TypeScript, and a union of tuples destructures into a union of elements.
+  const provocations: Array<readonly [label: string, command: string, args: string[]]> =
+    COMMANDS.flatMap((c) => {
+      // One filler token per declared positional, so the extra one is the ONLY thing wrong —
+      // otherwise `acc show extra` is a missing-argument error, not a surplus-argument one.
+      const filler = c.positionals.map((_, i) => `acc-probe-positional-${i}`);
+      // A VARIADIC positional cannot have a surplus: every extra token is another value, so
+      // `acc compare a b c` is a longer comparison rather than a mistake. The wrong SHAPE for such
+      // a command is too FEW — `compare` needs two reports and the filler supplies one — and that
+      // is what is provoked instead, so the command is still held to answering a malformed
+      // invocation with a declared kind. Keyed on the declaration rather than on the command name,
+      // so the next variadic command inherits it.
+      const variadic = c.positionals.some((p) => p.variadic);
+      return [
+        [`${c.name}: unknown option`, c.name, [c.name, ...filler, "--acc-probe-bogus-xyz"]],
+        variadic
+          ? [`${c.name}: below the declared minimum`, c.name, [c.name, ...filler]]
+          : [`${c.name}: extra positional`, c.name, [c.name, ...filler, "acc-probe-extra-xyz"]],
+      ];
+    });
 
   test("every provoked kind is declared for the command that produced it", async () => {
     const schema = JSON.parse((await run(["schema", "--json"])).stdout).data;
