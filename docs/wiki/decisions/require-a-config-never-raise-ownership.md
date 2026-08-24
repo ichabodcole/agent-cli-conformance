@@ -13,6 +13,16 @@ generated: { by: claude-opus-5, at: 2026-08-24 }
 
 # Require a config, and never raise who owns the target
 
+> **The refusal is not implemented, and is not being built now — recorded 2026-08-24.** The kit
+> does not stop on an unconfigured run. `loadConfig` returns an empty config with
+> `origin: "none"` when the working directory holds no `acc.config.json`, `acc check` produces a
+> full report and a `conformant` verdict from it, and
+> [the eight-CLI measurement](../../reports/2026-08-24-eight-owner-clis.md) this project's charter
+> rests on was taken in exactly that mode. **The decision below is not withdrawn** — its reasoning
+> stands and nothing here re-argues it — but the clause about the kit describes what was decided,
+> not what the product does. [Why the build is deferred, and the condition that starts
+> it](#the-refusal-is-not-being-built-yet-and-what-would-start-it).
+
 ## Context
 
 Someone clones this repository, writes an `acc.config.json`, points `acc check` at `ripgrep`, and
@@ -40,7 +50,8 @@ documented mode with its own partial answers to interpret.
 **And it binds the kit: `acc check` does not run without a declaration.** No config, no result —
 the run stops and tells the caller to write one. There is no reduced verdict for an unconfigured
 run, because a reduced verdict is the second mode arriving through the code instead of through
-the prose.
+the prose. **This clause is a decision about what the kit should do, and as of 2026-08-24 it is
+not a description of what the kit does** — see [the note at the top](#the-refusal-is-not-being-built-yet-and-what-would-start-it).
 
 **Who owns the target is not material, and the documentation does not raise it.** No audience
 split between adopters and third parties, no prose contrasting the maintainer of a CLI with
@@ -113,6 +124,46 @@ holding a CLI they want checked.
 
 ## Consequences
 
+### The refusal is not being built yet, and what would start it
+
+Recorded 2026-08-24, after an external audit ran the binary and found the page and the product
+asserting opposite things. Three reasons, and not one of them is a doubt about the decision.
+
+**Its premise is under review.** [`CHARTER.md`](../../../CHARTER.md)'s first open question asks
+whether the `L0`/`L1` split survives at all, and the refusal was designed for a world in which the
+required file carries declarations about the target's own shape. Those declarations do not exist
+yet. Building the gate now would harden a boundary while the thing it is a boundary around is
+still being argued — and the sibling decision already says to
+[sketch `L1`'s declaration shape before a shape key lands in the config](./not-in-the-config-not-inferred.md#sketch-l1s-declaration-shape-before-adding-a-shape-key-to-accconfigjson).
+
+**It is not a guard in `check.ts`.** `loadConfig` defaults to the working directory, and this
+repository deliberately ships no root `acc.config.json` — a file there would declare machine mode
+for every fixture the suite checks from that directory, making the declaration false of most of
+them. So the refusal lands on
+[`src/acc/conformance.test.ts`](../../../src/acc/conformance.test.ts) and its neighbours, which
+between them invoke `acc check` **48 times with no `--config-dir`** — two dozen of them in
+`conformance.test.ts` alone — every one of which would then be looking for a root file that is
+not there. Those are one problem rather than two: the same default that makes the refusal a few
+lines to write is what leaves those call sites with nothing to satisfy it.
+
+**It would invalidate the frame of the flagship measurement.**
+[The eight-CLI run](../../reports/2026-08-24-eight-owner-clis.md) records
+`configSource.origin: "none"` on all eight targets, and the charter cites that run in three
+places. Under a refusal none of those eight runs could have happened, so the measurement would
+have to be retaken before the gate landed, not after.
+
+**The condition that starts the build, which is a thing someone can check.** Build the refusal
+when `acc.config.json` is required to carry a declaration about the target itself — a key of the
+kind the sibling page defers, `helpFlags` being the named example, describing the target's own
+command surface. The check is `TOP_LEVEL_KEYS` in
+[`src/acc/kit/config.ts`](../../../src/acc/kit/config.ts): today it reads `rules`,
+`knownFailures`, `defaultOutput`, and when a shape key joins that list the condition is met.
+`defaultOutput` is not that key and does not meet it — it is optional, and its absence withholds
+verdicts rather than supplying guessed ones, which is what makes a run without it still worth
+having. That is the whole argument for waiting: until the file is required to say something the
+run needs, a gate in front of it stops callers from getting a result without making any result
+better.
+
 ### What now has to change
 
 These are implications, not edits made here. Each is a separate change with its own review.
@@ -138,21 +189,25 @@ These are implications, not edits made here. Each is a separate change with its 
   spends money and can take actions. "This probe is unsafe against this shape of target" and
   "therefore never run the kit here" are two sentences, and only the second one is being
   withdrawn. Whoever edits that page separates them rather than deleting the paragraph.
-- **Two strings the shipped product prints are now false, and both were written yesterday.**
+- **Two strings the shipped product prints go false the day the refusal ships, and both were
+  written yesterday.** They are accurate about the binary as it stands, because the refusal is
+  not built; this entry is part of what that build has to change, not a defect report against
+  today's output.
   [`src/acc/commands/check.ts`](../../../src/acc/commands/check.ts) offers, as the hint on a
   config error, "drop `--config-dir` — the working directory is searched instead, and no
   `acc.config.json` there is not an error"; the `--config-dir` description in
   [`src/acc/spec.ts`](../../../src/acc/spec.ts) says the same about the flag's absence, that the
-  working directory is searched and a file found there is loaded. Under a refusal, a run with no
-  config anywhere IS an error, so both sentences tell a caller the opposite of what will happen.
-  **Fix the `spec.ts` description first**: it is what `acc check --help` prints on every run, so a
-  caller meets it before they have any config at all, which is exactly the moment this decision
-  makes it wrong — where the hint is reachable only once a config exists and is broken, and so
+  working directory is searched and a file found there is loaded. Under a refusal a run with no
+  config anywhere would be an error, and both sentences would then tell a caller the opposite of
+  what happens.
+  **Fix the `spec.ts` description first, when that day comes**: it is what `acc check --help` prints on every run, so a
+  caller meets it before they have any config at all, which is exactly the moment the refusal
+  would make it wrong — where the hint is reachable only once a config exists and is broken, and so
   misleads a narrower audience in a narrower moment. Neither is neglect: both arrived in the
-  change that made the kit disclose where its config came from, they were true when written, and
-  this decision falsified them a day later. That is how
-  documentation usually goes stale — a decision arriving after the prose — and it is why this
-  list exists rather than being left for a reader to find.
+  change that made the kit disclose where its config came from, they are true of the kit today, and
+  the refusal is what falsifies them. That is how documentation usually goes stale — a decision
+  arriving after the prose — and it is why this list exists rather than being left for a reader
+  to find.
 
 ### What the refusal looks like is open, and the fact to start from
 
