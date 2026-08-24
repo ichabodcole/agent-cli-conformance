@@ -26,6 +26,17 @@ export interface PositionalSpec {
   name: string;
   description: string;
   required: boolean;
+  /**
+   * This positional consumes every remaining token, and the handler receives an ARRAY.
+   *
+   * Declared here rather than encoded in the name, because three consumers read this field and
+   * each needs the fact rather than a spelling convention: `cli.ts` builds `<name...>`,
+   * `schema.ts` publishes it, and the conformance suite provokes a surplus-positional error —
+   * which a variadic command cannot have, since every extra token is another value. A command
+   * that wants a MINIMUM above one enforces it in its handler, where the number can be quoted
+   * back to the caller (see `compare`).
+   */
+  variadic?: boolean;
 }
 
 export interface CommandSpec {
@@ -270,5 +281,45 @@ export const COMMANDS: CommandSpec[] = [
       "does not resolve them; they exist only in the report the run produced.",
     ],
     examples: ["acc check ./mycli", "acc check $(which gh) --json"],
+  },
+  {
+    name: "compare",
+    // "Where they disagree", not "whether they conform". Every other command in this list judges
+    // one tool against the catalogue; this one holds several tools against EACH OTHER and reports
+    // no verdict at all — see src/acc/kit/compare.ts for why verdicts cannot carry the finding.
+    description: "Show where several checked targets answer the same probe differently.",
+    // The strong sense of the word, and the one `check` had to give up: this command reads JSON
+    // files and executes nothing. Comparing eight targets spawns no processes at all.
+    effects: "read_only",
+    output_kind: "data",
+    cardinality: "single",
+    positionals: [
+      {
+        name: "reports",
+        description: "Two or more JSON reports written by `acc check <target> --json`.",
+        required: true,
+        variadic: true,
+      },
+    ],
+    args: [],
+    errors: [ErrorKind.NotFound],
+    notes: [
+      "INPUT IS STORED REPORTS, not targets: nothing is executed, and no probe is re-run. Write",
+      "one report per target first — `acc check <target> --json > <name>.json` — then pass them",
+      "all. The file's name becomes the target's label in the output.",
+      "NOT A VERDICT. Rows are grouped by who answered alike, nothing passes or fails, and this",
+      "command exits 0 whatever it finds. Two tools differing is a decision to surface, not a",
+      "defect to clear.",
+      "WHAT IT COMPARES: the `observations` array — how each probe ENDED (exit code, signal,",
+      "timeout) and WHERE its bytes went (stdout, stderr, both, neither), aligned across reports",
+      "by identical argv. Byte counts and digests travel on every row but never decide",
+      "divergence: two tools always have help screens of different lengths. Report CONTENT is not",
+      "carried by a report at all, so a difference visible only in the bytes — prose help versus",
+      "JSON help, both on stdout at exit 0 — is one this command cannot see.",
+    ],
+    examples: [
+      "acc compare run-a.json run-b.json",
+      "acc compare run-a.json run-b.json --json | jq '.data.divergent[].args'",
+    ],
   },
 ];

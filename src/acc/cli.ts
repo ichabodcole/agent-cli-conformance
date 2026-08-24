@@ -10,6 +10,7 @@
  */
 import { Command, CommanderError, Option } from "commander";
 import { checkCommand } from "./commands/check.ts";
+import { compareCommand } from "./commands/compare.ts";
 import { pathCommand } from "./commands/path.ts";
 import { rulesCommand } from "./commands/rules.ts";
 import { schemaCommand } from "./commands/schema.ts";
@@ -224,7 +225,11 @@ for (const a of GLOBAL_ARGS) program.addOption(toOption(a));
 for (const spec of COMMANDS) {
   const cmd = program.command(spec.name).description(spec.description);
   for (const p of spec.positionals) {
-    cmd.argument(p.required ? `<${p.name}>` : `[${p.name}]`, p.description);
+    // A variadic positional takes every remaining token, and commander hands the action ONE
+    // argument for it: an array. `<reports...>` still requires at least one, so a command
+    // needing more enforces that in its handler, where the count can be quoted back.
+    const tail = p.variadic ? "..." : "";
+    cmd.argument(p.required ? `<${p.name}${tail}>` : `[${p.name}${tail}]`, p.description);
   }
   // Global args are attached to EVERY command in this loop as well as to the root above.
   // Declaring them once on the root is the citty gotcha: root flags do not reach subcommands,
@@ -239,7 +244,9 @@ for (const spec of COMMANDS) {
   cmd.action((...actionArgs: unknown[]) => {
     commandRan = true;
     // commander passes: ...positionals, options, command
-    const positionals = actionArgs.slice(0, spec.positionals.length) as string[];
+    // One slot per DECLARED positional, variadic included — commander collapses a variadic's
+    // tokens into a single array argument, so the slot count never varies with the argv length.
+    const positionals = actionArgs.slice(0, spec.positionals.length) as Array<string | string[]>;
     const opts = actionArgs[spec.positionals.length] as Record<string, string | boolean>;
     // Both scopes, subcommand first. Now that the globals also live on the root, `acc --json
     // rules` parses — and reading only the subcommand's options would accept the flag and
@@ -281,6 +288,8 @@ for (const spec of COMMANDS) {
           resolved,
           startedAt,
         );
+      case "compare":
+        return compareCommand(positionals[0] as string[], resolved, startedAt);
       default:
         throw new AccError("internal", `no handler for command "${spec.name}"`);
     }

@@ -22,8 +22,10 @@ generated: { by: claude-opus-5, at: 2026-08-24 }
 
 ## Context
 
-[Require a config](./require-a-config-never-raise-ownership.md) settled that `acc check` stops
-when no declaration was loaded, and
+[Require a config](./require-a-config-never-raise-ownership.md) settled that `acc check` should
+stop when no declaration was loaded — a decision the kit
+[does not yet implement](./require-a-config-never-raise-ownership.md#the-refusal-is-not-being-built-yet-and-what-would-start-it),
+which this page inherits rather than changes — and
 [left the next question open](./require-a-config-never-raise-ownership.md#also-open-what-a-required-config-must-contain):
 what the file has to say before a run can start. Three shapes of the question were put — whether
 `{}` counts, whether a generated config may fill itself in from what the target does when probed,
@@ -172,7 +174,8 @@ Three gaps, none of them closed here.
   nothing.
 - **A missing file is not yet a refusal.** `loadConfig` returns an empty config with
   `origin: "none"` when the working directory holds no `acc.config.json`. The refusal is decided on
-  [the previous page](./require-a-config-never-raise-ownership.md) and not implemented, so both
+  [the previous page](./require-a-config-never-raise-ownership.md#the-refusal-is-not-being-built-yet-and-what-would-start-it)
+  and deliberately not implemented, with the condition that starts the build stated there, so both
   halves of "no config, no result" are still ahead of the code.
 - **The exit code for a missing config is still open**, along with whether this repository must
   ship one for `acc check ./acc` — both carried on that page rather than reopened here.
@@ -181,7 +184,9 @@ Three gaps, none of them closed here.
 
 The stated intention is that the kit ships a skill so that a first-time agent is walked through
 setup rather than sent to read documentation — which is the shape this decision makes necessary,
-since the file can no longer be skipped and can no longer be filled in by inspection.
+since under these decisions the file may not be skipped and may not be filled in by inspection.
+Neither half binds the code yet — the refusal is deferred and `{}` still loads clean — so this is
+a front door for a kit that does not yet require one.
 
 Nothing in this repository does that today. `.claude/skills/` holds three skills and all three are
 maintainer-facing — `prose-cold-read`, `two-lens-review` and `release` are about writing and

@@ -1,0 +1,300 @@
+// THE ACCEPTANCE TEST: `acc compare` reproduces, from the product, the divergences a human found
+// by hand.
+//
+// `docs/reports/2026-08-24-eight-owner-clis.md` §2 tabulated five ways the owner's eight
+// agent-facing CLIs contradict each other, and produced that table with a shell loop while eight
+// `--json` reports sat in the same directory holding the same numbers. Nothing in the catalogue
+// could report any of it: every rule judges one tool alone, and several report `PASS+` on BOTH
+// sides of a genuine disagreement because they require only "non-zero".
+//
+// Nothing here is hand-built from that report's prose. Three fixtures model the three distinct
+// rows of its table (see src/acc/kit/fixtures/population/), `acc check --json` is run against
+// each exactly as an adopter would run it, and `acc compare` is then asked what it sees. The
+// assertions are on the divergences coming BACK.
+
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { spawn } from "node:child_process";
+import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { Comparison, ProbeComparison } from "../kit/compare.ts";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const CLI = join(HERE, "../cli.ts");
+const POPULATION = join(HERE, "../kit/fixtures/population");
+
+/** The three rows of the report's §2 table that the observations can carry. */
+const TARGETS = {
+  // Six of the eight: help on stdout at 0, rejections at 2, no `--version` at all.
+  seven: "exits-2-no-version",
+  // mind-mapper: one usage line on stderr at exit 2, for every argv there is.
+  mindMapper: "help-to-stderr",
+  // anthill: the other repository, rejecting at exit 1 and answering `--version`.
+  anthill: "exits-1-with-version",
+} as const;
+
+interface Run {
+  code: number | null;
+  stdout: string;
+  stderr: string;
+}
+
+/** Run acc with stdin closed, exactly as the harness in conformance.test.ts does. */
+function run(args: string[]): Promise<Run> {
+  return new Promise((resolve) => {
+    const child = spawn("bun", [CLI, ...args], { stdio: ["pipe", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (d) => {
+      stdout += d;
+    });
+    child.stderr.on("data", (d) => {
+      stderr += d;
+    });
+    child.stdin.end();
+    child.on("close", (code) => resolve({ code, stdout, stderr }));
+  });
+}
+
+let dir: string;
+/** Report file per fixture, written by the real `acc check --json`. */
+const reports: Record<string, string> = {};
+
+beforeAll(async () => {
+  dir = mkdtempSync(join(tmpdir(), "acc-compare-"));
+  for (const name of Object.values(TARGETS)) {
+    const r = await run(["check", join(POPULATION, `${name}.ts`), "--json"]);
+    // 9 is `Outcome.NonConformant` — a successful check with a negative answer. All three of
+    // these fixtures violate something, exactly as all eight real CLIs do; that is not what is
+    // being measured here, and a run that failed to PRODUCE a report would be.
+    expect({ name, code: r.code }).toEqual({ name, code: 9 });
+    reports[name] = join(dir, `${name}.json`);
+    writeFileSync(reports[name] as string, r.stdout);
+  }
+}, 180_000);
+
+afterAll(() => {
+  rmSync(dir, { recursive: true, force: true });
+});
+
+const all = () => Object.values(TARGETS).map((n) => reports[n] as string);
+
+async function compare(paths: string[] = all()): Promise<{ code: number | null; c: Comparison }> {
+  const r = await run(["compare", ...paths, "--json"]);
+  expect(r.stderr).toBe("");
+  const envelope = JSON.parse(r.stdout);
+  expect(envelope.ok).toBe(true);
+  return { code: r.code, c: envelope.data as Comparison };
+}
+
+/** The row for one exact argv, with no repetition index — the base recording of that probe. */
+function probe(c: Comparison, args: string[]): ProbeComparison {
+  const key = JSON.stringify(args);
+  const found = [...c.divergent, ...c.agreed, ...c.unaligned].find(
+    (p) => JSON.stringify(p.args) === key && p.repeat === undefined && p.env === undefined,
+  );
+  if (!found) throw new Error(`no probe for argv ${key}`);
+  return found;
+}
+
+/** `{ "exit 2": ["seven", ...] }` — the axis, reduced to what a reader reads off it. */
+function groups(p: ProbeComparison, axis: "ending" | "placement"): Record<string, string[]> {
+  return Object.fromEntries(
+    (p.axes.find((a) => a.axis === axis)?.groups ?? []).map((g) => [g.value, g.targets]),
+  );
+}
+
+describe("the divergences the eight-CLI report found by hand", () => {
+  // §2(a). THE ONE THE CATALOGUE IS STRUCTURALLY INCAPABLE OF NOTICING. Seven CLIs answer an
+  // unknown flag with exit 2 and one answers with exit 1; A1, A2 and A3 report `PASS+` on both,
+  // because each requires only "non-zero" and says so in its own coverage gap. A comparison over
+  // VERDICTS would return `PASS+ ∩ PASS+` and report agreement here.
+  test("(a) exit 2 versus exit 1, for the same error class", async () => {
+    const { c } = await compare();
+    for (const args of [["--acc-probe-xyzzy-flag"], ["acc-probe-xyzzy-verb"]]) {
+      const p = probe(c, args);
+      expect({ args, divergent: p.divergent }).toEqual({ args, divergent: true });
+      expect({ args, ending: groups(p, "ending") }).toEqual({
+        args,
+        ending: { "exit 2": [TARGETS.seven, TARGETS.mindMapper], "exit 1": [TARGETS.anthill] },
+      });
+      // ...and they agree about the stream, which is the other half of the finding: the split is
+      // about the CODE, not about where the message went.
+      expect({ args, placement: groups(p, "placement") }).toEqual({
+        args,
+        placement: { stderr: [TARGETS.seven, TARGETS.mindMapper, TARGETS.anthill] },
+      });
+    }
+  });
+
+  // §2(b). Three answers to one question inside one toolset.
+  test("(b) --help on stdout at 0, versus stderr at exit 2", async () => {
+    const { c } = await compare();
+    for (const args of [["--help"], ["-h"]]) {
+      const p = probe(c, args);
+      expect({ args, divergent: p.divergent }).toEqual({ args, divergent: true });
+      expect({ args, ending: groups(p, "ending") }).toEqual({
+        args,
+        ending: { "exit 0": [TARGETS.seven, TARGETS.anthill], "exit 2": [TARGETS.mindMapper] },
+      });
+      expect({ args, placement: groups(p, "placement") }).toEqual({
+        args,
+        placement: { stdout: [TARGETS.seven, TARGETS.anthill], stderr: [TARGETS.mindMapper] },
+      });
+    }
+  });
+
+  // §2(c). One of eight.
+  test("(c) --version answered by one target and absent from the others", async () => {
+    const { c } = await compare();
+    const p = probe(c, ["--version"]);
+    expect(p.divergent).toBe(true);
+    expect(groups(p, "ending")).toEqual({
+      "exit 0": [TARGETS.anthill],
+      "exit 2": [TARGETS.seven, TARGETS.mindMapper],
+    });
+    expect(groups(p, "placement")).toEqual({
+      stdout: [TARGETS.anthill],
+      stderr: [TARGETS.seven, TARGETS.mindMapper],
+    });
+    // The absence is legible as an absence: the two without the flag wrote nothing to stdout and
+    // a rejection to stderr, which is what "it fell through as an unknown verb" looks like.
+    const byLabel = Object.fromEntries(p.outcomes.map((o) => [o.label, o]));
+    expect(byLabel[TARGETS.seven]?.stdoutBytes).toBe(0);
+    expect(byLabel[TARGETS.anthill]?.stdoutBytes).toBeGreaterThan(0);
+  });
+
+  // THE TABLE ITSELF. §2 is exit code, stdout bytes and stderr bytes over six argvs, and every
+  // one of those cells has to be reachable from the comparison — otherwise the surface reports
+  // the shape of the divergence and loses the evidence a reader would quote.
+  test("every cell of the report's own table is reachable from one row", async () => {
+    const { c } = await compare();
+    const p = probe(c, ["--help"]);
+    for (const o of p.outcomes) {
+      expect({ label: o.label, has: typeof o.exitCode === "number" }).toEqual({
+        label: o.label,
+        has: true,
+      });
+      expect(typeof o.stdoutBytes).toBe("number");
+      expect(typeof o.stderrBytes).toBe("number");
+    }
+  });
+});
+
+// WHAT THE OBSERVATIONS CANNOT EXPRESS, asserted rather than admitted in a comment.
+//
+// The report's §2(b) is a THREE-way split: prose help on stdout, a usage line on stderr, and a
+// JSON DOCUMENT on stdout. The first and third are indistinguishable here, and the reason is a
+// property of the report shape rather than of this command: `ReportedObservation` carries
+// `stdoutBytes` and `stdoutDigest` and deliberately not the bytes (see the field's own doc
+// comment in kit/types.ts — the digest adjudicates equality and refuses to say what the stream
+// was). So "both wrote to stdout and exited 0, with different byte counts" is the whole of what
+// a stored report can say, and different byte counts are what any two help screens have.
+//
+// This is not worked around. Classifying the payload would mean either re-probing the targets —
+// which this command exists not to do — or adding a content field to every report, which is a
+// change to the report shape and a decision for the owner of the catalogue, not for this surface.
+describe("the divergence a stored report cannot carry", () => {
+  test("prose help and JSON help are one group, and only the digests differ", async () => {
+    const { c } = await compare();
+    const p = probe(c, ["--help"]);
+    const both = groups(p, "placement").stdout as string[];
+    expect(both).toEqual([TARGETS.seven, TARGETS.anthill]);
+
+    const byLabel = Object.fromEntries(p.outcomes.map((o) => [o.label, o]));
+    // Byte-different, provably: one is prose and one is `{"ok":true,...}`. The evidence that they
+    // differ survives; the evidence of HOW they differ does not.
+    expect(byLabel[TARGETS.seven]?.stdoutDigest).not.toBe(byLabel[TARGETS.anthill]?.stdoutDigest);
+    // And nothing in the row separates them by kind. If a `contentKind` (or anything like it)
+    // is ever added to the report shape, this assertion is where the gap closes.
+    const fields = Object.keys(byLabel[TARGETS.seven] as object);
+    expect(fields).not.toContain("stdout");
+    expect(fields).not.toContain("contentKind");
+  });
+});
+
+describe("the comparison is a comparison, not a judgement", () => {
+  test("exits 0 with divergences present, and publishes no verdict", async () => {
+    const { code, c } = await compare();
+    expect(code).toBe(0);
+    expect(c.counts.divergent).toBeGreaterThan(0);
+    const document = JSON.stringify(c);
+    for (const forbidden of ['"conformant"', '"fullyVerified"', '"verdict"', '"findings"']) {
+      expect(document).not.toContain(forbidden);
+    }
+  });
+
+  test("the text form says so in words, and names who differs from whom on what", async () => {
+    const r = await run(["compare", ...all(), "--format", "text"]);
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain("A COMPARISON, NOT A VERDICT");
+    // The three axes-and-membership lines for `--version`, as a reader meets them.
+    expect(r.stdout).toContain("exit 1");
+    expect(r.stdout).toMatch(new RegExp(`exit 2\\s+${TARGETS.seven}, ${TARGETS.mindMapper}`));
+    expect(r.stdout).toMatch(new RegExp(`stdout\\s+${TARGETS.anthill}`));
+    // The byte counts of the report's table, on the row they belong to.
+    expect(r.stdout).toMatch(/bytes\s+\S+ out=\d+ err=\d+/);
+  });
+});
+
+// THE NEGATIVE CONTROLS. A comparison that marked everything divergent would satisfy every
+// assertion above and mean nothing.
+describe("what does NOT count as a divergence", () => {
+  test("a report compared with itself diverges nowhere", async () => {
+    const one = reports[TARGETS.seven] as string;
+    // Copied to a second NAME so the two columns are labelled differently and the alignment has
+    // to do real work — passing one path twice would make the labels collide.
+    const copy = join(dir, "copy.json");
+    copyFileSync(one, copy);
+    const { c } = await compare([one, copy]);
+    expect(c.counts.divergent).toBe(0);
+    expect(c.counts.agreed).toBe(c.counts.aligned);
+    expect(c.counts.aligned).toBeGreaterThan(5);
+  });
+
+  test("two targets that disagree on some probes still AGREE on others", async () => {
+    const { c } = await compare([
+      reports[TARGETS.seven] as string,
+      reports[TARGETS.anthill] as string,
+    ]);
+    // Both reject an unknown flag on stderr, and both write help to stdout at 0 — the agreement
+    // that makes the exit-code split worth reporting rather than one difference among many.
+    expect(c.counts.divergent).toBeGreaterThan(0);
+    expect(c.counts.agreed).toBeGreaterThan(0);
+  });
+});
+
+describe("bad input", () => {
+  test("one report is a usage error, not an empty comparison", async () => {
+    const r = await run(["compare", reports[TARGETS.seven] as string, "--json"]);
+    expect(r.code).toBe(2);
+    expect(r.stdout).toBe("");
+    expect(JSON.parse(r.stderr).error.kind).toBe("usage");
+  });
+
+  test("a missing report is not_found, and names the file", async () => {
+    const missing = join(dir, "nope.json");
+    const r = await run(["compare", reports[TARGETS.seven] as string, missing, "--json"]);
+    expect(r.code).toBe(5);
+    const envelope = JSON.parse(r.stderr);
+    expect(envelope.error.kind).toBe("not_found");
+    expect(envelope.error.details.path).toBe(missing);
+  });
+
+  test("a JSON file that is not a report is a usage error", async () => {
+    const notAReport = join(dir, "not-a-report.json");
+    writeFileSync(notAReport, JSON.stringify({ ok: true, data: { hello: "world" } }));
+    const r = await run(["compare", reports[TARGETS.seven] as string, notAReport, "--json"]);
+    expect(r.code).toBe(2);
+    expect(JSON.parse(r.stderr).error.message).toContain("not an acc check report");
+  });
+
+  test("a bare report payload (jq '.data') is accepted as well as the envelope", async () => {
+    const bare = join(dir, "bare.json");
+    const enveloped = JSON.parse(readFileSync(reports[TARGETS.seven] as string, "utf8"));
+    writeFileSync(bare, JSON.stringify(enveloped.data));
+    const { c } = await compare([reports[TARGETS.anthill] as string, bare]);
+    expect(c.counts.aligned).toBeGreaterThan(5);
+  });
+});

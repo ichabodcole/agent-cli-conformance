@@ -165,7 +165,7 @@ and it is not weak because the checkers are badly written. It is aimed at a surf
 one that breaks, and the thing standing between it and the surface that does break is the absence
 of anything the target has declared.
 
-The same eight-CLI run shows the other half of that shape. **Sixteen rules — two thirds of the catalogue —
+The same eight-CLI run shows the other half of that shape. **Fifteen rules — nearly two thirds of the catalogue —
 return an identical verdict on all eight targets**: nine always `PASS+`, three always `UNVR`, three
 always `N/A`. The six CLIs sharing a scaffold produce one verdict vector six times over, so three
 quarters of the output is duplicate on a corpus picked to expose difference. And the tool that
@@ -211,26 +211,33 @@ decided by this page.
 
 **Whether the `L0`/`L1` split survives.** [Probing](docs/wiki/concepts/probing.md) defines three
 levels and only the shallowest exists. If every miss in the archaeology is outside `L0` by
-construction, and if a run now
-[requires a declaration before it starts](docs/wiki/decisions/require-a-config-never-raise-ownership.md),
+construction, and if the project has
+[committed to a run that will not start without a declaration](docs/wiki/decisions/require-a-config-never-raise-ownership.md#the-refusal-is-not-being-built-yet-and-what-would-start-it),
 then the boundary the levels draw may no longer be the boundary the project cares about. The owner
 has said outright that "there isn't really an `L0` versus an `L1`" is an acceptable answer, and so
 is "there is an `L0` but it is very limited". What is not acceptable is the split surviving because
 it is already written down.
 
-The evidence that this is live rather than philosophical is in the code. `L0` was defined as the
-level that needs nothing from the target, and `L1` as the level that begins when the target
-declares something. Then
+The evidence that this is live rather than philosophical is in the decisions, which is where a
+premise lives. `L0` was defined as the level that needs nothing from the target, and `L1` as the
+level that begins when the target declares something. Then
 [require a config](docs/wiki/decisions/require-a-config-never-raise-ownership.md) settled that
-`acc check` does not run at all without a declaration, and
+`acc check` must not run at all without a declaration, and
 [if it is not in the config](docs/wiki/decisions/not-in-the-config-not-inferred.md) settled that
-the declaration cannot be empty and cannot be filled in by inspecting the target. **Taken together,
-those two decisions mean every run now starts from something the caller declared — which is `L1`'s
-premise arriving at `L0`'s door.** What the levels still separate is how much a declaration is
-allowed to say and what a probe is allowed to send, and those are two different axes that the
-single word "level" has been carrying at once. My reading is that the split as written is already
-inconsistent with the decisions taken this week, and that nobody has noticed because the code has
-not caught up to either decision yet. Settling it is a decision page, not an edit to this one.
+the declaration cannot be empty and cannot be filled in by inspecting the target. **Taken
+together, those two decisions commit every run to starting from something the caller declared —
+which is `L1`'s premise arriving at `L0`'s door.** Neither has reached the code, and that is
+deliberate rather than a backlog: `acc check` still runs with no config at all, and the refusal
+is [held until a declaration format exists that a config is required to carry](docs/wiki/decisions/require-a-config-never-raise-ownership.md#the-refusal-is-not-being-built-yet-and-what-would-start-it).
+**That does not soften this question, it sharpens it.** A premise moves when a project decides
+what it is for, not when a line ships, so the boundary is inconsistent with what has been
+committed to _now_ — and waiting for the code would be waiting for the very build whose premise
+is the thing in doubt. What the levels still separate is how much a declaration is allowed to say
+and what a probe is allowed to send, and those are two different axes that the single word
+"level" has been carrying at once. My reading is that the split as written is already
+inconsistent with the decisions taken this week, and that nobody has noticed because the split is
+only ever read against the code, which has not moved. Settling it is a decision page, not an edit
+to this one.
 
 The owner's own diagnosis of how the project got here is evidence about the mechanism, not only
 about the outcome:
