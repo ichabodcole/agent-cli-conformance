@@ -1,4 +1,5 @@
 import type { AccConfig, ConfigSource } from "./config.ts";
+import { captureSurface, type Surface } from "./surface.ts";
 import type {
   Checker,
   Coverage,
@@ -292,6 +293,19 @@ export interface Report {
    * rules this run did not judge, and that answer is the same for both.
    */
   notApplicable: string[];
+  /**
+   * WHAT THE TARGET SAID ITS OWN ACCEPTED FLAGS ARE — evidence, and the only field in this report
+   * that no rule reads and no verdict depends on.
+   *
+   * It rides on the report rather than behind its own command because the probes it reads already
+   * ran (see `surface.ts`), and because `toReportedObservation` drops the streams: an enumeration
+   * not extracted before that projection is unrecoverable from the stored artifact. Published here
+   * it reaches `acc compare` at no cost.
+   *
+   * Read `status` before `flags`. A target that did not enumerate has no `flags` field at all,
+   * deliberately — see `SurfaceStatus`.
+   */
+  surface: Surface;
   knownFailures: Array<{ ruleId: string; reason: string }>;
   /** Excused rules that now pass. The ratchet: remove these from `knownFailures`. */
   staleExpectations: string[];
@@ -632,6 +646,9 @@ export function buildReport(
     findings: reported,
     observations: h.observations.map(toReportedObservation),
     notApplicable: notApplicable.map((f) => f.ruleId),
+    // Captured from the history, because the projection below is about to discard the streams it
+    // is read from. Nothing about it feeds `conformant`, `fullyVerified` or any count.
+    surface: captureSurface(h.observations),
     knownFailures: Object.entries(config.knownFailures).map(([ruleId, reason]) => ({
       ruleId,
       reason,
