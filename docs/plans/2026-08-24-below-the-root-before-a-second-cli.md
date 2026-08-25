@@ -91,8 +91,9 @@ checker's `check` is"_ — and [`report.ts`](../../src/acc/kit/report.ts) suppli
 multi-path; only its caller is single-path.
 
 **What it buys, and it is the reason this reordering is worth doing.** The `SG-8` prediction —
-roughly 17 of 21 `accepted-not-declared` for bounty's `state`, pre-registered before the instrument
-to test it existed — becomes runnable **now** rather than after the safety decision. The decision
+roughly 18 of 22 `accepted-not-declared` for bounty's `state`, pre-registered before the instrument
+to test it existed, at a denominator corrected before any diff ran — becomes runnable **now** rather
+than after the safety decision. The decision
 page is then written by people who have read below-root census output instead of reasoning about it.
 
 **The trust question, raised and answered by the same reviewer.** Caller-recorded evidence can only
@@ -299,11 +300,28 @@ meant would put words in a target's mouth in a section labelled as the target's 
       statuses were built for. What it does change is that `no-evidence` now has two provenances —
       _the kit sent no probe_ and _the caller's record was unreadable_ — so the sentence must be
       rendered beside the `recorded-by-caller` label rather than on its own.
-- [ ] **Run `SG-8`.** bounty's verb-level rejection enumerates its 21 flags with the kit's exact
-      marker — measured on the channel — so a `PathSurface` for `["state"]` is one command to
-      capture. The pre-registered prediction is roughly 17 of 21 `accepted-not-declared`. It must be
-      run **before anything in the differ is tuned**, which is the whole value of having registered
-      it, and which the ordering below now makes possible.
+- [ ] **Run `SG-8`.** bounty's verb-level rejection enumerates its global registry with the kit's
+      exact marker — measured on the channel — so a `PathSurface` for `["state"]` is one command to
+      capture. **The capture has arrived**, is vendored at
+      [`fixtures/recorded-surfaces/`](../../src/acc/kit/fixtures/recorded-surfaces/PROVENANCE.md),
+      and it moves the denominator: the registry is **22** flags, not 21. The corrected
+      pre-registration is roughly **18 of 22** `accepted-not-declared`, and the correction was made
+      by `trellis` before any diff existed to run — see
+      [the amendment](../reports/2026-08-24-first-outside-application-grapevine.md#amendment-2026-08-25--the-denominator-was-22-and-the-correction-preceded-the-diff).
+      It must be run **before anything in the differ is tuned**, which is the whole value of having
+      registered it, and which the ordering below now makes possible.
+- [ ] **Pre-registered alongside it: `32 of 33 compared` for the grapevine pair.** Registered by
+      `trellis` at Spellbook `d45def2` and pinned here on 2026-08-25, under the same discipline and
+      for the same reason — before any ingestion code exists. Grapevine's emitted declaration carries
+      **33** command paths; the batch carries **32** records, one per declared below-root path and
+      none at the root, because [the root is the kit's](2026-08-25-the-recorded-surface-batch.md#the-root-is-the-kits-and-a-path--record-refuses-the-batch).
+      So once ingestion lands, the census for that pair should read **33 paths, 32 of them compared
+      on recorded surfaces and the 33rd on the kit's own root probe** — against the `1 of 33` the
+      first application measured. Counted here from the vendored artifacts, not taken on the
+      recorder's word: 33 declared paths, 32 recorded, and the two sets differ by the root alone.
+      **A result of 32 is the prediction; a result of 31 or fewer is a finding about the reader**,
+      most likely a path that failed one of the readable-rejection rules and landed `no-evidence`,
+      which is the case the spec says the census line must name.
 
 **What a caller can get wrong that we cannot see — and it is not fabrication.** The trust argument
 above covers a caller who lies, and the label plus the no-verdict census answer that. The harder
@@ -458,11 +476,17 @@ assumed**, and stating them is the point:
   must carry that on its face, or the next reader infers a door that was never there.
 
 - [ ] **Vendor the granted artifacts**, with attribution and both caveats recorded alongside them.
-- [ ] Also request, or reconstruct, **grapevine's recorded root enumeration**. The differ needs a
-      `PathSurface`, and a recorded observation serves as well as a binary. They have offered to
-      capture and send one **once the exact shape is specified** — which is [item
-      2a](#2a-recorded-surface-ingestion)'s first checkbox, so specifying that shape is now on this
-      round's critical path rather than a later convenience.
+- [x] ~~Also request, or reconstruct, **grapevine's recorded root enumeration**.~~ **Answered, and
+      answered differently than asked.** The shape was specified
+      ([the recorded-surface batch](2026-08-25-the-recorded-surface-batch.md)), and what came back is
+      not a root enumeration but the whole below-root sweep: two batches and two declarations,
+      vendored at
+      [`fixtures/recorded-surfaces/`](../../src/acc/kit/fixtures/recorded-surfaces/PROVENANCE.md)
+      with attribution, capture method and three caveats on the artifacts. **The root record is
+      absent on purpose** — the spec [refuses a `path: []`
+      record](2026-08-25-the-recorded-surface-batch.md#the-root-is-the-kits-and-a-path--record-refuses-the-batch),
+      so this ask as originally worded is one the spec written to serve it can no longer satisfy. The
+      cost is the one that section already names and prices; nothing new is owed here.
 - [ ] **Reconstruct anyway** — the reviewer explicitly endorsed doing so even having granted the
       originals, because a vendored fixture depends on somebody else's repository staying reachable
       and a reconstructed one is reproducible in-tree forever: a fixture
@@ -599,8 +623,10 @@ them.
   payoff. The old entry deferred it because item 2 was thought to be what made it runnable; item 2a
   makes it runnable without executing anything, so it runs here — see
   [item 2a](#2a-recorded-surface-ingestion). The pre-registration constraint is unchanged and now
-  actually enforceable: roughly 17 of 21 `accepted-not-declared` for bounty's `state`, run **before**
-  anything in the differ is tuned against it, or the registration is worth nothing.
+  actually enforceable: roughly 18 of 22 `accepted-not-declared` for bounty's `state` — the
+  denominator corrected from 21 before any diff ran, see
+  [the amendment](../reports/2026-08-24-first-outside-application-grapevine.md#amendment-2026-08-25--the-denominator-was-22-and-the-correction-preceded-the-diff) —
+  run **before** anything in the differ is tuned against it, or the registration is worth nothing.
 - **The portable declaration IR** ([roadmap 6](../roadmap.md#6-the-portable-declaration-ir)).
   Larger, and blocked on roadmap steps 2 and 5.
 
@@ -665,10 +691,13 @@ safe to probe, because `tail` and `wait` are read-only and unbounded, and a prob
 own failure. And a third class you named that neither axis covers: `watch` writes nothing of yours
 and opens a browser on **the operator's** machine, which is still something the command causes.
 
-**The ask is answered, and what is outstanding is smaller.** The break variants, the clean emission
-and the four `.declaration.json` files are granted; what remains is one recorded root enumeration
-for grapevine, in a shape this plan owes you — [item 2a](#2a-recorded-surface-ingestion) specifies
-it, and it is sequenced early for that reason.
+**The ask is answered, and nothing is outstanding on your side.** The break variants, the clean
+emission and the four `.declaration.json` files are granted and remain to be vendored. The recorded
+surfaces this plan owed you a shape for have been specified, captured and vendored — 32 grapevine
+records, 3 bounty records, both declarations, at
+[`fixtures/recorded-surfaces/`](../../src/acc/kit/fixtures/recorded-surfaces/PROVENANCE.md). One
+thing changed between the ask and the answer, and it is worth knowing: **the batch format refuses a
+root record**, so the root enumeration originally asked for is not something a batch can carry.
 
 ## Sequencing
 

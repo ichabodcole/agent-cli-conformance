@@ -349,6 +349,31 @@ The shape it predicts is `DT-1` a third time: anthill's discarded root `--format
 accepted-and-ignored 26, bounty's latent 17 — one global registry with help describing per-verb
 sets, one level below where anyone has looked.
 
+### Amendment, 2026-08-25 — the denominator was 22, and the correction preceded the diff
+
+**The registration above is left exactly as it was filed.** What follows corrects one number in it,
+and the correction is worth as much as the prediction: a pre-registration that quietly acquires the
+right denominator after the fact is not one.
+
+**The denominator is 22, not 21.** `trellis` — the same implementer, the party the prediction is
+about — recorded the correction in the README of their capture, at Spellbook `d45def2`, **before any
+diff had been run against it and before the code that could run one existed**. Their stated cause:
+the 21 came from counting a terminal paste in an earlier round. Counted here independently from the
+[vendored capture](../../src/acc/kit/fixtures/recorded-surfaces/PROVENANCE.md) rather than taken on
+their word, bounty's `state` rejection enumerates **22 tokens** after `recognized flags:`, and
+`claim` and `list` enumerate the same 22 — which is the global registry the prediction is about,
+observed three times.
+
+**The substance is unchanged, and the ratio moves toward the prediction rather than away from it.**
+The modelled declaration describes `state` with **4** flags — `--mine`, `--owner`, `--as`, `--full`,
+each of them in the accepted 22 — so the parser accepts **5.5×** what the help declares. Restated
+against the true denominator: **roughly 18 of 22 `accepted-not-declared` for bounty's `state`**, with
+no `declared-not-accepted`.
+
+That is the number `SG-8` is now registered at. It stays falsifiable in the same way: a result of 3
+of 22 is a finding about our model of the fleet, and a result the differ arrives at after being tuned
+against these bytes is worth nothing at all.
+
 ## What it cost the adopter
 
 The move from a global 26-flag registry to per-verb sets is a **breaking change**: flags that were
@@ -583,14 +608,14 @@ Recorded as its own section because every claim above is narrower than it will b
 
 ## Findings
 
-| Id     | What                                                                                                            | Disposition                                                    |
-| ------ | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `SG-1` | Flag-set capture was long-only; short flags truncated the read and produced false findings pointing at the tool | Actioned — `942f1a1` (merged `080c766`)                        |
-| `SG-2` | The non-enumeration sentence stated a target fact from root-only evidence                                       | Actioned — `942f1a1`, in the reporter's wording                |
-| `SG-3` | `MARKER` misses qualified enumerations; two near-miss specimens from a real target                              | Put to the implementer as a judgement call, specimens attached |
-| `SG-4` | A green headline over an emitted declaration contradicting its own tool                                         | Actioned — `a8e30ec`, provenance-differentiated clause         |
-| `SG-5` | One remedy sentence where the reader's next action differs by provenance                                        | Actioned — `a8e30ec`, split by provenance, test-gated          |
-| `SG-6` | Part 2 described fields declaration v0 structurally cannot carry, and omitted two it requires                   | Actioned — `099a328`, per-field `In v0` column                 |
-| `SG-7` | A flag is global when the tool's shipped instructions to callers make it global                                 | Actioned — `STANDARD.md` Part 1 §2, quoted and marked `[—]`    |
-| `SG-8` | Pre-registered: `~17 of 21 accepted-not-declared` for bounty's `state` once the kit probes below the root       | Registered — Spellbook `5c98726`; falsifiable in advance       |
-| `SG-9` | The declaration did not find the defect; it changed what the defect cost — a severity lens no rule supplies     | Recorded — no instrument change follows; `1c61d13`, `aff4d10`  |
+| Id     | What                                                                                                            | Disposition                                                                                                                        |
+| ------ | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `SG-1` | Flag-set capture was long-only; short flags truncated the read and produced false findings pointing at the tool | Actioned — `942f1a1` (merged `080c766`)                                                                                            |
+| `SG-2` | The non-enumeration sentence stated a target fact from root-only evidence                                       | Actioned — `942f1a1`, in the reporter's wording                                                                                    |
+| `SG-3` | `MARKER` misses qualified enumerations; two near-miss specimens from a real target                              | Put to the implementer as a judgement call, specimens attached                                                                     |
+| `SG-4` | A green headline over an emitted declaration contradicting its own tool                                         | Actioned — `a8e30ec`, provenance-differentiated clause                                                                             |
+| `SG-5` | One remedy sentence where the reader's next action differs by provenance                                        | Actioned — `a8e30ec`, split by provenance, test-gated                                                                              |
+| `SG-6` | Part 2 described fields declaration v0 structurally cannot carry, and omitted two it requires                   | Actioned — `099a328`, per-field `In v0` column                                                                                     |
+| `SG-7` | A flag is global when the tool's shipped instructions to callers make it global                                 | Actioned — `STANDARD.md` Part 1 §2, quoted and marked `[—]`                                                                        |
+| `SG-8` | Pre-registered: `~18 of 22 accepted-not-declared` for bounty's `state` once the kit probes below the root       | Registered — Spellbook `5c98726`; denominator corrected from 21 by `trellis` at `d45def2`, before any diff; falsifiable in advance |
+| `SG-9` | The declaration did not find the defect; it changed what the defect cost — a severity lens no rule supplies     | Recorded — no instrument change follows; `1c61d13`, `aff4d10`                                                                      |
