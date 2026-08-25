@@ -72,36 +72,38 @@ land, which is why they are grouped below by what blocks them rather than sequen
 
 ## 1. Remediation becomes structured data
 
-**What it is.** `next` is emitted today as prose and a shell string:
+**What it is.** The injection half of this step has shipped. `next` no longer carries a shell
+string; it carries an executable and an argv array, one element per argument:
 
 ```json
-"next": [{ "command": "acc show A1 --body", "when": "to read the full text" }]
+"next": [{ "exec": "acc", "args": ["show", "A1", "--body"], "when": "to read the full text" }]
 ```
 
-It becomes an object carrying an executable plus an **argv array**, **typed placeholders**, an
-**effect classification**, a **confirmation requirement**, and **provenance** — treated by a
-consumer as a proposal to validate, never as trusted text to run.
+What remains is the description of what an offer MEANS: **typed placeholders**, an **effect
+classification**, a **confirmation requirement**, and **provenance** — the fields that let a
+consumer validate a proposal rather than merely spawn it safely.
 
-**Why it matters.** A shell string is a command-injection boundary the moment a user-controlled
-identifier, path, or remote string is interpolated into it, and it loses the distinction between
-argv and shell syntax on the way out — a semicolon, a backtick or a glob is data or syntax
-depending entirely on who executes the string. Today's placeholders make it worse by being
-undeclared: `acc link --project <name>` carries a `<name>` no schema describes, so a caller has
-to recognise the convention by reading it. That is already written down honestly in
-[the error-envelope concept](./wiki/concepts/error-envelope.md#next-carries-remediation-as-untyped-command-templates),
-which calls the typed version "the intended direction" and says plainly it is not implemented.
+**Why it matters.** The argv split closed the boundary: an identifier interpolated into a shell
+string is data or syntax depending entirely on who executes it, and in an argv element it is
+only ever data. The remaining gap is a different one. An offer still says nothing about what
+running it would do, and its placeholders are still undeclared — `acc link --project <name>`
+carries a `<name>` no schema describes, so a caller has to recognise the convention by reading
+it. A consumer can therefore run an offer safely and still not know whether it writes anything.
+[The error-envelope concept](./wiki/concepts/error-envelope.md#next-carries-remediation-as-an-executable-plus-an-argv-array)
+states both halves — what the field now is, and what it still does not carry.
 
-**Why first.** Three reasons compound. `acc` emits `next` in every success envelope right now, so
-consumers can start depending on the string shape today. The change is small, touching the
-envelope and one declaration. And the cost curve is the one the project already argued about
-somewhere else: the [exit-code decision](./wiki/decisions/exit-codes-below-125.md) rests on
-KEP-2551 having been alpha-gated behind a feature flag since 2022 — "not because the design is
-unsound, but because retrofitting exit codes onto a tool with existing consumers is nearly
-impossible." A remediation schema is the same shape of decision, at the same stage, with a safety
-consequence attached rather than an ergonomic one.
+**Why first.** Three reasons compounded, and two still hold. `acc` emits `next` in every success
+envelope, so consumers can start depending on its shape today. The remaining change is small,
+touching the envelope and one declaration. And the cost curve is the one the project already
+argued about somewhere else: the [exit-code decision](./wiki/decisions/exit-codes-below-125.md)
+rests on KEP-2551 having been alpha-gated behind a feature flag since 2022 — "not because the
+design is unsound, but because retrofitting exit codes onto a tool with existing consumers is
+nearly impossible." A remediation schema is the same shape of decision, at the same stage. What
+has changed is the third reason: the safety consequence is no longer attached, so what is left
+is an ergonomic argument competing on ergonomic terms.
 
-**Blocked on.** Nothing. The design argument is written; what is missing is the schema and the
-emitter.
+**Blocked on.** Nothing. The design argument is written; what is missing is the vocabulary for
+effects and placeholders, and the emitter that fills it in.
 
 ## 2. Version the contract, not only the rules
 

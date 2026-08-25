@@ -490,11 +490,16 @@ describe("machine mode", () => {
     expect(parses(r.stdout)).toBe(true);
   });
 
-  test("success envelopes carry `next` command templates", async () => {
+  test("success envelopes carry `next` as an executable plus an argv array", async () => {
     const r = await run(["rules", "--json"]);
     const env = JSON.parse(r.stdout);
     expect(env.ok).toBe(true);
-    expect(env.next[0].command).toContain("acc show");
+    expect(env.next[0].exec).toBe("acc");
+    // Element-wise, not a substring of a joined string: the assertion has to fail if the
+    // interpolated rule id is ever folded back into one argument.
+    expect(env.next[0].args[0]).toBe("show");
+    expect(env.next[0].args).toHaveLength(2);
+    expect(env.next[0].command).toBeUndefined();
   });
 });
 

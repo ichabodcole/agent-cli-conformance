@@ -268,7 +268,8 @@ export async function checkCommand(
     next: nextRule
       ? [
           {
-            command: `acc show ${nextRule}`,
+            exec: "acc",
+            args: ["show", nextRule],
             // Not "the FIRST violation" any more: for a hang the offer is E1, which may sit
             // well after the other rules the hang tripped. Naming a position the ranking no
             // longer guarantees would be a small lie in the field that tells the caller what

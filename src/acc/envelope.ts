@@ -15,20 +15,35 @@ import { ERROR_KINDS, ExitCode, type ExitCodeValue } from "./exit-codes.ts";
 export type OutputMode = "text" | "json";
 
 /**
- * An UNTYPED command template. `command` is a string, and any placeholders in it (`<name>`) are
- * a reading convention, not a declared structure — nothing here says which substring is
- * substitutable, what type it takes, or what running it would do.
+ * A proposed follow-up invocation, carried as an executable and an argv array.
  *
- * Described that way deliberately: this said "typed placeholders" while emitting neither types
- * nor placeholders, and a string that looks executable invites being executed. See
- * docs/wiki/concepts/error-envelope.md — a typed `next` is a later roadmap item, and until it
- * exists the field says what it actually is.
+ * `exec` is the program to run; `args` is every argument after it, one element per argument,
+ * already split. Nothing here is a shell string, so a value that reaches `args` — a slug, a
+ * path, a rule id — is DATA at the boundary rather than syntax: a semicolon or a backtick in
+ * one is an argument containing a semicolon, and cannot become a second command. That is the
+ * whole reason for the shape. A caller that reassembles these into one string and hands it to a
+ * shell has put the injection boundary back, so do not; `spawn(exec, args)` is the intended
+ * consumption.
+ *
+ * The field is named `exec` rather than `command` on purpose. `command` already means the whole
+ * invocation, both in the string this replaced and in `meta.command`; reusing the key for just
+ * the program would hand a consumer reading `.command` a plausible truncation ("acc") instead
+ * of a failure. A rename makes the change loud at the point where it matters.
+ *
+ * `args` excludes the executable, so there is no argv[0] convention to get wrong.
+ *
+ * Still advisory, and still a proposal rather than an instruction: nothing here classifies what
+ * running it would do, so a caller that ignores `next` must be able to reach the same state by
+ * other means.
  *
  * Success envelopes only. `ErrorEnvelope` deliberately has no `next`: a failure's remediation
  * travels in `hint` and `choices`.
+ *
+ * Contract: docs/wiki/concepts/error-envelope.md
  */
 export interface NextAction {
-  command: string;
+  exec: string;
+  args: string[];
   when?: string;
 }
 
