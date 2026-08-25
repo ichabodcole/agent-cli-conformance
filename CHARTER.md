@@ -283,8 +283,11 @@ rather than mysterious. Fig accumulated 735 hand-written specs and its CI type-c
 **documents**; nothing ever probed a binary to ask whether a spec was still true, and the
 collection is now abandoned. So the question is not "will this work" but **"what makes our version
 different from the ones that died"** — and the candidate answer is the one thing none of them had:
-the declaration is bound to code and continuously falsified against the running tool, which is the
-checker's job and the reason it stays in the product at all.
+the declaration is bound to code and continuously falsified against the running tool — falsified
+meaning the tool is executed and its behaviour contradicts what it declared, not a document
+compared against a regeneration of itself, which is where `azdev latest-index verify` stops
+(above). That is the checker's job and the reason it stays in the product at all, and it is the
+harder of the two readings: a declaration that agrees with its own generator settles nothing here.
 
 What would settle it is not an argument. **An adopter binds a declaration to their code, the tool
 drifts from it, and the drift check catches it.** Until that has happened once, this is the
