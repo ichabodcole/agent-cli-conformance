@@ -686,9 +686,14 @@ a subcommand invocation, and whether it does work is a property of the target, n
 licence to change it: `classifyInertness` in [`../src/acc/kit/inert.ts`](../src/acc/kit/inert.ts)
 grants `help-path` only when **every** argv token is a help or format token, so `mycli deploy
 --help` does not classify and is refused. **That refusal is correct and stays.** So these gaps do
-not stop being blocked on discovery — they gain a second blocker, an `effects: read_only`
-declaration per command (also step 6) or a real sandbox — the same blocker the effect-observation
-group below already names — and by the rule above each closes with whichever lands later.
+not stop being blocked on discovery — they gain a second blocker: a real sandbox, or an operator
+running a kit-generated probe plan and handing back what came out. A per-command `effects: read_only`
+declaration was named here as a route and is **withdrawn** — a subject's self-description is evidence
+to test, not an execution-safety boundary, so no claim a target makes about itself licenses the kit
+to run its verbs
+([the decision](./plans/2026-08-24-below-the-root-before-a-second-cli.md#the-decision-and-it-is-now-a-decision-not-to-build)).
+The sandbox half is the same blocker the effect-observation group below already names, and by the
+rule above each gap closes with whichever of its blockers lands later.
 
 - Every gap of the form "only the root is probed", "nested subcommands are not probed at L0",
   "nested help is not probed", "a help subcommand is not probed" and "only root help is scanned".

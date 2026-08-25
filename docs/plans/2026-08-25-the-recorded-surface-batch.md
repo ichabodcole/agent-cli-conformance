@@ -525,7 +525,7 @@ read as a record: its shape was checked, it is counted in the batch, and it is n
 path's line says is that the record's declared completeness excluded it — never that nothing was
 recorded there. Those are different facts about the caller and lead to different next actions: one
 recaptures without the `head`, the other captures at all. An excluded record must never collapse into
-[`not-recorded`](#the-three-no-evidence-reasons), which is reserved for a path a supplied batch is
+[`not-recorded`](#the-two-no-evidence-reasons), which is reserved for a path a supplied batch is
 silent about.
 
 **Open question, recorded rather than built: a first-class partial-evidence model.** A captured
@@ -712,32 +712,36 @@ declaration diffed against caller-recorded evidence are both ordinary combinatio
 spelling for both would make the report unreadable at exactly the place a reader is checking who
 observed what.
 
-## The three no-evidence reasons
+## The two no-evidence reasons
 
 [`declaration.ts`](../../src/acc/kit/declaration.ts) today hardcodes one sentence for every path
-without evidence — _"no flag-surface evidence for this path — the kit enumerates the root only,
-because probing below it needs an effects claim nothing can yet falsify"_ — which assumes the answer.
-Once a caller can supply evidence, that sentence is right only for a path nothing could reach. Three
-reasons replace it, and the difference between them is what the reader would do next:
+without evidence — _"no flag-surface evidence for this path — the kit probes the root only; evidence
+below it comes from surfaces a caller recorded"_ — which is right for a path nothing reached and
+wrong for a path the caller simply did not record. Two reasons replace it, and the difference between
+them is what the reader would do next:
 
-| Reason         | When                                                                                                | The line                                                                             |
-| -------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `unreachable`  | The kit sent no probe there and none was possible                                                   | `the kit probes the root only, so nothing reached this path`                         |
-| `no-warrant`   | The path is reachable in principle and the declaration gave no read-only claim the kit would accept | `no probe warrant for this path — the declaration claims nothing the kit may act on` |
-| `not-recorded` | A batch was supplied and carries no record at this path                                             | `the caller supplied recorded surfaces and recorded nothing at this path`            |
+| Reason         | When                                                    | The line                                                                  |
+| -------------- | ------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `unreachable`  | The kit sent no probe there and none was possible       | `the kit probes the root only, so nothing reached this path`              |
+| `not-recorded` | A batch was supplied and carries no record at this path | `the caller supplied recorded surfaces and recorded nothing at this path` |
 
 `not-recorded` is only ever printed when a batch was supplied. With no batch, a path the kit could not
 reach is `unreachable`, which is what it is.
 
-**`no-warrant` is unreachable until [item 2](2026-08-24-below-the-root-before-a-second-cli.md#2-a-probe-warrant-below-the-root)
-ships, and an implementer building 2a alone must not emit it.** Telling `unreachable` from
-`no-warrant` requires the warrant class item 2 introduces — _reachable in principle, but the
-declaration claims nothing the kit may act on_ is a distinction that has no referent while no
-declaration can carry a warrant at all. Before item 2, every path the kit did not probe is
-`unreachable`, and every path a supplied batch skipped is `not-recorded`. The third reason is
-specified here anyway so its sentence does not have to be reinvented under deadline, and because the
-enum wants to be complete before it is stored; emitting it early would print a distinction the kit
-cannot yet make, which is this project's own named defect one level in.
+**A third reason, `no-warrant`, was specified in an earlier round and is withdrawn with the item that
+would have produced it.** It read _reachable in principle, but the declaration claims nothing the kit
+may act on_, and it depended on the warrant class
+[item 2](2026-08-24-below-the-root-before-a-second-cli.md#2-a-probe-warrant-below-the-root) would have
+introduced. Item 2 is
+[a decision not to build](2026-08-24-below-the-root-before-a-second-cli.md#the-decision-and-it-is-now-a-decision-not-to-build),
+so no declaration can carry a warrant, the distinction has no referent, and the member **must not be
+stored or emitted**. This document previously kept it on the argument that _the enum wants to be
+complete before it is stored_ — which is the withdrawn `effects` field's mistake in miniature: an
+inert name in a stored enum acquires apparent authority, invites a consumer to infer a distinction
+the kit cannot make, and constrains whatever a real warrant would need if the decision is ever
+reopened. It is recorded here as withdrawn, with its sentence, so that reopening the decision
+inherits the shape rather than the reservation. Every path the kit did not probe is `unreachable`,
+and every path a supplied batch skipped is `not-recorded`.
 
 **These are reasons a path had no surface at all. `no-evidence` is a status of a surface that exists**,
 and the plan is explicit that a caller record which arrives and yields no enumeration is not a fourth
@@ -866,7 +870,8 @@ its argument attached:
     prefix are written out rather than left in `surface.ts` for an adopter to discover by silence.
 12. **Timing and environment fields are excluded from the record**, with the reader's strict-key rule
     making a later addition unambiguous.
-13. **`no-warrant` is specified but not emitted** until item 2 ships.
+13. **`no-warrant` is withdrawn, not deferred** — the enum has two members, because the item that
+    would have given the third a referent is not being built.
 14. **A `recorded:` observation id resolves in the batch supplied to that run**, not in the stored
     report — `Report.surface` is serialized, and the batch is an input the artifact does not carry.
 

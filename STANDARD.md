@@ -326,11 +326,14 @@ writes a store, shells out or mutates state was refused and stayed refused, so *
 command's declaration is unverified**.
 
 That ceiling is general rather than anthill's. It is the case for any CLI worth checking, because
-the commands that matter most are the ones that change something. Passing it requires the
-declaration to carry an effects claim and the tool to be trustworthy about it — and an effects
-claim nobody falsifies is exactly the kind of document the survey found drifting everywhere else.
-That is the next thing to bet on and the next thing to verify, and this page does not pretend it is
-solved.
+the commands that matter most are the ones that change something. This page used to say that passing
+it required the declaration to carry an effects claim and the tool to be trustworthy about it, while
+noting in the same clause that an effects claim nobody falsifies is exactly the kind of document the
+survey found drifting everywhere else. **That objection won.** A subject's account of itself is
+evidence to test, never a licence to execute it, so no claim in any format was ever going to lift
+this ceiling. What lifts it is somebody who already holds the authority doing the running — the
+operator, on their own machine, handing back what came out — or an execution boundary the checker
+owns. Neither is built here, and this page does not pretend it is solved.
 
 **[C?]** The declared-versus-accepted census, on any target whose parse errors name the valid set —
 and the kit now ships it, at the root, behind `acc check --declaration`. It is not `[C]`, because it
@@ -440,14 +443,22 @@ new command has no entry ([Part 1 §2](#2-generate-it-from-what-implements-the-b
 they do not yet have is a slot in `acc.declaration.json`, and an emitter written against them today
 buys a document nothing here can consume.
 
-**What that costs this project, named rather than deferred.** `effects` is the blocker this page
-already leans on twice — [the ceiling](#the-ceiling-stated-honestly) reached runtime for 4 of 25
-commands, and [Part 4](#checkable-and-not-built) marks `[—]` on two rows that need a declared
-read-only claim to move. v0 has nowhere to put that claim **even as an unverified one the kit
-records and lets gate nothing**, which is exactly what this page recommends doing with it. So the
-sentence "probing below the root waits on an effects claim" is true and is also currently
-unreachable: the format has to grow a place for it first. There is no plan here for how; stating
-the dependency is the honest thing this page can do about it today.
+**What that costs this project — and this passage was wrong once, which is the first thing it owes
+you.** It used to name `effects` as the blocker, twice over: [the ceiling](#the-ceiling-stated-honestly)
+reached runtime for 4 of 25 commands, and [Part 4](#checkable-and-not-built) marked `[—]` on rows
+said to need a declared read-only claim. It then observed that _"probing below the root waits on an
+effects claim"_ was true but unreachable, because v0 had nowhere to put the claim, and that there was
+no plan here for how. **That dependency was asserted on this page and has since been withdrawn.** It
+was never a format problem. What gets anyone below the root is evidence, and evidence need not come
+from the checker's own probe: an operator can run their own tool at the paths they choose and hand
+back the recordings, executing nothing on the checker's authority and reading no claim at all.
+`effects` is not being added, so v0's missing slot costs nothing.
+
+What is genuinely unbuilt is narrower, and naming it exactly is the honest thing this page can do
+today: the kit cannot yet **read** a recorded surface, it generates no probe plan to make producing
+one cheap, and it owns no execution boundary of its own. The cost that leaves is that below-root
+coverage depends on somebody else doing the running — a limit on convenience, and on who can be
+checked without their cooperation, rather than on what is knowable from outside.
 
 ## The two things a declaration must never carry
 
@@ -517,10 +528,16 @@ is worth more than either argument alone:
 - Refuse to run against a declaration whose format version you do not understand, rather than
   ignoring it and carrying on. The fields unlock probes, and unknown semantics on an unlocking
   field means running an invocation whose justification you cannot read.
-- Say nothing about **effects** yet. Both sketches scoped it out, for the reason the drift trial hit
-  its ceiling: an effects claim is what would let a checker run a real verb, it widens the probe
-  surface further than every other field combined, and there is no sandbox to falsify it in. Record
-  it; let it gate nothing.
+- Say nothing about **effects** — and do not record it as a placeholder either. Both sketches scoped
+  it out, for the reason the drift trial hit its ceiling: there is no sandbox to falsify such a claim
+  in. An earlier version of this page told you to record it and let it gate nothing; **that advice is
+  withdrawn**, and no field is coming for it. An inert field is not a neutral placeholder: it lends
+  its names apparent authority, invites a consumer to infer safety from them, and fixes a meaning
+  before any consumer exists to need one. `read_only` already reads two ways — no mutation of the
+  tool's own state, versus no externally visible effect — and a command that writes nothing of its
+  own while opening a browser on the operator's machine is exactly where the two come apart. The
+  field earns its place when a concrete consumer and a testable contract for it exist, and that
+  consumer picks the meaning.
 - Do not add a field for bitmask exit codes. `pylint` ORs fatal `1`, error `2`, warning `4`,
   convention `8`, refactor `16` and usage `32`, so a run with a fatal and a warning exits `5`;
   `fsck` documents its status across filesystems as _"the bit-wise OR of the exit statuses"_
@@ -536,9 +553,11 @@ it**, and the narrowing-versus-widening asymmetry is what makes that safe. What 
 on what the **census** can do with one today, and it belongs here because it is invisible from the
 format layer, where a modelled document is as well-formed as an emitted one.
 
-The kit enumerates **the root only** — `captureSurface` in
+The kit probes **the root only** — `captureSurface` in
 [`src/acc/kit/surface.ts`](src/acc/kit/surface.ts) reads a flag set out of root-level rejections,
-and going below the root needs the effects claim v0 [has nowhere to put](#emit-v0-hold-the-rest).
+and the kit does not execute a subcommand of a target on that target's own say-so. Evidence below
+the root has to be recorded by somebody who already holds the authority to run the tool and handed
+to the kit, which cannot yet accept it.
 A verb-first tool's declaration is a document about its **verbs**, so every path it declares is a
 path nothing probes, and the one path that is probed is often the one it does not declare. Measured
 on this repository's own CLI, which is verb-first: `acc --nope` answers `unknown option '--nope'`
@@ -933,7 +952,8 @@ which is the second item in the shape above — at any depth: its checker declar
 returns `unverified` unconditionally
 ([`unexpected-positionals.ts`](src/acc/kit/checkers/parsing/unexpected-positionals.ts)), because
 testing arity means sending extra positionals to a _real_ verb and running it. It becomes checkable
-on a per-command `effects: read_only` declaration or a sandbox, not on discovery. **[C?]** The rest
+in a sandbox, or on a surface an operator recorded by running a generated probe plan — not on
+discovery, and not on anything the tool says about itself. **[C?]** The rest
 of them one level down, which is the largest single block of coverage debt in the catalogue —
 blocked on the tool declaring that the subcommand exists, and, for every one of them whose probe
 would run the subcommand rather than ask it for help, blocked a second time on knowing that command
@@ -1005,7 +1025,8 @@ safely, which is a different kind of thing to be missing and belongs under a dif
 - **Declared against accepted, per command** — the valid-flag census. Available today against any
   target whose parse errors name the valid set, and it needs no kit. **Built at the root**, in
   `acc check --declaration`; _per command_ is the half still missing, and it is missing because the
-  kit enumerates the root only — going below it needs the effects claim, not a better differ.
+  kit probes the root only. The differ is already per-path; what it lacks is below-root evidence to
+  feed it — which a caller running their own tool can record, and the kit cannot yet accept.
 - **The declared self-description invocation actually runs and parses.** The document half is
   built — the kit reports a declaration that omits the verb it says emits it — and the running half
   is not.
@@ -1015,9 +1036,10 @@ safely, which is a different kind of thing to be missing and belongs under a dif
   `bounty close --help` **closed the board**, `state --help` dumped it, and `tail --help` opened a
   stream that never exited
   ([defect archaeology §6.1](docs/research/2026-08-15-defect-archaeology.md)). So a declaration that
-  the command exists does not make this checkable; what would is a declared, emitted, read-only
-  **effects** claim per command — or a real OS sandbox — and effects is filed under
-  [nothing outside can check it](#nothing-outside-can-check-it) below, which is why the mark is
+  the command exists does not make this checkable; what would is a real OS sandbox, or an operator
+  running a generated probe plan and handing back what came out. Neither is something a declaration
+  can supply — and effects, which an earlier revision named here as a third route, is filed under
+  [nothing outside can check it](#nothing-outside-can-check-it) below — which is why the mark is
   `[—]` and not `[C?]`. The kit already refuses the shape rather than guessing at it:
   `classifyInertness` in [`src/acc/kit/inert.ts`](src/acc/kit/inert.ts) grants a `help-path`
   classification only when _every_ argv token is a help or format token, so `mycli deploy --help`
@@ -1029,7 +1051,8 @@ safely, which is a different kind of thing to be missing and belongs under a dif
   and they split because only one half survives the same test as `--help` above. Rejecting a missing
   value is a parser error, observable before anything runs; an _accepted_ flag is accepted **by
   running the command**, and there is no observation of acceptance that is not an execution. So this
-  half waits on the effects claim or the sandbox, not on a declaration of the flag.
+  half waits on a sandbox, or on an operator running a generated probe plan, not on a declaration of
+  the flag.
 - **Every declared enforced value set rejects an out-of-set value.**
 - **The declared error-envelope fields carry what they say they carry.**
 - **The declared exit-code mapping holds** — provoke each kind, compare.
