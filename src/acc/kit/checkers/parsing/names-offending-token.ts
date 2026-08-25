@@ -4,7 +4,7 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
-import { SENTINEL } from "../../inert.ts";
+import { SENTINEL, VERB_DISPATCH_ASSUMED } from "../../inert.ts";
 import {
   machineErrorArgs,
   machineSelector,
@@ -62,12 +62,20 @@ export const namesOffendingTokenChecker: Checker = {
   // target for that. And `includes(SENTINEL)` asks for the sentinel SUBSTRING while the page says
   // VERBATIM: a target printing `acc-probe-xyzzy` where the argv said `--acc-probe-xyzzy-flag`
   // satisfies this check and not the rule.
+  //
+  // THE VERB HALF ALSO CARRIES A PREMISE, which is the last gap: it reads the sentinel probe as a
+  // rejection. Against `ripgrep` there was no rejection — the token was a search pattern that
+  // matched nothing — and this checker still reported `fail — verb rejection did not name the
+  // verb`, complaining about the wording of a diagnostic nothing emitted. Every verdict the verb
+  // probe informs says so now; none of them changes, because deciding it needs the target to
+  // declare its positional shape (`VERB_DISPATCH_ASSUMED` in inert.ts).
   coverage: "partial",
   coverageGaps: [
     "the machine-mode field is any string value anywhere in the document because no declaration exists at L0 to name the envelope field the rule requires",
     "only an unknown flag and an unknown verb are probed",
     "the SHOULD to enumerate a closed set as choices is not exercised",
     "the assertion is that the sentinel substring reached stderr and not that the whole offending token appears verbatim",
+    "the verb probe assumes the first positional selects a subcommand so a target that reads it as free-form data is judged for not naming a token it never rejected",
   ],
   coverageEstablished: [
     "the stderr of an unknown root flag rejection contains the probe's sentinel string",
@@ -122,7 +130,11 @@ export const namesOffendingTokenChecker: Checker = {
     // The sentinel is distinctive enough that a match is evidence the tool echoed it, not
     // coincidence.
     if (!flag.stderr.includes(SENTINEL)) problems.push("flag rejection did not name the flag");
-    if (!verb.stderr.includes(SENTINEL)) problems.push("verb rejection did not name the verb");
+    // The verb clause carries the assumption with it, so a report quoting only this problem still
+    // says what it rests on. The flag clause needs none: `--acc-probe-xyzzy-flag` is an unknown
+    // option whatever the target does with its positionals.
+    if (!verb.stderr.includes(SENTINEL))
+      problems.push(`verb rejection did not name the verb (${VERB_DISPATCH_ASSUMED})`);
     // The machine clause fails only when there IS a document and the token is not in it. Its
     // absence is decided below, because "no document" is a different finding with a different
     // owner.
@@ -153,15 +165,16 @@ export const namesOffendingTokenChecker: Checker = {
     if (machineDeclared && machine && inAField === null) {
       return finding(
         "unverified",
-        "the rejections named the token in prose, but machine mode produced no parseable document to inspect for the field; see B5",
+        `the rejections named the token in prose, but machine mode produced no parseable document to inspect for the field; see B5; ${VERB_DISPATCH_ASSUMED}`,
         evidence,
       );
     }
+    // The pass asserts a VERB REJECTION happened, so it carries the premise too.
     return finding(
       "pass",
       machine
-        ? "the unknown-flag and unknown-verb rejections both named the offending token, and the machine-mode document carries it in a field"
-        : "the unknown-flag and unknown-verb rejections both named the offending token; no machine mode was reachable at L0 so the envelope clause was not reached",
+        ? `the unknown-flag and unknown-verb rejections both named the offending token, and the machine-mode document carries it in a field; ${VERB_DISPATCH_ASSUMED}`
+        : `the unknown-flag and unknown-verb rejections both named the offending token; no machine mode was reachable at L0 so the envelope clause was not reached; ${VERB_DISPATCH_ASSUMED}`,
       evidence,
     );
   },

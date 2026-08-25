@@ -88,8 +88,8 @@ a decision rather than hiding a failure — and it decides what a waiver costs: 
 | Rule                                                              | Tier       | Deviation     | Level | Checker     | Coverage | Gaps |
 | ----------------------------------------------------------------- | ---------- | ------------- | ----- | ----------- | -------- | ---- |
 | [A1](./rules/parsing/unknown-flag-exits-nonzero.md)               | core       | defect        | L0    | implemented | partial  | 5    |
-| [A2](./rules/parsing/unknown-command-exits-nonzero.md)            | core       | defect        | L0    | implemented | partial  | 4    |
-| [A3](./rules/parsing/errors-name-the-offending-token.md)          | core       | defect        | L0    | implemented | partial  | 4    |
+| [A2](./rules/parsing/unknown-command-exits-nonzero.md)            | core       | defect        | L0    | implemented | partial  | 5    |
+| [A3](./rules/parsing/errors-name-the-offending-token.md)          | core       | defect        | L0    | implemented | partial  | 5    |
 | [A4](./rules/parsing/unexpected-positionals-rejected.md)          | core       | defect        | L1    | implemented | partial  | 1    |
 | [A5](./rules/parsing/no-fuzzy-auto-correction.md)                 | core       | defect        | L0    | implemented | partial  | 5    |
 | [A6](./rules/parsing/double-dash-terminator.md)                   | diagnostic | design-choice | L0    | implemented | partial  | 4    |
@@ -100,7 +100,7 @@ a decision rather than hiding a failure — and it decides what a waiver costs: 
 | [B4](./rules/streams/output-is-delivered-whole.md)                | core       | defect        | L1    | planned     | partial  | 2    |
 | [B5](./rules/streams/machine-mode-holds-on-parser-errors.md)      | core       | defect        | L0    | implemented | partial  | 5    |
 | [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | defect        | L0    | implemented | partial  | 4    |
-| [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | defect        | L0    | implemented | partial  | 3    |
+| [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | defect        | L0    | implemented | partial  | 4    |
 | [C3](./rules/exit-codes/exit-codes-are-deterministic.md)          | core       | defect        | L0    | implemented | partial  | 5    |
 | [D1](./rules/discoverability/version-flag-exists.md)              | core       | defect        | L0    | implemented | partial  | 5    |
 | [D2](./rules/discoverability/bare-invocation-is-a-usage-error.md) | core       | design-choice | L0    | implemented | partial  | 4    |
@@ -111,7 +111,7 @@ a decision rather than hiding a failure — and it decides what a waiver costs: 
 | [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | design-choice | L0    | implemented | partial  | 4    |
 | [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | defect        | L0    | implemented | partial  | 4    |
 
-23 rules · 0 `complete` · 23 `partial` · 92 named gaps.
+23 rules · 0 `complete` · 23 `partial` · 95 named gaps.
 
 ### Parsing
 

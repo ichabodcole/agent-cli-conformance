@@ -316,9 +316,14 @@ you add the second key**, while the parser and its docs are already open; it is 
 expensive once adopters have written both.
 
 It is also the largest single unblocker of the [coverage debt](#the-coverage-debt). The biggest
-group of gaps is some variant of "only the root is probed", which is not an L0 limit at all — a
-subcommand's `--help` is exactly as inert as the root's. It is a _discovery_ limit, and discovery
-today means parsing English help text.
+group of gaps is some variant of "only the root is probed", and every one of them is a _discovery_
+limit — discovery today means parsing English help text, and a declaration replaces the parsing.
+That is what this step buys, and it is not the whole blocker: **a subcommand's `--help` is not as
+inert as the root's**, and this project's own corpus is what falsifies the claim. `bounty close
+--help` closed the board; `state --help` dumped it; `tail --help` opened a stream that never exited
+([defect archaeology §6.1](./research/2026-08-15-defect-archaeology.md)). Knowing the subcommand
+exists does not license running it — see the [coverage debt](#the-coverage-debt) for what the second
+blocker is and which gaps carry it.
 
 **Blocked on.** Step 5, so a declaration can state which profile it claims, and step 2, since
 this is the most pinned-to artifact of the lot.
@@ -663,10 +668,24 @@ of what they say, and — the category that was systematically absent — **whic
 universal clause reaches that no probe visits.** A page can look thorough while silently scoping a
 universal rule down to whatever the probe happened to run.
 
-**Blocked on discovery** — the largest group by some distance. None of these is an L0 safety
-limit: a subcommand's help path is exactly as inert as the root's. They are blocked on knowing
-that the subcommand exists, which today means parsing English help text. Step 6, with step 3's
-schema-based discovery as the interim improvement.
+**Blocked on discovery** — the largest group by some distance. Every gap here is blocked on knowing
+that the subcommand exists, which today means parsing English help text: step 6, with step 3's
+schema-based discovery as the interim improvement. That is the blocker they share and it is why they
+are grouped, and per the note above, a gap can carry a second one.
+
+**They do, and this entry used to deny it.** It read: _"none of these is an L0 safety limit — a
+subcommand's help path is exactly as inert as the root's."_ That is false, and this repo's own
+corpus falsifies it. `bounty close --help` **closed the board**; `state --help` dumped it;
+`tail --help` opened the stream and never exited
+([defect archaeology §6.1](./research/2026-08-15-defect-archaeology.md)). A subcommand's help path is
+a subcommand invocation, and whether it does work is a property of the target, not of the token
+`--help`. The kit already behaves correctly on this and the argument here must not be read as
+licence to change it: `classifyInertness` in [`../src/acc/kit/inert.ts`](../src/acc/kit/inert.ts)
+grants `help-path` only when **every** argv token is a help or format token, so `mycli deploy
+--help` does not classify and is refused. **That refusal is correct and stays.** So these gaps do
+not stop being blocked on discovery — they gain a second blocker, an `effects: read_only`
+declaration per command (also step 6) or a real sandbox — the same blocker the effect-observation
+group below already names — and by the rule above each closes with whichever lands later.
 
 - Every gap of the form "only the root is probed", "nested subcommands are not probed at L0",
   "nested help is not probed", "a help subcommand is not probed" and "only root help is scanned".

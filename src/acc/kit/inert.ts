@@ -10,6 +10,30 @@ import type { Invocation } from "./types.ts";
  */
 export const SENTINEL = "acc-probe-xyzzy";
 
+/**
+ * The premise a sentinel-VERB probe rests on, written where a verdict can carry it.
+ *
+ * `<cli> acc-probe-xyzzy-verb` is an unknown command only for a target whose first positional
+ * selects one. For a target whose first positional is free-form DATA — a pattern (`rg`), a
+ * program (`jq`, `expr`), a coordinate system (`projinfo`), a filename the target WRITES
+ * (`ffmpeg`, `sqlite3`, `ogr2ogr`, `cdo`) — the same argv is not a rejection to observe: the
+ * target accepted the token and did the work it was asked to do, and whatever code it returned
+ * is about that work.
+ *
+ * `L0` cannot tell the two shapes apart and does not guess, so every verdict read off that probe
+ * inherits the assumption. Three rules read it — A2, A3 and C2 — and each says so in its detail
+ * and in a `coverageGaps` entry, because a `pass` resting on an unstated premise is the failure
+ * this catalogue exists to report: against `ripgrep`, A2 reported `pass — root verb rejected with
+ * exit 1` over a search that matched nothing
+ * (`docs/reports/2026-08-23-blind-trial-ripgrep.md`).
+ *
+ * DISCLOSURE ONLY. The verdicts are unchanged: a `pass` carrying this clause is still a `pass`,
+ * still counted in `counts.corePassed`, still contributing to `conformant`. Deciding it instead
+ * needs a fact only the target can supply — its positional shape, declared — which is `L1`.
+ */
+export const VERB_DISPATCH_ASSUMED =
+  "this verdict assumes the first positional selects a subcommand, which nothing at L0 established";
+
 const HELP_TOKENS = new Set(["--help", "-h", "help", "--version", "-V", "-v"]);
 
 /**

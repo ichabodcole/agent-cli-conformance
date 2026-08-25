@@ -4,7 +4,7 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
-import { SENTINEL } from "../../inert.ts";
+import { SENTINEL, VERB_DISPATCH_ASSUMED } from "../../inert.ts";
 import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByArgs } from "../../types.ts";
 
@@ -39,6 +39,12 @@ export const unknownCommandChecker: Checker = {
   // verb-naming clause over the byte-identical recording, but that is A3's evidence, not this
   // rule's, and a report that borrowed it would be citing a finding it did not make.
   //
+  // The fifth is not a clause of the rule at all but the PREMISE the whole verdict rests on: that
+  // the first positional selects a command. Against a target whose first positional is data the
+  // probe is not an unknown verb, and this checker reported `pass — root verb rejected with exit
+  // 1` for a `ripgrep` search that matched nothing over closed stdin. The gap and the detail both
+  // say so; neither changes the verdict, which needs the target to declare its positional shape.
+  //
   // The fourth is a PATH rather than a clause (review R6-5), and it is the one a reader would
   // otherwise assume covered: "any command it does not recognise" includes a token one edit away
   // from a real verb, which is precisely the token a fuzzy matcher resolves and runs. A5 refuses
@@ -50,6 +56,7 @@ export const unknownCommandChecker: Checker = {
     "the exit code is only required to be non-zero here and not the declared 2",
     "naming the offending verb on stderr is not asserted",
     "only a sentinel-shaped token is probed so a verb that near-misses a real command is never offered",
+    "the first positional is assumed to select a subcommand so a target that reads it as free-form data is judged on the work it did rather than on a rejection",
   ],
   coverageEstablished: [
     "one unknown verb given at the root exits non-zero and leaves stdout empty",
@@ -74,7 +81,7 @@ export const unknownCommandChecker: Checker = {
       return o.stdout !== ""
         ? finding(
             "fail",
-            `unknown root verb wrote ${o.stdoutBytes}+ bytes to stdout before the output limit`,
+            `unknown root verb wrote ${o.stdoutBytes}+ bytes to stdout before the output limit; ${VERB_DISPATCH_ASSUMED}`,
             [o.id],
           )
         : cut;
@@ -94,11 +101,14 @@ export const unknownCommandChecker: Checker = {
     // so the pass detail must say so — the rule itself requires rejection at every level of
     // nesting, and a reader of the Finding alone (not this file) has no other way to know the
     // nested case was never exercised.
+    // BOTH verdicts carry the premise, not just the pass. A target that reads the positional as
+    // data can be convicted here too — it prints its result to stdout and exits 0, which is
+    // byte-for-byte the A2 violation — so the fail rests on the same unestablished fact.
     return problems.length
-      ? finding("fail", problems.join("; "), [o.id])
+      ? finding("fail", `${problems.join("; ")}; ${VERB_DISPATCH_ASSUMED}`, [o.id])
       : finding(
           "pass",
-          `root verb rejected with exit ${o.exitCode}; nested case not probed at L0`,
+          `root verb rejected with exit ${o.exitCode}; nested case not probed at L0; ${VERB_DISPATCH_ASSUMED}`,
           [o.id],
         );
   },
