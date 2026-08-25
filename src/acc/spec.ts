@@ -247,6 +247,18 @@ export const COMMANDS: CommandSpec[] = [
           "Directory holding acc.config.json. Omitted, the current working directory is searched — that directory only, with no search upward — and a file found there is loaded; the report names whichever was used.",
         valueHint: "dir",
       },
+      // A FILE, and a separate one from `acc.config.json` — the name says which, for the same
+      // reason `--config-dir` says "dir". A declaration is falsifiable and a config is a choice:
+      // they have different authors, different lifetimes, and a maintainer publishing a
+      // declaration in their own repository must not be publishing somebody's suppressions with
+      // it. See src/acc/kit/declaration.ts.
+      {
+        name: "--declaration",
+        type: "string",
+        description:
+          "Path to a declaration file to diff against what the target says it accepts. Omitted, no comparison is made and the report says so; nothing here passes or fails, because the kit cannot tell which side of a disagreement is wrong.",
+        valueHint: "file",
+      },
     ],
     errors: [ErrorKind.NotFound],
     // What the gate does and does not buy, stated where someone is about to point this at a

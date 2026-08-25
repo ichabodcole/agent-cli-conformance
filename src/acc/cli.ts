@@ -284,7 +284,10 @@ for (const spec of COMMANDS) {
       case "check":
         return checkCommand(
           positionals[0] as string,
-          { configDir: opts.configDir as string | undefined },
+          {
+            configDir: opts.configDir as string | undefined,
+            declaration: opts.declaration as string | undefined,
+          },
           resolved,
           startedAt,
         );
