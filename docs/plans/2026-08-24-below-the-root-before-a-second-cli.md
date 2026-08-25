@@ -349,8 +349,9 @@ case is a caller who is honest and whose capture is lossy in a way the bytes do 
      what improves is that the assertion is now **checkable against a tool's own output**, not
      merely unstated.
   2. **`D1` establishes less than the field looks like it carries.** Its detector is
-     `stdout.trim() !== ""`, and its own standing coverage gap says _"stdout is never checked to
-     carry a version string in either mode."_ So a present identity observation establishes that
+     `plain.exitCode === 0 && plain.stdout.trim() !== ""` (`version-flag.ts:104`) — a non-empty
+     stream standing in for a typed payload — and its own standing coverage gap says _"stdout is
+     never checked to carry a version string in either mode."_ So a present identity observation establishes that
      **the caller recorded** the target saying **something** under `["--version"]` — the kit
      observed nothing here — not that what it said is a version, and
      not that two batches quoting different bytes are different builds. The field is honest in
