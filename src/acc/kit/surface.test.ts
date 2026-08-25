@@ -260,21 +260,36 @@ describe("what the capture says about a target that did not enumerate", () => {
     expect(text).toContain("NOT a tool with no flags");
   });
 
-  test("the summary says WHERE it did not enumerate, because root is all that was probed", () => {
-    // The probes behind this are root-only, so a verb-first CLI that enumerates richly one level
-    // down is indistinguishable here from one that never enumerates at all. "did not enumerate"
-    // unqualified is a claim about the tool made from evidence that covers only its root.
+  test("the summary says WHERE it did not enumerate, and takes the where from the data", () => {
+    // A verb-first CLI that enumerates richly one level down is indistinguishable, from one
+    // path's evidence, from one that never enumerates at all. "did not enumerate" unqualified is
+    // a claim about the tool made from evidence that covers one path.
     const text = surfaceSummary(captureSurface([rejection("error: unknown option '--x'")]));
-    expect(text).toContain("did not enumerate at the root — the only path probed");
+    expect(text).toContain("did not enumerate at the root");
     expect(text).toContain("1 rejection read");
   });
 
+  test("the scope is the PATH, and the literal `the only path probed` is gone", () => {
+    // `diffDeclaration` reuses this sentence verbatim for every non-enumerated path, so the
+    // literal printed "at the root — the only path probed" ABOUT `state` for the first caller who
+    // recorded a `state` surface: a false scope claim, produced by the wording `SG-2` added to
+    // stop one. The scope survives — the path is named — and the coverage claim moves to the
+    // census header, where the set of paths is actually held.
+    const s = captureSurface([rejection("error: unknown option '--x'")]);
+    expect(surfaceSummary(s, ["state"])).toContain("did not enumerate at state");
+    expect(surfaceSummary(s, ["state"])).not.toContain("root");
+    expect(surfaceSummary(s)).not.toContain("the only path probed");
+  });
+
   test("...and the enumerated sentence names the same scope, for the mirror reason", () => {
-    // A root list is not the tool's whole surface, and a reader must not be able to take it for
+    // A path's list is not the tool's whole surface, and a reader must not be able to take it for
     // one. Both sentences come from `surfaceSummary`, so `acc check` and `acc compare` cannot
     // disagree about the scope either.
     const text = surfaceSummary(captureSurface([rejection("valid flags: --a")]));
-    expect(text).toContain("enumerated 1 flag at the root — the only path probed: --a");
+    expect(text).toContain("enumerated 1 flag at the root: --a");
+    expect(surfaceSummary(captureSurface([rejection("valid flags: --a")]), ["send"])).toContain(
+      "enumerated 1 flag at send: --a",
+    );
   });
 
   test("a report predating the capture says so rather than reading as silence", () => {
@@ -307,7 +322,7 @@ describe("the harm the truncation actually did, one level downstream", () => {
       ),
     ]);
     const d = diffDeclaration(declaring(["--help", "-h", "--version", "-V"]), [
-      { path: [], surface },
+      { path: [], surface, surfaceProvenance: "probed-by-kit" },
     ]);
     // Three of these were reported before the fix, on a target accepting all four.
     expect(d.findings.filter((f) => f.kind === "declared-not-accepted")).toEqual([]);
@@ -319,7 +334,9 @@ describe("the harm the truncation actually did, one level downstream", () => {
 
   test("a declaration that names only the long spellings still reports the short ones", () => {
     const surface = captureSurface([rejection(`{"error":{"validFlags":["--help","-h"]}}`)]);
-    const d = diffDeclaration(declaring(["--help"]), [{ path: [], surface }]);
+    const d = diffDeclaration(declaring(["--help"]), [
+      { path: [], surface, surfaceProvenance: "probed-by-kit" },
+    ]);
     // Not an alias the diff can quietly absorb: the document does not name `-h`, and a caller
     // holding only that document cannot reach it. Relating the two spellings would take an
     // aliasing model nothing in a rejection supports — see `flagsAfter`.
@@ -410,9 +427,7 @@ describe("against real fixtures", () => {
       { encoding: "utf8" },
     );
     expect(run.stdout).toContain("SELF-DECLARED FLAGS");
-    expect(run.stdout).toContain(
-      "enumerated 2 flags at the root — the only path probed: --format --verbose",
-    );
+    expect(run.stdout).toContain("enumerated 2 flags at the root: --format --verbose");
     expect(run.stdout).toContain('prose-marker "Valid flags:" on stderr');
     // C3, D4 and F2 record the same unknown-flag argv several times over, so an unfolded list
     // shows one declaration as six and a reader counts six.

@@ -259,6 +259,23 @@ export const COMMANDS: CommandSpec[] = [
           "Path to a declaration file to diff against what the target says it accepts. Omitted, no comparison is made and the report says so; nothing here passes or fails, because the kit cannot tell which side of a disagreement is wrong.",
         valueHint: "file",
       },
+      // A FILE, on the `--declaration` precedent above and for that flag's own stated reason: a
+      // recorded batch is the same kind of thing as a declaration — somebody's account of what
+      // happened, handed to the kit to be diffed — so it arrives the same way. It is NOT an
+      // `acc.config.json` key: a key describing the target's own shape belongs in a declaration
+      // file, and a repository that committed a batch would be committing one machine's afternoon.
+      //
+      // THE PLURAL IS THE FILE'S CONTENTS, NOT A REPEATABLE FLAG. One file holds a batch of
+      // surfaces, and one document is one session assertion — so a second `--recorded-surfaces` is
+      // REFUSED rather than merged, which commander does not do for a string option on its own.
+      // See `refuseRepeated` in cli.ts, which is where that departure is enforced and argued.
+      {
+        name: "--recorded-surfaces",
+        type: "string",
+        description:
+          "Path to a batch of surfaces you recorded yourself, below the root the kit probes. Give it at most once — one batch is one session assertion, and a second is refused rather than merged. Every census line says who observed it; nothing here passes or fails.",
+        valueHint: "file",
+      },
     ],
     errors: [ErrorKind.NotFound],
     // What the gate does and does not buy, stated where someone is about to point this at a

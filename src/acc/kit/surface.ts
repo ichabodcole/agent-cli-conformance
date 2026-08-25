@@ -79,12 +79,43 @@ export type SurfaceShape =
   /** A marked phrase in prose (`Valid flags: --format`), including prose inside a JSON string. */
   | "prose-marker";
 
+/**
+ * WHO OBSERVED THE EVIDENCE A PATH'S SURFACE RESTS ON.
+ *
+ * A census line that does not say who observed it is the defect this project is named after, so
+ * the label rides on every path result rather than on the run. `recorded-by-caller` attests to
+ * the RECORDING and never to the reading: these bytes came back from that argv on someone else's
+ * machine. What they mean is the kit's judgement, and the kit owns being wrong about it.
+ */
+export type SurfaceProvenance = "probed-by-kit" | "recorded-by-caller";
+
 export interface SurfaceEvidence {
-  /** The observation this was read from; resolves in `Report.observations[]`. */
+  /**
+   * The observation this was read from, and it resolves in ONE OF TWO PLACES.
+   *
+   * Under `probed-by-kit` it resolves in `Report.observations[]`. Under `recorded-by-caller` it
+   * is `recorded:<index>` over `records[]` OF THE BATCH SUPPLIED TO THE RUN THAT PRODUCED THIS
+   * REPORT — its own namespace, so the two id spaces cannot collide in a stored report.
+   *
+   * The narrower invariant is deliberate, and the comment must not claim the wider one:
+   * `Report.surface` is serialized, so a `recorded:` id ships inside the JSON while the batch it
+   * indexes is an INPUT the artifact neither carries nor names. Once the batch file is gone, that
+   * id resolves nowhere. A recorded record can never be minted into `Report.observations[]`
+   * either — `ReportedObservation` carries stream digests, `inertness` and timings, which are
+   * derived facts and kit-side judgements a caller is forbidden to send and the kit has no honest
+   * way to fill.
+   */
   observationId: string;
   /** The argv that provoked the rejection. */
   args: string[];
-  stream: "stdout" | "stderr";
+  /**
+   * The stream this was read from.
+   *
+   * `merged` is the caller-recorded case only: a capture ending `2>&1` cannot fill this honestly,
+   * and attributing merged bytes to a stream nobody observed them on would be a fabrication in a
+   * section labelled as the target's own words. The kit's own probes never produce it.
+   */
+  stream: "stdout" | "stderr" | "merged";
   shape: SurfaceShape;
   /**
    * WHAT MATCHED: the JSON key for `json-field`, the marker phrase as the target spelled it for
@@ -143,7 +174,40 @@ const LONG = /^--[A-Za-z][A-Za-z0-9-]*$/;
 const SHORT = /^-[A-Za-z]$/;
 
 /** The shape every recognised list member must have — see `flagsAfter`. */
-const isFlag = (token: string) => LONG.test(token) || SHORT.test(token);
+export const isFlag = (token: string) => LONG.test(token) || SHORT.test(token);
+
+/**
+ * WHETHER AN ARGV IS A REJECTION AT ITS OWN PATH — the shape half of the filter, and the one rule
+ * that governs a probe the kit sent and a record a caller handed in alike.
+ *
+ * `tokens` is what follows the command path: the whole argv for a root probe, and everything
+ * after the `path` prefix for a recorded record. Three clauses, and they are published to
+ * adopters in `docs/plans/2026-08-25-the-recorded-surface-batch.md`, so this function and that
+ * document must not disagree in either direction.
+ *
+ * 1. NO `--` ANYWHERE. A bare terminator makes everything after it data (A6), so the rejection it
+ *    provokes on a target that honours it is about a POSITIONAL rather than about a flag. Two
+ *    different questions arriving at one field is how a capture starts publishing answers to a
+ *    question nobody asked.
+ * 2. AT LEAST ONE TOKEN. A bare `state` is an invocation, not a rejection of anything.
+ * 3. EVERY TOKEN FLAG-SHAPED, by the same `isFlag` a list member must satisfy. This used to be
+ *    `startsWith("-")`, which admits `-1` and `-abc` — a digit opens no list, and a cluster is
+ *    one parser's `-a -b -c` and another's old-style long name, so picking would be reading what
+ *    one of the target's words MEANS. It is also what makes this a rejection at THIS path: a
+ *    token that is not flag-shaped is a verb or a positional, and the set a tool names when
+ *    refusing one of those belongs somewhere else.
+ *
+ * THE VALUE SLOT IS STRIPPED BEFORE THE SHAPE TEST, and that is not a widening of clause 3: the
+ * kit's own machine-mode probes send `--format=json` attached (see `machineSelector`) and A1's
+ * value-set probes send `--flag=<sentinel>`, so testing the raw token would stop the kit reading
+ * the root rejections it reads today — the one thing this change must not do. `captureSurface`
+ * already strips the same slot to compute the echo guard, for the same reason: what the parser
+ * rejected is the flag NAME.
+ */
+export function isRejectionShape(tokens: readonly string[]): boolean {
+  if (tokens.includes("--")) return false;
+  return tokens.length > 0 && tokens.every((t) => isFlag(t.split("=")[0] as string));
+}
 
 /**
  * A phrase that marks what follows as the accepted set, requiring the colon.
@@ -282,7 +346,7 @@ function keyedSets(document: unknown): Array<{ key: string; values: string[] }> 
  * or sentence that echoes the caller's own input back, and it needs no inference about the target
  * at all.
  */
-function readStream(
+export function readStream(
   text: string,
   rejected: string[],
 ): Omit<SurfaceEvidence, "observationId" | "args" | "stream"> | null {
@@ -347,11 +411,10 @@ function isReadableRejection(o: Observation): boolean {
   if (o.timedOut || o.crashed || o.spawnFailed || o.truncated) return false;
   const { args, inertness } = o.invocation;
   if (inertness !== "sentinel" && inertness !== "no-verb") return false;
-  // A bare `--` makes everything after it DATA (A6), so the rejection it provokes on a target that
-  // honours the terminator is about a positional rather than about a flag. Two different questions
-  // arriving at one field is how a capture starts publishing answers to a question nobody asked.
-  if (args.includes("--")) return false;
-  return args.length > 0 && args.every((a) => a.startsWith("-"));
+  // The shape half is `isRejectionShape`, shared with the reader of caller-recorded records so
+  // one rule governs both provenances. The inertness class above has no counterpart there: it is
+  // a kit-side judgement about a probe the KIT sent, and a caller does not assert it.
+  return isRejectionShape(args);
 }
 
 /**
@@ -396,33 +459,41 @@ export function captureSurface(observations: readonly Observation[]): Surface {
 }
 
 /**
- * One line saying what the capture found, in words that cannot be read as a verdict.
+ * One line saying what the capture found AT ONE PATH, in words that cannot be read as a verdict.
  *
  * Shared by `acc check` and `acc compare` so the two cannot describe the same field differently —
  * the `not-enumerated` sentence in particular has to say the same thing in both places, because it
  * is the sentence this whole capture exists to get right.
  *
- * EVERY SENTENCE CARRIES ITS SCOPE, because every one of them is built from root-only probes. A
- * verb-first CLI that enumerates richly one level down is indistinguishable HERE from one that
- * never enumerates at all, so "did not enumerate" without "at the root" is a claim about the tool
- * made from evidence that only covers its root — the same overreach as reading an empty array as a
- * tool with no flags, one step further out. The `enumerated` sentence needs it for the mirror
- * reason: a reader must not take a root list for the tool's whole surface.
+ * EVERY SENTENCE CARRIES ITS SCOPE, and `path` is where the scope now comes from. A verb-first CLI
+ * that enumerates richly one level down is indistinguishable HERE from one that never enumerates
+ * at all, so "did not enumerate" without naming where is a claim about the tool made from evidence
+ * that covers one path — the same overreach as reading an empty array as a tool with no flags, one
+ * step further out. The `enumerated` sentence needs it for the mirror reason: a reader must not
+ * take one path's list for the tool's whole surface.
+ *
+ * WHAT IT NO LONGER SAYS IS "the only path probed", and dropping that is the point rather than a
+ * loss. `diffDeclaration` reuses this sentence verbatim for every non-enumerated path, so the
+ * literal made the first caller who records a `["state"]` surface read "did not enumerate at the
+ * root — the only path probed" ABOUT `state`: a false scope claim, produced by the very wording
+ * `SG-2` added to stop one. The claim about coverage — which paths were reached, and by whom —
+ * belongs where the set of paths is actually held, which is the census header and not here.
  */
-export function surfaceSummary(s: Surface | undefined): string {
+export function surfaceSummary(s: Surface | undefined, path: readonly string[] = []): string {
   if (!s) return "not recorded — this report predates the flag-surface capture";
+  const where = path.length === 0 ? "the root" : path.join(" ");
   if (s.status === "enumerated") {
     const flags = s.flags ?? [];
     const n = flags.length;
     const disagreed = s.consistent === false;
-    return `enumerated ${n} flag${n === 1 ? "" : "s"} at the root — the only path probed: ${flags.join(" ")}${
+    return `enumerated ${n} flag${n === 1 ? "" : "s"} at ${where}: ${flags.join(" ")}${
       disagreed ? "  (rejections disagreed; see the per-probe lists)" : ""
     }`;
   }
   if (s.status === "not-enumerated") {
-    return `did not enumerate at the root — the only path probed; ${s.probesRead} rejection${
+    return `did not enumerate at ${where}; ${s.probesRead} rejection${
       s.probesRead === 1 ? "" : "s"
     } read, none named a set (NOT a tool with no flags)`;
   }
-  return "nothing readable was recorded, so nothing was read (not a statement about the tool)";
+  return `nothing readable was recorded at ${where}, so nothing was read (not a statement about the tool)`;
 }

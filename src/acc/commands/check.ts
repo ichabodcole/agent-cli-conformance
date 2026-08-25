@@ -20,6 +20,14 @@ import {
   loadDeclaration,
 } from "../kit/declaration.ts";
 import { record, TargetNotExecutableError } from "../kit/record.ts";
+import {
+  identityLines,
+  loadRecordedBatch,
+  provenanceLabel,
+  type RecordedReading,
+  RecordedSurfacesError,
+  readRecordedBatch,
+} from "../kit/recorded.ts";
 import { CHECKERS, UNCHECKED_RULES } from "../kit/registry.ts";
 import { buildReport, primaryProblem, type ReportedFinding, runCheckers } from "../kit/report.ts";
 import { surfaceSummary } from "../kit/surface.ts";
@@ -31,6 +39,15 @@ export interface CheckOptions {
   /** Path to a declaration file. A path the caller named that cannot be read is an ERROR — see
    *  the load below, which follows `--config-dir`'s rule for the same reason. */
   declaration?: string;
+  /**
+   * Path to a batch of caller-recorded surfaces. Read, never executed — the whole feature is a
+   * read over bytes the caller already has, which is why it needs no effects claim and no probe
+   * warrant. A named path that cannot be read is an ERROR, for the same reason `declaration`'s is.
+   *
+   * At most one. The refusal of a second lives in `cli.ts`, over raw argv, because commander is
+   * last-wins and the option's parser never sees the first occurrence again.
+   */
+  recordedSurfaces?: string;
 }
 
 /** Enough for any real interpreter line — the kernel caps it at 127 bytes on Linux and the BSDs
@@ -192,6 +209,29 @@ export async function checkCommand(
     }
   }
 
+  // THE BATCH IS READ BEFORE THE FIRST SPAWN TOO, and for the declaration's reason: a malformed
+  // document is something the caller can fix by editing a file they own, and reporting it after
+  // eighteen invocations of a stranger's binary spends the risky part of the run to deliver a
+  // message that was available before it started. Nothing here executes anything — this is a read
+  // over bytes the caller already has.
+  let recorded: { source: string; reading: RecordedReading } | null = null;
+  if (opts.recordedSurfaces !== undefined) {
+    try {
+      recorded = {
+        source: resolve(opts.recordedSurfaces),
+        reading: readRecordedBatch(loadRecordedBatch(opts.recordedSurfaces)),
+      };
+    } catch (err) {
+      if (err instanceof RecordedSurfacesError) {
+        throw usageError(`${err.path} ${err.message}`, {
+          hint: "Fix that file, or drop --recorded-surfaces — a run without one reports the root the kit probes and says every other path was not reached.",
+          details: { path: err.path },
+        });
+      }
+      throw err;
+    }
+  }
+
   // A target that cannot execute gets an ERROR, never a report. Reporting it would mean
   // publishing verdicts derived from a process that never ran — see TargetNotExecutableError.
   // `not_found` is the honest kind: the caller named something that is not a runnable CLI.
@@ -237,6 +277,7 @@ export async function checkCommand(
     VERSION,
     UNCHECKED_RULES,
     declaration,
+    recorded,
   );
 
   // The rule that actually explains the report's headline — see primaryProblem, which owns the
@@ -492,6 +533,45 @@ export async function checkCommand(
           return `    from ${e.args.join(" ")}${runs > 1 ? ` (${runs} identical rejections)` : ""} · ${e.shape} ${JSON.stringify(e.matched)} on ${e.stream} · ${e.flags.join(" ")}`;
         }),
         "",
+        // SURFACES THE CALLER RECORDED, printed only when they supplied a batch. It sits between
+        // the kit's own root capture above and the declared side below, because that is the order
+        // a reader needs them in: what the kit saw, what somebody else says they saw, and only
+        // then the diff over both.
+        ...(r.recordedSurfaces
+          ? [
+              "  RECORDED SURFACES — captured by the caller on their own machine, read here with the",
+              "  kit's own extraction. The kit executed nothing below the root.",
+              "  Evidence, not a rule: nothing in this report passes or fails on it.",
+              `    ${r.recordedSurfaces.records} record${r.recordedSurfaces.records === 1 ? "" : "s"} at ${r.recordedSurfaces.readings.length} path${r.recordedSurfaces.readings.length === 1 ? "" : "s"}, from ${r.recordedSurfaces.source}`,
+              `    recorded by ${r.recordedSurfaces.recordedBy.join(", ")}`,
+              // WHAT WAS READ AT EACH PATH, and what was not — printed here rather than only in
+              // the declaration block, because a batch can arrive without a declaration and a
+              // report that showed it as a count would swallow the caller's evidence entirely.
+              // The summary names its own path, so nothing prefixes it — a line reading
+              // "state: … at state" teaches a reader that one of the two is decoration.
+              ...r.recordedSurfaces.readings.map((p) => `      ${p.summary}`),
+              // BESIDE THE AFFECTED PATHS FIRST, and this total is a summary of that rather than
+              // a substitute for it — an absent identity observation withholds nothing, but it
+              // weakens the tie between the recording and the binary the kit ran, and the place a
+              // reader decides what to make of that is the census line.
+              ...(() => {
+                // Counted over the lines that actually rest on the batch: the census lines when a
+                // declaration was supplied, and the per-path readings above when none was.
+                const resting =
+                  r.declaration === undefined
+                    ? (r.recordedSurfaces?.readings.length ?? 0)
+                    : r.declaration.paths.filter(
+                        (p) => p.surfaceProvenance === "recorded-by-caller",
+                      ).length;
+                return r.recordedSurfaces?.identity
+                  ? identityLines(r.recordedSurfaces.identity).map((l) => `    ${l}`)
+                  : [
+                      `    ${resting} census line${resting === 1 ? "" : "s"} rest on recorded surfaces; ${resting} of them on a batch that states no identity.`,
+                    ];
+              })(),
+              "",
+            ]
+          : []),
         // THE DECLARED SIDE, printed only when a caller supplied one — a section that appeared
         // empty on every other run would be a permanent advertisement rather than a report.
         //
@@ -509,19 +589,56 @@ export async function checkCommand(
               // Folded to one line per distinct reason: the reason is the same sentence for every
               // path the kit cannot reach below the root, and twenty-four copies of it teach a
               // reader to skip the block.
-              ...[...new Set(r.declaration.paths.filter((p) => !p.checked).map((p) => p.reason))]
-                .filter((reason): reason is string => reason !== undefined)
-                .map((reason) => {
-                  const paths = r.declaration?.paths
-                    .filter((p) => !p.checked && p.reason === reason)
-                    .map((p) => (p.path.length === 0 ? "(root)" : p.path.join(" ")));
-                  const shown = (paths ?? []).slice(0, 4).join(", ");
-                  const more =
-                    (paths?.length ?? 0) > 4 ? `, +${(paths?.length ?? 0) - 4} more` : "";
-                  return `    NOT COMPARED: ${shown}${more} — ${reason}`;
-                }),
+              // WHO OBSERVED EACH PATH rides on the line, not only in a summary. Folded on the
+              // reason AND the observer together: two paths that could not be compared for the
+              // same reason but were looked at by different parties are two different facts, and
+              // one folded line would report them as one.
+              ...(() => {
+                const identityStated = Boolean(r.recordedSurfaces?.identity);
+                const unchecked = (r.declaration?.paths ?? []).filter(
+                  (p) => !p.checked && p.reason !== undefined,
+                );
+                const keys = [
+                  ...new Set(
+                    unchecked.map((p) => JSON.stringify([p.reason, p.surfaceProvenance ?? null])),
+                  ),
+                ];
+                return keys.map((key) => {
+                  const group = unchecked.filter(
+                    (p) => JSON.stringify([p.reason, p.surfaceProvenance ?? null]) === key,
+                  );
+                  const [reason, provenance] = JSON.parse(key) as [
+                    string,
+                    "probed-by-kit" | "recorded-by-caller" | null,
+                  ];
+                  const paths = group.map((p) =>
+                    p.path.length === 0 ? "(root)" : p.path.join(" "),
+                  );
+                  const shown = paths.slice(0, 4).join(", ");
+                  const more = paths.length > 4 ? `, +${paths.length - 4} more` : "";
+                  // A path with NO surface has no observer to name, and the reason already says
+                  // so in words — inventing a label for it would be the census claiming somebody
+                  // looked.
+                  const who =
+                    provenance === null ? "" : ` [${provenanceLabel(provenance, identityStated)}]`;
+                  return `    NOT COMPARED: ${shown}${more} — ${reason}${who}`;
+                });
+              })(),
               ...r.declaration.findings.flatMap((f) => [
-                `    ${f.kind}  ${f.subject}${f.path.length ? ` at ${f.path.join(" ")}` : " at (root)"}`,
+                // THE OBSERVER OF THE PATH THE FINDING RESTS ON, except for the one finding kind
+                // that rests on no observation at all: `self-description-not-declared` reads the
+                // document and never the target, so labelling it `probed-by-kit` would attribute a
+                // reading to a probe that had nothing to do with it.
+                `    ${f.kind}  ${f.subject}${f.path.length ? ` at ${f.path.join(" ")}` : " at (root)"}${((
+                  p,
+                ) =>
+                  f.kind !== "self-description-not-declared" && p?.surfaceProvenance
+                    ? ` [${provenanceLabel(p.surfaceProvenance, Boolean(r.recordedSurfaces?.identity))}]`
+                    : "")(
+                  r.declaration?.paths.find(
+                    (p) => p.path.join(" ") === f.path.join(" ") && p.path.length === f.path.length,
+                  ),
+                )}`,
                 `      either ${f.readings[0]}`,
                 `      or     ${f.readings[1]}`,
               ]),

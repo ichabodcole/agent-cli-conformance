@@ -58,7 +58,9 @@ function enumerated(flags: string[]): Surface {
   };
 }
 
-const rootSurface = (flags: string[]): PathSurface[] => [{ path: [], surface: enumerated(flags) }];
+const rootSurface = (flags: string[]): PathSurface[] => [
+  { path: [], surface: enumerated(flags), surfaceProvenance: "probed-by-kit" },
+];
 
 describe("the format refuses what it does not fully understand", () => {
   test("an unknown major refuses the run rather than reading the fields it recognises", () => {
@@ -307,7 +309,7 @@ describe("the honesty case: a target that did not enumerate", () => {
           },
         ],
       }),
-      [{ path: [], surface: silent }],
+      [{ path: [], surface: silent, surfaceProvenance: "probed-by-kit" }],
     );
     expect(d.status).toBe("not-checked");
     expect(d.checkedCommands).toBe(0);
@@ -328,7 +330,7 @@ describe("the honesty case: a target that did not enumerate", () => {
         provenance: "modelled",
         commands: [{ path: ["info"], args: [], positionals: [] }],
       }),
-      [{ path: [], surface: silent }],
+      [{ path: [], surface: silent, surfaceProvenance: "probed-by-kit" }],
     );
     const line = declarationSummary(d);
     expect(line).toMatch(/nothing you can write in this file changes this/);
@@ -341,7 +343,7 @@ describe("the honesty case: a target that did not enumerate", () => {
         provenance: "emitted",
         commands: [{ path: ["info"], args: [], positionals: [] }],
       }),
-      [{ path: [], surface: silent }],
+      [{ path: [], surface: silent, surfaceProvenance: "probed-by-kit" }],
     );
     const line = declarationSummary(d);
     expect(line).toMatch(/have the target's rejections enumerate the flags it accepts/);
@@ -351,7 +353,11 @@ describe("the honesty case: a target that did not enumerate", () => {
 
   test("no evidence at all is distinguished from a tool that said nothing", () => {
     const d = diffDeclaration(declaration(), [
-      { path: [], surface: { status: "no-evidence", evidence: [], probesRead: 0 } },
+      {
+        path: [],
+        surface: { status: "no-evidence", evidence: [], probesRead: 0 },
+        surfaceProvenance: "probed-by-kit",
+      },
     ]);
     expect(d.status).toBe("not-checked");
     expect(d.reason).toMatch(/nothing readable was recorded/);
@@ -363,7 +369,7 @@ describe("the honesty case: a target that did not enumerate", () => {
         selfDescription: { args: ["help", "--json"] },
         commands: [{ path: ["info"], args: [], positionals: [] }],
       }),
-      [{ path: [], surface: silent }],
+      [{ path: [], surface: silent, surfaceProvenance: "probed-by-kit" }],
     );
     expect(d.status).toBe("not-checked");
     expect(d.findings.map((f) => f.kind)).toEqual(["self-description-not-declared"]);
@@ -479,9 +485,12 @@ describe("anthill v2.3.0 against its own manifest", () => {
       [["field-notes"], "--team", ["--format"]],
       [["migrate"], "--team", ["--dry-run", "--format", "--keep-paths"]],
     ];
+    // Below-root evidence, so `recorded-by-caller`: these sets were measured by hand against the
+    // running binary, exactly as a caller's batch is, and the kit cannot probe there.
     const evidence: PathSurface[] = census.map(([path, , accepted]) => ({
       path,
       surface: enumerated(accepted),
+      surfaceProvenance: "recorded-by-caller",
     }));
     const d = diffDeclaration(manifest(), evidence);
     const reported = d.findings
@@ -526,9 +535,12 @@ describe("anthill v2.3.0 against its own manifest", () => {
       [["commit"], "--paths", ["--as", "--file", "--format", "--message", "--stdin", "--team"]],
       [["feedback"], "--message", ["--category", "--format", "--skill", "--submit"]],
     ];
+    // Below-root evidence, so `recorded-by-caller`: these sets were measured by hand against the
+    // running binary, exactly as a caller's batch is, and the kit cannot probe there.
     const evidence: PathSurface[] = census.map(([path, , accepted]) => ({
       path,
       surface: enumerated(accepted),
+      surfaceProvenance: "recorded-by-caller",
     }));
     const d = diffDeclaration(manifest(), evidence);
     for (const [path, asFlag] of census) {
@@ -568,7 +580,13 @@ describe("anthill v2.3.0 against its own manifest", () => {
 /** Evidence for one non-root command path. Named apart from `rootSurface` so a reader cannot
  *  mistake a per-command enumeration for something the kit produced. */
 function rootSurfaceFor(path: string[], flags: string[]): PathSurface[] {
-  return [{ path, surface: enumerated(flags) }];
+  return [
+    {
+      path,
+      surface: enumerated(flags),
+      surfaceProvenance: path.length === 0 ? "probed-by-kit" : "recorded-by-caller",
+    },
+  ];
 }
 
 describe("the fixture declarations parse", () => {
