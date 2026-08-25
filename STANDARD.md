@@ -33,6 +33,11 @@ blurring it here would be dishonest:
 | **[C?]** | Checkable in principle, no checker exists — the design is known or the blocker is named         |
 | **[—]**  | Nothing outside the process can establish it. Believe the author, or arrange to see it directly |
 
+All three marks are about whether a claim can be **checked**. Whether a declaration can **express**
+the claim at all is a separate axis, and a `[C?]` on a field no format can carry is not a promise
+that writing one is enough — [Part 2's `In v0` column](#the-fields-and-why-each-exists) carries
+that second axis for the shipped reader.
+
 **No new rule ids are minted here.** The catalogue mints an id when a checker design exists, and
 this page is upstream of that. Ids that do appear — `A1`, `B5`, `C2` and the rest — are existing
 rules in [the catalogue](docs/wiki/index.md), cited so a recommendation can point at what already
@@ -136,7 +141,9 @@ also a warning: if your help is a document, make it the same document, or make i
 **[C]** Of a much narrower claim than this recommendation makes: `D3` establishes that help _names_
 a machine path, and its own coverage gap records that a pass never establishes the flag is accepted.
 **[C?]** Running the declared invocation and requiring a parseable document back is cheap and
-obvious, and nothing implements it.
+obvious, and nothing implements it. The kit reads the pointer without following it: a v0
+declaration names the invocation that emits it, and `acc` reports when the verb in that invocation
+is not among the commands the document declares — a zero-probe check, never an execution.
 
 **Counter-example, and it is the population rather than the exception.** `jq`, `ffmpeg`, `ssh`,
 `find`, `dd`, `psql` and `rg` emit no machine-readable self-description and never will. This page is
@@ -283,7 +290,11 @@ claim nobody falsifies is exactly the kind of document the survey found drifting
 That is the next thing to bet on and the next thing to verify, and this page does not pretend it is
 solved.
 
-**[C?]** The declared-versus-accepted census, on any target whose parse errors name the valid set.
+**[C?]** The declared-versus-accepted census, on any target whose parse errors name the valid set —
+and the kit now ships it, at the root, behind `acc check --declaration`. It is not `[C]`, because it
+is not a rule: it mints no id, feeds no verdict, and reports a disagreement as two readings rather
+than as a failure, since nothing here can tell which side is wrong. Below the root it stays
+unbuilt.
 **[—]** Anything behind a command that changes state, until there is a sandbox to run it in.
 
 ---
@@ -302,26 +313,38 @@ catalogue says what it owes.
 
 ## The fields, and why each exists
 
-| Field                                 | What it retires or unlocks                                                             | Who can answer it         |
-| ------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------- |
-| Format version                        | Lets a reader refuse a document it half-understands rather than half-applying it       | anyone                    |
-| Tool name and version                 | Makes a stored report replayable; the thing an outside copy cannot keep in sync        | only the tool, accurately |
-| Help invocations                      | Retires guessing that `-h` means help — and it decides whether a probe is safe         | anyone with `--help`      |
-| Version invocations                   | Same guess, same hazard                                                                | anyone with `--help`      |
-| The command tree, fully nested        | Unlocks every check below the root — the single largest block of coverage debt         | anyone; free if generated |
-| Root positional shape                 | Decides whether an unrecognised first token is rejected, searched for, or **written**  | only the implementation   |
-| Per-argument arity                    | Distinguishes a boolean flag from one whose value you just orphaned                    | anyone; free if generated |
-| Positionals, held apart from flags    | A consumer iterating the flag list must not build `--handle foo` for a positional      | anyone; free if generated |
-| Closed value sets, marked as enforced | Unlocks sending an out-of-set value and requiring rejection                            | anyone; free if generated |
-| Cross-argument constraints            | Mutual exclusion, requires, required-unless — an agent has no other way to know        | only the implementation   |
-| Refused and hidden arguments          | A recognised-but-rejected flag is not a valid flag and must not be published as one    | only the implementation   |
-| Machine mode: how it is reached       | Retires reading `--json` / `--format` / `--output` out of help prose                   | anyone, by running it     |
-| Machine mode: what it covers          | Whether the mode governs errors too, or only the success payload                       | only the implementation   |
-| Output kind and cardinality           | Says whether stdout is one document, a stream of records, or opaque bytes              | only the implementation   |
-| Error-envelope field names            | Unlocks checking that an error names the offending token, in the field it names        | only the implementation   |
-| Exit-code meanings                    | `1` is not always failure and `2` is not always usage                                  | only the implementation   |
-| Exit-code ownership                   | Whether the code you read was produced by a program this tool did not write            | only the implementation   |
-| Effects, per command                  | The only thing that would let a checker run a real verb — **and see the caveat below** | nobody, confidently       |
+**Read the last column before you write an emitter.** It answers a different question from the
+`[C] / [C?] / [—]` marks used everywhere else on this page, and conflating the two costs an
+implementer a design pass. Those marks say whether the kit can **check** a claim. The `In v0`
+column says whether the one reader that exists can **read** it at all. `v0` is the format in
+[`src/acc/kit/declaration.ts`](src/acc/kit/declaration.ts), which `acc check --declaration`
+consumes — and it **refuses any key it does not define, anywhere in the document**, deliberately,
+because a field it cannot name may be the one bounding a probe's safety. So a `no` in that column
+is not "supported weakly": a document carrying that field is rejected whole, and the run gets no
+comparison at all. What to do about that is [below the table](#emit-v0-hold-the-rest).
+
+| Field                                   | What it retires or unlocks                                                                | Who can answer it          | In v0                                                                                         |
+| --------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------- |
+| Format version                          | Lets a reader refuse a document it half-understands rather than half-applying it          | anyone                     | yes — `formatVersion`, required                                                               |
+| Who is speaking                         | Whether a disagreement is the tool contradicting itself or a stranger's model being wrong | whoever produced the file  | yes — `provenance`, required                                                                  |
+| The invocation that emits this document | The pointer a caller must supply anyway, and the verb a declaration must list in itself   | anyone; caller supplies it | yes — `selfDescription`, required (`null` is the positive claim that there is none)           |
+| Tool name and version                   | Makes a stored report replayable; the thing an outside copy cannot keep in sync           | only the tool, accurately  | no                                                                                            |
+| Help invocations                        | Retires guessing that `-h` means help — and it decides whether a probe is safe            | anyone with `--help`       | no                                                                                            |
+| Version invocations                     | Same guess, same hazard                                                                   | anyone with `--help`       | no                                                                                            |
+| The command tree, fully nested          | Unlocks every check below the root — the single largest block of coverage debt            | anyone; free if generated  | yes — `commands[].path`, a flat list of full paths; `[]` is the root                          |
+| Root positional shape                   | Decides whether an unrecognised first token is rejected, searched for, or **written**     | only the implementation    | partly — name, `required`, `variadic`; nothing says whether an unrecognised token is written  |
+| Per-argument arity                      | Distinguishes a boolean flag from one whose value you just orphaned                       | anyone; free if generated  | yes — `type: "string" \| "boolean"`                                                           |
+| Positionals, held apart from flags      | A consumer iterating the flag list must not build `--handle foo` for a positional         | anyone; free if generated  | yes — its own container, `positionals`                                                        |
+| Closed value sets, marked as enforced   | Unlocks sending an out-of-set value and requiring rejection                               | anyone; free if generated  | yes — `values` binds, `valueHint` is a label                                                  |
+| Cross-argument constraints              | Mutual exclusion, requires, required-unless — an agent has no other way to know           | only the implementation    | no                                                                                            |
+| Refused and hidden arguments            | A recognised-but-rejected flag is not a valid flag and must not be published as one       | only the implementation    | partly — `status: "valid" \| "refused"`, required on every argument; nothing expresses hidden |
+| Machine mode: how it is reached         | Retires reading `--json` / `--format` / `--output` out of help prose                      | anyone, by running it      | no                                                                                            |
+| Machine mode: what it covers            | Whether the mode governs errors too, or only the success payload                          | only the implementation    | no                                                                                            |
+| Output kind and cardinality             | Says whether stdout is one document, a stream of records, or opaque bytes                 | only the implementation    | no                                                                                            |
+| Error-envelope field names              | Unlocks checking that an error names the offending token, in the field it names           | only the implementation    | no                                                                                            |
+| Exit-code meanings                      | `1` is not always failure and `2` is not always usage                                     | only the implementation    | no                                                                                            |
+| Exit-code ownership                     | Whether the code you read was produced by a program this tool did not write               | only the implementation    | no                                                                                            |
+| Effects, per command                    | The only thing that would let a checker run a real verb — **and see the caveat below**    | nobody, confidently        | no — **and see the roadmap cost below**                                                       |
 
 Three things about that table are worth stating outright.
 
@@ -348,6 +371,41 @@ a TTY heuristic and exits `0`. Identical declared shape, opposite behaviour, and
 distinguishes them, so **that defect cannot be automated against any target**, including that one.
 A value list that does not say whether it binds is a label, and a checker that treats a label as a
 constraint manufactures a failure.
+
+### Emit v0, hold the rest
+
+**The advice, plainly: write the v0 document, and keep the rest of this page's fields out of the
+file.** There is no third option where you emit a richer document and the reader takes what it
+recognises. `parseDeclaration` refuses an unknown key anywhere in the document, and refuses a
+`formatVersion` that is not the major it knows rather than reading the fields it does know — so a
+document carrying `exitCodes` or `effects` alongside its commands does not get a partial check, it
+gets no check. That is the reader working as designed: half-applying a document you half-understand
+is how a narrowing statement gets dropped and a widening one gets obeyed. The cost lands on the
+emitter author anyway, so it is stated here rather than discovered in a rejection.
+
+Concretely, a v0 document is `formatVersion: "0"`, `provenance`, `selfDescription` (an object or an
+explicit `null`), and `commands` — each with `path`, `args` and `positionals`, each argument
+carrying `name`, `type` and `status`. All of those keys are required; nothing else is permitted at
+any level. The file is
+[`src/acc/kit/declaration.ts`](src/acc/kit/declaration.ts), and it is the authority, not this
+table.
+
+**The rest of the fields keep their argument.** Exit-code meanings, envelope field names, machine
+mode's scope, tool version — this page argues for them on the evidence, and the evidence does not
+weaken because one reader lags it. If you have those facts, publish them: in your own emitted
+schema, in your docs, adjacent to the code that implements them, with the test that fails when a
+new command has no entry ([Part 1 §2](#2-generate-it-from-what-implements-the-behaviour)). What
+they do not yet have is a slot in `acc.declaration.json`, and an emitter written against them today
+buys a document nothing here can consume.
+
+**What that costs this project, named rather than deferred.** `effects` is the blocker this page
+already leans on twice — [the ceiling](#the-ceiling-stated-honestly) reached runtime for 4 of 25
+commands, and [Part 4](#checkable-and-not-built) marks `[—]` on two rows that need a declared
+read-only claim to move. v0 has nowhere to put that claim **even as an unverified one the kit
+records and lets gate nothing**, which is exactly what this page recommends doing with it. So the
+sentence "probing below the root waits on an effects claim" is true and is also currently
+unreachable: the format has to grow a place for it first. There is no plan here for how; stating
+the dependency is the honest thing this page can do about it today.
 
 ## The two things a declaration must never carry
 
@@ -458,10 +516,14 @@ and a policy are different speech acts with different lifetimes, and whether the
 the smaller question. If you are choosing now, choose two files: that is the choice that survives
 somebody wanting to publish a declaration in their own repository.
 
-**[C?]** for this Part as a whole, and it is the reason the Part exists. None of these fields is
-checked today, because nothing reads a declaration; every one of them is checkable the moment one
-is written, and [Part 4](#checkable-and-not-built) lists the checks each unlocks. The exceptions
-are marked in place: effects, and exit-code ownership.
+**[C?]** for this Part as a whole, and it is the reason the Part exists — but the mark now needs
+its two halves separated. A reader ships: `acc check --declaration` reads a v0 document and diffs
+its declared flags against the set the target's own parser names, at the root, reporting both
+readings and never a verdict. So the fields the `In v0` column marks `yes` are read and compared
+today, on any target that enumerates. Every field it marks `no` is not merely unchecked — it is
+**unwritable**, and "checkable the moment a declaration is written" does not apply to a field no
+declaration can carry. [Part 4](#checkable-and-not-built) lists what each unlocks once the format
+can hold it. The exceptions are marked in place: effects, and exit-code ownership.
 
 ---
 
@@ -857,8 +919,12 @@ Most of these need a declaration and nothing else. That is the point, and the tw
 safely, which is a different kind of thing to be missing and belongs under a different mark.
 
 - **Declared against accepted, per command** — the valid-flag census. Available today against any
-  target whose parse errors name the valid set, and it needs no kit.
-- **The declared self-description invocation actually runs and parses.**
+  target whose parse errors name the valid set, and it needs no kit. **Built at the root**, in
+  `acc check --declaration`; _per command_ is the half still missing, and it is missing because the
+  kit enumerates the root only — going below it needs the effects claim, not a better differ.
+- **The declared self-description invocation actually runs and parses.** The document half is
+  built — the kit reports a declaration that omits the verb it says emits it — and the running half
+  is not.
 - **[—] Every declared command answers `--help` rather than "unknown command."** This row read
   **[C?]** until this revision and the correction comes from this project's own corpus: checking it
   means _running a subcommand_, and a subcommand's help path is not inert. In the archaeology
