@@ -460,9 +460,11 @@ declaration, and label it as measured.
 
 ## Where the declaration lives, and who may say what
 
-Two independent design sketches were written for this, from opposite starting points — one derived
-from what the checkers need, one from what a person can honestly say. They converged on more than
-they disagreed about, and the convergences are the load-bearing part.
+[Two independent design sketches](docs/research/2026-08-24-two-declaration-format-sketches.md) were
+written for this, from opposite starting points — one derived from what the checkers need, one from
+what a person can honestly say. They converged on more than they disagreed about, and the
+convergences are the load-bearing part. Both are filed whole, with what has since overtaken them
+marked rather than corrected; this section is a reading of them and they are the source.
 
 **They converged on the asymmetry, and it is the most useful rule in this section.** Both reached it
 independently, from different premises:
