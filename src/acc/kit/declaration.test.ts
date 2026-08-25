@@ -320,6 +320,35 @@ describe("the honesty case: a target that did not enumerate", () => {
     expect(d.reason).toMatch(/did not enumerate/);
   });
 
+  test("a modelling caller is told that no edit to their own file makes this checkable", () => {
+    // The reasons name the KIT'S limits and the TARGET'S silence, both correctly. What a modelling
+    // caller could not infer from either is that the remedy is not theirs to apply.
+    const d = diffDeclaration(
+      declaration({
+        provenance: "modelled",
+        commands: [{ path: ["info"], args: [], positionals: [] }],
+      }),
+      [{ path: [], surface: silent }],
+    );
+    const line = declarationSummary(d);
+    expect(line).toMatch(/nothing you can write in this file changes this/);
+    expect(line).toMatch(/when the target enumerates at the root, or when the kit probes below it/);
+  });
+
+  test("an emitted declaration's author is pointed at the tool, which is theirs to change", () => {
+    const d = diffDeclaration(
+      declaration({
+        provenance: "emitted",
+        commands: [{ path: ["info"], args: [], positionals: [] }],
+      }),
+      [{ path: [], surface: silent }],
+    );
+    const line = declarationSummary(d);
+    expect(line).toMatch(/have the target's rejections enumerate the flags it accepts/);
+    // And NOT the modelling caller's sentence, which would tell a tool author to give up.
+    expect(line).not.toMatch(/nothing you can write in this file/);
+  });
+
   test("no evidence at all is distinguished from a tool that said nothing", () => {
     const d = diffDeclaration(declaration(), [
       { path: [], surface: { status: "no-evidence", evidence: [], probesRead: 0 } },
@@ -635,6 +664,65 @@ describe("acc check --declaration, against a program", () => {
     expect(run.stdout).toContain("      or     ");
     // Not a rule: the verdict line must be untouched by anything in that block.
     expect(run.stdout).toContain("Evidence, not a rule");
+  }, 120_000);
+
+  // -------------------------------------------------------------------------------------------
+  // THE HEADLINE. The census is evidence and never a verdict — and a report whose headline says
+  // nothing at all about a disagreement is how four deliberately broken variants of one tool all
+  // printed `CONFORMANT (L0)` on the line most readers stop at. The clause below is a POINTER
+  // into the block; the guard that matters is that it moves no number and no exit code.
+  // -------------------------------------------------------------------------------------------
+  const enumerating = fixture("enumerates-flags-in-prose.ts");
+  const runCheck = (args: string[]) =>
+    spawnSync("bun", [acc, "check", enumerating, "--format", "text", ...args], {
+      encoding: "utf8",
+    });
+  const disagreeingArgs = [
+    { name: "--format", type: "string", status: "valid" },
+    { name: "--team", type: "string", status: "valid" },
+    { name: "--verbose", type: "boolean", status: "refused" },
+  ];
+
+  test("a modelled disagreement is named on the headline as a disagreement", () => {
+    const path = write("headline-modelled.json", rootDeclaration(disagreeingArgs));
+    const headline = runCheck(["--declaration", path]).stdout.split("\n")[0] ?? "";
+    expect(headline).toMatch(/but see 2 declaration disagreements \(modelled\)/);
+  }, 120_000);
+
+  test("an emitted disagreement is named as a self-contradiction — one process, both statements", () => {
+    const path = write("headline-emitted.json", {
+      ...rootDeclaration(disagreeingArgs),
+      provenance: "emitted",
+    });
+    const headline = runCheck(["--declaration", path]).stdout.split("\n")[0] ?? "";
+    expect(headline).toMatch(/but see 2 declaration self-contradictions \(emitted\)/);
+  }, 120_000);
+
+  test("THE GUARD: the counts, the verdict and the EXIT CODE are what they were without one", () => {
+    const path = write("headline-guard.json", rootDeclaration(disagreeingArgs));
+    const without = runCheck([]);
+    const withDeclaration = runCheck(["--declaration", path]);
+    // Same exit code, and it is the one signal a harness that never parses stdout still sees.
+    expect(withDeclaration.status).toBe(without.status);
+    // Same headline, up to the clause that was added — verdict, level and every count identical.
+    const head = (out: string) => out.split("\n")[0] ?? "";
+    expect(head(withDeclaration.stdout).replace(/ · but see [^·]*?\(modelled\)/, "")).toBe(
+      head(without.stdout),
+    );
+    // And the summary line, which carries `unverified` across every tier, is untouched.
+    const summary = (out: string) => out.split("\n").find((l) => l.startsWith("  core ")) ?? "";
+    expect(summary(withDeclaration.stdout)).toBe(summary(without.stdout));
+  }, 240_000);
+
+  test("a clean declaration adds nothing to the headline", () => {
+    const path = write(
+      "headline-clean.json",
+      rootDeclaration([
+        { name: "--format", type: "string", status: "valid" },
+        { name: "--verbose", type: "boolean", status: "valid" },
+      ]),
+    );
+    expect(runCheck(["--declaration", path]).stdout.split("\n")[0] ?? "").not.toContain("but see");
   }, 120_000);
 
   test("THE HONESTY CASE: a target that never enumerated says the diff did not run", () => {

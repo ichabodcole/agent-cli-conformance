@@ -578,6 +578,25 @@ export function diffDeclaration(
 }
 
 /**
+ * WHAT THE READER DOES NEXT when the diff did not run — one sentence, chosen by provenance.
+ *
+ * Every `not-checked` reason names a limit of THE KIT or a silence of the TARGET, which is
+ * correct and is also where an adopter stopped: the reasons say what happened and nothing says
+ * what to do about it. The remedy differs by who wrote the document, and only by that. An
+ * `emitted` declaration's author owns the tool, so the enumeration is theirs to add. A modelling
+ * caller cannot patch a target they did not write, and the thing they most need to know is that
+ * no edit to their own file will help — otherwise they go looking for the mistake in it.
+ *
+ * One sentence each, deliberately: this is a report line, not a tutorial.
+ */
+const NOT_CHECKED_REMEDY: Record<Provenance, string> = {
+  emitted:
+    "Remedy: have the target's rejections enumerate the flags it accepts — this document is the tool's own, so that is a change its author can make",
+  modelled:
+    "Remedy: nothing you can write in this file changes this — it becomes checkable when the target enumerates at the root, or when the kit probes below it",
+};
+
+/**
  * One line saying what the diff did, in words that cannot be read as a verdict.
  *
  * The `not-checked` sentence is the one this whole reader exists to get right: an empty finding
@@ -594,7 +613,7 @@ export function declarationSummary(d: DeclarationDiff | undefined): string {
     const zero = d.findings.length;
     return `THE DIFF DID NOT RUN — ${scope}. ${d.reason} (this is not agreement: nothing was compared)${
       zero > 0 ? `; ${zero} disagreement${zero === 1 ? "" : "s"} found without probing` : ""
-    }`;
+    }. ${NOT_CHECKED_REMEDY[d.provenance]}`;
   }
   const n = d.findings.length;
   return `${scope}; ${n} disagreement${n === 1 ? "" : "s"} (${d.provenance} declaration)`;
