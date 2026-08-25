@@ -23,6 +23,12 @@ examined:
 > here because the material is evidence this project needs and the transcript that holds it will
 > not outlive the session. The framing around them is this report's.
 >
+> **Amended 2026-08-25.** The trial and its eight findings are unchanged and are what the headline
+> counts. Two findings that arrived afterwards are filed at the end under
+> [findings that arrived after the trial](#findings-that-arrived-after-the-trial), because the
+> `DT-` series is where findings about this target live and a second report would split the
+> namespace. They are `DT-9` and `DT-10`, and neither is the trial's.
+>
 > **Finding ids are prefixed `DT-` throughout**, and map one-to-one onto the trial's own `D1`–`D8`.
 > The prefix is not decoration: unprefixed `C2`, `D2`, `A1`, `A7` and the like are **rule ids from
 > the catalogue**, a different namespace, and this report contains both — `DT-2` is the finding
@@ -360,6 +366,10 @@ No live instance exists for either; recorded so they are not rediscovered.
 **One stale. One wrong. Six incomplete.** The prior art's entire failure mode — staleness —
 accounts for the least consequential finding here.
 
+Two further findings about this target, `DT-9` and `DT-10`, were filed after the trial and are not
+counted in that table or that sentence — see
+[findings that arrived after the trial](#findings-that-arrived-after-the-trial).
+
 ## What the kit found, and what it structurally could not
 
 `acc check` returned exit 9, `conformant: false`, 2 core failures — both the same behaviour:
@@ -459,3 +469,113 @@ Three things carry forward:
    matters to behaviour, and is dropped in transit. Checking against behaviour is what makes a
    dropped field visible. From inside the tool it is an absence, and **absences do not fail
    tests.**
+
+---
+
+## Findings that arrived after the trial
+
+**These are not the trial's findings and do not move its counts.** One stale, one wrong, six
+incomplete still describes the eight above. The two below were found on 2026-08-25, by different
+people and by different means, and are filed here because the `DT-` series is the namespace for
+findings about this target.
+
+Both were **measured in this tree** on 2026-08-25, from a scratch directory outside both
+repositories, using only help, version and parse-error paths — the classes
+[the method section](#method) established as inert.
+Nothing was written and no command body ran. Both were reproduced in separate processes.
+
+### DT-9 — the manifest is a bare document while every other output is enveloped
+
+**Reported by the adopter behind anthill**, who had run `acc check` against it twice and read
+[`STANDARD.md`](../../STANDARD.md) for the first time. It is their finding; the confirmation and the
+framing below are this report's.
+
+Every anthill command answers with an envelope. Success is `{ok: true, data, meta}` and failure is
+`{ok: false, error, meta}`:
+
+```
+$ anthill --version
+{"ok":true,"data":{"version":"2.3.0","source":"…/cli.ts"},"meta":{"command":"version"}}
+
+$ anthill info show --nope
+{"ok":false,"error":"Unknown option '--nope'. Valid flags: --format","meta":{"command":"info show"}}
+
+$ anthill            # bare invocation, piped
+{"ok":true,"data":{"name":"anthill","version":"2.3.0","description":…},"meta":…}
+```
+
+`help --json` does not:
+
+```
+$ anthill help --json
+{
+  "name": "anthill",
+  "version": "2.3.0",
+  "description": "Project orchestration CLI",
+  "commands": [ … ]
+}
+```
+
+Same manifest, same process, two shapes. The bare invocation wraps it; the documented machine
+spelling does not — and `help --json` is the invocation anthill's own human help screen tells the
+reader to run for a machine-readable manifest.
+
+**Why it is worth an id rather than a shrug.** This is
+[`STANDARD.md`'s own "machine mode is a mode, not a flag on one command"](../../STANDARD.md#machine-mode)
+failing on the one command where it costs most. A consumer that has learned the envelope reads `ok`
+before anything else; against the declaration it reads `undefined`, and the branch it takes next is
+whatever it does for a malformed response. The one machine output whose entire job is to be
+machine-readable is the only one a caller has to special-case, and the caller discovers that at the
+first invocation it ever makes.
+
+It is also not visible from either document alone — the same shape as [DT-2](#dt-2--eight-refused-flags-published-as-valid).
+The manifest is well-formed. The envelope is well-formed. The defect is that they are different
+answers to the same question from the same binary, and only running both shows it.
+
+**Class: wrong.** Not incomplete: nothing is missing from the manifest here. Two of the tool's own
+machine outputs disagree about their own contract, which `STANDARD.md` files under
+[the one cross-artifact check that needs no external model](../../STANDARD.md#checkable-and-not-built).
+
+**Why the kit did not find it, and why it is not a kit defect.** `acc` probes the root, and at the
+root anthill's answer _is_ enveloped. The disagreement is one level down, on `help --json`, which
+the kit does not reach — the same structural reason it found none of the eight above.
+
+### DT-10 — two builds of the same declared version disagree about whether the root enumerates
+
+Found while confirming DT-9, and it is a finding about **this project's own numbers** rather than
+about anthill's manifest.
+
+[`STANDARD.md`](../../STANDARD.md#a-caller-may-declare--and-at-the-root-that-is-all-the-census-can-act-on)
+and [`declaration.test.ts`](../../src/acc/kit/declaration.test.ts) both rest on anthill's root
+naming a flag when it rejects one — `Unknown option '--nope'. Valid flags: --format` — which is what
+makes `1 of 25` paths comparable rather than none. Measured on 2026-08-25, that holds on one build
+and not the other, from the same working directory:
+
+```
+$ bun …/dreamwood/anthill/plugin/scripts/anthill/cli.ts --nope
+{"ok":false,"error":"Unknown option '--nope'. Valid flags: --format","meta":{"command":"anthill"}}
+
+$ anthill --nope                      # the PATH launcher, ~/.bun/bin/anthill
+{"ok":false,"error":"No command specified.","meta":{"command":"anthill"}}
+```
+
+Both self-report `version: "2.3.0"`. The second resolves to the published plugin build; the first is
+the repo checkout, whose git HEAD has moved past the release the literal names. The root's answer to
+an unknown flag is therefore **not** a property of anthill `2.3.0`; it is a property of which build
+you invoked, and only one of the two enumerates.
+
+**What it costs.** The trial compared these two targets once and found their manifests
+byte-identical, which was true and which is not the same question — it compared what they _declare_,
+never what they _reject_. So `1 of 25` is sound as measured and is a figure about the repo checkout.
+On the published launcher the root names no flag, the census has nothing to compare, and a modelled
+declaration for it buys what the verb-first case buys: a report about what could not be compared.
+
+**Class: wrong** — about a version claim, not about the manifest. A binary whose behaviour differs
+from the release it names is the staleness class the survey knows about, arriving on the axis
+nobody diffs: not the declaration against the code, but two builds against each other.
+
+**Disposition.** `STANDARD.md`'s `1 of 25` sentence now carries the build it was measured on and
+points here. The in-tree expectation in `declaration.test.ts` is **not** changed: its fixture is the
+recorded surface `["--format"]`, which is what the repo checkout answers, and re-baselining it on
+this finding would delete the record rather than correct it. What is owed is that any future
+re-measurement names its build.
