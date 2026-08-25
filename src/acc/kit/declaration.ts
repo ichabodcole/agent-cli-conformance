@@ -46,8 +46,18 @@ export const DECLARATION_FILE = "acc.declaration.json";
 export const DECLARATION_FORMAT_MAJOR = "0";
 
 /**
- * WHO SAID IT. The field no prior sketch names, and the one that decides what a disagreement
- * MEANS.
+ * WHO SAID IT — the field that decides what a disagreement MEANS.
+ *
+ * NOT A NEW IDEA. The author-first sketch in
+ * `docs/research/2026-08-24-two-declaration-format-sketches.md` gives its §0 to provenance,
+ * proposes a three-point scale — derived, emitted, observed — and settles the thing that matters:
+ * the stamp records the PROVENANCE OF THE BYTES, never the quality of the authorship, with
+ * `ConfigSource.origin` as precedent. What ships departs from it twice. **Two values, not three**,
+ * because that sketch's own argument is that the kit cannot tell derived from emitted from
+ * outside, and a distinction nothing can establish is one nobody can be held to. **A field of the
+ * document, required, with no default**, because both sketches let the CONTAINER carry provenance
+ * — the tool's mouth versus the caller's file — and this reader takes both from a path on disk.
+ * The container no longer says it, so the document has to.
  *
  * `STANDARD.md` Part 2 establishes the asymmetry both design sketches reached independently: a
  * statement that NARROWS what the kit does may be believed on anyone's word; one that WIDENS it
