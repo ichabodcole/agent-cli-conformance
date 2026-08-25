@@ -1,4 +1,5 @@
 import type { AccConfig, ConfigSource } from "./config.ts";
+import { type Declaration, type DeclarationDiff, diffDeclaration } from "./declaration.ts";
 import { captureSurface, type Surface } from "./surface.ts";
 import type {
   Checker,
@@ -306,6 +307,20 @@ export interface Report {
    * deliberately — see `SurfaceStatus`.
    */
   surface: Surface;
+  /**
+   * WHERE THE TARGET'S DECLARATION AND THE TARGET DISAGREE — present only when the caller
+   * supplied one, absent otherwise.
+   *
+   * The other half of `surface`: that field is what the tool said it accepts, this is what a
+   * document said it accepts, and the difference is the check `STANDARD.md` Part 1 says to build
+   * before anything else on the page. Like `surface` it is EVIDENCE — no rule reads it, and it
+   * touches neither `conformant` nor `fullyVerified`, because the kit cannot tell which side of a
+   * disagreement is wrong. See `declaration.ts`.
+   *
+   * Read `status` before `findings`. An empty finding list on a target that never enumerated
+   * means the diff did not happen, not that everything agreed.
+   */
+  declaration?: DeclarationDiff;
   knownFailures: Array<{ ruleId: string; reason: string }>;
   /** Excused rules that now pass. The ratchet: remove these from `knownFailures`. */
   staleExpectations: string[];
@@ -459,6 +474,12 @@ export function buildReport(
    * have to pass a list saying so.
    */
   uncheckedRules: readonly UncheckedRule[] = [],
+  /**
+   * The declaration to diff against, when the caller named one. Optional for the same reason
+   * `uncheckedRules` is: a run without one is the normal case and produces a full report, with
+   * `Report.declaration` absent rather than an empty diff claiming a comparison happened.
+   */
+  declaration?: Declaration | null,
 ): Report {
   const byId = new Map<string, Checker | UncheckedRule>(checkers.map((c) => [c.ruleId, c]));
   // A REAL CHECKER WINS over a declaration for the same id. The declaration is the kit's copy of
@@ -616,6 +637,11 @@ export function buildReport(
           ],
     }));
 
+  // Captured once and read twice — the report publishes it, and the declaration diff compares
+  // against it. Two calls would be two captures of the same observations, and a reader comparing
+  // the two blocks would have no guarantee they came from one read.
+  const surface = captureSurface(h.observations);
+
   return {
     target: h.target.path,
     kitVersion,
@@ -648,7 +674,11 @@ export function buildReport(
     notApplicable: notApplicable.map((f) => f.ruleId),
     // Captured from the history, because the projection below is about to discard the streams it
     // is read from. Nothing about it feeds `conformant`, `fullyVerified` or any count.
-    surface: captureSurface(h.observations),
+    surface,
+    // ONE evidence entry, and it is the root — `captureSurface` reads root-level rejections only.
+    // Every other declared path comes back `checked: false` naming that as the reason, which is
+    // the honest shape: a diff over 1 of 25 paths must not be reported as a diff over 25.
+    ...(declaration ? { declaration: diffDeclaration(declaration, [{ path: [], surface }]) } : {}),
     knownFailures: Object.entries(config.knownFailures).map(([ruleId, reason]) => ({
       ruleId,
       reason,

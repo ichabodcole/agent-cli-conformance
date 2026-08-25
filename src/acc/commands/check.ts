@@ -13,6 +13,12 @@ import { emit, type OutputMode, useColor } from "../envelope.ts";
 import { notFoundError, usageError } from "../errors.ts";
 import { Outcome } from "../exit-codes.ts";
 import { type AccConfig, CONFIG_FILE, ConfigError, loadConfig } from "../kit/config.ts";
+import {
+  type Declaration,
+  DeclarationError,
+  declarationSummary,
+  loadDeclaration,
+} from "../kit/declaration.ts";
 import { record, TargetNotExecutableError } from "../kit/record.ts";
 import { CHECKERS, UNCHECKED_RULES } from "../kit/registry.ts";
 import { buildReport, primaryProblem, type ReportedFinding, runCheckers } from "../kit/report.ts";
@@ -22,6 +28,9 @@ import { VERSION } from "../version.ts";
 
 export interface CheckOptions {
   configDir?: string;
+  /** Path to a declaration file. A path the caller named that cannot be read is an ERROR — see
+   *  the load below, which follows `--config-dir`'s rule for the same reason. */
+  declaration?: string;
 }
 
 /** Enough for any real interpreter line — the kernel caps it at 127 bytes on Linux and the BSDs
@@ -160,6 +169,29 @@ export async function checkCommand(
     throw err;
   }
 
+  // THE DECLARATION, LIKE THE CONFIG, IS READ BEFORE THE FIRST SPAWN. A malformed document is
+  // something the caller can fix by editing a file they own, and reporting it after eighteen
+  // invocations of a stranger's binary spends the risky part of the run to deliver a message that
+  // was available before it started.
+  //
+  // A NAMED PATH THAT CANNOT BE READ IS AN ERROR, never an empty diff. Continuing would publish a
+  // report whose declaration block is absent — indistinguishable from a run where nobody asked
+  // for one — over a caller who did.
+  let declaration: Declaration | null = null;
+  if (opts.declaration !== undefined) {
+    try {
+      declaration = loadDeclaration(opts.declaration);
+    } catch (err) {
+      if (err instanceof DeclarationError) {
+        throw usageError(`${err.path} ${err.message}`, {
+          hint: "Fix that file, or drop --declaration — a run without one is a full report with no comparison in it.",
+          details: { path: err.path },
+        });
+      }
+      throw err;
+    }
+  }
+
   // A target that cannot execute gets an ERROR, never a report. Reporting it would mean
   // publishing verdicts derived from a process that never ran — see TargetNotExecutableError.
   // `not_found` is the honest kind: the caller named something that is not a runnable CLI.
@@ -196,7 +228,16 @@ export async function checkCommand(
   //
   // `UNCHECKED_RULES` goes in so the rules the catalogue declares and the kit cannot yet check
   // appear as `N/A` with their reason, rather than being absent from the report entirely.
-  const report = buildReport(history, findings, CHECKERS, config, "L0", VERSION, UNCHECKED_RULES);
+  const report = buildReport(
+    history,
+    findings,
+    CHECKERS,
+    config,
+    "L0",
+    VERSION,
+    UNCHECKED_RULES,
+    declaration,
+  );
 
   // The rule that actually explains the report's headline — see primaryProblem, which owns the
   // ranking (violations before gaps, and the rule that owns a failure mode before whatever
@@ -421,6 +462,42 @@ export async function checkCommand(
           return `    from ${e.args.join(" ")}${runs > 1 ? ` (${runs} identical rejections)` : ""} · ${e.shape} ${JSON.stringify(e.matched)} on ${e.stream} · ${e.flags.join(" ")}`;
         }),
         "",
+        // THE DECLARED SIDE, printed only when a caller supplied one — a section that appeared
+        // empty on every other run would be a permanent advertisement rather than a report.
+        //
+        // The HEADING says what the block is before the reader reaches a number, and the second
+        // line says what it is not. `STANDARD.md` requires both readings of a disagreement to be
+        // named, because the kit does not know which side is wrong, so each finding prints two
+        // sentences and neither is a verdict.
+        ...(r.declaration
+          ? [
+              "  DECLARED vs ACCEPTED — a declaration the caller supplied, against the target's own",
+              "  enumeration above. Evidence, not a rule: nothing in this report passes or fails on it.",
+              `    ${declarationSummary(r.declaration)}`,
+              // Every path that could NOT be compared, with the reason, because a diff over one of
+              // twenty-five paths reported as a bare finding count is a claim about twenty-five.
+              // Folded to one line per distinct reason: the reason is the same sentence for every
+              // path the kit cannot reach below the root, and twenty-four copies of it teach a
+              // reader to skip the block.
+              ...[...new Set(r.declaration.paths.filter((p) => !p.checked).map((p) => p.reason))]
+                .filter((reason): reason is string => reason !== undefined)
+                .map((reason) => {
+                  const paths = r.declaration?.paths
+                    .filter((p) => !p.checked && p.reason === reason)
+                    .map((p) => (p.path.length === 0 ? "(root)" : p.path.join(" ")));
+                  const shown = (paths ?? []).slice(0, 4).join(", ");
+                  const more =
+                    (paths?.length ?? 0) > 4 ? `, +${(paths?.length ?? 0) - 4} more` : "";
+                  return `    NOT COMPARED: ${shown}${more} — ${reason}`;
+                }),
+              ...r.declaration.findings.flatMap((f) => [
+                `    ${f.kind}  ${f.subject}${f.path.length ? ` at ${f.path.join(" ")}` : " at (root)"}`,
+                `      either ${f.readings[0]}`,
+                `      or     ${f.readings[1]}`,
+              ]),
+              "",
+            ]
+          : []),
         // WHERE THE EVIDENCE IS, said once, on every report. The ids each finding cites have
         // resolved since 0.1.0 and a blind reader never found out: they tried `acc show <id>` —
         // the obvious guess — got a hint naming rule ids and page slugs, and reconstructed the
