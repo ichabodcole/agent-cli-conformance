@@ -1,4 +1,4 @@
-import { runProbe } from "./runner.ts";
+import { DEFAULT_TIMEOUT_MS, runProbe } from "./runner.ts";
 import type { Discovery, Invocation, TargetInfo } from "./types.ts";
 
 const MACHINE_FLAGS = ["--json", "--format", "--output"];
@@ -274,13 +274,19 @@ export async function discover(
    * L1 lands, its declarations arrive here too.
    */
   declaredMachineDefault = false,
+  /**
+   * Per-probe deadline for discovery's own `--help` probe, so the whole of one `record()` run
+   * is bounded by a single deadline. Defaults to `DEFAULT_TIMEOUT_MS`; see `record()` for why a
+   * caller would ever pass anything else (it is the hang tests, and nothing else).
+   */
+  probeTimeoutMs: number = DEFAULT_TIMEOUT_MS,
 ): Promise<Discovery> {
   const inv: Invocation = {
     args: ["--help"],
     inertness: "help-path",
     purpose: "discover the target's command surface",
   };
-  const o = await runProbe(target, inv);
+  const o = await runProbe(target, inv, probeTimeoutMs);
   // Help on stderr still tells us the surface; only an empty or failed run does not.
   const text = o.stdout || o.stderr;
   if (o.timedOut || text.trim() === "") {

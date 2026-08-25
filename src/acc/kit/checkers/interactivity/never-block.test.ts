@@ -21,18 +21,36 @@ describe("E1 — never block on input without a TTY", () => {
 
   // The negative control genuinely hangs — it awaits a promise that never resolves — because
   // that is the only way to prove the runner's deadline is actually enforced, not just assumed.
-  // Two of E1's three probes (bare, bad-flag) trip the hang; only --help returns fast. Each
-  // hung probe burns the full 10s DEFAULT_TIMEOUT_MS (see runner.ts), so this test genuinely
-  // takes ~20s. That is expected, not broken — do not "fix" it by shortening the fixture's
-  // hang, which would stop testing deadline enforcement at all. The explicit 60s test timeout
-  // below is the margin for that.
+  // Three of E1's four probes (bare, bad flag, bad verb) trip the hang; only --help returns
+  // fast. THE FIXTURE STILL HANGS FOREVER, and must: do not "fix" this by shortening the
+  // fixture's hang or making it exit on its own, which would stop testing deadline enforcement
+  // at all — a target that terminates by itself proves nothing about a deadline.
+  //
+  // What IS shortened is the DEADLINE, passed here as `record()`'s last argument. Against a
+  // target that never terminates, "the runner killed it" is the same claim at one second as at
+  // ten: only the runner can end this probe, so the assertion still fails if the deadline stops
+  // being enforced. The default stays 10s for every real run (DEFAULT_TIMEOUT_MS in runner.ts)
+  // — a real binary may legitimately be slow, and 1s there would report slowness as a hang.
+  // Three hung probes at the default cost ~30s of wall clock; at 1s they cost ~3.
+  //
+  // The explicit test timeout below is the backstop, not the assertion. If the runner ever stops
+  // killing on the deadline, nothing else can end these probes, so this test goes red by hitting
+  // that timeout — which is the correct outcome and the reason it must stay well above 3x the
+  // deadline (a margin for a loaded machine) but nowhere near forever.
+  const HANG_DEADLINE_MS = 1_000;
   test("FAILS, rather than hanging forever, when the target blocks on stdin", async () => {
-    const h = await record(fixture("broken/hangs-waiting-for-input.ts"), [neverBlockChecker]);
+    const h = await record(
+      fixture("broken/hangs-waiting-for-input.ts"),
+      [neverBlockChecker],
+      false,
+      new Set<string>(),
+      HANG_DEADLINE_MS,
+    );
     const f = neverBlockChecker.check(h);
     expect(f.verdict).toBe("fail");
     expect(f.detail).toContain("never terminated");
     expect(f.ruleId).toBe("E1");
-  }, 60_000);
+  }, 20_000);
 
   test("reports unverified when probes were not recorded", () => {
     const h: History = {
