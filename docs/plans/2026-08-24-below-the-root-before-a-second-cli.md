@@ -231,9 +231,9 @@ cost is real and paid now.
 ### 2a. Recorded-surface ingestion
 
 **The consumer's item, and the one that lifts the ceiling without touching the chain.** The kit
-accepts `PathSurface[]` from the caller alongside the declaration. The caller ran their own tool at
-whatever paths they chose, on their own machine, and recorded the per-path rejections; the kit
-diffs. Nothing here executes anything, so nothing here needs an effects claim, a warrant, or the
+accepts recorded rejections from the caller alongside the declaration, reads them into
+`PathSurface[]` itself, and diffs. The caller ran their own tool at whatever paths they chose, on
+their own machine, and recorded what came back. Nothing here executes anything, so nothing here needs an effects claim, a warrant, or the
 decision page.
 
 **Why this is not a hole in the safety argument.** The safety argument is about what `acc check`
@@ -241,9 +241,48 @@ does **to a machine**. Ingestion does nothing to any machine. The trust argument
 answered above: the census renders both readings and reaches no verdict, so a fabricated surface
 buys a sentence, not a pass — and the report names who recorded it.
 
-- [ ] A way to supply recorded surfaces on a run — path plus the recorded rejection text, in the
-      shape `captureSurface` already produces, so a caller records what the kit would have read
-      rather than a parallel format.
+**The shape a caller supplies: raw, observation-shaped records. Decided on the consumer's review**
+(`standard-grapevine`, message 30), whose stake is the one that settles it — they are the caller who
+will produce the first recorded surfaces. A record is what the tool **did**: the argv sent, the exit
+code, the stdout and stderr bytes verbatim, plus who recorded it and when. Not a pre-parsed flag
+set. Everything downstream — the readable-rejection filter, `MARKER`, `flagsAfter`, the diff — stays
+on this side. Their three reasons, which are the justification and not a preference:
+
+1. **A caller-parsed set imports the caller's extractor into the trust chain**, and the caller's
+   extractor is the one component here that has never been through this project's discipline. The
+   `SG-1` class — short flags truncating the read — becomes **unfindable** in a submission that
+   arrives already parsed: the kit would be diffing against the caller's parsing bugs while
+   labelling the result the tool's own account of itself. Raw text keeps the reading in the single
+   place it happens, with its documented narrowness and its documented error direction intact.
+2. **Raw text preserves specimens.** Both `SG-3` near-miss phrasings exist only because the raw
+   wording survived to be looked at, and the widening decision is still waiting on a second
+   independent specimen. Below-root phrasings are the qualifier-carrying population — the second
+   near miss is a subcommand's own list, phrased with a qualifier — so they are about to arrive in
+   volume, at exactly the moment a parsed-set submission would destroy them.
+3. **It is cheaper for the caller.** Recording what happened is a shell one-liner; parsing it
+   correctly is a program, and the parsed shape makes every adopter write the program.
+
+**What it means for provenance labelling.** `recorded-by-caller` attests to the **recording**, never
+to the reading — in the consumer's words, _"the caller attests only to what the tool DID, never to
+what it means."_ The label stays honest at the altitude it is printed at: it says these bytes came
+back from that argv on someone else's machine, and it says nothing about what the bytes mean,
+because the kit decided that and owns being wrong about it.
+
+**This is [`probing.md`](../wiki/concepts/probing.md)'s own rule at a different altitude.** That page
+permits using a spelling to choose which probe to **send** and forbids using it to reach a
+**verdict** — _"inference may select what to look at; only observation may condemn."_ Here the
+caller chooses what to **record** and does not reach the reading, and the asymmetry that justifies
+it is the same one: being wrong about what to record costs a capture, and being wrong about what it
+meant would put words in a target's mouth in a section labelled as the target's own.
+
+- [ ] A way to supply recorded surfaces on a run — per record: the command path, the argv sent, the
+      exit code, both streams verbatim, and the recorder's identity and timestamp. The kit runs its
+      own extraction over them, so a caller records what the kit would have read rather than a
+      parallel format.
+- [ ] **The kit classifies; the caller does not.** Inertness, readability and truncation are
+      kit-side judgements over the record, not fields a caller asserts. A record whose argv the kit
+      would not have sent is still readable evidence — the caller ran it, not us — but it is the
+      kit that decides whether the argv is a rejection at that path.
 - [ ] **Surface provenance on every path result: `recorded-by-caller` versus `probed-by-kit`.** This
       is the reported-not-verified discipline of
       [the eight-owner report](../reports/2026-08-24-eight-owner-clis.md), one level down. A census
@@ -253,12 +292,41 @@ buys a sentence, not a pass — and the report names who recorded it.
       evidence. Once a caller can supply evidence, that sentence is wrong for a path the caller
       simply did not record, and right only for a path nothing could reach. Two reasons, and the
       report line in [item 2](#2-a-probe-warrant-below-the-root) about distinguishing _cannot reach_
-      from _no warrant_ becomes a three-way distinction that starts here.
+      from _no warrant_ becomes a three-way distinction that starts here. **The shape decision above
+      does not change what those three are.** A caller record that arrives and yields no
+      enumeration is not a fourth state: it lands in the `Surface` statuses that already exist
+      (`not-enumerated`, `no-evidence`) on a path that was looked at, which is the distinction those
+      statuses were built for. What it does change is that `no-evidence` now has two provenances —
+      _the kit sent no probe_ and _the caller's record was unreadable_ — so the sentence must be
+      rendered beside the `recorded-by-caller` label rather than on its own.
 - [ ] **Run `SG-8`.** bounty's verb-level rejection enumerates its 21 flags with the kit's exact
       marker — measured on the channel — so a `PathSurface` for `["state"]` is one command to
       capture. The pre-registered prediction is roughly 17 of 21 `accepted-not-declared`. It must be
       run **before anything in the differ is tuned**, which is the whole value of having registered
       it, and which the ordering below now makes possible.
+
+**What a caller can get wrong that we cannot see — and it is not fabrication.** The trust argument
+above covers a caller who lies, and the label plus the no-verdict census answer that. The harder
+case is a caller who is honest and whose capture is lossy in a way the bytes do not show:
+
+- **A truncated capture.** `captureSurface` excludes its own truncated observations because a list
+  cut mid-way yields a set short by an unknowable number of flags **and looks complete** — the one
+  failure worse than reading nothing. The kit knows when it truncated; it cannot know when a
+  caller's pipe, buffer or `head` did. Everything the differ then reports as `declared-not-accepted`
+  at that path is a finding against flags the tool accepts.
+- **Merged streams.** The consumer's own one-liner is `... 2>&1`, and `SurfaceEvidence.stream` is a
+  published field a reader is invited to audit. A merged capture cannot fill it honestly, so the
+  record must be able to say _merged_ rather than have the kit guess `stderr`.
+- **A different binary.** The record says what some build of the tool did; nothing in it ties that
+  build to the declaration being diffed.
+
+- [ ] **Say what happens then, rather than assume it away.** The record carries the fields that make
+      the loss declarable — stream attribution including _merged_, and whatever the caller can say
+      about completeness — and the report says which of them the caller left unstated. This is the
+      one place the raw shape is genuinely weaker than a parsed one would be: a parsed set at least
+      fails loudly on a truncated list, where a raw prefix reads as a whole. It is still the right
+      trade, because the failure is confined to one labelled census line and the alternative moves
+      the caller's extractor into every finding.
 
 **No format change and no version question.** Recorded surfaces are an input to a run, not a field
 in the declaration, so this item does not touch `formatVersion`, `TOP_LEVEL_KEYS`, or the ratchet in
@@ -581,11 +649,12 @@ reaches none.
 
 ## Open, and not decided here
 
-Four questions this plan flagged were closed by the consumer's review, and are recorded at their
+Five questions this plan flagged were closed by the consumer's review, and are recorded at their
 items: **the version route** (A, with the ratchet — item 1), **`effects` optional** (yes, plus a
-coverage count in the report — item 1), **the fixtures** (granted, with two caveats — item 3), and
-**the fourth legend mark** (no; name the clause and reuse it verbatim — item 5). Keeping grapevine
-as the worked hazard example was endorsed and sharpened into three hazard classes.
+coverage count in the report — item 1), **the fixtures** (granted, with two caveats — item 3), the
+**fourth legend mark** (no; name the clause and reuse it verbatim — item 5), and **the shape a
+caller supplies a recorded surface in** (raw, observation-shaped records — item 2a). Keeping
+grapevine as the worked hazard example was endorsed and sharpened into three hazard classes.
 
 Still open:
 
@@ -593,9 +662,10 @@ Still open:
   which item 2a defers rather than answers.
 - Whether the warrant is per command path or per command **path plus argv class**, which is the
   narrower and probably safer shape and costs more to declare.
-- **The exact shape a caller supplies a recorded surface in** — item 2a's first checkbox. It is now
-  on the critical path, because the consumer has offered to capture grapevine's root enumeration as
-  soon as the shape is specified.
+- **What a caller can get wrong invisibly**, now that the shape is settled — item 2a names
+  truncation, merged streams and an unidentified binary, and says the record must let a caller
+  declare the loss. Which fields do that, and what the report prints when they are unstated, is not
+  decided here.
 - **Whether the coverage count belongs anywhere else.** _"Effects declared on 14 of 33 paths"_ is
   the same move as _"1 of 33 compared"_; whether recorded-versus-probed coverage wants its own
   number is an item-2a question that only real output will settle.
