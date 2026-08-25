@@ -185,6 +185,38 @@ cannot drift apart."_ Its implementation guide has a section titled _"The part y
 generate"_, and the reason it gives for the test generalises: _"adding a subcommand is exactly the
 moment the declarations go stale, and exactly the moment nobody is thinking about the schema."_
 
+**And one source of truth sits outside the code entirely.** Generation walks the parser, so what it
+reports is the parser's organisation — which is not always the contract the caller is following. The
+first outside application of this page hit that as its opening design question: a CLI whose parser
+held one global flag registry had to decide whether to declare those flags global (honest to the
+parser, useless to the caller) or split them per verb. The implementer settled it by reading their
+own shipped documentation rather than their code
+([SG-7](docs/reports/2026-08-24-first-outside-application-grapevine.md#sg-7--what-the-standard-gained-a-flag-can-be-global-because-the-tools-docs-make-it-global)),
+in their words:
+
+> grapevine's own SKILL.md instructs agents to _pass identity on every verb_ ("a fresh shell per
+> command means the env var doesn't persist, so pass `--as`/`--from` explicitly"). So
+> `--as`/`--from` are contractually global — a caller following our own docs sends them everywhere —
+> and everything else goes per-verb.
+
+**A flag is global because the tool's own shipped instructions to its callers make it global.** That
+is a source of truth neither the parser nor the command table holds, and a declaration that
+contradicts the shipped SKILL.md, README or agent instructions is wrong even if it matches the code,
+because the caller is following the document and not reading the source. It bites hardest on
+agent-facing CLIs, where the shipped instructions are often _the_ interface an agent meets first.
+
+**The measurement is what makes the split safe to recommend to somebody else**, because moving flags
+per-verb is a breaking change: flags that were accepted-and-ignored become errors. On that CLI, **24
+flags moved per-verb, identity stayed global, and all 107 pre-existing tests passed unmodified** — so
+nothing in its own recorded usage had ever relied on a cross-verb flag. Those numbers are the
+implementer's, recorded in the report **as reported and not independently verified**, because their
+tree is not reachable from this checkout.
+
+**[—]** for the claim itself. Nothing on this page reads a SKILL.md: emitting from the parser,
+generating from the command table and checking against the running tool all miss it by construction,
+and the kit has no way to falsify a declaration that contradicts the documentation shipped beside the
+binary.
+
 **What generation does not prevent.** It kills staleness. It does not kill **incompleteness**, and
 incompleteness is the larger problem. That is the next section, and it is a measurement rather than
 a worry.
@@ -506,9 +538,20 @@ only comparable path is the one it cannot speak to (DT-1).
 
 So the `[C?]` on this Part, and every `yes` in the [`In v0` column](#the-fields-and-why-each-exists),
 carry a condition already stated in both places and worth stating plainly: **on any target that
-enumerates _at the root_**. For the verb-first population — most agent-facing CLIs — a modelled
-declaration is readable, is diffed, and buys **zero comparisons** until the kit can probe below the
-root. It is not wasted: the self-description check runs on it with no probe at all, and the report
+enumerates _at the root_**. The conclusion is not this page's. It was drawn by the implementer in
+[the first outside application of the standard](docs/reports/2026-08-24-first-outside-application-grapevine.md#the-modelled-negative-which-is-the-most-useful-failure-in-the-session),
+and it belongs here in their words rather than in a paraphrase:
+
+> for the verb-first population — most of this fleet, and I suspect most agent-facing CLIs — a
+> modelled declaration currently buys zero comparison. The standard's "a caller may declare for a
+> tool" is true at the format layer and inert at the census layer.
+
+**The worked `0 of 4` above is this repository's own CLI, measured in this tree**, and it is not the
+run that produced that sentence: that session modelled a declaration for a different tool, on a tree
+this checkout cannot reach, and the report records its numbers as reported rather than verified. The
+grammar in the sentence is also not the invariant — anthill is verb-first and does enumerate at the
+root — which is why the limit above is stated as the root-slot mismatch rather than as a fact about
+verb-first parsers. It is not wasted: the self-description check runs on it with no probe at all, and the report
 says which paths went uncompared and why. But an author writing one today should expect a report
 about what could not be compared rather than about what agreed, and the fix is the kit's and the
 tool's, not the file's.
@@ -989,6 +1032,10 @@ safely, which is a different kind of thing to be missing and belongs under a dif
 Named rather than dressed up.
 
 - **That your emitter walks your parser's structures.** Only the consequences are visible.
+- **That a flag's declared scope matches the tool's own shipped instructions.** An identity flag
+  every SKILL.md tells agents to pass on every verb is contractually global whatever the parser
+  does ([Part 1 §2](#2-generate-it-from-what-implements-the-behaviour)), and no probe over argv,
+  streams, exit codes or help output reads a document that ships beside the binary.
 - **Effects.** That a command performs no writes is unobservable from argv and streams alone, which
   is why the drift trial reached runtime for four commands in twenty-five. A sandbox moves this into
   the row above; nothing else does.
