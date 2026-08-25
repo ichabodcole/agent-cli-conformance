@@ -328,9 +328,12 @@ case is a caller who is honest and whose capture is lossy in a way the bytes do 
   recorded surfaces and the diffed declaration then rests on **the tool's own words, captured under
   the same discipline as everything else**, and a batch missing its identity observation is legible
   as exactly that — **unstated, not lied about**. A tool with no `--version` leaves the field
-  honestly empty, which is itself a finding: `D1` fails a target that reported no version at all
-  (`"--version reported no version"`), so the empty field is a fact the census already has a rule
-  about rather than a hole in the record.
+  honestly empty, and the census must carry that as a stated fact of its own, because **no rule
+  covers it**: `D1` is a verdict about the binary **the kit** ran, an empty identity is a silence
+  about the binary **the caller** ran, and `"--version reported no version"` fires only on
+  `exitCode !== 0 && stdout.trim() === ""` — so a target with no `--version` that exits `0` printing
+  its help screen does not trip even that clause. See
+  [the recorded-surface batch](2026-08-25-the-recorded-surface-batch.md#the-identity-observation).
 
   **It narrows the gap; it does not close it, and this plan should not say otherwise.** A caller
   can still record `--version` from one build and the rejections from another. What the proposal
@@ -346,20 +349,23 @@ case is a caller who is honest and whose capture is lossy in a way the bytes do 
      what improves is that the assertion is now **checkable against a tool's own output**, not
      merely unstated.
   2. **`D1` establishes less than the field looks like it carries.** Its detector is
-     `stdout.trim() !== ""`, and its own standing coverage gap says _"stdout is never checked to
-     carry a version string in either mode."_ So a present identity observation establishes that
-     the target said **something** under `["--version"]` — not that what it said is a version, and
+     `plain.exitCode === 0 && plain.stdout.trim() !== ""` (`version-flag.ts:104`) — a non-empty
+     stream standing in for a typed payload — and its own standing coverage gap says _"stdout is
+     never checked to carry a version string in either mode."_ So a present identity observation establishes that
+     **the caller recorded** the target saying **something** under `["--version"]` — the kit
+     observed nothing here — not that what it said is a version, and
      not that two batches quoting different bytes are different builds. The field is honest in
      both directions, which is the property being bought here; it is not a verification, and the
      report must not print it as one.
 
 - [ ] **Say what happens then, rather than assume it away.** The record carries the fields that make
-      the loss declarable — stream attribution including _merged_, and whatever the caller can say
-      about completeness — and the report says which of them the caller left unstated. This is the
-      one place the raw shape is genuinely weaker than a parsed one would be: a parsed set at least
-      fails loudly on a truncated list, where a raw prefix reads as a whole. It is still the right
-      trade, because the failure is confined to one labelled census line and the alternative moves
-      the caller's extractor into every finding.
+      the loss declarable — stream attribution including _merged_, and a completeness declaration —
+      and the report says what each one cost the read. The worry when this item was written was that
+      a raw prefix reads as a whole where a parsed set at least fails loudly on a truncated list.
+      [The batch document](2026-08-25-the-recorded-surface-batch.md#completeness) answers it by
+      making completeness a required field and reading only `complete`, which is the rule
+      `isReadableRejection` already applies to the kit's own truncated captures — so the raw shape
+      is not weaker here after all, and the caller's extractor still stays out of every finding.
 - [ ] **The identity observation is optional and counted — the same treatment item 1 gave `effects`,
       reached by a different argument rather than by proximity to it.** Requiring it would refuse a
       batch over a property of the **target**: a tool with no `--version` cannot supply one, so a
