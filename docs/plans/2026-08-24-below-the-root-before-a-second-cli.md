@@ -1,6 +1,6 @@
 ---
 type: plan
-generated: { by: claude-opus-5, at: 2026-08-24 }
+generated: { by: claude-opus-5, at: 2026-08-25 }
 status: draft
 lifecycle: live
 description:
@@ -8,7 +8,9 @@ description:
   the root, and lifting that ceiling was thought to run through a chain — probe below the root,
   which needs a read-only claim, which the declaration format has nowhere to put. Revised on the
   first consumer's review: the chain gates the probe, not the census, because the differ is pure and
-  a caller can record surfaces itself.
+  a caller can record surfaces itself. Revised again on an outside read: the probe warrant is not
+  built and `effects` is not added, because a subject's self-description is evidence to test rather
+  than an execution-safety boundary — the kit generates a probe plan and the operator runs it.
 tags: [declaration, probe-level, adoption, safety, remediation]
 ---
 
@@ -67,6 +69,14 @@ this table with a fifth row and learn nothing the fourth row did not already say
 `help-path` classifies only when _every_ token is a help or format token, so `mycli deploy --help`
 does not classify and will not run — and it is right to.
 
+**The chain has since been cut twice, at two different links, and both cuts survive in this
+document.** The consumer's amendment cut it at the first link: a below-root **census** does not need
+the kit to probe at all. An outside read then cut it at the second: the kit is not going to execute
+below the root on a claim the target makes about itself, so link 2 has nothing to lead to and link 3
+is not worth building. What remains of the chain is a correct account of why _the kit executing a
+subcommand_ was blocked — kept because it is the reasoning the two amendments act on, not because
+anything downstream of it is still scheduled.
+
 ### The chain gates the probe, not the census — which is the consumer's amendment
 
 That chain is correct about **the kit executing a subcommand**. It is wrong as a gate on **a
@@ -103,63 +113,164 @@ recorded what.**
 
 ---
 
-## The decision this plan does not make
+## Where this revision came from
 
-**Probing below the root is the first time `acc check` would execute a subcommand on a target's
+**One outside read, on a reframing question.** The question put to a non-Claude model was not _which
+warrant shape is safe_ but **is the probe warrant a problem anyone actually has**. Its answer —
+accepted by the repo owner and carried below — is: do not build the warrant, do not add `effects`
+even as an inert field, and generate a probe plan for the operator instead. The response is
+untracked working material in `.scratch/`, so nothing here cites it as a source; its arguments are
+restated below and stand or fall on their own.
+
+**Two things about that provenance, said rather than left implicit.**
+
+- **It is one read, and its central claim is an argument rather than a measurement.** Nothing was
+  run to produce it. What it did was point at the subject–assertion relation the plan had stopped
+  looking at, which is the kind of thing an argument can settle and a measurement usually cannot —
+  but it is still one model's reasoning, adopted because the reasoning holds up, not because of
+  where it came from.
+- **The same technique had just reversed the truncation design**, one round earlier. Two reversals
+  in two rounds is a run, not a method; it is exactly the point at which a technique starts getting
+  believed instead of read. Recorded here so that the third one gets argued with.
+
+**It worked from a brief, not from this tree.** It could not open the reader, `spec.ts`, or the
+fixtures, so its claims about this project are only as good as the brief was. Where it was wrong
+about this project, this plan says so in place rather than importing it — the framing of who is left
+without a warrant was wrong _in the plan_, and is corrected in
+[item 2](#2-a-probe-warrant-below-the-root) rather than deleted.
+
+---
+
+## The decision, and it is now a decision not to build
+
+**Probing below the root would be the first time `acc check` executed a subcommand on a target's
 say-so.** Everything the kit does today is a help path, a version request, or a deliberately
 malformed argv that fails at parse. That is a step change in what this tool does to a machine, and
-it is not a step inside an implementation item.
+it is not a step inside an implementation item. It still gets **its own decision page** in
+[`../wiki/`](../wiki/SCHEMA.md) — but the page now records a decision **not** to build, plus what
+would reopen it, rather than a list of questions to settle before building.
 
-It gets **its own decision page** in [`../wiki/`](../wiki/SCHEMA.md), taken before
-[item 2](#2-a-probe-warrant-below-the-root) is built — and now, per the consumer's amendment, taken
-**after** [item 2a](#2a-recorded-surface-ingestion) has produced real below-root census output and
-after `SG-8` has been run against it. The page is the same page; it is written with data instead of
-hypotheticals. What has to be settled:
+**The central correction: the subject of the check is the source of the safety assertion.** The
+warrant asks the checker to execute a subcommand on a safety claim made by the binary being checked
+— the same binary whose declaration may be wrong, which is the entire reason the census exists.
+Provenance establishes **who** asserted; it never establishes that the assertion is **true**.
+`emitted` rules out human transcription error and does nothing whatever about a buggy or hostile
+tool. This plan treated the narrowing-versus-widening asymmetry as though it settled safety. It does
+not: it is a rule about **documents**, and the question here is about **execution**. A conformance
+subject's self-description is evidence to test; it is not an execution-safety boundary.
 
-- **What an effects claim licenses, exactly.** Which argv, at which paths, under which classes. A
-  `read_only` claim about `send` is not a claim about `send --acc-probe-xyzzy-flag`, which is an
-  invocation the tool's author never considered.
-- **What happens when it is wrong.** There is no undo and no rule that fires. The worked example is
-  the adopter's own tool, kept at their explicit request and sharpened with a hazard class they
-  supplied that neither axis here names. **Three classes, one tool:** `close` deletes the message
-  log, `reset` clears it, `reap` kills daemons — _destroys your state_; `tail` and `wait` are
-  read-only and unbounded — _never terminates_; and `watch` is read-only with respect to its own
-  state and **acts on the operator's machine** by opening a browser — _causes something over
-  there_. A wrong `read_only` on any of the first class costs somebody their data, and the kit's
-  report would say a probe ran and nothing else.
-- **That the third class is inside `effects` at all**, stated in one sentence on the page:
-  `effects` as [`spec.ts`](../../src/acc/spec.ts) defines it covers what the command **causes**,
-  and causes-on-the-caller's-machine is part of that. Opening a browser tab is the mild form;
-  the archaeology's `close --help` is the severe one. A declarer reading `read_only` as "writes
-  nothing of mine" would mark `watch` read-only and be wrong by this definition.
-- **Whether `read_only` is even the right shape of warrant.** It is not sufficient on its own: a
-  read-only command can still fail to terminate. `tail --help` never exited; grapevine's `tail` and
-  `wait` are read-only and unbounded. [`spec.ts`](../../src/acc/spec.ts) already carries the second
-  axis that names it — `output_kind: "data" | "stream" | "opaque"` — and a warrant that reads only
-  `effects` would license a probe that hangs.
-- **Whether a caller can decline it, and whether a caller can grant it.** Declining is the easy
-  half. The hard half is whether an operator running the check against a tool they own may widen
-  the surface themselves — which is a different speech act from a declaration (consent to run,
-  not a claim about the tool) and is not obviously governed by the narrowing-versus-widening
-  asymmetry, which is a rule about documents.
-- **Whether anything is required beyond the target's word.**
-  [Roadmap step 3](../roadmap.md#3-control-the-observation-environment-which-is-also-the-l0-safety-work)'s
-  sandbox is unbuilt and undecided — which sandbox, on which platforms, and what the kit does
-  where it has none. That page already says the answer must not be _"probe anyway, quietly"_, and
-  that sentence binds here.
-- **What the report says about a licensed run**, so that a probe which ran on a claim is legible
-  as such rather than indistinguishable from an inert one.
+**Ownership was the wrong distinction, and it dissolves the "who is left" question.** Anyone who can
+let `acc` execute a local binary can execute that binary themselves and record what came back. The
+warrant creates access for nobody. What it does is **transfer the choice of invocation from the
+operator to the checker** — which is a transfer of authority, not an unlocking of capability, and it
+is a transfer in the wrong direction.
 
-**Nothing here resolves any of that.** Items 1, 2a, 3, 4 and 5 below are unblocked by it; item 2 is
-not, and is written to stop at the boundary. Item 2a is unblocked **because the kit executes
-nothing in it** — that is the whole of its claim to be sequenced first, and it is not a shortcut
-around this page.
+**That argument stopped being reasoning when the adopter answered it from their own position.** They
+accept the reversal without reservation, and report: _"I shipped full below-root coverage yesterday
+with zero warrant machinery, because the operator who could grant the warrant could always just run
+the tool. The warrant moved invocation choice, not access."_ One person has now done the thing the
+warrant was for, without the warrant, and says which half of it was load-bearing.
+
+**Command-level effects are the wrong abstraction for warranting execution**, and this plan already
+half-knew it. Safety belongs to an exact invocation, in a particular environment, under a threat
+model. `read_only` addresses none of: termination, network access, credential use, data disclosure,
+process creation, UI launches, resource consumption, API charges, audit-visible activity. The plan
+names `output_kind` as a second axis and a third hazard class found by accident, and files both as
+refinements — they are better read as evidence that the abstraction is wrong, because adding a
+category per hazard as each one appears is the clause-by-clause churn this whole project exists to
+argue against.
+
+**The hazards that make it concrete, kept as they were measured.** The worked example is the
+adopter's own tool, kept at their explicit request and sharpened with a hazard class they supplied
+that neither axis names. **Three classes, one tool:** `close` deletes the message log, `reset`
+clears it, `reap` kills daemons — _destroys your state_; `tail` and `wait` are read-only and
+unbounded — _never terminates_; and `watch` is read-only with respect to its own state and **acts on
+the operator's machine** by opening a browser — _causes something over there_. A wrong `read_only`
+on any of the first class costs somebody their data, and the kit's report would say a probe ran and
+nothing else. `read_only` already has two plausible meanings — no mutation of the tool's own state,
+versus no externally visible effect — and `watch` is precisely where the two come apart.
+
+**The real questions were never "which warrant shape".** They are **who authorizes execution** and
+**what contains the consequences when the target is wrong**. The first is answered by the operator,
+not by the subject. The second requires an actual execution boundary —
+[roadmap step 3](../roadmap.md#3-control-the-observation-environment-which-is-also-the-l0-safety-work)'s
+sandbox, unbuilt and undecided as to which sandbox, on which platforms, and what the kit does where
+it has none — not another declaration field. That page already says the answer must not be _"probe
+anyway, quietly"_, and that sentence binds here.
+
+### What the decision page records, and what would reopen it
+
+The page states the decision not to build, the argument above, and the evidence that would change
+it. **All four, not any one:**
+
+- **Named users** who require unattended, third-party, below-root probing — a CI operator, a
+  standards body, a package evaluator — and who say so, rather than a role someone can imagine.
+- **Demonstrated failures of the recording workflow that probe-plan generation cannot solve.** If
+  the operator-runs-it route is merely tedious, that is an argument for making it cheaper, which is
+  [item 2b](#2b-probe-plan-generation).
+- **A defined platform and threat model.** Which machines, against which adversary.
+- **A containment mechanism** that actually enforces limits on filesystem writes, network access,
+  process creation, UI launches, time and output.
+
+**And containment alone would still not be enough**, which is the outside read's point and belongs
+on the page: containment reduces consequences, it does not grant authorization. Even with a sandbox,
+an operator-authored policy or an explicit opt-in would be required, because the tool being checked
+cannot consent on the operator's behalf.
+
+### A rejected alternative: the dedicated conformance endpoint
+
+**The proposal.** A narrowly specified endpoint the tool implements to return rejection evidence
+directly, without the kit dispatching ordinary subcommands. It was raised by the outside read as a
+possible future design, and its appeal is real: it moves the contract away from guessing whether
+`send --badflag` reaches application behaviour at all, and it avoids the specific defect that killed
+the warrant — treating a semantic label such as `read_only` as **permission to exercise general
+command paths**.
+
+**Rejected, by the adopter it would be pitched to.** Their argument, and it is the stronger one: a
+dedicated endpoint is the tool testifying about itself down a **second code path** — evidence
+generated _beside_ the behaviour instead of _by_ it, which is the anthill manifest failure with
+better intentions. The dilemma has no third horn. Either the endpoint routes the same parser
+invocation a real caller hits, in which case it is running the tool with extra steps; or it does
+not, in which case its evidence needs exactly the validation the endpoint existed to avoid. **The
+reason a rejection is worth anything is that it came from the path a real caller reaches.** They
+would decline to implement one for grapevine.
+
+Recorded here as a named rejected alternative with its reason attached, not as a live direction, so
+that the next person to reach for it inherits the objection rather than the idea.
+
+**What this unblocks.** Items 2a, 2b, 3, 4 and 5 below are unblocked by this decision. Items 1 and 2
+are **not scheduled at all** — the decision removes them rather than gating them.
 
 ---
 
 ## The items
 
-### 1. An `effects` field in the declaration format
+### 1. An `effects` field in the declaration format — decided, then withdrawn
+
+**Not to be built. This item was decided, with the consumer, and then withdrawn when the premise it
+rested on was removed.** The premise was that a warrant would read the field
+([item 2](#2-a-probe-warrant-below-the-root)); with the warrant not being built, an `effects` field
+in the declaration format has **no consumer**, and the work below is **no longer needed**. The
+consumer had agreed to it and expected to mark roughly **14 of grapevine's 33 paths**. They are not
+being asked for that field, this round or on the current plan.
+
+**The reasoning below is kept, not deleted.** It was sound given the premise, and the premise is
+what changed — the version route, the optionality argument and the coverage count all still follow
+correctly from _"a warrant will read this"_. Deleting them would leave the next reader to redo the
+same argument and reach the same answer under a premise that no longer holds.
+
+**And an inert field is not a neutral placeholder**, which is the second half of why it is withdrawn
+rather than merely deferred. A declared-but-ungated `effects` gives its names apparent authority,
+invites consumers to infer safety from them, and constrains whatever later definition a real
+consumer would need. `read_only` already carries two plausible meanings — no mutation of the tool's
+own state, versus no externally visible effect — and `watch`, which writes nothing of its own and
+opens a browser on the operator's machine, is the case that separates them. **Add the field when a
+concrete consumer and a testable semantic contract exist**, and let that consumer's requirements
+pick the meaning, rather than reserving the names now and discovering later which one was meant.
+
+What follows is the withdrawn design, as it stood when it was decided.
+
+---
 
 Declared, provenance-marked, gating nothing by itself. This is the format work; the warrant that
 reads it is item 2.
@@ -179,22 +290,22 @@ vocabulary for arguments deliberately — _"in `spec.ts`'s vocabulary rather tha
 and this is the same move for the same reason. Carry `output_kind` with it, for the terminating
 question above.
 
-- [ ] `DeclaredCommand` gains `effects`, and the `output_kind` axis with it.
-- [ ] **Optional, not required — and the reason is the asymmetry, not economy.** `status` on an
-      argument is required because a generator with nowhere to put refusal writes nothing and
-      nothing reads as valid (`DT-2`). The default here runs the other way: an absent effects claim
-      is silence, silence withholds a probe, and withholding a probe costs coverage rather than
-      somebody's data. This is the inverse of the `DT-2` precedent and has to be argued rather than
-      inherited from it. **Settled, and the emitter-side half of the argument is the consumer's:**
-      a required field would force them to answer on day one for `watch`, `roll` and `reap` — the
-      exact commands where a rushed wrong `read_only` costs someone their data. Forced answers are
-      how `DT-2`'s inverse is actually produced. They expect to mark roughly 14 of grapevine's 33
-      paths and leave the rest silent this round.
-- [ ] **The report counts coverage** — _"effects declared on 14 of 33 paths"_ — which is the real
-      `DT-2` lesson applied to silence rather than to refusal. Optionality means an absent claim
-      withholds a probe; the count means it also **shows up as a number**, so nobody reads silence
-      as an answer. Consumer's refinement, and it is the thing that makes optional safe.
-- [ ] The reader records the claim and reports it. Nothing in the census changes.
+- `DeclaredCommand` gains `effects`, and the `output_kind` axis with it.
+- **Optional, not required — and the reason is the asymmetry, not economy.** `status` on an
+  argument is required because a generator with nowhere to put refusal writes nothing and
+  nothing reads as valid (`DT-2`). The default here runs the other way: an absent effects claim
+  is silence, silence withholds a probe, and withholding a probe costs coverage rather than
+  somebody's data. This is the inverse of the `DT-2` precedent and has to be argued rather than
+  inherited from it. **Settled, and the emitter-side half of the argument is the consumer's:**
+  a required field would force them to answer on day one for `watch`, `roll` and `reap` — the
+  exact commands where a rushed wrong `read_only` costs someone their data. Forced answers are
+  how `DT-2`'s inverse is actually produced. They expect to mark roughly 14 of grapevine's 33
+  paths and leave the rest silent this round.
+- **The report counts coverage** — _"effects declared on 14 of 33 paths"_ — which is the real
+  `DT-2` lesson applied to silence rather than to refusal. Optionality means an absent claim
+  withholds a probe; the count means it also **shows up as a number**, so nobody reads silence
+  as an answer. Consumer's refinement, and it is the thing that makes optional safe.
+- The reader records the claim and reports it. Nothing in the census changes.
 
 **The version question, which is the part a current adopter's emitter turns on.** The reader
 compares `formatVersion` by exact string equality against `DECLARATION_FORMAT_MAJOR = "0"`, and its
@@ -222,11 +333,11 @@ instinct that a format break should be honest about being one did not survive co
 actual reader ecology: population one. A's cost is theoretical until a second reader exists; B's
 cost is real and paid now.
 
-- [ ] **Write the ratchet in, as they asked.** _The first optional key inside v0 is a wart; a second
-      is a policy._ If any other field wants this route,
-      [roadmap step 2](../roadmap.md#2-version-the-contract-not-only-the-rules) — version the
-      contract — goes first. This is the sentence that stops A from becoming the way fields are
-      always added.
+- **Write the ratchet in, as they asked.** _The first optional key inside v0 is a wart; a second
+  is a policy._ If any other field wants this route,
+  [roadmap step 2](../roadmap.md#2-version-the-contract-not-only-the-rules) — version the
+  contract — goes first. This is the sentence that stops A from becoming the way fields are
+  always added.
 
 ### 2a. Recorded-surface ingestion
 
@@ -290,9 +401,13 @@ meant would put words in a target's mouth in a section labelled as the target's 
 - [ ] Fix the reason string that assumes the answer. `declaration.ts` today hardcodes _"no flag-
       surface evidence for this path — the kit enumerates the root only"_ for every path without
       evidence. Once a caller can supply evidence, that sentence is wrong for a path the caller
-      simply did not record, and right only for a path nothing could reach. Two reasons, and the
-      report line in [item 2](#2-a-probe-warrant-below-the-root) about distinguishing _cannot reach_
-      from _no warrant_ becomes a three-way distinction that starts here. **The shape decision above
+      simply did not record, and right only for a path nothing could reach. Two reasons — and
+      **not three**: the third, _no warrant for this path_, was to come from
+      [item 2](#2-a-probe-warrant-below-the-root), which is not being built, so it has no referent
+      and must not be emitted.
+      [The batch document](2026-08-25-the-recorded-surface-batch.md) specifies all three anyway and
+      says the third is unreachable until item 2 ships; that reads "until" but now means
+      "unless and until the decision is reopened". **The shape decision above
       does not change what those three are.** A caller record that arrives and yields no
       enumeration is not a fourth state: it lands in the `Surface` statuses that already exist
       (`not-enumerated`, `no-evidence`) on a path that was looked at, which is the distinction those
@@ -385,12 +500,96 @@ case is a caller who is honest and whose capture is lossy in a way the bytes do 
 in the declaration, so this item does not touch `formatVersion`, `TOP_LEVEL_KEYS`, or the ratchet in
 item 1.
 
+### 2b. Probe-plan generation
+
+**The cheaper feature that serves the need the warrant was invented for. Scoped here, not designed
+— it needs its own design pass before anyone implements it.**
+
+**What it is.** The kit reads a declaration and emits an explicit **probe plan**: the exact argv it
+would send at each declared command path, for the operator to read, run, and hand back as a
+recording. It also reports which command paths remain unobserved. The kit executes nothing at any
+point.
+
+**Why it serves the need.** Same coverage as the warrant, with the authorization in the right hands:
+the operator decides what runs on their machine, rather than the checker deciding on the strength of
+what the target said about itself. It composes directly with
+[item 2a](#2a-recorded-surface-ingestion) — the plan comes out, the operator fills it in, ingestion
+takes it back — so it adds a generation step to a route that already exists rather than a new route.
+
+**The shape: the plan _is_ an unfilled batch. The adopter's design, and it is better than a
+freestanding plan format.** Emit the plan in the recorded-surface batch's own vocabulary: a
+batch-shaped document with `path` and `argv` filled in and `exitCode`, the streams, `completeness`,
+`recordedBy` and `recordedAt` left empty, which the operator's runner fills **in place**. Plan and
+record become one document at two lifecycle stages. Three consequences they name, and each is a
+defect that stops existing rather than a convenience:
+
+1. **Argv-transcription drift dies outright.** The operator never retypes a token, so the argv that
+   was run is the argv the kit specified, byte for byte.
+2. **The batch spec's `path`-is-a-prefix-of-`argv` self-check now validates the kit's own
+   emission**, not only a caller's. The rule was written to catch a caller's mistake; it catches
+   ours for free.
+3. **"Which paths remain unobserved" becomes trivial** — they are the records still empty. No
+   separate accounting, and no second definition of coverage to keep in step with the first.
+
+Their capture script was accidentally this design already, minus the generation step: roughly
+fifteen lines of subprocess-fill.
+
+#### The hazard did not vanish, it moved to the operator — and the plan must carry it in its own bytes
+
+**This is the residue that makes probe-plan generation safe or not, and it is not a footnote.**
+Every rejection probe is a bet that the parser refuses the unknown flag **before** the verb
+dispatches. On a strict parser the invocation is inert. But the `A1`-violating tool — the lenient
+parser that ignores the unknown flag and runs the verb anyway — is **simultaneously the tool the
+census most needs to probe and the tool where `close --acc-not-a-flag` actually closes the board**.
+An operator mechanically executing a kit-emitted plan against a lenient tool does real work and gets
+a success-shaped transcript back.
+
+Moving authorization to the operator is only an improvement **if the plan hands them the risk
+legibly**. Three requirements follow, and they are requirements on the emitted document, not on a
+README beside it:
+
+- **The warning is inline and per-record**, on every record: this argv assumes rejection before
+  dispatch; on a tool that ignores unknown flags, running it executes the verb. A warning the
+  operator reads once at the top is a warning they read once.
+- **Order the records so the obviously-inert paths come first**, so an operator can work down the
+  plan and stop when they reach something they are not willing to run.
+- **Flag any path whose verb name pattern-matches the destructive family** — `close`, `reset`,
+  `delete`, `rm`, `prune`, `kill` — for manual confirmation. **The adopter calls the pattern-match
+  crude and argues the crudeness is honest, which is the right reading:** the kit cannot know what a
+  verb does, and that it cannot know is the whole reason the warrant died. A crude flag that says
+  _this name looks dangerous, you decide_ makes no claim the kit is unable to support.
+
+**What the design pass still owes.** Where the plan is emitted from and under what flag; whether it
+covers every declared path or only those a caller selects; what it does for a declaration that
+declares no paths below the root; how the empty-record shape validates against the batch schema
+without a caller having to hand-write one; and whether the unobserved-path accounting is a mode of
+this item or a report line item 2a already has to grow.
+
 ### 2. A probe warrant below the root
+
+**Not to be built.** See [the decision](#the-decision-and-it-is-now-a-decision-not-to-build): the
+warrant asks the kit to execute a subcommand on a safety claim made by the binary under test, and a
+subject's self-description is evidence to test rather than an execution-safety boundary. **What
+would reopen it** is the four-part evidence list on that page — named users needing unattended
+third-party below-root probing, demonstrated failures of the recording workflow that
+[item 2b](#2b-probe-plan-generation) cannot solve, a defined platform and threat model, and a
+containment mechanism that enforces real limits — plus, even then, an operator opt-in, because
+containment reduces consequences without granting authorization.
+
+**The mechanism below is kept for whoever reopens it.** It is the shape the warrant would take, and
+re-deriving it would cost a day. It is not a scheduled item, and the checkboxes have been taken off
+it deliberately: nothing here is work anyone is expected to do.
+
+---
 
 Opens only for command paths a declaration marks read-only, and only when the declaration is the
 tool's own.
 
-**The asymmetry decides the provenance, and the framing checks out.** `STANDARD.md` Part 2:
+**The asymmetry decides the provenance — and this is the sentence the decision overturns.**
+"The framing checks out" was wrong. The narrowing-versus-widening asymmetry is a rule about
+**documents**, and it settles who may say a thing, never whether the thing is true. Reading it as an
+execution-safety boundary is the error the whole item rests on. Kept verbatim below so the mistake
+is legible rather than quietly patched. `STANDARD.md` Part 2:
 _"A statement that narrows the probe surface may be accepted on anyone's word. A statement that
 widens it must come from the tool."_ Probing a subcommand is a widening claim, so the warrant reads
 `provenance: "emitted"` and nothing else.
@@ -402,25 +601,28 @@ gloss admits it — _"an unfalsifiable field is admissible exactly when the only
 remove probes and withdraw verdicts."_ So a caller's declaration can still make the kit do
 **less**, which is worth having and costs nothing.
 
-- [ ] `classifyInertness` gains a class that opens only on: `emitted` provenance, a `read_only`
-      claim at that exact path, and an argv that is the declared path tokens plus tokens the
-      existing classes already admit. It fails closed like the other four.
-- [ ] The four existing classes are not weakened. `help-path` keeps requiring every token to be a
-      help or format token, so `mycli deploy --help` still refuses **under the old class** and runs
-      only under an explicit warrant.
-- [ ] `captureSurface` reads rejections at warranted paths, and `PathSurface` carries more than one
-      member.
-- [ ] The report distinguishes a path not compared because the kit cannot reach it from one not
-      compared because no warrant was given — those are different sentences with different remedies,
-      and item 2a has already made it a three-way distinction by adding _the caller recorded nothing
-      here_.
+- `classifyInertness` gains a class that opens only on: `emitted` provenance, a `read_only`
+  claim at that exact path, and an argv that is the declared path tokens plus tokens the
+  existing classes already admit. It fails closed like the other four.
+- The four existing classes are not weakened. `help-path` keeps requiring every token to be a
+  help or format token, so `mycli deploy --help` still refuses **under the old class** and runs
+  only under an explicit warrant.
+- `captureSurface` reads rejections at warranted paths, and `PathSurface` carries more than one
+  member.
+- The report distinguishes a path not compared because the kit cannot reach it from one not
+  compared because no warrant was given — those are different sentences with different remedies,
+  and item 2a has already made it a three-way distinction by adding _the caller recorded nothing
+  here_.
 
-**Blocked on the decision above, and no longer blocking anything else.** Everything in this item is
-mechanism; none of it says the mechanism should be pointed at a stranger's binary. What changes
-under the amendment is that this item stops being the bottleneck for **every** below-root result —
-item 2a delivers those — and becomes what it always was on its own terms: the machinery for the kit
-running a target's subcommand on the target's say-so, for callers who do not own the tool and
-cannot record its surfaces themselves.
+**The framing this item closed on was wrong, and correcting it is what ended the item.** It said the
+warrant was "the machinery for the kit running a target's subcommand on the target's say-so, for
+callers who do not own the tool and cannot record its surfaces themselves." **Ownership is not the
+distinction.** Anyone who can let `acc` execute a local binary can execute that binary themselves
+and record what came back; the warrant creates access for nobody. It transfers the **choice of
+invocation** from the operator to the checker — and the adopter who shipped full below-root coverage
+with no warrant machinery at all has now confirmed that from the other side. Once the population it
+was supposed to serve is described correctly, it is empty, and everything above it is mechanism in
+search of a user.
 
 ### 3. Regression fixtures from the first application
 
@@ -576,22 +778,25 @@ them.
   `recognized root flags:`, and a qualifier is exactly what a **verb-level** rejection carries,
   because it has a verb to name. Below-root probing multiplies the population the pattern has to
   read. The honest reason to defer is the evidence: two specimens is a thin basis for widening a
-  pattern that errs the right way, and that basis grows the moment item 2 lands. The interim
+  pattern that errs the right way, and that basis grows the moment recorded surfaces start arriving
+  from below the root — [item 2a](#2a-recorded-surface-ingestion), not the withdrawn item 2, which
+  is a correction rather than a rewording: the specimens now arrive from callers running their own
+  tools, so they arrive sooner and from more tools. The interim
   commitment already on the record stands — if the widening is declined, both specimens go into the
   code comment so the next reader inherits the evidence rather than the conclusion.
-- **Modelled declarations.** Deferred, and the "it dissolves" reasoning is **half right**, which is
-  worth writing down because the residue is the interesting part. Today a modelled declaration buys
-  zero comparison for the verb-first population. After item 2, it buys comparison **only where an
-  emitted declaration has already marked a path read-only** — because the warrant is a widening
-  claim and a caller cannot make one. So the limit does not vanish; it changes shape into something
-  slightly perverse: a modelled declaration becomes useful exactly on the tools that had least need
-  of one. Do not build modelled-specific machinery now. Re-measure the claim after item 2, and
-  record the residue as a real limit rather than a leftover. **Item 2a changes this and the change
-  is worth stating**: a recorded surface is an observation, not a widening claim, so a caller who
-  owns the tool can compare a **modelled** declaration below the root without any warrant at all —
-  which is exactly how `SG-8` gets run against bounty. The residue named above survives only for
-  callers who cannot record surfaces themselves. The other exit remains roadmap step 3's sandbox —
-  the same undecided decision named above.
+- **Modelled declarations.** Deferred, and the reasoning has been through two revisions worth
+  keeping. It once read: today a modelled declaration buys zero comparison for the verb-first
+  population, and after item 2 it would buy comparison **only where an emitted declaration has
+  already marked a path read-only**, because the warrant is a widening claim and a caller cannot
+  make one — a limit that changes shape into something slightly perverse rather than vanishing, with
+  modelled declarations useful exactly on the tools that had least need of one. **That residue is
+  gone with the warrant**, and what remains is simpler and better: a recorded surface is an
+  observation, not a widening claim, so a caller who can run the tool can compare a **modelled**
+  declaration below the root with no warrant, no effects claim and no permission from anyone. That
+  is exactly how `SG-8` gets run against bounty. The population the old residue described — callers
+  who cannot record surfaces themselves — is the same empty population the warrant was built for.
+  Do not build modelled-specific machinery now; re-measure the claim once recorded surfaces are
+  landing.
 - **Feeding the census into `conformant`.** Not proposed by the adopter, not done by the fix that
   answered `SG-4`, and not reopened here. The kit cannot tell which side of a disagreement is wrong,
   and a verdict that requires knowing would be a guess wearing a rule id.
@@ -607,10 +812,17 @@ them.
 ## What a second application would, and would not, establish
 
 **Would.** Whether the emit–generate–check loop is reproducible by a second implementer on a second
-tool — the thing `n = 1` cannot say. Whether an implementer can answer an effects claim per command
-without losing a design pass to it, which is the cost this round is asking adopters to pay. Whether
-a caller-recorded surface is something a second adopter can actually produce, or whether the shape
-is only obvious to the person who wrote the differ.
+tool — the thing `n = 1` cannot say. Whether a caller-recorded surface is something a second adopter
+can actually produce, or whether the shape is only obvious to the person who wrote the differ. And,
+once [item 2b](#2b-probe-plan-generation) exists, whether a generated probe plan is something a
+second adopter will actually run — including whether its per-record hazard warning is read or
+skipped, which is the question that decides whether moving authorization to the operator improved
+anything.
+
+**No longer on this list, because the field it asked about is not being added.** _Whether an
+implementer can answer an effects claim per command without losing a design pass to it._ That was
+the cost this round was going to ask adopters to pay; it is not being asked, so the question has no
+occasion.
 
 **No longer on this list, because the amendment moved it into this round.** _Whether a below-root
 census finds real drift._ `SG-8` is run in step 4 of the sequencing, against bounty, on a recorded
@@ -619,10 +831,7 @@ application inherits the result instead of the question.
 
 **Would not.** `n` goes from one to two, which is not a population. A second tool built to be
 checkable says nothing about a tool that was not — the first report already names that limit and
-this round does not touch it. Nothing here establishes that an effects claim is **true**: the
-sandbox is what would, it is not built, and so a second application would rest on an unfalsified
-claim by design rather than by oversight. Nothing is learned about the tools that emit nothing at
-all. And the charter's fourth question still needs drift **across releases**, which one session
+this round does not touch it. Nothing is learned about the tools that emit nothing at all. And the charter's fourth question still needs drift **across releases**, which one session
 cannot see — `STANDARD.md`'s own "Stability" row says a single run cannot see across releases, and
 that applies to this project's evidence as much as to a target's claims.
 
@@ -635,35 +844,42 @@ anecdote.
 Written for the implementer who did the first application, and for anyone in the same position.
 
 **Your existing declaration keeps working.** No field you emit today changes meaning, and nothing
-you emit today becomes invalid. **Route A is chosen**, which means your emitter changes zero bytes
-until you decide to claim effects — that was your call to make and you made it.
+you emit today becomes invalid. Your emitter changes zero bytes.
 
-**Your census does not move on its own.** It stays at `1 of 33` until you either add an effects
-claim per command path or hand the kit surfaces you recorded yourself. Neither act is the same as
-being probed.
+**You are no longer being asked for an effects claim.**
+[Item 1](#1-an-effects-field-in-the-declaration-format--decided-then-withdrawn) was decided with you
+— route A, optional, with a coverage count — and has been **withdrawn**, because the warrant that
+was going to read it is
+[not being built](#the-decision-and-it-is-now-a-decision-not-to-build). The roughly 14 of 33 paths
+you expected to mark: **do not mark them.** Nothing in this round wants that field, and adding it
+now would put names with apparent authority into the format ahead of any consumer who could say what
+they mean.
 
-**The cheapest route below the root, and it needs nothing from item 1.** Run your own tool at the
-paths you care about, capture the per-path rejections, pass them in with your declaration
+**Your census does not move on its own.** It stays at `1 of 33` until you hand the kit surfaces you
+recorded yourself. That act is not the same as being probed.
+
+**The route below the root, and it is now the only one.** Run your own tool at the paths you care
+about, capture the per-path rejections, pass them in with your declaration
 ([item 2a](#2a-recorded-surface-ingestion)). The kit executes nothing, claims nothing about safety,
 and labels the surfaces as **recorded by you** rather than probed by it. If your tests already spawn
-the binary, the capture is work you have mostly done.
+the binary, the capture is work you have mostly done — as you have now demonstrated, having shipped
+full below-root coverage with no warrant machinery at all.
 
-**What you would add.** One value per command path, from the same registry your parser, dispatcher,
-root rejection and emitter already walk — the shape `spec.ts` already has for this CLI's own
-commands. If your registry is the single structure the first session made it, this is one field on
-each entry and one line in the emitter.
+**What the kit owes you in exchange**, and it is [item 2b](#2b-probe-plan-generation): the exact
+argv it would have sent, emitted as an unfilled batch for your runner to fill in place, with the
+still-empty records standing as the list of paths nobody has observed. Your capture script is
+already most of it.
 
-**What it buys you.** The paths you mark read-only become comparable, and the drift `SG-8` predicts
-becomes visible in your own tool by your own emission rather than by somebody's model of it.
-
-**What it costs you, stated plainly.** You would be making a widening claim that nothing can
-falsify, about a tool where `close` deletes a message log and `reset` clears it. That is why the
-step change is [a decision with its own record](#the-decision-this-plan-does-not-make) rather than a
-box inside item 2, and why your tool is the worked example in it — kept there at your own request.
-Related, and the reason the plan asks for a second axis: `read_only` alone does not make a command
-safe to probe, because `tail` and `wait` are read-only and unbounded, and a probe that hangs is its
-own failure. And a third class you named that neither axis covers: `watch` writes nothing of yours
-and opens a browser on **the operator's** machine, which is still something the command causes.
+**What it costs you, stated plainly, because the cost did not disappear — it moved to you.** Every
+rejection probe in that plan is a bet that your parser refuses the unknown flag before the verb
+dispatches. Where that bet loses, the invocation runs the verb — and the tools where it loses are
+exactly the `A1`-violating ones the census most wants to see. So the plan will carry the warning per
+record rather than in a preamble, order the obviously-inert paths first, and flag verbs whose names
+pattern-match the destructive family for your explicit confirmation. That flag is crude on purpose:
+the kit cannot know what `close` does, and its not knowing is the whole reason it is not deciding.
+Your tool remains the worked example, at your request — `close` deletes a message log, `reset`
+clears it, `tail` and `wait` are read-only and unbounded, and `watch` writes nothing of yours while
+opening a browser on **the operator's** machine.
 
 **The ask is answered, and what is outstanding is smaller.** The break variants, the clean emission
 and the four `.declaration.json` files are granted; what remains is one recorded root enumeration
@@ -672,10 +888,12 @@ it, and it is sequenced early for that reason.
 
 ## Sequencing
 
-**Amended on the consumer's review**, and the amendment is the substance of this revision rather
-than a reshuffle. The old order put every below-root result behind the safety decision, because it
-treated "compare below the root" and "execute below the root" as one step. They are two, and only
-the second needs the decision.
+**Amended twice.** The consumer's review split "compare below the root" from "execute below the
+root" and moved every below-root result out from behind the safety decision. The outside read then
+removed the tail of the order rather than reordering it: the sequence used to end _item 1 → decision
+page → item 2_, and items 1 and 2 are no longer scheduled at all. What replaces them is the decision
+page, written as a decision **not** to build, and a design pass on
+[item 2b](#2b-probe-plan-generation).
 
 1. **Item 4** first. It needs no decision and no one else, and it is the item that stops the
    standard's reference implementation contradicting the standard while a second adopter is reading
@@ -688,17 +906,22 @@ the second needs the decision.
    tool they are checking.
 4. **Run `SG-8`**, immediately, before any differ tuning. This is the step the whole reordering
    exists to reach: a pre-registered prediction tested while it is still pre-registered.
-5. **Item 1**, on route A, with the ratchet written in.
-6. **The decision page** — now written by people who have read below-root census output.
-7. **Item 2**, the probe warrant, unchanged and still last.
+5. **The decision page** — written by people who have read below-root census output, and recording
+   the decision **not** to build the warrant, the argument for it, and the four-part evidence that
+   would reopen it.
+6. **Item 2b, probe-plan generation** — its own design pass first, then the work. It is last because
+   it is the only item here that is scoped rather than designed, not because anything gates it.
 
-**Item 5** has no ordering constraint.
+**Item 5** has no ordering constraint. **Items 1 and 2 are not in the order**, and their absence is
+the point of this revision rather than a deferral inside it.
 
 **What the order is buying, stated plainly so it can be argued with.** Steps 3 and 4 move the only
 thing this round can learn that a second application could not — real below-root drift — in front
 of the decision that would otherwise gate it, at the cost of the census depending on evidence the
 kit did not observe itself. That cost is paid with a label, not with a verdict, because the census
-reaches none.
+reaches none. Step 5 is still worth writing after step 4 for the same reason it always was: a
+decision not to build is as easy to take badly on hypotheticals as a decision to build, and the
+people taking it will have read real below-root output.
 
 ## Open, and not decided here
 
@@ -709,16 +932,33 @@ coverage count in the report — item 1), **the fixtures** (granted, with two ca
 caller supplies a recorded surface in** (raw, observation-shaped records — item 2a). Keeping
 grapevine as the worked hazard example was endorsed and sharpened into three hazard classes.
 
+**Two of those five are now moot rather than closed**, and the distinction matters to whoever reads
+this next: the version route and `effects` optionality were answers about a field that is
+[no longer being added](#1-an-effects-field-in-the-declaration-format--decided-then-withdrawn). They
+were decided correctly and then the question stopped being asked. They stay on the record because
+the next person to want an optional key inside v0 needs the ratchet argument, not because either is
+scheduled.
+
+**And the biggest thing this section used to hold is now closed too.** Everything under _"the
+decision this plan does not make"_ — what a warrant licenses, what happens when it is wrong, whether
+`read_only` is the right shape, whether a caller can grant one — is answered by
+[not building the warrant](#the-decision-and-it-is-now-a-decision-not-to-build). Two questions
+dissolved with it: **whether the warrant is per command path or per path plus argv class**, and
+whether the third hazard class belongs inside `effects` at all.
+
 Still open:
 
-- Everything named under [the decision this plan does not make](#the-decision-this-plan-does-not-make),
-  which item 2a defers rather than answers.
-- Whether the warrant is per command path or per command **path plus argv class**, which is the
-  narrower and probably safer shape and costs more to declare.
+- **What [item 2b](#2b-probe-plan-generation) actually looks like.** It is scoped and not designed,
+  and the design pass is named in the item.
 - **What a caller can get wrong invisibly**, now that the shape is settled — item 2a names
   truncation, merged streams and an unidentified binary, and says the record must let a caller
   declare the loss. Which fields do that, and what the report prints when they are unstated, is not
   decided here.
-- **Whether the coverage count belongs anywhere else.** _"Effects declared on 14 of 33 paths"_ is
-  the same move as _"1 of 33 compared"_; whether recorded-versus-probed coverage wants its own
-  number is an item-2a question that only real output will settle.
+- **Whether recorded-versus-probed coverage wants its own number** in the report. This was asked
+  alongside _"effects declared on 14 of 33 paths"_, which is gone; the recorded half survives, and
+  only real output will settle it. Item 2b changes its shape once more, since an unfilled record in
+  a generated plan is a third thing to count.
+- **Whether a containment mechanism is worth building on its own merits** — separately from the
+  warrant, which no longer depends on it.
+  [Roadmap step 3](../roadmap.md#3-control-the-observation-environment-which-is-also-the-l0-safety-work)
+  is where that question lives, and this plan neither advances nor closes it.
