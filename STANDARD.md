@@ -230,10 +230,20 @@ structures. What is visible is the consequence.
 
 `CHARTER.md` bets that a declaration bound to code is different from the declarations that died.
 The [first drift trial](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md) is the first
-test of that bet anywhere — the survey's flat conclusion was that **nothing anywhere checks a tool
-against its own declaration**, and its single exception, clispec, was four months old with 10 stars
-and a 0-star reference implementation when the survey read it
+test of that bet anywhere — the survey found **nothing that probes a running tool and falsifies
+what it declares**. Its own wording is "almost nothing, and the 'almost' is four months old": the
+single exception, clispec, had 10 stars and a 0-star reference implementation when the survey read
+it
 ([§5](docs/research/2026-08-22-machine-readable-cli-declarations.md#5-nothing-checks-a-tool-against-its-own-declaration)).
+
+**The nearest thing anyone does is real, and it is not this.** Azure's `azdev latest-index verify`
+is what the survey calls
+[the cheapest generalisable drift gate found anywhere](docs/research/2026-08-22-machine-readable-cli-declarations.md#41-complete-declarations-are-emitted-never-authored):
+regenerate from the live command table, byte-compare to the checked-in JSON, exit non-zero naming
+the stale file. That is good practice and it answers a different question — it compares a
+generated artifact against a regenerated one, both from the same in-process source, so it catches
+a copy falling behind its generator. It cannot catch a declaration that was never right at
+generation time, and that is the class the trial below found.
 
 The target was chosen to be the strongest form of the bet. anthill emits its manifest from the same
 `define.ts` structures its parser consumes, regenerated live on every invocation, with no second
