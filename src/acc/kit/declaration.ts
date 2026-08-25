@@ -453,8 +453,10 @@ export function loadDeclaration(file: string): Declaration {
  * Keyed by path rather than assumed to be the root, because the declaration is keyed by path and
  * a diff that flattened them would compare a root enumeration against a subcommand's flags. Today
  * the kit produces exactly one member, `path: []` — `captureSurface` reads only root-level
- * rejections, and probing below the root needs an effects claim nothing can yet falsify. Every
- * other declared path is reported as not checked, with that as the reason.
+ * rejections, and the kit does not execute a subcommand of the target it is checking. Evidence
+ * below the root reaches the differ from surfaces a caller recorded and handed in (and, once it is
+ * built, from a probe plan the kit generates for an operator to run). Every other declared path is
+ * reported as not checked, with that as the reason.
  */
 export interface PathSurface {
   path: string[];
@@ -543,7 +545,7 @@ export function diffDeclaration(
         // Named as a property of THE KIT, not of the target: nothing was learned about this
         // command, and the reason is that nothing probed it.
         reason:
-          "no flag-surface evidence for this path — the kit enumerates the root only, because probing below it needs an effects claim nothing can yet falsify",
+          "no flag-surface evidence for this path — the kit probes the root only; evidence below it comes from surfaces a caller recorded",
       });
       continue;
     }

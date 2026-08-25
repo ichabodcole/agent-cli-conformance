@@ -283,7 +283,7 @@ describe("the set difference", () => {
     );
     const nested = d.paths.find((p) => p.path.join(" ") === "info show");
     expect(nested?.checked).toBe(false);
-    expect(nested?.reason).toMatch(/the kit enumerates the root only/);
+    expect(nested?.reason).toMatch(/the kit probes the root only/);
     // And the flag it declares produced NO finding, because nothing looked at it.
     expect(d.findings.filter((f) => f.subject === "--team")).toEqual([]);
   });
