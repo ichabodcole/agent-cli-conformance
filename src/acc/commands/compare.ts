@@ -233,7 +233,8 @@ function renderText(c: Comparison): string {
     // out from this column which of them will tell it what they accept when it gets a flag wrong.
     // Printed for every target including the silent ones, since the silent ones are the finding.
     `  ${bold}SELF-DECLARED FLAGS${reset} — what each target says it accepts, read from its own`,
-    "  rejection of an unknown flag. Evidence, not an axis: differing here is not diverging.",
+    "  rejection of an unknown flag AT THE ROOT, the only path probed. Evidence, not an axis:",
+    "  differing here is not diverging.",
     ...c.surfaces.map((s) => `    ${pad(s.label, width)}  ${surfaceSummary(rowSurface(s))}`),
     "",
     // THE LAST WORD, on every comparison, because the format invites the other reading. Rows,
