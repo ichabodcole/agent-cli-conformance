@@ -15,7 +15,9 @@ every recommendation below points at the measurement it came from.
 standing supply of defensible tools that decline conventions on this page — `ffmpeg`, `find`,
 `dd`, `jq`, `ssh` and `psql` are not badly built, they are built for something else. Where a
 recommendation has a known counter-example, this page names it. Declining one is a decision; the
-thing worth avoiding is declining one without noticing.
+thing worth avoiding is declining one without noticing — and
+[the decision needs a home](#where-a-declined-recommendation-is-recorded-which-is-not-in-either-of-those-files),
+which is not the declaration and not the caller's config.
 
 **Every recommendation carries its reason.** A bare rule is not this project's voice. If a
 paragraph tells you what to do and not what goes wrong otherwise, that is a defect in this page.
@@ -37,6 +39,43 @@ All three marks are about whether a claim can be **checked**. Whether a declarat
 the claim at all is a separate axis, and a `[C?]` on a field no format can carry is not a promise
 that writing one is enough — [Part 2's `In v0` column](#the-fields-and-why-each-exists) carries
 that second axis for the shipped reader.
+
+**`v0` is the declaration format**, version `0` — the file format your tool would emit, defined in
+[`src/acc/kit/declaration.ts`](src/acc/kit/declaration.ts) and read by the `--declaration` half of
+`acc check`. It is neither a version of this page nor a version of your tool, and it is the only
+format any reader shipped here can read: it requires the keys
+[Part 2's table](#the-fields-and-why-each-exists) marks `yes`, and refuses every key it does not
+define. The term is defined here rather than where Part 2 first uses it because the first cold
+reader of this page met it in the paragraph above, guessed, and happened to guess right — a wrong
+guess would have carried them through all of Part 1 with nothing to correct it.
+
+**Every number on this page carries its evidentiary status, in one of four fixed phrases.** This is
+a second axis and not a fourth mark, and the phrases are used verbatim so that a reader meeting one
+mid-sentence does not have to look anything up:
+
+| Phrase                                         | What produced the number                                                                               |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **measured in this tree**                      | reproducible from this checkout, by running the thing named beside it                                  |
+| **read from a primary source**                 | somebody else's artifact or documentation, quoted and linked — re-readable by anyone, re-run by nobody |
+| **as reported and not independently verified** | an implementer's figure from a tree this checkout cannot reach                                         |
+| **a judgement, not a measurement**             | somebody classified something and no checker ran                                                       |
+
+**That it is phrases and not a glyph was decided rather than defaulted.** A prior round faced the
+same question on a different axis, declined a new mark, and named the concept _"Evidence, not a
+rule"_ instead — a named phrase is self-teaching where a glyph is one more thing to memorise — while
+recording the objection that a population of two was thin, and that the question reopened if the axis
+grew. It grew: the first cold reader of this page reached Part 4 tracking four evidentiary classes in
+prose and deciding per paragraph how much weight to give a number, and reported that this page has
+"a three-mark legend for checkability and nothing equivalent for evidentiary status, and the second
+is now carrying as much load as the first." The precedent followed is the one that same round cited
+in support: `In v0`. **When the three-mark axis does not cover something, this page has added an axis
+or a column and never a mark**, and the reason holds harder here than it did there. The marks attach
+at one predictable place, the end of a recommendation, one per section. An evidentiary status attaches
+to a figure, mid-sentence, wherever a figure appears — a glyph there is looked up, three words there
+are read. Three of the four phrases were already on the page verbatim before this legend existed,
+which is the strongest evidence available that they teach themselves. **What would reopen it:** a
+figure whose status is genuinely none of these four, or a section where the phrases have to be
+restated so often that they stop reading as prose.
 
 **No new rule ids are minted here.** The catalogue mints an id when a checker design exists, and
 this page is upstream of that. Ids that do appear — `A1`, `B5`, `C2` and the rest — are existing
@@ -63,6 +102,49 @@ Forty-one were domain capabilities, and those are yours.
 
 Guidance for a human at a terminal is also out of scope — a different document with a different
 reader, and [mixing them produces something that serves neither](CHARTER.md#what-is-out-of-scope).
+
+### Where to start, if you already have a CLI
+
+**The rest of this page is in reading order, not in dependency order.** That is a defect a reader
+found and this section is the repair, in their ordering rather than in one invented for the fix. The
+adopter behind anthill — the CLI the drift trial below measured — read this page for the first time
+having run the checker twice, and reported:
+
+> I do not know what to do first… the v0 emitter, the census, the envelope work and the exit-code
+> mapping are argued at the same pitch and in reading order rather than in dependency order. A
+> retrofit reader wants a first move, a second, and a "not until X". The Fig post-mortem tells me
+> what happens if I do nothing; it does not tell me what to do on Monday.
+
+They then answered it against their own tool, and their reasons are the ones attached below.
+
+1. **First, the census** — [make the tool enumerate its own surface](#the-cheapest-version-of-checked)
+   and diff that against what you publish, one inert probe per command path. It is first because it
+   is cheap, it needs nothing from this project, and it needs no declaration to exist yet: a shell
+   loop and `jq` will do it. Their reason for putting it first is a measurement of their own tool
+   rather than an argument — the census caught a live defect in anthill that **two full `acc check`
+   runs had missed, because both probed the root and the defect lives below it**. The two runs are
+   [the first-contact trial](docs/reports/2026-08-21-anthill-first-contact-trial.md) and
+   [the eight-CLI run](docs/reports/2026-08-24-eight-owner-clis.md); the defect is
+   [DT-2](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-2--eight-refused-flags-published-as-valid),
+   eight flags the same binary publishes and refuses. The drift trial's own record of the kit's
+   contribution says the same thing from the other side: it
+   [found none of the eight findings and could not have](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#what-the-kit-found-and-what-it-structurally-could-not).
+
+2. **Second, and contingent on the first, the v0 emitter** — the format described in
+   [Part 2](#the-fields-and-why-each-exists). Contingent, because on their tool the emitter **alone**
+   buys `1 of 25 declared command paths compared`, and the one path that does compare is the root,
+   which their manifest has no slot for ([DT-1](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-1--root---format-is-declared-in-code-absent-from-the-manifest-and-inert-where-it-looks-like-it-works)).
+   An emitter written before you have below-root evidence to compare it against buys a report about
+   what could not be compared. Written after, every path the census already reads becomes a path the
+   emitter is checked at.
+
+3. **Not until both of those are running: the rest of this page's fields** — the error envelope, the
+   exit-code mapping, machine mode's scope, output kind. Each is argued on the evidence and each is
+   worth doing; none of them is readable by anything shipped here, because
+   [the `In v0` column marks them `no`](#the-fields-and-why-each-exists). Do them because they are
+   right for your callers, not expecting a verdict back — and see
+   [emit v0, hold the rest](#emit-v0-hold-the-rest) for why putting them in the file today costs you
+   the check you would otherwise have got.
 
 ---
 
@@ -95,7 +177,8 @@ for a standard, found none, and found something more useful on the way:
 > **Every hand-authored one drifts, and none of them has a drift check.** Fig's 735 specs,
 > carapace's 533 completers, Cobra doc trees, `oclif.manifest.json`.
 
-Fig is the post-mortem worth reading in full, and every figure in it is in
+Fig is the post-mortem worth reading in full, and every figure in it is **read from a primary
+source** and recorded in
 [the same survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#6-the-fig-post-mortem): 25,218 stars, 735 spec directories, and a CI pipeline
 that ran `build`, `lint`, `typecheck` — **type-checking the documents, and never probing a real
 binary.** The collection is a zombie now, `fig.io` returns 503, and the npm packages still serve
@@ -479,6 +562,40 @@ inherited from whoever invoked it, so the same target and the same argv would pa
 could not find a tool localising its parser errors). Measure the environment, print it beside the
 declaration, and label it as measured.
 
+### Where a declined recommendation is recorded, which is not in either of those files
+
+[How to read this](#how-to-read-this) says declining a recommendation is a decision and the thing
+worth avoiding is declining one without noticing. The noticing then had nowhere to live, and the
+first cold reader of this page found the gap. The case is anthill and `D2`: its bare invocation
+returns the manifest rather than a usage error, deliberately, because bare invocation is how an
+agent gets the declaration. Its maintainer decided that on the merits, wrote the reason down, and
+had two places to put it, neither of which is theirs to keep. **The waiver went in a local
+`acc.config.json` on the machine that ran the check, which they declined to commit** — _"dead config
+carrying a live opinion"_ in a repository that does not otherwise depend on `acc` — **and the
+durable copy of the reason ended up in a report in this repository**
+([first-contact trial](docs/reports/2026-08-21-anthill-first-contact-trial.md)). The maintainer made
+the decision, and either a temporary file or a stranger owns the record.
+
+**The narrowing-versus-widening asymmetry [in the next section](#where-the-declaration-lives-and-who-may-say-what)
+already says how to split it**, and the split is the answer rather than a new file format:
+
+- **The waiver stays caller policy** and stays out of the declaration, exactly as this section says.
+  It binds a gate, it is neither true nor false, and it belongs to whoever is running the check.
+- **The reason is not policy.** It is a fact about the tool's design, and it is a **narrowing**
+  statement in that sense: it can only withdraw an expectation, never authorise a probe. So it is
+  publishable by the maintainer and quotable by anyone, and it belongs **in the tool's own
+  repository, beside the code** — a plain list of the recommendations you decline and why, in the
+  same place as the hand-written declarations [Part 1 §2](#2-generate-it-from-what-implements-the-behaviour)
+  asks for. A caller's waiver then quotes a reason the maintainer wrote instead of inventing one,
+  and the maintainer keeps a record that outlives anybody's config.
+
+The kit's waiver `reason` is a required, non-empty field and is the only slot on either side that
+can carry the quote today, which is enough for this to be worth doing now. **[—]** Nothing here
+reads that document. It is the same construction as the SKILL.md limit in
+[Part 1 §2](#2-generate-it-from-what-implements-the-behaviour) — a file shipped beside the binary is
+not reachable by any probe over argv, streams, exit codes or help output — so a maintainer's decline
+record and a caller's waiver agreeing is a thing a person checks, not a thing this kit does.
+
 ## Where the declaration lives, and who may say what
 
 [Two independent design sketches](docs/research/2026-08-24-two-declaration-format-sketches.md) were
@@ -565,7 +682,11 @@ and lists its verbs, naming no flag, so the root surface reads `did not enumerat
 four-command modelled declaration for it reports `THE DIFF DID NOT RUN — 0 of 4 declared command
 paths compared`. anthill v2.3.0 is the better case and still a narrow one: its root rejection does
 name `--format`, so **1 of 25** paths compares, and its manifest has no slot for root flags, so the
-only comparable path is the one it cannot speak to (DT-1).
+only comparable path is the one it cannot speak to (DT-1). That `1 of 25` is **measured in this
+tree** against the anthill repo checkout, and it is the build that matters: the published `2.3.0`
+launcher answers the same probe `No command specified.`, naming no flag at all, so on that build
+nothing compares and the figure is a property of the build rather than of the version
+([DT-10](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-10--two-builds-of-the-same-declared-version-disagree-about-whether-the-root-enumerates)).
 
 So the `[C?]` on this Part, and every `yes` in the [`In v0` column](#the-fields-and-why-each-exists),
 carry a condition already stated in both places and worth stating plainly: **on any target that
@@ -657,6 +778,14 @@ the two modes; read it rather than a summary here.
 
 **Machine mode is a mode, not a flag on one command.** Once selected it should govern success
 output, failure output, and every subcommand alike.
+
+**The place it breaks is the command you would least expect, and the case was found by a reader of
+this page rather than by anything here.** anthill answers every command with `{ok, data, meta}` and
+every failure with `{ok: false, error, meta}` — except `help --json`, which returns the manifest as
+a bare document. The single machine output whose whole job is to be machine-readable is the one that
+does not speak the envelope, so a consumer written against the mode has to special-case the
+declaration ([DT-9](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-9--the-manifest-is-a-bare-document-while-every-other-output-is-enveloped),
+**measured in this tree**). Nothing here caught it: every check that would have runs below the root.
 
 **Declare what your machine mode covers, because two different things share the spelling.** `rg
 --json` selects a JSON Lines format for search results; it is not a CLI-wide output mode and does
