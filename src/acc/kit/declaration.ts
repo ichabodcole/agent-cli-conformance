@@ -8,8 +8,18 @@ import { type Surface, surfaceSummary } from "./surface.ts";
  *
  * `STANDARD.md` Part 1 asks a CLI for three things: emit a description of your own interface,
  * generate it from what implements the behaviour, and **check it against the running tool**. The
- * survey behind that page found the third part done nowhere, and said that if an adopter builds
- * one thing from the page before anything else, it is this. `surface.ts` is the expensive half —
+ * survey behind that page — `docs/research/2026-08-22-machine-readable-cli-declarations.md` —
+ * found nothing that probes a running tool and falsifies what it declares. The nearest thing
+ * anyone does is Azure's `azdev latest-index verify`, which that survey calls the cheapest
+ * generalisable drift gate found anywhere: regenerate from the live command table, byte-compare
+ * to the checked-in JSON, exit non-zero naming the stale file. It answers a different question,
+ * and answers it well — it catches a checked-in copy falling behind its generator. What it cannot
+ * catch is a declaration that was never right AT GENERATION TIME, which is exactly what
+ * `docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md` found (DT-2, DT-1): the
+ * generator faithfully emitted everything its type could hold, and the type had no slot for part
+ * of the surface. Regenerating changes nothing; the artifact has never been right. The survey
+ * also said that if an adopter builds one thing from the page before anything else, it is this
+ * third part. `surface.ts` is the expensive half —
  * the target's own account of its accepted flags, read out of a rejection the kit already
  * provoked. This file is the other half: the declared side, and the set difference.
  *

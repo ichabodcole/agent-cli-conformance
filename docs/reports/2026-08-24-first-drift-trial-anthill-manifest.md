@@ -40,8 +40,12 @@ say what it does.
 [The declaration survey](../research/2026-08-22-machine-readable-cli-declarations.md) established
 what that bet is up against. There is no standard. Of the artifacts that exist, every
 hand-authored one drifts from the tool it describes, none of them has a drift check, and every
-artifact that covers a real CLI completely is one the tool emits itself. Its flat conclusion:
-**nothing anywhere checks a tool against its own declaration.**
+artifact that covers a real CLI completely is one the tool emits itself. Its conclusion, scoped as
+the survey scopes it: **nothing found probes a running tool and falsifies what it declares.** The
+nearest thing it found anywhere is Azure's `azdev latest-index verify` — regenerate from the live
+command table, byte-compare to the checked-in JSON, exit non-zero naming the stale file. That gate
+is real and cheap, and it compares a generation against a regeneration; the findings below are the
+class it cannot see.
 
 This trial is the first time anyone did. anthill emits its manifest from the same `define.ts`
 structures its parser consumes — the generated-not-authored case, the strongest form of the

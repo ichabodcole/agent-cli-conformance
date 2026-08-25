@@ -59,8 +59,11 @@ CLI to declare its own interface**. The nearest things are `dotnet --cli-schema`
 maintainer, near-zero adoption) and `clispec` (closest in intent, four months old). Every
 hand-authored declaration format in that survey drifts from the tool it describes and none of them
 has a drift check; every artifact that covers a real CLI completely is one the tool emits itself.
-Fig accumulated 735 hand-written specs and is abandoned. **Nothing anywhere checks a tool against
-its own declaration.**
+Fig accumulated 735 hand-written specs and is abandoned. **Nothing found probes a running tool and
+falsifies what it declares** — the nearest thing anyone does is Azure's `azdev latest-index
+verify`, which regenerates from the live command table and byte-compares to the checked-in JSON.
+That is a real drift gate and a good one, and it compares one generation against another; a
+declaration that was wrong the first time it was generated passes it.
 
 So the person building their fourth agent-facing CLI has no spec to adopt, no scaffold that
 carries what the last three taught them, and no way to be told they have drifted.
