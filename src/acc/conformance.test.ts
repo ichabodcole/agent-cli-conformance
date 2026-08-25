@@ -495,10 +495,22 @@ describe("machine mode", () => {
     const env = JSON.parse(r.stdout);
     expect(env.ok).toBe(true);
     expect(env.next[0].exec).toBe("acc");
-    // Element-wise, not a substring of a joined string: the assertion has to fail if the
-    // interpolated rule id is ever folded back into one argument.
-    expect(env.next[0].args[0]).toBe("show");
-    expect(env.next[0].args).toHaveLength(2);
+
+    // The interpolated rule id has to be checked against the value it came from, not merely
+    // counted. Asserting args[0] and a length of 2 catches folding ("show A1" in one element)
+    // and nothing else: dropping the id, or emitting the wrong one, keeps both true. Compare
+    // the whole array against the row the offer is derived from, so the only way to pass is to
+    // carry that id, as its own element, in that position.
+    const firstRuleId = env.data.rules[0].rule_id;
+    expect(firstRuleId).toMatch(/^[A-Z]\d+$/); // a `?? ""` fallback must not satisfy the next line
+    expect(env.next[0].args).toEqual(["show", firstRuleId]);
+
+    // `when` is what tells a consumer whether to follow the offer, so an offer without it is
+    // half an offer. The wording is not asserted — freezing prose here would make every
+    // rewording a test failure — only that some is emitted.
+    expect(typeof env.next[0].when).toBe("string");
+    expect(env.next[0].when.length).toBeGreaterThan(0);
+
     expect(env.next[0].command).toBeUndefined();
   });
 });

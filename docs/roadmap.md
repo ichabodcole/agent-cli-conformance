@@ -92,15 +92,16 @@ it. A consumer can therefore run an offer safely and still not know whether it w
 [The error-envelope concept](./wiki/concepts/error-envelope.md#next-carries-remediation-as-an-executable-plus-an-argv-array)
 states both halves — what the field now is, and what it still does not carry.
 
-**Why first.** Three reasons compounded, and two still hold. `acc` emits `next` in every success
-envelope, so consumers can start depending on its shape today. The remaining change is small,
-touching the envelope and one declaration. And the cost curve is the one the project already
-argued about somewhere else: the [exit-code decision](./wiki/decisions/exit-codes-below-125.md)
-rests on KEP-2551 having been alpha-gated behind a feature flag since 2022 — "not because the
-design is unsound, but because retrofitting exit codes onto a tool with existing consumers is
-nearly impossible." A remediation schema is the same shape of decision, at the same stage. What
-has changed is the third reason: the safety consequence is no longer attached, so what is left
-is an ergonomic argument competing on ergonomic terms.
+**Why first.** Three reasons compounded; two are untouched and the third is weaker than it was.
+`acc` emits `next` in every success envelope, so consumers can start depending on its shape today.
+The remaining change is small, touching the envelope and one declaration. And the cost curve is the
+one the project already argued about somewhere else: the
+[exit-code decision](./wiki/decisions/exit-codes-below-125.md) rests on KEP-2551 having been
+alpha-gated behind a feature flag since 2022 — "not because the design is unsound, but because
+retrofitting exit codes onto a tool with existing consumers is nearly impossible." A remediation
+schema is the same shape of decision, at the same stage. What has changed is the third reason: the
+safety consequence is no longer attached, so what is left is an ergonomic argument competing on
+ergonomic terms.
 
 **Blocked on.** Nothing. The design argument is written; what is missing is the vocabulary for
 effects and placeholders, and the emitter that fills it in.
