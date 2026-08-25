@@ -318,7 +318,40 @@ case is a caller who is honest and whose capture is lossy in a way the bytes do 
   published field a reader is invited to audit. A merged capture cannot fill it honestly, so the
   record must be able to say _merged_ rather than have the kit guess `stderr`.
 - **A different binary.** The record says what some build of the tool did; nothing in it ties that
-  build to the declaration being diffed.
+  build to the declaration being diffed. **Answered on the consumer's proposal**
+  (`standard-grapevine`, message 32), and the answer is the shape decision applied one more time:
+  **make binary identity an observation in the batch, not an attestation on the record.** A
+  caller-supplied version _string_ is the pre-parsed-set problem again — the caller would be
+  attesting to a **reading**, which the shape decision above has just ruled out. The same session
+  that captures the rejections can capture `argv ["--version"]`, or the schema emission itself, as
+  one more observation-shaped record: same binary, same bytes, our extraction. The tie between the
+  recorded surfaces and the diffed declaration then rests on **the tool's own words, captured under
+  the same discipline as everything else**, and a batch missing its identity observation is legible
+  as exactly that — **unstated, not lied about**. A tool with no `--version` leaves the field
+  honestly empty, which is itself a finding: `D1` fails a target that reported no version at all
+  (`"--version reported no version"`), so the empty field is a fact the census already has a rule
+  about rather than a hole in the record.
+
+  **It narrows the gap; it does not close it, and this plan should not say otherwise.** A caller
+  can still record `--version` from one build and the rejections from another. What the proposal
+  changes is the **category** of that error: today it is an unstated assumption nobody can see or
+  contradict, and afterwards it is a **mistake** — a wrong claim, made in the tool's own words,
+  inside a batch that asserts one session. That is real progress, because mistakes are the kind of
+  thing a reader can catch and a caller can be shown. Two residues survive it, and both should be
+  said out loud rather than absorbed:
+
+  1. **The session, not the bytes, is what binds the records.** Nothing in an identity observation
+     ties it to the rejection observations beside it except the caller's assertion that they came
+     from one session. The batch stays the unit of trust and the line stays `recorded-by-caller`;
+     what improves is that the assertion is now **checkable against a tool's own output**, not
+     merely unstated.
+  2. **`D1` establishes less than the field looks like it carries.** Its detector is
+     `stdout.trim() !== ""`, and its own standing coverage gap says _"stdout is never checked to
+     carry a version string in either mode."_ So a present identity observation establishes that
+     the target said **something** under `["--version"]` — not that what it said is a version, and
+     not that two batches quoting different bytes are different builds. The field is honest in
+     both directions, which is the property being bought here; it is not a verification, and the
+     report must not print it as one.
 
 - [ ] **Say what happens then, rather than assume it away.** The record carries the fields that make
       the loss declarable — stream attribution including _merged_, and whatever the caller can say
@@ -327,6 +360,20 @@ case is a caller who is honest and whose capture is lossy in a way the bytes do 
       fails loudly on a truncated list, where a raw prefix reads as a whole. It is still the right
       trade, because the failure is confined to one labelled census line and the alternative moves
       the caller's extractor into every finding.
+- [ ] **The identity observation is optional and counted — the same treatment item 1 gave `effects`,
+      reached by a different argument rather than by proximity to it.** Requiring it would refuse a
+      batch over a property of the **target**: a tool with no `--version` cannot supply one, so a
+      hard requirement leaves the caller a choice between fabricating a reading and dropping the
+      capture — forced answers again, and this time they cost specimens the `SG-3` widening decision
+      is still waiting on. The honest-empty case has to be representable at all, and once it is, a
+      required field is indistinguishable from an optional one left blank. **Where it parts company
+      with `effects`:** an absent effects claim withholds a probe, so silence is fully priced by one
+      coverage total. An absent identity observation withholds nothing — every recorded surface is
+      still read and still reported — it only weakens the tie under **that batch's** lines. So the
+      count cannot only be a total at the top of the report: the unstated-identity fact must be
+      rendered **beside the `recorded-by-caller` label on the affected paths**, where the reader is
+      deciding what to make of that census line, with a total as a summary of it rather than a
+      substitute for it.
 
 **No format change and no version question.** Recorded surfaces are an input to a run, not a field
 in the declaration, so this item does not touch `formatVersion`, `TOP_LEVEL_KEYS`, or the ratchet in
