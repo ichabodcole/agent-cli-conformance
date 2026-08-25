@@ -35,11 +35,12 @@ Three boundaries hold throughout, and each one is load-bearing rather than decor
 
 - **Nothing here executes anything.** Ingestion is a read over bytes the caller already has. It
   needs no effects claim, no probe warrant, and no decision page.
-- **The kit classifies; the caller does not.** Inertness, readability, and whether one of the kit's
-  own reads was truncated are judgements the kit makes over the record. The caller supplies what the
+- **The kit classifies; the caller does not.** Inertness and readability are judgements the kit
+  makes over the record, exactly as it makes them over its own probes. The caller supplies what the
   tool did. There is one exception, and it is the subject of
   [the loss declaration](#the-loss-declaration) below: whether the caller's own capture was complete
-  is a fact only the caller can hold, which is why it is a declared field rather than a judgement.
+  is not something the record's bytes show, so the caller declares it rather than the kit judging
+  it — and because the caller may not hold that fact either, `unknown` is one of the values.
 - **The census reaches no verdict.** No finding here feeds `conformant`, and nothing here moves an
   exit code. A fabricated batch buys a sentence, not a pass.
 
@@ -461,11 +462,11 @@ caller's pipe, buffer or `head` did — so the caller declares it, and the field
 **Only `complete` is read.** The other two values are valid records that the batch accepts and the
 read excludes, with the census line saying which value excluded them.
 
-| `completeness` | What it says                                        | What the kit reads the record for | The census line for that path says                                             |
-| -------------- | --------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------ |
-| `"complete"`   | every byte the tool wrote is in this record         | both finding directions           | nothing extra — the `recorded-by-caller` label already carries who recorded it |
-| `"truncated"`  | the caller knows bytes were lost                    | nothing                           | `the caller recorded a truncated capture at this path, so it was not read`     |
-| `"unknown"`    | the caller cannot establish that no bytes were lost | nothing                           | `the caller could not establish this capture was complete, so it was not read` |
+| `completeness` | What it says                                        | What the kit reads the record for   | The census line for that path says                                             |
+| -------------- | --------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------ |
+| `"complete"`   | every byte the tool wrote is in this record         | an enumeration, in the ordinary way | nothing extra — the `recorded-by-caller` label already carries who recorded it |
+| `"truncated"`  | the caller knows bytes were lost                    | nothing                             | `the caller recorded a truncated capture at this path, so it was not read`     |
+| `"unknown"`    | the caller cannot establish that no bytes were lost | nothing                             | `the caller could not establish this capture was complete, so it was not read` |
 
 **Requiring the field is what dissolves the problem.** The original defect was never that a truncated
 capture might carry usable flags; it was that an **absent** `completeness` was read as `complete`, so
@@ -475,6 +476,14 @@ contract, in one rule: the field is required, and a record without it refuses th
 every other missing required key does. Three rounds of this document tried to fix it downstream
 instead, by finding something a truncated record could still be read for. Every one of those attempts
 bought the property back with another clause, and each clause needed the next.
+
+**The other fix in the space, and why it loses.** Keeping the field optional and reading an absence as
+`unknown` removes the same domination, and the two produce byte-identical reads, since only `complete`
+is read either way: silence defaulting to `complete` was the defect, and silence defaulting to
+`unknown` would not have been. What a required key adds is that the caller has to **state** the
+answer — three values, one of them an admission — rather than have one inferred for them from saying
+nothing, which is what an input contract is for and what makes the stored batch a record of what the
+caller claimed.
 
 **One rule now governs both provenances, and that is the decisive argument.** `isReadableRejection`
 (`surface.ts:346`) already refuses the kit's own truncated captures outright, for the reason quoted
@@ -578,7 +587,11 @@ line.** The field is required here for the same reason it is required on a recor
 vocabulary — but it excludes nothing, and the difference is what the two are read **for**. A record
 is read for a **set**, where a short list looks whole and fakes an absence. A quotation is read for
 **bytes**, nothing is diffed against it, and a cut makes it shorter rather than false. So the value
-prints beside the quote instead of removing it, and a reader knows the quote may be a fragment.
+prints beside the quote instead of removing it, and a reader knows the quote may be a fragment. The
+line it prints under the quote is `the caller recorded a truncated capture of this identity, so the
+quote may be short` for `truncated`, and `the caller could not establish this identity capture was
+complete, so the quote may be short` for `unknown`; the parenthesis below is unchanged, and
+`complete` prints neither.
 
 **Why its own key.** A record in `records[]` is filtered, read for an enumeration, and diffed at its
 path. `["--version"]` is flag-shaped and would land at the root, where reading it for a marked list of
@@ -590,7 +603,10 @@ rule somebody has to keep correct.
 `--version` cannot supply one, so a hard requirement leaves the caller choosing between fabricating a
 reading and dropping the capture — and dropping it costs the specimens the marker-widening decision is
 still waiting on. Once the honest-empty case has to be representable at all, a required field is
-indistinguishable from an optional one left blank.
+indistinguishable from an optional one left blank **in what the kit reads**. What it would add is the
+caller stating the answer, and here the answer is a property of the target rather than of the
+capture — which is not the caller's to state, and is why `completeness` takes the requirement and this
+does not.
 
 **Where this parts company with an optional `effects` claim, which is a different argument reaching
 the same shape.** An absent effects claim withholds a probe, so its silence is fully priced by one
@@ -699,7 +715,10 @@ cannot yet make, which is this project's own named defect one level in.
 **These are reasons a path had no surface at all. `no-evidence` is a status of a surface that exists**,
 and the plan is explicit that a caller record which arrives and yields no enumeration is not a fourth
 state: it lands in the statuses already built for it — `not-enumerated` when rejections were read and
-none named a set, `no-evidence` when nothing readable was recorded — on a path that was looked at.
+none named a set, `no-evidence` when nothing readable was recorded — on a path that was looked at. A
+record whose only candidate set echoed the sentinel back belongs to the first of those: it passes the
+shape test and is read, `readStream` yields nothing from it (`surface.ts:295`, `surface.ts:317`), and
+the path is `not-enumerated` rather than `no-evidence`.
 
 **So `no-evidence` now has two provenances**, and the sentence must render beside the
 `recorded-by-caller` label rather than on its own:
@@ -708,10 +727,9 @@ none named a set, `no-evidence` when nothing readable was recorded — on a path
 the tool)`, unchanged, under `probed-by-kit`.
 - _the caller's records were unreadable_ — under `recorded-by-caller`, and the line names **what**
   every record at that path missed: a `--` in the argv, no token after the path prefix, a token that
-  is not flag-shaped, a candidate set that echoed the sentinel back, or a `completeness` that was not
-  `complete`. Naming it is the difference between a caller who can fix their capture and one who
-  retries the same one — and the last of the five is a different fix from the other four, so the line
-  must not blur them together.
+  is not flag-shaped, or a `completeness` that was not `complete`. Naming it is the difference between
+  a caller who can fix their capture and one who retries the same one — and the last of the four is a
+  different fix from the other three, so the line must not blur them together.
 
 **An excluded record is not a missing one.** A path whose only records were excluded by their
 completeness is `no-evidence` under `recorded-by-caller` and never `not-recorded`: the caller
@@ -797,8 +815,9 @@ its argument attached:
 3. **`streams` is required, not optional**, and the rule underneath it is **knowability**: require
    what the caller holds by construction at the moment of answering, make optional and counted what
    they would have to guess at. Tested against the full field table in the same section, because the
-   aboutness version of the rule fails that test three times. `exitCode` is required **and
-   nullable** — a `2>&1 | tee` pipeline loses `$?`, and `null` is the honest answer.
+   aboutness version of the rule fails that test on two rows and cannot express the third shape at
+   all. `exitCode` is required **and nullable** — a `2>&1 | tee` pipeline loses `$?`, and `null` is
+   the honest answer.
 4. **`SurfaceEvidence.stream` gains `"merged"`.** Implied by the plan; stated here as the type change
    it is.
 5. **The batch carries its own `formatVersion`, one batch is accepted per run, and it arrives as
