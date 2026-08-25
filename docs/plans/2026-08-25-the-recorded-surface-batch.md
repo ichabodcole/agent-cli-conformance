@@ -651,6 +651,33 @@ claim, made in the tool's own words, inside a batch that asserts one session. Mi
 thing a reader can catch and a caller can be shown, which is why this is progress and why it is not a
 fix.
 
+**The first live specimen, and it is sharper than the hypothesis.** Recorded here as evidence rather
+than as a decision — nothing above changes, and the paragraph is stronger for having a case instead
+of a construction. The first batch produced against this document
+([vendored](../../src/acc/kit/fixtures/recorded-surfaces/PROVENANCE.md)) carries the identity
+`{"name":"grapevine","version":"2.2.0"}` at exit 0. **`2.2.0` currently names two different
+programs**, because Spellbook's release is deferred: the plugin-cache build the
+[eight-owner measurement](../reports/2026-08-24-eight-owner-clis.md) used, and the `develop` working
+tree these records came from. Verified in this checkout rather than taken on report: the cached
+2.2.0's `cli.ts` contains **no occurrence of the token `schema`**, while the develop tree's declares
+a `schema` verb — so the two disagree about a command, not about a patch level. The identity
+observation ties the batch to _a_ grapevine that answers `--version`; the thing that actually
+disambiguates is `recordedBy`, free text the kit reads for nothing.
+
+The hypothesis above was a caller who **mixes** two builds. This is worse and commoner: a caller who
+mixed nothing, recorded honestly, and whose tool's own words are still ambiguous — because a version
+string is a claim the target makes and nothing obliges it to be injective over builds. So the
+narrowing is bounded by the target's release discipline, and the caveat should be read as _narrows by
+as much as the target's own version string distinguishes_, which on a deferred release is not much.
+
+**Where it happens to narrow anyway, and why that is not reassuring.** The cached 2.2.0's `cli.ts`
+carries no `--version` route at all, so an identity of exit 0 with that JSON on stdout could not have
+come from it — the observation discriminates here, but by the accident of the older build lacking the
+flag rather than by the version string doing its job. A reader must not generalise from it: the
+discriminating fact was the **presence of a route**, which the kit does not know about any target,
+and not the bytes the route returned. This is the same shape as the parenthesis this section already
+requires — `D1`'s detector reads a non-empty stream, not a version — one level up.
+
 **An empty identity is a fact, not a hole**, on the batch's side. The census records that the batch
 states no identity, and says so on each affected line. It does not follow that `D1` failed: `D1` is a
 verdict about the binary **the kit** ran, and an absent identity observation is a silence about the
@@ -855,6 +882,38 @@ value now, so no value has to describe where the bytes went. And comparing `cons
 the non-truncated records at a path was needed when a truncated record could contribute a
 deliberately shortened list to compare against; every set at a path now comes from a `complete`
 record, so `consistent` means what it has always meant and needs no rule of its own.
+
+## First use, 2026-08-25 — what an outside implementer produced from this document
+
+Recorded here because it is the only evidence that exists about whether this document is writable
+against, and because a specification's first use is the one moment its defects are cheapest to find.
+
+`trellis` implemented against this document at `80104df` without a conversation about it, and
+captured two batches — grapevine, 32 records covering every declared below-root path; bounty, 3
+records for `SG-8`. Both are
+[vendored with attribution](../../src/acc/kit/fixtures/recorded-surfaces/PROVENANCE.md), and both
+were validated field by field against every rule this document pins, **before any reader existed to
+be written to fit them**.
+
+**No mismatch was found, in either direction.** Envelope keys, `formatVersion`, every required field,
+`completeness` present and `complete` throughout, the `streams` cross-field rules, `path` a prefix of
+`argv` on all 35 records, no forbidden key, no `path: []` record, and no `path` on either identity.
+Every enumerated token is flag-shaped under the kit's own `isFlag`, and no candidate set echoes the
+sentinel — so the sentinel-spelling trap this document calls _"the one thing that will bite an
+adopter twice"_ did not bite the first adopter once. That is a result about this document, and it is
+`n = 1`: the implementer is the same person who reviewed the design, so it says the format is
+writable by someone who had already argued about it.
+
+**One thing the first use added that the argument had not.** The [Why
+optional](#the-identity-observation) reasoning frames a tool with no `--version` as a caller choosing
+between fabricating a reading and dropping the capture. bounty has no `--version`, and its batch took
+a third option this document did not name: **record the failure as the identity** — exit 2, empty
+`stdout`, `bounty: unknown verb "--version"` on `stderr`, the absence in the tool's own words. It is
+in-spec already (`argv` is not checked against any literal, `exitCode` is read by nothing), it costs
+the reader nothing, and it is a better answer than the two the argument offered — the honest-empty
+case turns out to have honest **bytes** available in it. The [empty
+`stdout`](#the-identity-observation) rule already covers what gets printed. Nothing changes; the
+argument is now less confident than the format.
 
 ## Discharge
 
