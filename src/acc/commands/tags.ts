@@ -13,7 +13,13 @@ export function tagsCommand(mode: OutputMode, startedAt: number): void {
     startedAt,
     data: { count: rows.length, tags: rows },
     next: rows.length
-      ? [{ command: `acc rules --tag ${rows[0]?.tag}`, when: "to filter rules by a tag" }]
+      ? [
+          {
+            exec: "acc",
+            args: ["rules", "--tag", rows[0]?.tag ?? ""],
+            when: "to filter rules by a tag",
+          },
+        ]
       : [],
     renderText: (d) => {
       const dim = useColor() ? "\x1b[2m" : "";
