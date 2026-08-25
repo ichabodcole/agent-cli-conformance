@@ -58,8 +58,10 @@ export type SurfaceStatus =
   /** At least one rejection named a set of flags. `flags` is present. */
   | "enumerated"
   /**
-   * Rejections were read and none named a set. A STATEMENT ABOUT THE TOOL'S ERROR TEXT, and not
-   * about what it accepts: the tool has flags, it simply does not list them when it refuses one.
+   * Root-level rejections were read and none named a set. A STATEMENT ABOUT THE TOOL'S ROOT ERROR
+   * TEXT, and not about what it accepts: the tool has flags, it simply does not list them when it
+   * refuses one at the root. It says nothing about a subcommand — a verb-first CLI that enumerates
+   * one level down lands here too, which is why every rendered sentence names the scope.
    */
   | "not-enumerated"
   /**
@@ -120,8 +122,28 @@ export interface Surface {
   probesRead: number;
 }
 
-/** One long flag, whole. The shape every recognised list member must have — see `flagsAfter`. */
-const FLAG = /^--[A-Za-z][A-Za-z0-9-]*$/;
+/** One long flag, whole. */
+const LONG = /^--[A-Za-z][A-Za-z0-9-]*$/;
+
+/**
+ * One short flag, whole — a single dash and a single LETTER, and nothing else.
+ *
+ * `-h` and `-V` are members of the universal surface `STANDARD.md` itself recommends, so a
+ * long-only test truncated the captured set on any CLI following this project's own advice: a
+ * target enumerating `--help -h --version -V` was read as `[--help]`, and `declaration.ts` then
+ * reported the three lost flags as `declared-not-accepted` — findings against flags the tool
+ * plainly accepts. The reference target has no short aliases, which is why it never showed, and is
+ * the reason one reference target is a thin basis for a shape.
+ *
+ * A SINGLE LETTER, not a cluster: `-abc` is a bundle on one parser, a single old-style long name
+ * on another, and deciding which would be working out what one of the target's words MEANS — the
+ * one thing the module comment forbids. A digit is excluded too, so `-1` in ordinary error prose
+ * cannot open a list.
+ */
+const SHORT = /^-[A-Za-z]$/;
+
+/** The shape every recognised list member must have — see `flagsAfter`. */
+const isFlag = (token: string) => LONG.test(token) || SHORT.test(token);
 
 /**
  * A phrase that marks what follows as the accepted set, requiring the colon.
@@ -130,6 +152,27 @@ const FLAG = /^--[A-Za-z][A-Za-z0-9-]*$/;
  * is a signpost, and only the punctuation separates them from a matcher's point of view. The
  * adjective is required too: a bare "flags:" heading appears in help screens, changelogs and
  * commit messages.
+ *
+ * ## Two near misses, measured on a real target, and DECLINED (2026-08-24)
+ *
+ * An outside implementer running this against their own CLI hit two phrasings this pattern does
+ * not match, and adapted their wording rather than ask for a widening. Both are declarations by any
+ * ordinary reading; both are recorded here so the next person weighs evidence rather than intuition:
+ *
+ *   - `recognized root flags:`     — a qualifier between the adjective and the noun.
+ *   - `recognized flags for send:` — a qualifier after the noun, before the colon.
+ *
+ * The second is not a matcher problem at all: it declares a SUBCOMMAND's set. Capturing it here
+ * would publish `send`'s flags as the root's, which is the same overstatement `surfaceSummary` was
+ * corrected for, in a worse form — a set that genuinely belongs to another path. The honest home
+ * for it is the path-keyed shape `PathSurface` already anticipates, and reaching it needs a
+ * subcommand probe `L0` cannot send.
+ *
+ * The first is safe in meaning, and it is still one specimen from one target. Admitting an
+ * arbitrary token between adjective and noun widens the pattern for every target on the strength of
+ * that one, and the cost of being wrong is asymmetric: finding less leaves the previous state of
+ * knowledge, while a false surface puts words in a target's mouth in a section labelled as its own.
+ * A second independent specimen is what would change the answer.
  */
 const MARKER =
   /\b(valid|accepted|allowed|available|known|supported|recogni[sz]ed)\s+(flags|options|switches)\b\s*(?:are\s*)?:/gi;
@@ -165,6 +208,16 @@ const normaliseKey = (k: string) => k.toLowerCase().replace(/[^a-z]/g, "");
  * yields `["--format"]` and not the rest of the sentence. It also refuses the signpost shape
  * outright — "valid flags: see `acc --help`" starts with a word, so nothing is returned.
  *
+ * A SHORT FLAG IS AN ORDINARY MEMBER — `-h` is captured exactly as `--help` is, and the two are
+ * INDEPENDENT members of the set. Nothing in a rejection says which long flag a short one aliases;
+ * a list is a sequence of tokens, and pairing them would be reading a relationship the target never
+ * stated. So the downstream diff in `declaration.ts` compares spellings, as it already does: a
+ * declaration that names `--help` and not `-h` on a target enumerating both gets one
+ * `accepted-not-declared` finding for `-h`, which is a true statement about that document. Relating
+ * them would be an aliasing model — a field on `SurfaceEvidence`, a rule for which spelling is
+ * canonical, and a diff that has to decide whether declaring one declares the other — and that is
+ * far more than a line, so it is not here.
+ *
  * A MEMBER CARRYING ITS VALUE SLOT — `--format=<text|json>` — is not a flag by this test, so a
  * list that opens with one is read as no list at all. That is a real target this capture will
  * report as silent, and it is the direction the error has to fall: finding less leaves the
@@ -179,7 +232,7 @@ function flagsAfter(text: string): string[] {
     // a flag name.
     const token = raw.replace(/^[`'"([]+/, "").replace(/[`'")\].,;]+$/, "");
     if (token === "") continue;
-    if (!FLAG.test(token)) break;
+    if (!isFlag(token)) break;
     out.push(token);
   }
   return out;
@@ -203,7 +256,7 @@ function keyedSets(document: unknown): Array<{ key: string; values: string[] }> 
         // field that enumerates something else. `acc`'s own unknown-flag envelope carries
         // `choices: ["rules","show","path",...]` — its COMMANDS — and reading that as a flag
         // surface would publish a fabricated one for the kit's own reference implementation.
-        value.every((v) => typeof v === "string" && FLAG.test(v))
+        value.every((v) => typeof v === "string" && isFlag(v))
       ) {
         out.push({ key, values: value as string[] });
       }
@@ -348,16 +401,26 @@ export function captureSurface(observations: readonly Observation[]): Surface {
  * Shared by `acc check` and `acc compare` so the two cannot describe the same field differently —
  * the `not-enumerated` sentence in particular has to say the same thing in both places, because it
  * is the sentence this whole capture exists to get right.
+ *
+ * EVERY SENTENCE CARRIES ITS SCOPE, because every one of them is built from root-only probes. A
+ * verb-first CLI that enumerates richly one level down is indistinguishable HERE from one that
+ * never enumerates at all, so "did not enumerate" without "at the root" is a claim about the tool
+ * made from evidence that only covers its root — the same overreach as reading an empty array as a
+ * tool with no flags, one step further out. The `enumerated` sentence needs it for the mirror
+ * reason: a reader must not take a root list for the tool's whole surface.
  */
 export function surfaceSummary(s: Surface | undefined): string {
   if (!s) return "not recorded — this report predates the flag-surface capture";
   if (s.status === "enumerated") {
-    return `enumerated ${s.flags?.length ?? 0} flags: ${(s.flags ?? []).join(" ")}${
-      s.consistent === false ? "  (rejections disagreed; see the per-probe lists)" : ""
+    const flags = s.flags ?? [];
+    const n = flags.length;
+    const disagreed = s.consistent === false;
+    return `enumerated ${n} flag${n === 1 ? "" : "s"} at the root — the only path probed: ${flags.join(" ")}${
+      disagreed ? "  (rejections disagreed; see the per-probe lists)" : ""
     }`;
   }
   if (s.status === "not-enumerated") {
-    return `did not enumerate — ${s.probesRead} rejection${
+    return `did not enumerate at the root — the only path probed; ${s.probesRead} rejection${
       s.probesRead === 1 ? "" : "s"
     } read, none named a set (NOT a tool with no flags)`;
   }

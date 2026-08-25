@@ -11,6 +11,7 @@ import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { type Declaration, diffDeclaration } from "./declaration.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import { digestOfText } from "./runner.ts";
@@ -91,6 +92,35 @@ describe("what the capture recognises", () => {
     expect(s.flags).toEqual(["--a", "--b"]);
   });
 
+  test("a list mixing long and short flags, captured WHOLE", () => {
+    const s = captureSurface([
+      rejection(
+        `{"ok":false,"error":"Unknown option '--nope'. Valid flags: --help, -h, --version, -V"}`,
+      ),
+    ]);
+    // The defect this replaces stopped the read at `-h` and published `["--help"]`. Under-capture
+    // would be bad enough; what made it urgent is that `declaration.ts` diffs against this set, so
+    // the three lost flags came back as findings against flags the tool accepts. `-h` and `-V` are
+    // the universal surface STANDARD.md recommends, so any CLI following our own advice trips it.
+    expect(s.flags).toEqual(["--help", "--version", "-V", "-h"]);
+  });
+
+  test("a short flag in a structured field is an ordinary member too", () => {
+    const s = captureSurface([rejection(`{"error":{"validFlags":["-h","--help"]}}`)]);
+    // Every member must be flag-shaped, and a short flag IS flag-shaped — a long-only test made
+    // this whole field unreadable rather than merely short.
+    expect(s.flags).toEqual(["--help", "-h"]);
+  });
+
+  test("short and long are INDEPENDENT members, with no aliasing inferred", () => {
+    const s = captureSurface([rejection("valid flags: -h --help")]);
+    // Nothing in a rejection says `-h` aliases `--help`; they are two tokens in a list. Pairing
+    // them would be reading a relationship the target never stated, and would need a model — a
+    // canonical spelling, a field to carry it, a diff rule for whether declaring one declares the
+    // other. Both are published, and the declaration diff compares spellings as it always has.
+    expect(s.flags).toEqual(["--help", "-h"]);
+  });
+
   test("stdout is read when the rejection went there", () => {
     const s = captureSurface([rejection("", { stdout: "valid flags: --a" })]);
     expect(s.evidence[0]?.stream).toBe("stdout");
@@ -120,6 +150,22 @@ describe("what the capture refuses, which is the half that keeps it honest", () 
   test("a marker followed by words rather than flags", () => {
     const s = captureSurface([rejection("unknown option; valid flags: see the manual")]);
     expect(s.status).toBe("not-enumerated");
+  });
+
+  test("a single dash and MORE than one letter is not a short flag", () => {
+    // `-abc` is a bundle of three on one parser and one old-style long name on another, and
+    // nothing in a rejection says which. Choosing would be working out what one of the target's
+    // words MEANS, which is the line this file does not cross — so the list stops there.
+    expect(captureSurface([rejection("valid flags: -abc")]).status).toBe("not-enumerated");
+    expect(captureSurface([rejection("valid flags: --a -abc --b")]).flags).toEqual(["--a"]);
+  });
+
+  test("a lone dash, a digit and a bare `--` open nothing", () => {
+    // Ordinary error prose is full of these. `-1` in particular is a number in a sentence far more
+    // often than it is a flag, and widening to short flags must not turn one into the other.
+    for (const text of ["valid flags: -", "valid flags: -1 --a", "valid flags: -- --a"]) {
+      expect(captureSurface([rejection(text)]).status).toBe("not-enumerated");
+    }
   });
 
   test("a closed set of SUBCOMMANDS under `choices`, which is acc's own envelope", () => {
@@ -214,8 +260,70 @@ describe("what the capture says about a target that did not enumerate", () => {
     expect(text).toContain("NOT a tool with no flags");
   });
 
+  test("the summary says WHERE it did not enumerate, because root is all that was probed", () => {
+    // The probes behind this are root-only, so a verb-first CLI that enumerates richly one level
+    // down is indistinguishable here from one that never enumerates at all. "did not enumerate"
+    // unqualified is a claim about the tool made from evidence that covers only its root.
+    const text = surfaceSummary(captureSurface([rejection("error: unknown option '--x'")]));
+    expect(text).toContain("did not enumerate at the root — the only path probed");
+    expect(text).toContain("1 rejection read");
+  });
+
+  test("...and the enumerated sentence names the same scope, for the mirror reason", () => {
+    // A root list is not the tool's whole surface, and a reader must not be able to take it for
+    // one. Both sentences come from `surfaceSummary`, so `acc check` and `acc compare` cannot
+    // disagree about the scope either.
+    const text = surfaceSummary(captureSurface([rejection("valid flags: --a")]));
+    expect(text).toContain("enumerated 1 flag at the root — the only path probed: --a");
+  });
+
   test("a report predating the capture says so rather than reading as silence", () => {
     expect(surfaceSummary(undefined)).toContain("not recorded");
+  });
+});
+
+describe("the harm the truncation actually did, one level downstream", () => {
+  // The lost flags were not merely missing from the report. `declaration.ts` diffs a declaration
+  // against this set, so every flag the read dropped came back as `declared-not-accepted` — the
+  // kit accusing a tool of publishing flags its own parser refuses, about flags it accepts. That
+  // is the defect, and this is the assertion that holds the fix to it.
+  const declaring = (names: string[]): Declaration => ({
+    formatVersion: "0",
+    provenance: "modelled",
+    selfDescription: null,
+    commands: [
+      {
+        path: [],
+        args: names.map((name) => ({ name, type: "boolean" as const, status: "valid" as const })),
+        positionals: [],
+      },
+    ],
+  });
+
+  test("a declaration of all four flags produces NO false `declared-not-accepted`", () => {
+    const surface = captureSurface([
+      rejection(
+        `{"ok":false,"error":"Unknown option '--nope'. Valid flags: --help, -h, --version, -V"}`,
+      ),
+    ]);
+    const d = diffDeclaration(declaring(["--help", "-h", "--version", "-V"]), [
+      { path: [], surface },
+    ]);
+    // Three of these were reported before the fix, on a target accepting all four.
+    expect(d.findings.filter((f) => f.kind === "declared-not-accepted")).toEqual([]);
+    // ...and the diff RAN — an empty finding list would otherwise be indistinguishable from a
+    // comparison that never happened, which is the distinction `status` exists to draw.
+    expect(d.status).toBe("checked");
+    expect(d.findings).toEqual([]);
+  });
+
+  test("a declaration that names only the long spellings still reports the short ones", () => {
+    const surface = captureSurface([rejection(`{"error":{"validFlags":["--help","-h"]}}`)]);
+    const d = diffDeclaration(declaring(["--help"]), [{ path: [], surface }]);
+    // Not an alias the diff can quietly absorb: the document does not name `-h`, and a caller
+    // holding only that document cannot reach it. Relating the two spellings would take an
+    // aliasing model nothing in a rejection supports — see `flagsAfter`.
+    expect(d.findings.map((f) => [f.kind, f.subject])).toEqual([["accepted-not-declared", "-h"]]);
   });
 });
 
@@ -246,6 +354,24 @@ describe("against real fixtures", () => {
     const s = captureSurface(h.observations);
     expect(s.status).toBe("enumerated");
     expect(s.flags).toEqual(["--format", "--verbose"]);
+    expect(s.consistent).toBe(true);
+  }, 60_000);
+
+  test("a target whose enumeration mixes long flags with their short aliases", async () => {
+    // The universal surface STANDARD.md recommends, in one list. The reference target has no short
+    // aliases, so nothing in this tree exercised the mixed list until an outside implementer ran
+    // the kit against a CLI that follows our own advice — and got three findings against flags
+    // their tool accepts.
+    const h = await record(
+      {
+        path: fixture("enumerates-long-and-short-flags.ts"),
+        argv0: ["bun", fixture("enumerates-long-and-short-flags.ts")],
+      },
+      CHECKERS,
+    );
+    const s = captureSurface(h.observations);
+    expect(s.status).toBe("enumerated");
+    expect(s.flags).toEqual(["--format", "--help", "--version", "-V", "-h"]);
     expect(s.consistent).toBe(true);
   }, 60_000);
 
@@ -284,7 +410,9 @@ describe("against real fixtures", () => {
       { encoding: "utf8" },
     );
     expect(run.stdout).toContain("SELF-DECLARED FLAGS");
-    expect(run.stdout).toContain("enumerated 2 flags: --format --verbose");
+    expect(run.stdout).toContain(
+      "enumerated 2 flags at the root — the only path probed: --format --verbose",
+    );
     expect(run.stdout).toContain('prose-marker "Valid flags:" on stderr');
     // C3, D4 and F2 record the same unknown-flag argv several times over, so an unfolded list
     // shows one declaration as six and a reader counts six.

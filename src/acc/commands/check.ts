@@ -437,7 +437,8 @@ export async function checkCommand(
         // tools, and a section that appears only on the tools that do would leave the reader
         // unable to tell a silent target from a capture that never ran. Nothing here is a
         // verdict, and the heading says so before the reader reaches the data.
-        "  SELF-DECLARED FLAGS — read back from the target's own rejection of an unknown flag.",
+        "  SELF-DECLARED FLAGS — read back from the target's own rejection of an unknown flag at",
+        "  the root, which is the only path the kit probes.",
         "  Evidence, not a rule: nothing in this report passes or fails on it.",
         `    ${surfaceSummary(r.surface)}`,
         // Where each list came from, so a reader can re-run the probe and see the same bytes
