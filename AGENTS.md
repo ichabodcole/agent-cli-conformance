@@ -13,6 +13,8 @@ the same change: a grounding file that lies is worse than one that stays silent.
 
 | Path                 | What it is                                                                        |
 | -------------------- | --------------------------------------------------------------------------------- |
+| `CHARTER.md`         | what the project is for. A proposal that does not serve it is rejected            |
+| `STANDARD.md`        | the guidance itself — the primary product, and what an adopter reads              |
 | `docs/wiki/`         | the spec. `SCHEMA.md` is the contract for editing it; `STYLE.md` is the prose bar |
 | `docs/research/`     | the evidence, dated and frozen — a corpus, never brought up to date               |
 | `docs/reports/`      | findings someone is expected to act on; each one completes and discharges         |
