@@ -20,6 +20,7 @@ coverage_gaps:
   - only an unknown flag and an unknown verb are probed
   - the SHOULD to enumerate a closed set as choices is not exercised
   - the assertion is that the sentinel substring reached stderr and not that the whole offending token appears verbatim
+  - the verb probe assumes the first positional selects a subcommand so a target that reads it as free-form data is judged for not naming a token it never rejected
 coverage_established:
   - the stderr of an unknown root flag rejection contains the probe's sentinel string
   - the stderr of an unknown root verb rejection contains the probe's sentinel string
@@ -144,6 +145,7 @@ the rest of this page, unexamined.
 - the SHOULD to enumerate a closed set as choices is not exercised
 - the assertion is that the sentinel substring reached stderr and not that the whole offending token
   appears verbatim
+- the verb probe assumes the first positional selects a subcommand so a target that reads it as free-form data is judged for not naming a token it never rejected
 
 ## Evidence
 

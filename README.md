@@ -168,7 +168,7 @@ first CLI](docs/wiki/guides/check-your-first-cli.md) walks through a real one.
 CONFORMANT (L0) — 0 core violated, 1 core unverified, 16 core partially covered  ./conforming.ts  [acc 0.1.0]
 
   PASS+ A1  root flag rejected with exit 2, stdout empty, flag named; the same flag carrying a value likewise
-  PASS+ A2  root verb rejected with exit 2; nested case not probed at L0
+  PASS+ A2  root verb rejected with exit 2; nested case not probed at L0; this verdict assumes the first positional selects a subcommand, which nothing at L0 established
 ```
 
 <!-- x-release-please-end -->

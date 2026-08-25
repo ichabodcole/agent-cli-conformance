@@ -1,5 +1,5 @@
 import { crashedUnverified, findingFor, truncatedUnverified } from "../../finding.ts";
-import { SENTINEL } from "../../inert.ts";
+import { SENTINEL, VERB_DISPATCH_ASSUMED } from "../../inert.ts";
 import type { Checker, Discovery, Finding, History, Invocation, Observation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -47,11 +47,19 @@ export const usageDistinguishableChecker: Checker = {
   // one is byte-identical to, so the recorder runs it once. What is left is the unexpected
   // positional, and it stays out of reach for the reason A4 does: a stray positional is only a
   // stray positional if there is a verb for it to be stray to, and sending a verb is L1.
+  //
+  // The fourth gap is about the population itself rather than its size: ONE OF THE FOUR SHAPES IS
+  // ONLY A USAGE ERROR IF THE TARGET DISPATCHES VERBS. Against `ripgrep` the verb shape returned
+  // `1` — its documented no-match code, from a search that ran — and this checker collected
+  // `(2,1,2)` and called one of the cleanest exit-code taxonomies in circulation inconsistent.
+  // Every verdict that compares the codes says so now (`VERB_DISPATCH_ASSUMED` in inert.ts); none
+  // of them changes, because dropping the shape needs the target to declare it.
   coverage: "partial",
   coverageGaps: [
     "the internal-fault contrast is not established at L0 because no internal fault can be provoked inertly",
     "the taxonomy codes for more specific failures are not exercised",
     "an unexpected positional is never compared because a stray positional needs a verb to be stray to and sending a verb is above L0",
+    "the verb shape assumes the first positional selects a subcommand so a target that reads it as free-form data contributes an exit code that is not a usage error at all",
   ],
   coverageEstablished: [
     "an unknown root flag and an unknown root verb and the bare invocation all exit with the same non-zero code",
@@ -163,13 +171,20 @@ export const usageDistinguishableChecker: Checker = {
     const evidence = usage.map((o) => o.id);
     const codes = usage.map((o) => o.exitCode);
 
+    // Attached to every verdict below that reads these codes, because the verb shape is a member
+    // of the population all of them compare. Dropped where a waiver has already withdrawn that
+    // shape, since the premise is no longer load-bearing there.
+    const assumed = usage.some((o) => hasPurpose(o, "C2: usage error via verb"))
+      ? `; ${VERB_DISPATCH_ASSUMED}`
+      : "";
+
     if (codes.some((c) => c === 0)) {
-      return finding("fail", `a usage error exited 0 (${codes.join(",")})`, evidence);
+      return finding("fail", `a usage error exited 0 (${codes.join(",")})${assumed}`, evidence);
     }
     if (new Set(codes).size !== 1) {
       return finding(
         "fail",
-        `the same error class produced different codes (${codes.join(",")})`,
+        `the same error class produced different codes (${codes.join(",")})${assumed}`,
         evidence,
       );
     }
@@ -187,12 +202,12 @@ export const usageDistinguishableChecker: Checker = {
     return codes[0] === 2
       ? finding(
           "pass",
-          `${codes.length} usage-error shapes all use exit 2; internal-fault contrast unverified at L0${narrowed}`,
+          `${codes.length} usage-error shapes all use exit 2; internal-fault contrast unverified at L0${narrowed}${assumed}`,
           evidence,
         )
       : finding(
           "unverified",
-          `usage errors are consistent at exit ${codes[0]}, but not the declared 2, and no taxonomy was declared${narrowed}`,
+          `usage errors are consistent at exit ${codes[0]}, but not the declared 2, and no taxonomy was declared${narrowed}${assumed}`,
           evidence,
         );
   },

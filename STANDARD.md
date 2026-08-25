@@ -510,12 +510,26 @@ spelling produces a **false pass** in this repository's own kit — reproduced a
 help documents it as writing a body to a file — which is the honest reason this page asks for a
 declaration instead of a convention.
 
-**[C]** `B2` (no ANSI when piped), `B1` (stdout carries only data), `B3` (machine output parses),
-`B5` (machine mode holds on the parser-error path), `D3` (help advertises it, diagnostic). **[C?]**
-The precedence order and the two-way override — nothing measures either, and neither needs anything
-the kit does not already have; likewise "governs every subcommand alike", which is only unreachable
-because nothing probes below the root. **[—]** Whether the mode's behaviour survives the next
-release.
+**[C]** `B2` (no ANSI when piped), `B1` (stdout carries only data), `D3` (help advertises it,
+diagnostic).
+
+**[C?]** `B3` (machine output parses) — listed as checked today until this revision, and it is not.
+Its checker declares `probes: []`, every branch returns `unverified`, and its own
+`coverageEstablished` reads _"nothing at L0"_
+([`machine-output-parseable.ts`](src/acc/kit/checkers/streams/machine-output-parseable.ts)). Its
+subject is the output of a **data command**, and selecting one means knowing it is side-effect-free.
+`B5` (machine mode holds on the parser-error path) is a genuine probe and sound at the root, but it
+is gated on `defaultOutput` and reported `unverified` on **all eight** targets of the
+[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) — every one of which is a machine-mode
+tool, so the rule is currently unreachable on the population it was proposed for. Each becomes live
+on a declaration and neither needs new kit machinery: `defaultOutput` for `B5`, and for `B3` a
+command declared read-only whose output the kit is licensed to read.
+
+Also **[C?]**: the precedence order and the two-way override — nothing measures either, and neither
+needs anything the kit does not already have; and "governs every subcommand alike", unreachable both
+because nothing probes below the root and because reaching it means running a subcommand.
+
+**[—]** Whether the mode's behaviour survives the next release.
 
 ## Complete and untruncated output
 
@@ -596,8 +610,10 @@ means "I could not count" is a lie a caller cannot detect, and a field that is a
 present-and-null is unreadable, because absence and a null answer are the same bytes.
 
 **[C]** `B1` (stdout carries only data, so it is empty when the command failed), `A3` (an error
-names the offending token), `B5` (machine mode holds on the parser-error path), `C2` (usage errors
-distinguishable from internal faults).
+names the offending token), `C2` (usage errors distinguishable from internal faults) — and `B5`
+(machine mode holds on the parser-error path) **only where `defaultOutput` is declared**, which was
+true of none of the eight targets in the
+[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md).
 **[C?]** `kind`, `retryable`, the two-shape discipline and the `choices` list — all checkable the
 moment the envelope's field names are declared, which is exactly what
 [A3's coverage gap asks for](docs/wiki/rules/parsing/errors-name-the-offending-token.md). **[—]**
@@ -761,9 +777,21 @@ Likewise, this page asserts **no flag spelling**. `sqlite3`, `openssl`, `ip`, GR
 and GDAL use single-dash long options; `dig +short`, `ps aux`, `tar cfv` and `dd if=/of=` are not
 even the same grammar. None of that falsifies anything above, and none of it is a defect.
 
-**[C]** `A1`–`A7`, at the root only. **[C?]** All of them one level down, which is the largest single
-block of coverage debt in the catalogue and is blocked on exactly one thing: the tool declaring that
-the subcommand exists.
+**[C]** `A1`–`A3` and `A5`–`A7`, at the root only — with `A6` and `A7` carrying a caveat the
+[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) measured: both returned `unverified` on
+all eight targets, `A6` because a `bun` launcher swallows the leading `--` before the target sees
+it, `A7` because its prose extractor found no closed value set to falsify. Neither is a target fact
+and both checkers can resolve on other shapes, but on the population `acc` handles best they have
+yet to. **[—]** `A4` — the silently swallowed positional,
+which is the second item in the shape above — at any depth: its checker declares no probe and
+returns `unverified` unconditionally
+([`unexpected-positionals.ts`](src/acc/kit/checkers/parsing/unexpected-positionals.ts)), because
+testing arity means sending extra positionals to a _real_ verb and running it. It becomes checkable
+on a per-command `effects: read_only` declaration or a sandbox, not on discovery. **[C?]** The rest
+of them one level down, which is the largest single block of coverage debt in the catalogue —
+blocked on the tool declaring that the subcommand exists, and, for every one of them whose probe
+would run the subcommand rather than ask it for help, blocked a second time on knowing that command
+is safe to run. `bounty close --help` closed the board.
 
 ---
 
@@ -776,7 +804,20 @@ it buys today against what it buys eventually.
 
 Twenty-three rules — twenty-two of them with a checker behind them — probing the root and nothing
 below it, every one declaring `coverage: partial` over more than 90 named gaps
-([the catalogue](docs/wiki/index.md)). What they establish is real and narrow: an unknown flag
+([the catalogue](docs/wiki/index.md)).
+
+**A checker existing is not the same as a check running, and two of the twenty-two do not run one.**
+`B3` and `A4` both declare `probes: []` and return `unverified` from every branch; their own
+`coverageEstablished` fields say so in as many words —
+[_"nothing at L0"_](src/acc/kit/checkers/streams/machine-output-parseable.ts) and
+[_"nothing because no probe is declared"_](src/acc/kit/checkers/parsing/unexpected-positionals.ts).
+A third, `B5`, has a real probe but is gated on `defaultOutput` and reported `unverified` on all
+eight targets of the [owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md). Read the number
+as **twenty-three rules, nineteen of which can return a verdict at all against an undeclared
+target** — and measured rather than reasoned, that run found **only eight rules that discriminated
+between its eight targets**.
+
+What the ones that do run establish is real and narrow: an unknown flag
 exits non-zero, help succeeds and is deterministic, stdout carries only data, no ANSI reaches a
 pipe, identical invocations produce identical codes, nothing blocks with stdin closed, nothing
 crashes on an inert path.
@@ -811,20 +852,43 @@ one of them was a missing capability a rule actually caught.
 
 ## Checkable, and not built
 
-Each of these needs a declaration and nothing else. That is the point.
+Most of these need a declaration and nothing else. That is the point, and the two rows marked
+**[—]** below are where it stops holding: they need a declaration _and_ a way to run a subcommand
+safely, which is a different kind of thing to be missing and belongs under a different mark.
 
 - **Declared against accepted, per command** — the valid-flag census. Available today against any
   target whose parse errors name the valid set, and it needs no kit.
 - **The declared self-description invocation actually runs and parses.**
-- **Every declared command answers `--help` rather than "unknown command."**
-- **Every declared boolean flag is accepted; every declared value flag rejects a missing value.**
+- **[—] Every declared command answers `--help` rather than "unknown command."** This row read
+  **[C?]** until this revision and the correction comes from this project's own corpus: checking it
+  means _running a subcommand_, and a subcommand's help path is not inert. In the archaeology
+  `bounty close --help` **closed the board**, `state --help` dumped it, and `tail --help` opened a
+  stream that never exited
+  ([defect archaeology §6.1](docs/research/2026-08-15-defect-archaeology.md)). So a declaration that
+  the command exists does not make this checkable; what would is a declared, emitted, read-only
+  **effects** claim per command — or a real OS sandbox — and effects is filed under
+  [nothing outside can check it](#nothing-outside-can-check-it) below, which is why the mark is
+  `[—]` and not `[C?]`. The kit already refuses the shape rather than guessing at it:
+  `classifyInertness` in [`src/acc/kit/inert.ts`](src/acc/kit/inert.ts) grants a `help-path`
+  classification only when _every_ argv token is a help or format token, so `mycli deploy --help`
+  does not classify and will not run. **The recommendation is unchanged**; only the claim about who
+  can verify it is.
+- **Every declared value flag rejects a missing value.** A parser-error probe, sound at the root,
+  and a declaration is genuinely all it needs.
+- **[—] Every declared boolean flag is accepted.** These two were one bullet until this revision,
+  and they split because only one half survives the same test as `--help` above. Rejecting a missing
+  value is a parser error, observable before anything runs; an _accepted_ flag is accepted **by
+  running the command**, and there is no observation of acceptance that is not an execution. So this
+  half waits on the effects claim or the sandbox, not on a declaration of the flag.
 - **Every declared enforced value set rejects an out-of-set value.**
 - **The declared error-envelope fields carry what they say they carry.**
 - **The declared exit-code mapping holds** — provoke each kind, compare.
 - **The emission does not contradict the tool's own help.** This one is special: it is a
   disagreement between two of the tool's own outputs, so it is a legitimate finding whichever one is
   wrong, and it needs no external model at all.
-- **Everything the catalogue already checks, one level down.**
+- **Everything the catalogue already checks, one level down** — for the rules whose probe is a help
+  path or a parser error only. Discovery is the blocker there. For any rule whose probe would have
+  to _run_ the subcommand, read the two `[—]` rows above: that half is blocked twice over.
 
 ## Nothing outside can check it
 

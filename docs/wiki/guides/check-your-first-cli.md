@@ -106,10 +106,10 @@ Scroll back through either report. Four markers appear in the left column, and o
 means "broken":
 
 ```
-PASS+ A2  root verb rejected with exit 2; nested case not probed at L0
+PASS+ A2  root verb rejected with exit 2; nested case not probed at L0; this verdict assumes ...
 N/A   A4  arity cannot be probed at L0 — testing it requires running a real subcommand ...
 UNVR  A6  cannot be probed through a `bun` launcher: bun swallows the leading `--` ...
-FAIL  A3  flag rejection did not name the flag; verb rejection did not name the verb
+FAIL  A3  flag rejection did not name the flag; verb rejection did not name the verb (this ...)
 ```
 
 - **FAIL** — the probe ran and the rule was broken. Only this one blocks conformance.
