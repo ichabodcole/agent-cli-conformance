@@ -6,6 +6,10 @@ and framework maintainers make ordinary command-line tools predictable, machine-
 safely operable by autonomous agents, using an executable specification and black-box evidence
 rather than documentation alone.
 
+**Start with [`STANDARD.md`](STANDARD.md)** if you are building a CLI — it is the guidance itself,
+and it is the primary product. [`CHARTER.md`](CHARTER.md) states what the project is for and what it
+is trying to make true; everything else here is the evidence and the checker that serve those two.
+
 **For** — CLI authors, framework and scaffold maintainers, and platform/tooling teams;
 agent-harness authors second. It is a conformance suite for _ordinary CLIs consumed by agents_,
 not for agent applications that happen to have a CLI. If a person types your tool and a script
