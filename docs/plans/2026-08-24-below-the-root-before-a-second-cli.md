@@ -359,12 +359,13 @@ case is a caller who is honest and whose capture is lossy in a way the bytes do 
      report must not print it as one.
 
 - [ ] **Say what happens then, rather than assume it away.** The record carries the fields that make
-      the loss declarable — stream attribution including _merged_, and whatever the caller can say
-      about completeness — and the report says which of them the caller left unstated. This is the
-      one place the raw shape is genuinely weaker than a parsed one would be: a parsed set at least
-      fails loudly on a truncated list, where a raw prefix reads as a whole. It is still the right
-      trade, because the failure is confined to one labelled census line and the alternative moves
-      the caller's extractor into every finding.
+      the loss declarable — stream attribution including _merged_, and a completeness declaration —
+      and the report says what each one cost the read. The worry when this item was written was that
+      a raw prefix reads as a whole where a parsed set at least fails loudly on a truncated list.
+      [The batch document](2026-08-25-the-recorded-surface-batch.md#completeness) answers it by
+      making completeness a required field and reading only `complete`, which is the rule
+      `isReadableRejection` already applies to the kit's own truncated captures — so the raw shape
+      is not weaker here after all, and the caller's extractor still stays out of every finding.
 - [ ] **The identity observation is optional and counted — the same treatment item 1 gave `effects`,
       reached by a different argument rather than by proximity to it.** Requiring it would refuse a
       batch over a property of the **target**: a tool with no `--version` cannot supply one, so a

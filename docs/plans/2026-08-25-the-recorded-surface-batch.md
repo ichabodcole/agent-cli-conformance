@@ -5,8 +5,9 @@ status: draft
 lifecycle: live
 description:
   The pinned shape of a batch of caller-recorded surfaces, and what the kit does with each field.
-  Raw observation-shaped records, a declared loss residue for merged streams and truncation, an
-  optional counted identity observation, and the provenance label every census line carries.
+  Raw observation-shaped records, a merged-stream attribution and a required completeness
+  declaration, an optional counted identity observation, and the provenance label every census line
+  carries.
 tags: [declaration, adoption, evidence, safety, probe-level]
 ---
 
@@ -95,6 +96,7 @@ and the batch is therefore the unit of trust.
     "streams": "separated",
     "stdout": "grapevine 0.4.1\n",
     "stderr": "",
+    "completeness": "complete",
     "recordedBy": "ci@grapevine",
     "recordedAt": "2026-08-25T09:14:02Z"
   }
@@ -200,18 +202,18 @@ on. A caller with two sessions runs twice.
 }
 ```
 
-| Field          | Required       | Type                        | What the kit does with it                                                                                                                                                      |
-| -------------- | -------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `path`         | yes            | non-empty `string[]`        | Keys the `PathSurface` this record contributes to, and is the path the census line names. `[]` [refuses the batch](#the-root-is-the-kits-and-a-path--record-refuses-the-batch) |
-| `argv`         | yes            | `string[]`                  | Decides whether this record is a rejection **at that path** — the kit's own filter, applied to the caller's argv                                                               |
-| `exitCode`     | yes            | `number \| null`            | Reported beside the record; read by no part of the extraction                                                                                                                  |
-| `streams`      | yes            | `"separated" \| "merged"`   | Names which stream fields are present, and fills `SurfaceEvidence.stream` for anything read out of this record                                                                 |
-| `stdout`       | when separated | `string`                    | Read for an enumeration, second                                                                                                                                                |
-| `stderr`       | when separated | `string`                    | Read for an enumeration, first                                                                                                                                                 |
-| `output`       | when merged    | `string`                    | Read for an enumeration; evidence from it is attributed `merged`                                                                                                               |
-| `completeness` | no             | `"complete" \| "truncated"` | `truncated` narrows what the record is read for; absent is rendered on every census line it touches. See [below](#the-loss-declaration)                                        |
-| `recordedBy`   | yes            | non-empty `string`          | Printed with the batch. Free text: a person, a CI job, a script                                                                                                                |
-| `recordedAt`   | yes            | RFC 3339 `string`           | Printed with the batch                                                                                                                                                         |
+| Field          | Required       | Type                                     | What the kit does with it                                                                                                                                                      |
+| -------------- | -------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `path`         | yes            | non-empty `string[]`                     | Keys the `PathSurface` this record contributes to, and is the path the census line names. `[]` [refuses the batch](#the-root-is-the-kits-and-a-path--record-refuses-the-batch) |
+| `argv`         | yes            | `string[]`                               | Decides whether this record is a rejection **at that path** — the kit's own filter, applied to the caller's argv                                                               |
+| `exitCode`     | yes            | `number \| null`                         | Reported beside the record; read by no part of the extraction                                                                                                                  |
+| `streams`      | yes            | `"separated" \| "merged"`                | Names which stream fields are present, and fills `SurfaceEvidence.stream` for anything read out of this record                                                                 |
+| `stdout`       | when separated | `string`                                 | Read for an enumeration, second                                                                                                                                                |
+| `stderr`       | when separated | `string`                                 | Read for an enumeration, first                                                                                                                                                 |
+| `output`       | when merged    | `string`                                 | Read for an enumeration; evidence from it is attributed `merged`                                                                                                               |
+| `completeness` | yes            | `"complete" \| "truncated" \| "unknown"` | Only `complete` is read for an enumeration. The other two exclude the record, and the census line names the exclusion. See [below](#completeness)                              |
+| `recordedBy`   | yes            | non-empty `string`                       | Printed with the batch. Free text: a person, a CI job, a script                                                                                                                |
+| `recordedAt`   | yes            | RFC 3339 `string`                        | Printed with the batch                                                                                                                                                         |
 
 `path` **must be a prefix of** `argv`. That is what makes the record self-checking: a record claiming
 `path: ["state"]` whose argv begins `["send"]` is a filing mistake the reader can catch, and without
@@ -237,8 +239,8 @@ change the tree owes, listed under
 The other half of the root filter has no counterpart here at all: `isReadableRejection` gates on the
 **inertness class**, and inertness is a kit-side judgement over a probe the kit sent — a
 [field the caller must not send](#fields-the-caller-must-not-send). For a record, these three rules
-are the whole test. Without them written down, an adopter captures in good faith and gets a silent
-`no-evidence` with nothing to fix. All three must hold:
+are the whole of the shape test. Without them written down, an adopter captures in good faith and
+gets a silent `no-evidence` with nothing to fix. All three must hold:
 
 1. **No `--` anywhere in `argv`.** A bare terminator makes everything after it data (`A6`), so the
    rejection it provokes on a target that honours it is about a **positional**, not about a flag.
@@ -248,9 +250,10 @@ are the whole test. Without them written down, an adopter captures in good faith
 3. **Every token after the prefix is flag-shaped** — `--long-name` or a single-letter `-x`. Not
    `-1` (a digit opens no list), not `-abc` (a bundle on one parser and an old-style long name on
    another, and deciding which would be reading what one of the target's words means).
-   A record that passes all three is **read**. What it is read **for** is then narrowed by its own
-   `completeness` — see [the loss declaration](#completeness) — which is a separate question and never
-   turns a readable record into an unreadable one.
+
+A record that passes all three is a rejection at that path. Whether it is then **read** is settled by
+one further question, its declared [`completeness`](#completeness): a record that does not declare
+itself `complete` is excluded from the read.
 
 Rule 3 is what makes a record evidence about **that path** and not about a deeper one: a token that
 is not flag-shaped is a verb or a positional, and the set a tool names when refusing one of those
@@ -261,7 +264,8 @@ cannot tell from the sentinel and the set that comes back may be the one that fl
 **A record that fails any of the three is not read, and the report is not silent about it.** It
 contributes nothing to the path's surface, it does not count toward `probesRead`, and if no other
 record at that path was read the path is `no-evidence` under `recorded-by-caller` with the line naming
-which rule it missed.
+which rule it missed. A record excluded by its `completeness` lands the same way, and its line names
+the declared value instead of a rule — the two are different things for the caller to fix.
 
 **The sentinel spelling is load-bearing, which is the one thing that will bite an adopter twice.**
 `readStream` refuses any candidate set that contains a token the record's own argv sent — with any
@@ -281,22 +285,15 @@ so a second entry makes one of the two unreachable. Here a path is a bucket evid
 
 The path's surface is then derived from what was actually read, not from what was submitted:
 
-| The records at that path                         | The path's `Surface`                                                                             |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| at least one **yielded flags**                   | `enumerated`, `flags` the union, `consistent` false if the sets disagreed — see the caveat below |
-| at least one was read, none yielded flags        | `not-enumerated`, with `probesRead` counting the records read                                    |
-| none was read — unreadable, or excluded, or both | `no-evidence`                                                                                    |
+| The records at that path                         | The path's `Surface`                                                      |
+| ------------------------------------------------ | ------------------------------------------------------------------------- |
+| at least one **yielded flags**                   | `enumerated`, `flags` the union, `consistent` false if the sets disagreed |
+| at least one was read, none yielded flags        | `not-enumerated`, with `probesRead` counting the records read             |
+| none was read — unreadable, or excluded, or both | `no-evidence`                                                             |
 
-**Yielded flags** means _after_ the truncation discard clause has run. A record whose list that
-clause empties was read and named nothing, so it lands in row 2 and not in row 1 — the two halves are
-written to meet, because when they did not, a truncated one-flag list published `enumerated` with an
-empty set. And `consistent` is **absent** at a path where any read record declared itself
-`truncated`. Both are argued in [the loss declaration](#completeness).
-
-That is what makes the mixed case behave. One truncated record and one complete record at `state` is
-**not** `no-evidence`: the complete one is read, and the truncated one contributes what
-[the loss declaration](#completeness) says it may. A path only falls to `no-evidence` when nothing at
-it survived to be read.
+That is what makes the mixed case behave. One excluded record and one complete record at `state` is
+**not** `no-evidence`: the complete one is read, and the excluded one is named on the line. A path
+only falls to `no-evidence` when nothing at it survived to be read.
 
 ### The root is the kit's, and a `path: []` record refuses the batch
 
@@ -358,11 +355,10 @@ here is absent on purpose, and sending it is an unknown key that refuses the bat
   `truncated`. These are classifications, and classification is not what the caller attests to. The
   `truncated` named here is the **`Observation` field**, which is the kit's judgement about its own
   read hitting the output ceiling; it is not
-  [`completeness: "truncated"`](#completeness), which is the caller's own required vocabulary and the
-  one loss the caller does attest to. Two different words would have been kinder and the kit's is
-  already published; the record's field is `completeness`, and a record carrying a key spelled
-  `truncated` is refused. A
-  record whose argv the kit would never have sent is still readable evidence; whether it is a
+  [`completeness: "truncated"`](#completeness), which is the caller's own required declaration about
+  their own capture. Two different words would have been kinder and the kit's is already published;
+  the record's field is `completeness`, and a record carrying a key spelled `truncated` is refused.
+  A record whose argv the kit would never have sent is still readable evidence; whether it is a
   rejection at that path is the kit's call.
 - **Timing** — `durationMs`, `timeToFirstByteMs`. No rule reads a batch, and a timing rule measured
   on somebody else's machine would be a measurement of their machine.
@@ -393,36 +389,38 @@ so the record says so and the kit carries `merged` through to the evidence rathe
 `"stdout" | "stderr" | "merged"`. The alternative is attributing merged bytes to a stream nobody
 observed them on, in a section labelled as the target's own words.
 
-**`streams` is required, and left unstated it refuses the batch.** That is the opposite of how
-`completeness` and the identity observation are treated, and the difference is what the answer depends
-on. Stream attribution is a property of the caller's own command line: they know whether they wrote
-`2>&1`, they cannot get it wrong by guessing, and a forced answer here costs them nothing.
-Completeness and identity both depend on facts the caller may genuinely not have — whether a pipe
-cut, whether the tool has a `--version` — and forcing an answer there is how the plan's `DT-2`
-inverse gets produced: a required field answered wrongly under pressure.
+**`streams` is required, and left unstated it refuses the batch.** That is the opposite of how the
+identity observation is treated, and the difference is what the answer depends on. Stream attribution
+is a property of the caller's own command line: they know whether they wrote `2>&1`, they cannot get
+it wrong by guessing, and a forced answer here costs them nothing. Identity depends on a fact the
+caller may genuinely not have — whether the tool has a `--version` at all — and forcing an answer
+there is how the plan's `DT-2` inverse gets produced: a required field answered wrongly under
+pressure.
 
 **The rule is knowability, not aboutness:** require an answer when the caller holds the fact by
 construction at the moment of answering and cannot get it wrong by guessing; make it optional and
-counted when answering would mean guessing at something they may genuinely not know. One field sits
-between the two and takes a third shape — **required, with `null` a permitted answer** — for the case
-where the fact exists but the caller's own pipeline may not have kept it.
+counted when answering would mean guessing at something they may genuinely not know. Two fields sit
+between the two and take a third shape — **required, with a value that means _I do not hold this_**.
+`exitCode` takes `null` and `completeness` takes `unknown`, for the same reason in both cases: the
+fact exists, the caller's own pipeline may not have kept it, and a required key with an honest
+not-held answer asks for a statement without forcing a fabricated one.
 
 An earlier draft of this document stated the rule as _about what the caller did_ versus _about the
 target_, and that version is false against this document's own field table, which is why it is
 written out here rather than asserted:
 
-| Field             | About      | Knowable by construction                     | Required      |
-| ----------------- | ---------- | -------------------------------------------- | ------------- |
-| `path`, `argv`    | the caller | yes — they typed it                          | yes           |
-| `streams`         | the caller | yes — they wrote the redirection or did not  | yes           |
-| the stream bodies | the target | yes — the capture **is** those bytes         | yes           |
-| `exitCode`        | the target | **not always** — a pipeline can discard `$?` | yes, nullable |
-| `recordedBy`      | the caller | yes — they are the recorder                  | yes           |
-| `recordedAt`      | the caller | yes — at the moment they record it           | yes           |
-| `completeness`    | the caller | **no** — nothing tells you your pipe cut     | no            |
-| `identity`        | the target | **no** — the tool may have no `--version`    | no            |
+| Field             | About      | Knowable by construction                     | Required                 |
+| ----------------- | ---------- | -------------------------------------------- | ------------------------ |
+| `path`, `argv`    | the caller | yes — they typed it                          | yes                      |
+| `streams`         | the caller | yes — they wrote the redirection or did not  | yes                      |
+| the stream bodies | the target | yes — the capture **is** those bytes         | yes                      |
+| `exitCode`        | the target | **not always** — a pipeline can discard `$?` | yes, nullable            |
+| `recordedBy`      | the caller | yes — they are the recorder                  | yes                      |
+| `recordedAt`      | the caller | yes — at the moment they record it           | yes                      |
+| `completeness`    | the caller | **no** — nothing tells you your pipe cut     | yes, `unknown` permitted |
+| `identity`        | the target | **no** — the tool may have no `--version`    | no                       |
 
-Two rows need their own sentence, because each is where the rule was quietly failing.
+Three rows need their own sentence, because each is where the rule was quietly failing.
 
 **`exitCode` is required and its value may be `null`, which is why the type is `number | null`.** It
 is not bytes, and the reference capture shape this document itself uses — `… 2>&1 | tee` — is exactly
@@ -437,124 +435,110 @@ caller who does that. The condition the rule states is _cannot get it wrong by c
 moment of answering_: the recorder knows when it is recording. `completeness` fails that condition
 because nothing at the moment of answering tells you your pipe cut; `recordedAt` does not.
 
-Aboutness gets three of these rows backwards: the exit code and the stream bodies are facts about the
-**target** and are required, and completeness is a fact about the caller's **own pipe** and is
-optional. Knowability gets all five, and it is what the argument above was actually resting on the
-whole time — _"they cannot get it wrong"_, _"facts the caller may genuinely not have"_. The
-distinction matters beyond the tidiness, because this pair is what the wiki guide will inherit:
-required-ness here is a claim about what a caller can answer honestly under time pressure, and
-nothing else.
+**`completeness` is required and its value may be `unknown`, for the same reason and in the same
+shape.** It fails knowability outright — nothing at the moment of answering tells you your pipe cut —
+so a two-valued required field would force every caller who does not know into a claim they cannot
+support. `unknown` is what makes the requirement answerable. Why the field is required at all rather
+than optional is the subject of [completeness](#completeness) below, and it is the change this whole
+section turns on.
+
+Aboutness gets two of these rows backwards: the exit code and the stream bodies are facts about the
+**target** and are required. Knowability gets every row, and it is what the argument above was
+actually resting on the whole time — _"they cannot get it wrong"_, _"facts the caller may genuinely
+not have"_. Aboutness also cannot express the third shape at all: it has only _required_ and
+_optional_, and the two rows that need a not-held value are exactly the rows where the caller's
+answer is a statement rather than a guess. The distinction matters beyond the tidiness, because this
+pair is what the wiki guide will inherit: required-ness here is a claim about what a caller can
+answer honestly under time pressure, and nothing else.
 
 ### Completeness
 
-`captureSurface` excludes the kit's own truncated observations because a list cut mid-way yields a set
-short by an unknowable number of flags **and looks complete** — the one failure worse than reading
-nothing. The kit knows when it truncated. It cannot know when a caller's pipe, buffer or `head` did.
+`captureSurface` excludes the kit's own truncated observations, and `surface.ts:342-344` says why: _"a
+prefix cut mid-list yields a set that is short by an unknowable number of flags and looks complete,
+which is worse than reading nothing."_ The kit knows when it truncated. It cannot know when a
+caller's pipe, buffer or `head` did — so the caller declares it, and the field is **required**.
 
-**`truncated` means bytes lost from the END of the capture, and nothing else.** Every clause below
-rests on that and on nothing else: the severed token is the **last** one in the stream, so if it is
-flag-shaped it is the final member of the list, and if it is not, `flagsAfter` stops before it. An
-interior elision defeats the whole argument — `Valid flags: --forma--json --limit` is a `LONG`-shaped
-fabrication that is **not** last, so the clause below would discard the real `--limit` and keep the
-fake. So a harness that elides from the middle, or that stitches a capture out of pieces, **must not
-send `completeness: "truncated"`, and must not send the record at all**: no value of this field
-describes an interior loss, and unstated says something different and false. Open question, recorded
-rather than built: whether a later format wants a third value for an interior elision. Nothing in the
-corpus has produced one, and inventing the state before the case exists is how this section acquired
-its defects.
+**Only `complete` is read.** The other two values are valid records that the batch accepts and the
+read excludes, with the census line saying which value excluded them.
 
-| `completeness` | What the kit reads the record for                                            | The census line for that path says                                                                      |
-| -------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `"complete"`   | both finding directions                                                      | nothing extra — the `recorded-by-caller` label already carries who recorded it                          |
-| absent         | both finding directions                                                      | `completeness unstated — a capture cut short reads here as a whole one`                                 |
-| `"truncated"`  | **presence only**, and the last token of each `prose-marker` list is dropped | `the caller recorded a truncated capture at this path, so it was read only for flags the tool did name` |
+| `completeness` | What it says                                        | What the kit reads the record for | The census line for that path says                                             |
+| -------------- | --------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------ |
+| `"complete"`   | every byte the tool wrote is in this record         | both finding directions           | nothing extra — the `recorded-by-caller` label already carries who recorded it |
+| `"truncated"`  | the caller knows bytes were lost                    | nothing                           | `the caller recorded a truncated capture at this path, so it was not read`     |
+| `"unknown"`    | the caller cannot establish that no bytes were lost | nothing                           | `the caller could not establish this capture was complete, so it was not read` |
 
-A path is `no-evidence` only when **no** record at it survived to be read — see
-[several records at one path](#several-records-at-one-path). A truncated record no longer empties a
-path on its own, and never did empty one that also carried a complete record.
+**Requiring the field is what dissolves the problem.** The original defect was never that a truncated
+capture might carry usable flags; it was that an **absent** `completeness` was read as `complete`, so
+silence strictly dominated honesty — a caller who said nothing got a full read, and a caller who
+declared their capture lossy got less. That is an input-contract defect, and it is fixed at the input
+contract, in one rule: the field is required, and a record without it refuses the batch, exactly as
+every other missing required key does. Three rounds of this document tried to fix it downstream
+instead, by finding something a truncated record could still be read for. Every one of those attempts
+bought the property back with another clause, and each clause needed the next.
 
-**Why a declared truncation is read in one direction rather than dropped.** Truncation makes an
-enumeration **short, not wrong**: every flag that did survive the cut is a flag the tool named in its
-own refusal. The two finding directions are not equally damaged by that, and treating them as if they
-were throws away evidence the caller paid for:
+**One rule now governs both provenances, and that is the decisive argument.** `isReadableRejection`
+(`surface.ts:346`) already refuses the kit's own truncated captures outright, for the reason quoted
+above. Under the partial-reading design, the kit and a caller handed the same bytes to two different
+rules — the kit's own truncated read discarded entirely, the caller's read in one direction — and
+this document asserted both justifications within ten lines of each other. **A prior review raised
+exactly this, and it was lost when the findings were renumbered into the following brief, so it went
+unanswered for two rounds.** There is no defensible version of it: either the sentence in
+`surface.ts` is right, in which case it is right about the same bytes whoever captured them, or it is
+wrong and the repair belongs there and not here. Provenance changes who is accountable for a
+recording. It does not change what a short list can establish.
 
-- `declared-not-accepted` — declared, and **absent** from the enumeration. Rests on absence, which is
-  exactly what a short list fakes. **Suppressed** at a path where any read record declared itself
-  truncated.
-- `accepted-not-declared` — enumerated, and absent from the declaration. Rests on **presence**.
-  Truncation cannot manufacture a flag the tool never printed. **Read.**
-- `refused-but-enumerated` — declared refused, and present in the enumeration. Presence again.
-  **Read.**
+**Three values rather than two, because the field is required.** A required field must be answerable
+honestly by a caller who does not hold the fact, and completeness is the field this document's own
+knowability table marks as unholdable — nothing at the moment of capture tells you your pipe cut. A
+two-valued required field would force that caller to choose between a false `complete` and a
+`truncated` claim they cannot support, which is precisely the `DT-2` inverse: a required field
+answered wrongly under pressure. `unknown` is the same shape as `exitCode`'s `null`, for the same
+reason, and it is the honest-empty principle this document already applies to identity. The
+alternative considered was collapsing both to one not-`complete` value: it is one word shorter and
+loses a real distinction, since a caller who knows their `head -c` cut and a caller who piped into
+something they have not audited are recording different facts, and a stored record that says
+`truncated` when nobody established a truncation is a false statement about the capture. The read
+rule stays one line either way — only `complete` is read — so the third value costs nothing it saves.
 
-**The counter-argument, which is real.** A cut is a byte offset, not a token boundary, so it can
-sever a flag mid-name: `--limit` arrives as `--limi`, which satisfies `LONG` and lands in the set as a
-flag the tool never accepted — a false `accepted-not-declared` in the one direction just declared
-sound. It is bounded, though, and bounded in a way the reader can act on: the loss is at the **end** of
-the stream, and `flagsAfter` stops at the first token that is not flag-shaped, so **only the final
-token** of a list read out of prose can be a fragment. So the rule carries its own clause: **discard
-the last token of every `prose-marker` enumeration read from a record declared `truncated`.** That
-drops a genuine flag whenever the cut happened to land on a boundary, which is the error direction
-this project takes everywhere else — finding less leaves the previous state of knowledge, while a
-fabricated flag puts a word in the target's mouth in a section labelled as its own.
+**The incentive objection was over-weighted, and here is why.** Earlier rounds treated the gradient —
+truthful uncertainty getting less out of the kit than silence — as something that had to be flattened
+by giving a lossy record something to do. It did not. The census reaches no verdict, mints no
+identifier, and moves no exit code; there is nothing here to game, and a fabricated batch already
+buys a sentence rather than a pass. More to the point, honesty does not mean truthful uncertainty
+must produce as much output as an unsupported claim of completeness. **The truthful caller receives
+the more accurate result** — a census that says what their capture could and could not establish —
+and that is the correct outcome, not a penalty imposed on them. What actually needed removing was the
+case where silence beat a true statement, and requiring the field removes it: there is no longer a
+silence to prefer.
 
-**The clause does not touch a `json-field` list, and does not need to.** That shape comes from
-`keyedSets` over a document `parsesWhole` accepted, and a document cut at the end does not parse —
-`readStream` falls through to the prose scan over the same raw text, where the clause does apply. So
-a `json-field` list is taken whole: the bytes that closed the document are the proof the document is
-not what was cut. Under `separated` this is also what makes the mixed capture behave — a record whose
-stdout was cut while its stderr carries complete JSON is read from stderr, first and whole, and no
-real flag is discarded out of an intact list because the record as a whole was declared lossy.
+**What the report says about an excluded record, which must not read as an absence.** The record was
+read as a record: its shape was checked, it is counted in the batch, and it is named. What the
+path's line says is that the record's declared completeness excluded it — never that nothing was
+recorded there. Those are different facts about the caller and lead to different next actions: one
+recaptures without the `head`, the other captures at all. An excluded record must never collapse into
+[`not-recorded`](#the-three-no-evidence-reasons), which is reserved for a path a supplied batch is
+silent about.
 
-**A read that yields no flags is `not-enumerated`, never `enumerated` with an empty set.** The
-commonest truncation shape is a cut landing just after the first flag, and the clause reduces that
-one-token list to nothing. A record the clause empties **did not yield an enumeration**: it counts as
-read, it appears in `probesRead`, it contributes no `SurfaceEvidence` and no flags, and it cannot
-satisfy row 1 of [the path table](#several-records-at-one-path). That is not a courtesy. `flags` is
-documented absent rather than empty (`surface.ts:100-110`), `SurfaceStatus` exists to keep _"it did
-not say"_ apart from _"it accepts nothing"_ (`surface.ts:50-56`), and `surfaceSummary` would
-otherwise print `enumerated 0 flags` — the exact false and confident-sounding claim the type was
-built to prevent.
+**Open question, recorded rather than built: a first-class partial-evidence model.** A captured
+prefix can support a qualified statement — _the captured prefix named at least these flags; the full
+set is unknown_ — and a state meaning that would contribute positive observations only, would never
+produce an absence finding, would never be labelled `enumerated`, and would need its own rule for the
+`json-field` path, which does not go through `flagsAfter` at all. That is a coherent feature and it is
+not this one: it adds an evidence state and source-specific rules to a type that currently has three
+statuses. Build it on a concrete need somebody actually hit — a caller whose capture is lossy, whose
+flags matter, and who cannot recapture — and not before. Note that it would be an addition rather
+than a correction: `enumerated` is documented as _"at least one rejection named a set of flags"_
+(`surface.ts:58`), and a `declared-not-accepted` finding already publishes _"the enumeration may also
+be short of a flag the tool does accept"_ (`declaration.ts:490`), so absence is hedged for every
+enumeration the kit reads. That hedge is part of why the extra machinery bought so little.
 
-**`consistent` is absent at a path where any read record declared itself `truncated`.** Two
-enumerations disagree meaningfully only when both are whole. A list this document deliberately
-shortened will differ from a complete one at the same path, and publishing `consistent: false` for
-that blames the tool for our own discard — the same unattributable `consistent` the
-[`path: []` refusal](#the-root-is-the-kits-and-a-path--record-refuses-the-batch) exists to prevent,
-refused at the root and admitted everywhere else if the field were published here. The type already
-allows it: `consistent?` is optional, exactly as `flags?` is. The census line for such a path says
-the comparison was not made and why. Open question, recorded rather than built: comparing only among
-the non-truncated records at a path would keep a real disagreement visible, and it needs its own rule
-for the path where every set came from a truncated record — case analysis this round is deliberately
-not shipping.
-
-**Why an unstated completeness is read in both directions rather than excluded.** This is the choice
-the plan left open, and it cuts the other way. Excluding unstated captures would make almost every
-honest batch unreadable on its first attempt — nobody knows their pipe did not truncate — which
-destroys the specimen corpus reason 2 above exists to protect. What the reading is **not** is silently
-wrong in only one direction, and the document owes an accurate account of the mitigation rather than a
-flattering one:
-
-- The sentence a `declared-not-accepted` finding already carries — _"the enumeration may also be short
-  of a flag the tool does accept"_ ([`declaration.ts:490`](../../src/acc/kit/declaration.ts)) — does
-  cover the corrupt direction. It is the **second** reading under `emitted` provenance and the
-  **first** under `modelled`, and modelled-below-the-root is this feature's own headline use case:
-  `SG-8` runs a modelled declaration against a recorded surface. So on the run this is built for, that
-  sentence leads.
-- It covers **one** direction. A truncated prefix also silently **omits** `accepted-not-declared`
-  findings for every flag past the cut, and no finding is printed to carry a caveat on, because the
-  whole point is that the finding never appears. Nothing in the report can recover it. The unstated
-  label on the census line is the only thing standing in for it, which is why that label prints on
-  every line the batch touches rather than once at the top.
-
-**The incentive this creates, stated rather than hidden.** The gradient that needed fixing was never
-`complete` versus unstated — attesting `complete` is a claim the caller owns and the reader can hold
-them to. It was `truncated` versus **unstated**, where unstated strictly dominated: an honest caller
-who knew their capture was cut got less out of the kit than one who said nothing. Reading a truncated
-record in the presence direction removes that domination — declaring truncation now costs only the
-findings truncation actually undermines, which is the price honesty ought to carry and no more. A
-caller optimising for a large finding count still prefers unstated; a caller optimising for a census
-they can defend prefers the truth. That is the right way round, and it is as far as an incentive can
-be pushed by a kit whose one real limitation is that it cannot find out.
+**Where this decision came from.** Three rounds elaborated a partial-reading design and did not
+converge; each round repaired the previous round's clause with another clause. An outside read of the
+whole question was commissioned and is what changed the answer — not because it is authoritative, but
+because it asked whether the result type could express what the capture establishes, which is a
+question none of the three rounds had put. Its central claim went further than this codebase
+supports, and that part is not imported here. Its recommendation — require the field, exclude what is
+not `complete`, explain the exclusion — is what this section now says.
 
 ## The identity observation
 
@@ -564,16 +548,16 @@ the schema emission, captured under the same discipline as everything else. It g
 
 ### Its own shape, which is not quite a record's
 
-| Field                       | Required           | Notes                                                          |
-| --------------------------- | ------------------ | -------------------------------------------------------------- |
-| `path`                      | **no — forbidden** | Present, it is an unknown key and refuses the batch            |
-| `argv`                      | yes                | Whatever the caller ran. Not checked against any literal       |
-| `exitCode`                  | yes                | Printed beside the quote; read by no part of the extraction    |
-| `streams`                   | yes                | Same two values, same cross-field rules as a record            |
-| `stdout` / `stderr`         | when separated     | Both required, either may be `""`                              |
-| `output`                    | when merged        | Required                                                       |
-| `completeness`              | no                 | Same three states; `truncated` does **not** suppress the quote |
-| `recordedBy` / `recordedAt` | yes                | As on a record                                                 |
+| Field                       | Required           | Notes                                                       |
+| --------------------------- | ------------------ | ----------------------------------------------------------- |
+| `path`                      | **no — forbidden** | Present, it is an unknown key and refuses the batch         |
+| `argv`                      | yes                | Whatever the caller ran. Not checked against any literal    |
+| `exitCode`                  | yes                | Printed beside the quote; read by no part of the extraction |
+| `streams`                   | yes                | Same two values, same cross-field rules as a record         |
+| `stdout` / `stderr`         | when separated     | Both required, either may be `""`                           |
+| `output`                    | when merged        | Required                                                    |
+| `completeness`              | yes                | The same three values; none of them suppresses the quote    |
+| `recordedBy` / `recordedAt` | yes                | As on a record                                              |
 
 **`path` is forbidden rather than optional**, and that is what makes the separation structural. The
 identity record is never filed at a path, never diffed, and never read for an enumeration; a key that
@@ -589,10 +573,12 @@ inside the quote. Under `separated` with an empty `stdout`, the line says the ta
 stdout under that argv and **stderr is not substituted** — substituting would be the kit inventing
 `D1`'s answer out of the other stream.
 
-**A `truncated` identity is still printed, with the truncation named in the line.** That is the same
-asymmetry the completeness rule turns on, applied consistently: a quotation is made **shorter** by a
-cut, not false, because nothing downstream treats the quote as a complete set. Nothing is diffed
-against it, so there is no absence for a short capture to fake.
+**An identity that is not `complete` is still printed, with its declared completeness named in the
+line.** The field is required here for the same reason it is required on a record — one rule, one
+vocabulary — but it excludes nothing, and the difference is what the two are read **for**. A record
+is read for a **set**, where a short list looks whole and fakes an absence. A quotation is read for
+**bytes**, nothing is diffed against it, and a cut makes it shorter rather than false. So the value
+prints beside the quote instead of removing it, and a reader knows the quote may be a fragment.
 
 **Why its own key.** A record in `records[]` is filtered, read for an enumeration, and diffed at its
 path. `["--version"]` is flag-shaped and would land at the root, where reading it for a marked list of
@@ -722,8 +708,15 @@ none named a set, `no-evidence` when nothing readable was recorded — on a path
 the tool)`, unchanged, under `probed-by-kit`.
 - _the caller's records were unreadable_ — under `recorded-by-caller`, and the line names **what**
   every record at that path missed: a `--` in the argv, no token after the path prefix, a token that
-  is not flag-shaped, or a candidate set that echoed the sentinel back. Naming it is the difference
-  between a caller who can fix their capture and one who retries the same one.
+  is not flag-shaped, a candidate set that echoed the sentinel back, or a `completeness` that was not
+  `complete`. Naming it is the difference between a caller who can fix their capture and one who
+  retries the same one — and the last of the five is a different fix from the other four, so the line
+  must not blur them together.
+
+**An excluded record is not a missing one.** A path whose only records were excluded by their
+completeness is `no-evidence` under `recorded-by-caller` and never `not-recorded`: the caller
+recorded there, and what the line owes them is that the recording was set aside, not that it was
+absent. `not-recorded` stays reserved for a path a supplied batch says nothing about at all.
 
 A reader who cannot tell those apart will read the second as a statement about the tool, which it is
 not.
@@ -792,18 +785,15 @@ it is worth doing on evidence that somebody followed an id and could not, rather
 Flagged for the reviewer. Each of these is a shape the plan did not pin, decided in this document with
 its argument attached:
 
-1. **What the report prints for an unstated loss field**, which the plan explicitly owed and did not
-   settle. Unstated completeness is **read in both directions and labelled** on every census line it
-   touches; `complete` prints nothing extra. Argued in [the loss declaration](#completeness).
-2. **A declared truncation is read in the presence direction only**, suppressing
-   `declared-not-accepted` at that path and discarding the last token of each `prose-marker` list it
-   yields. The plan and the first draft of this document both said the kit had no third option; it
-   has one, and it is what stops honesty from being strictly dominated by silence. The
-   counter-argument — a cut flag name arriving flag-shaped — is stated with it, and three clauses
-   bound it: `truncated` means **bytes lost from the end** and a harness that elides otherwise must
-   not use the value; a record the discard empties is `not-enumerated` rather than `enumerated` with
-   no flags; and `consistent` is not published at a path where a truncated record was read, so our
-   own discard cannot be printed as the tool disagreeing with itself.
+1. **`completeness` is required**, which is the plan's open loss-field question answered at the input
+   contract rather than in the reading. An absent field refuses the batch, so the silence that used
+   to dominate honesty no longer exists to prefer. Argued in [completeness](#completeness).
+2. **Only `complete` is read; `truncated` and `unknown` are both excluded, and the census line says
+   which value excluded the record.** This is the same rule `isReadableRejection` already applies to
+   the kit's own truncated captures, and one rule now governs both provenances. Three values rather
+   than two because a required field must be answerable by a caller who does not hold the fact.
+   Earlier rounds read a declared truncation in the presence direction and needed a clause per
+   consequence; the clauses are gone with the reading that required them.
 3. **`streams` is required, not optional**, and the rule underneath it is **knowability**: require
    what the caller holds by construction at the moment of answering, make optional and counted what
    they would have to guess at. Tested against the full field table in the same section, because the
@@ -834,11 +824,18 @@ its argument attached:
 14. **A `recorded:` observation id resolves in the batch supplied to that run**, not in the stored
     report — `Report.surface` is serialized, and the batch is an input the artifact does not carry.
 
-Three things are deliberately **left open** rather than decided, because each would need case
-analysis to stay correct and this document's defects have all come from that: a third `completeness`
-value for an interior elision; comparing `consistent` among only the non-truncated records at a path;
-and recording the batch's identity in the report so an archived `recorded:` id can name what it
-pointed at. Each is worth building on a case that has actually arrived.
+Two things are deliberately **left open** rather than decided, each worth building on a case that has
+actually arrived: a [first-class partial-evidence model](#completeness), which is a coherent feature
+and a different one from this; and recording the batch's identity in the report so an archived
+`recorded:` id can name what it pointed at.
+
+Two more were open in an earlier round and are **dissolved** rather than still pending, because each
+existed only to bound a clause this round deleted. A third `completeness` value for an interior
+elision was needed when `truncated` had to promise the loss was at the end; nothing reads either
+value now, so no value has to describe where the bytes went. And comparing `consistent` among only
+the non-truncated records at a path was needed when a truncated record could contribute a
+deliberately shortened list to compare against; every set at a path now comes from a `complete`
+record, so `consistent` means what it has always meant and needs no rule of its own.
 
 ## Discharge
 
