@@ -78,8 +78,8 @@ export function rulesCommand(opts: RulesOptions, mode: OutputMode, startedAt: nu
     // A list invites a lookup. Pre-filling the first id means the caller does not have to
     // construct the follow-up, which is the failure `next` exists to prevent.
     next: rows.length
-      ? [{ command: `acc show ${rows[0]?.rule_id}`, when: "to read a rule in full" }]
-      : [{ command: "acc rules", when: "no rules matched — try without filters" }],
+      ? [{ exec: "acc", args: ["show", rows[0]?.rule_id ?? ""], when: "to read a rule in full" }]
+      : [{ exec: "acc", args: ["rules"], when: "no rules matched — try without filters" }],
     renderText: (d) => {
       if (!d.count) return "No rules matched.";
       const dim = useColor() ? "\x1b[2m" : "";

@@ -21,7 +21,7 @@ export function versionCommand(mode: OutputMode): void {
     mode,
     command: "--version",
     data: { name: "acc", version: VERSION },
-    next: [{ command: "acc schema", when: "to see the surface this version implements" }],
+    next: [{ exec: "acc", args: ["schema"], when: "to see the surface this version implements" }],
     renderText: (d) => d.version,
   });
 }

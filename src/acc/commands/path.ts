@@ -63,7 +63,7 @@ export function pathCommand(
     command: "path",
     startedAt,
     data: { from: from.path, to: to.path, hops: hops.length - 1, chain: hops },
-    next: [{ command: `acc show ${to.slug}`, when: "to read the destination" }],
+    next: [{ exec: "acc", args: ["show", to.slug], when: "to read the destination" }],
     renderText: (d) => {
       const dim = useColor() ? "\x1b[2m" : "";
       const reset = useColor() ? "\x1b[0m" : "";

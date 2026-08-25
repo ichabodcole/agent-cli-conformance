@@ -482,19 +482,19 @@ only item here that needs no decision from anyone.
 `STANDARD.md` tells adopters: _"If you are designing this now, carry an executable and an argv array
 rather than a string, and you will be ahead of this page"_ — on a field the same paragraph calls a
 command-injection boundary. `NextAction` in [`envelope.ts`](../../src/acc/envelope.ts) is
-`{ command: string; when?: string }`, and seven command modules emit it. One of them already
-interpolates a value into the string (`path.ts` builds `acc show ${to.slug}`); the value is internal
-and the shape is the one the standard warns about.
+`{ command: string; when?: string }`, and eight command modules emit ten of them — `show.ts` and
+`rules.ts` carry two each. Six interpolate a value into the string (`path.ts` builds
+`acc show ${to.slug}`); the values are internal and the shape is the one the standard warns about.
 
 So the reference implementation does the thing its own standard tells adopters not to do. That is
 tolerable while nobody has read the page, and this round is precisely the round where a second
 adopter reads it.
 
-- [ ] `NextAction` carries an executable and an argv array.
-- [ ] Seven emit sites move with it, and the
+- [x] `NextAction` carries an executable and an argv array.
+- [x] All ten emit sites move with it, and the
       [error-envelope concept page](../wiki/concepts/error-envelope.md) stops describing the
       typed version as an intended direction.
-- [ ] `acc schema`'s own output changes shape, which is consumer-visible — the same versioning
+- [x] `acc schema`'s own output changes shape, which is consumer-visible — the same versioning
       question as item 1, arriving on a different artifact.
 
 ### 5. Name the clause once: "Evidence, not a rule"

@@ -275,7 +275,10 @@ export function compareCommand(reportPaths: string[], mode: OutputMode, startedA
     next: comparison.counts.divergent
       ? [
           {
-            command: `acc compare ${reportPaths.join(" ")} --json`,
+            exec: "acc",
+            // One element per path, never a joined string: a report path is filesystem input,
+            // and a space or a quote in one is a filename here rather than an argument break.
+            args: ["compare", ...reportPaths, "--json"],
             when: "to read every divergence with its byte counts and digests",
           },
         ]

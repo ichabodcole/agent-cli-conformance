@@ -58,7 +58,13 @@ export function schemaCommand(mode: OutputMode): void {
     // Caught by CI on a slower runner after passing locally for months, which is the whole
     // argument for the rule: a duration in a description of the tool measures the machine.
     data,
-    next: [{ command: "acc rules --tier core", when: "to see what a conforming CLI must satisfy" }],
+    next: [
+      {
+        exec: "acc",
+        args: ["rules", "--tier", "core"],
+        when: "to see what a conforming CLI must satisfy",
+      },
+    ],
     // Text mode still emits JSON here: the schema IS structured data, and pretty-printing it
     // into prose would produce something no one can consume and no one wants to read.
     //

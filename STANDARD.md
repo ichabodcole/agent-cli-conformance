@@ -739,11 +739,12 @@ The full shape, the `confirmation_required` case and the `next` field's real sem
 [the error envelope](docs/wiki/concepts/error-envelope.md). Two things from it are worth repeating
 because they are easy to get wrong.
 
-**`next` is a proposal to read, not text to run.** It carries untyped command templates whose
-placeholders no schema describes; a shell string also loses the distinction between argv and shell
-syntax, so interpolating a caller-controlled identifier into one is a command-injection boundary. A
-typed replacement is the intended direction and is not implemented — so if you are building this
-now, carry an executable and an argv array rather than a string, and you will be ahead of this page.
+**`next` carries an executable and an argv array, and is a proposal to validate rather than text to
+run.** Carry it that way in your own tool. A shell string loses the distinction between argv and
+shell syntax, so interpolating a caller-controlled identifier into one is a command-injection
+boundary; split into argv elements, that identifier is only ever data. The split is not the whole
+job — nothing in the field yet declares its placeholders or what running an offer would do, so a
+consumer can spawn one safely and still not know whether it writes anything.
 
 **`next` is advisory, never required.** A caller that ignores it must still be able to reach the same
 state by other means.

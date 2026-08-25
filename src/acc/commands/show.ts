@@ -75,11 +75,14 @@ export function showCommand(
   };
 
   const next = [
-    ...(opts.body ? [] : [{ command: `acc show ${handle} --body`, when: "to read the full text" }]),
+    ...(opts.body
+      ? []
+      : [{ exec: "acc", args: ["show", handle, "--body"], when: "to read the full text" }]),
     ...(page.linksOut.length
       ? [
           {
-            command: `acc show ${graph.byPath.get(page.linksOut[0] as string)?.slug ?? ""}`,
+            exec: "acc",
+            args: ["show", graph.byPath.get(page.linksOut[0] as string)?.slug ?? ""],
             when: "to follow the first outbound link",
           },
         ]
