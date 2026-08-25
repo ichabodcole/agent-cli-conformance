@@ -328,9 +328,12 @@ case is a caller who is honest and whose capture is lossy in a way the bytes do 
   recorded surfaces and the diffed declaration then rests on **the tool's own words, captured under
   the same discipline as everything else**, and a batch missing its identity observation is legible
   as exactly that — **unstated, not lied about**. A tool with no `--version` leaves the field
-  honestly empty, which is itself a finding: `D1` fails a target that reported no version at all
-  (`"--version reported no version"`), so the empty field is a fact the census already has a rule
-  about rather than a hole in the record.
+  honestly empty, and the census must carry that as a stated fact of its own, because **no rule
+  covers it**: `D1` is a verdict about the binary **the kit** ran, an empty identity is a silence
+  about the binary **the caller** ran, and `"--version reported no version"` fires only on
+  `exitCode !== 0 && stdout.trim() === ""` — so a target with no `--version` that exits `0` printing
+  its help screen does not trip even that clause. See
+  [the recorded-surface batch](2026-08-25-the-recorded-surface-batch.md#the-identity-observation).
 
   **It narrows the gap; it does not close it, and this plan should not say otherwise.** A caller
   can still record `--version` from one build and the rejections from another. What the proposal
@@ -348,7 +351,8 @@ case is a caller who is honest and whose capture is lossy in a way the bytes do 
   2. **`D1` establishes less than the field looks like it carries.** Its detector is
      `stdout.trim() !== ""`, and its own standing coverage gap says _"stdout is never checked to
      carry a version string in either mode."_ So a present identity observation establishes that
-     the target said **something** under `["--version"]` — not that what it said is a version, and
+     **the caller recorded** the target saying **something** under `["--version"]` — the kit
+     observed nothing here — not that what it said is a version, and
      not that two batches quoting different bytes are different builds. The field is honest in
      both directions, which is the property being bought here; it is not a verification, and the
      report must not print it as one.
