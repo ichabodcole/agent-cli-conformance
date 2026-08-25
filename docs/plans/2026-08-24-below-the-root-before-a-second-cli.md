@@ -399,17 +399,17 @@ meant would put words in a target's mouth in a section labelled as the target's 
       is the reported-not-verified discipline of
       [the eight-owner report](../reports/2026-08-24-eight-owner-clis.md), one level down. A census
       line that does not say who observed it is the defect this project is named after.
-- [ ] Fix the reason string that assumes the answer. `declaration.ts` today hardcodes _"no flag-
-      surface evidence for this path — the kit enumerates the root only"_ for every path without
-      evidence. Once a caller can supply evidence, that sentence is wrong for a path the caller
-      simply did not record, and right only for a path nothing could reach. Two reasons — and
-      **not three**: the third, _no warrant for this path_, was to come from
-      [item 2](#2-a-probe-warrant-below-the-root), which is not being built, so it has no referent
-      and must not be emitted.
-      [The batch document](2026-08-25-the-recorded-surface-batch.md) specifies all three anyway and
-      says the third is unreachable until item 2 ships; that reads "until" but now means
-      "unless and until the decision is reopened". **The shape decision above
-      does not change what those three are.** A caller record that arrives and yields no
+- [ ] Fix the reason string that still assumes one answer. `declaration.ts` today hardcodes
+      _"no flag-surface evidence for this path — the kit probes the root only; evidence below it
+      comes from surfaces a caller recorded"_ for every path without evidence. That sentence is
+      right for a path nothing reached and wrong for a path the caller simply did not record, so it
+      splits in two. Two reasons — and **not three**: the third, _no warrant for this path_, was to
+      come from [item 2](#2-a-probe-warrant-below-the-root), which is not being built, so it has no
+      referent and must not be emitted.
+      [The batch document](2026-08-25-the-recorded-surface-batch.md) specified all three in an
+      earlier round; it now specifies two and records the third as withdrawn with item 2, to be
+      re-derived only if the decision is reopened. **The shape decision above
+      does not change what those two are.** A caller record that arrives and yields no
       enumeration is not a fourth state: it lands in the `Surface` statuses that already exist
       (`not-enumerated`, `no-evidence`) on a path that was looked at, which is the distinction those
       statuses were built for. What it does change is that `no-evidence` now has two provenances —
@@ -629,8 +629,10 @@ remove probes and withdraw verdicts."_ So a caller's declaration can still make 
   member.
 - The report distinguishes a path not compared because the kit cannot reach it from one not
   compared because no warrant was given — those are different sentences with different remedies,
-  and item 2a has already made it a three-way distinction by adding _the caller recorded nothing
-  here_.
+  and item 2a would have made it a three-way distinction by adding _the caller recorded nothing
+  here_. (Written when both items were live. Live item 2a makes it a **two**-way distinction —
+  _nothing reached this path_ against _the caller recorded nothing here_ — because the warrant half
+  never arrives.)
 
 **The framing this item closed on was wrong, and correcting it is what ended the item.** It said the
 warrant was "the machinery for the kit running a target's subcommand on the target's say-so, for
@@ -766,8 +768,11 @@ them.
 - **The eight-owner measurement's frame.** All eight runs carry `configSource.origin: "none"`, and
   the report's denominator is 23 rules. `declaration.ts` names the trap explicitly: adding a key
   describing the target's own shape to `TOP_LEVEL_KEYS` is the stated trigger for the config-refusal
-  gate, which would invalidate that frame. So **`effects` goes in the declaration file and never in
-  `acc.config.json`, and `TOP_LEVEL_KEYS` does not move.**
+  gate, which would invalidate that frame. So **`TOP_LEVEL_KEYS` does not move** — whatever field
+  wants in next, a key describing the target's own shape belongs in the declaration file and never
+  in `acc.config.json`. (This bullet was written for `effects`, which is
+  [withdrawn](#1-an-effects-field-in-the-declaration-format--decided-then-withdrawn); the constraint
+  it protects is not about that field and stands without it.)
 - **The honesty properties in `surface.ts`.** Three statuses stay three: `enumerated`,
   `not-enumerated` (the tool did not list, which is not "it has no flags") and `no-evidence` (we did
   not look). `flags` stays absent rather than empty on the latter two. Every rendered sentence keeps
@@ -782,14 +787,20 @@ them.
   document, and `formatVersion` stays checked before them.
 - **The census stays evidence.** The headline clause moves no number and no exit code; nothing here
   feeds `conformant`.
-- **`classifyInertness` keeps failing closed**, and `assertInert` keeps throwing. A new class adds a
-  door; it does not widen the four that exist.
-- **anthill's `1 of 25` is guarded in-tree, and items 2a and 2 both change it.** That test's
-  expectation moves as soon as any path below the root is compared — by recorded surface or by
-  probe. It must be **re-baselined deliberately, with the new number argued** — silently updating
-  the assertion would delete the only in-tree record of the ceiling. And the re-baselined test must
-  say **which** kind of evidence moved it, or the record loses the distinction item 2a exists to
-  keep.
+- **`classifyInertness` keeps failing closed**, and `assertInert` keeps throwing. The four classes
+  that exist are not widened. No fifth is proposed — the only one that was is
+  [the withdrawn warrant's](#2-a-probe-warrant-below-the-root) — and if one ever is, it adds a door
+  rather than widening those four.
+- **anthill's `1 of 25` is guarded in-tree, and [item 2a](#2a-recorded-surface-ingestion) changes
+  it.** That test's expectation moves as soon as any path below the root is compared, and there is
+  now one way that happens: a surface somebody recorded and handed in. It must be **re-baselined
+  deliberately, with the new number argued** — silently updating the assertion would delete the only
+  in-tree record of the ceiling. And the re-baselined test must still say **what** moved it, naming
+  the recorded evidence rather than the number alone: the surfaces a
+  [generated probe plan](#2b-probe-plan-generation) comes back with are recorded evidence too, run
+  by an operator instead of assembled by hand, so the live distinction the report keeps is
+  `probed-by-kit` against `recorded-by-caller` — not two kinds of below-root evidence, of which
+  there is one.
 - **Grapevine's conformant result and its census are not on this list yet.** The artifacts that
   would put them there have been granted (item 3) and are not vendored; until they are, the only
   guard is the consumer re-running against their own tree.
