@@ -485,6 +485,34 @@ is worth more than either argument alone:
   on bit fields or it does not**, and adding a field would let a format look like it had answered a
   question it had only relocated.
 
+### A caller may declare — and at the root, that is all the census can act on
+
+**The claim above is not weakened: a caller who did not write the tool may author a declaration for
+it**, and the narrowing-versus-widening asymmetry is what makes that safe. What follows is a limit
+on what the **census** can do with one today, and it belongs here because it is invisible from the
+format layer, where a modelled document is as well-formed as an emitted one.
+
+The kit enumerates **the root only** — `captureSurface` in
+[`src/acc/kit/surface.ts`](src/acc/kit/surface.ts) reads a flag set out of root-level rejections,
+and going below the root needs the effects claim v0 [has nowhere to put](#emit-v0-hold-the-rest).
+A verb-first tool's declaration is a document about its **verbs**, so every path it declares is a
+path nothing probes, and the one path that is probed is often the one it does not declare. Measured
+on this repository's own CLI, which is verb-first: `acc --nope` answers `unknown option '--nope'`
+and lists its verbs, naming no flag, so the root surface reads `did not enumerate` — and a
+four-command modelled declaration for it reports `THE DIFF DID NOT RUN — 0 of 4 declared command
+paths compared`. anthill v2.3.0 is the better case and still a narrow one: its root rejection does
+name `--format`, so **1 of 25** paths compares, and its manifest has no slot for root flags, so the
+only comparable path is the one it cannot speak to (DT-1).
+
+So the `[C?]` on this Part, and every `yes` in the [`In v0` column](#the-fields-and-why-each-exists),
+carry a condition already stated in both places and worth stating plainly: **on any target that
+enumerates _at the root_**. For the verb-first population — most agent-facing CLIs — a modelled
+declaration is readable, is diffed, and buys **zero comparisons** until the kit can probe below the
+root. It is not wasted: the self-description check runs on it with no probe at all, and the report
+says which paths went uncompared and why. But an author writing one today should expect a report
+about what could not be compared rather than about what agreed, and the fix is the kit's and the
+tool's, not the file's.
+
 ### Where they disagreed, and it is not settled here
 
 **Exit-code ownership.** One sketch makes it declarable by anyone — `own` against `delegating`, plus

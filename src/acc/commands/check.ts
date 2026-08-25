@@ -374,11 +374,39 @@ export async function checkCommand(
       const waiverNote = r.counts.waived
         ? ` · ${r.counts.waived} waiver${r.counts.waived === 1 ? "" : "s"}`
         : "";
+      // A DECLARATION DISAGREEMENT RIDES ON THE HEADLINE TOO, and it is a POINTER, not a number.
+      // The census mints no rule id, feeds no verdict and gates no exit code — `declaration.ts`
+      // argues at length why the kit cannot know which side of a disagreement is wrong — and none
+      // of that changes here: this clause is a string, it touches no count on this line or the
+      // next, and the exit code below still fires on a core VIOLATION only.
+      //
+      // What it stops doing is being silent. Four deliberately broken variants of one tool each
+      // printed a clean headline while the block that caught three of them sat below the fold,
+      // and the headline is the line most readers get to the end of.
+      //
+      // The two provenances read DIFFERENTLY, because the headline is the cheapest place in the
+      // report to draw the distinction the whole `provenance` field exists for. An `emitted`
+      // document is the tool's own words, so a disagreement is one process publishing a flag and
+      // refusing it — a self-contradiction, and the strong reading. A `modelled` one is somebody's
+      // model of the tool, so the same diff says only that a file and a tool disagree. One word
+      // apart, so the shape is the same either way and a reader is not learning two clauses.
+      //
+      // Counted over `findings`, not over `status`: `self-description-not-declared` needs no probe
+      // and is a real disagreement on a target that never enumerated.
+      const declarationNote = ((d) => {
+        if (!d || d.findings.length === 0) return "";
+        const n = d.findings.length;
+        const noun =
+          d.provenance === "emitted"
+            ? `self-contradiction${n === 1 ? "" : "s"}`
+            : `disagreement${n === 1 ? "" : "s"}`;
+        return ` · but see ${n} declaration ${noun} (${d.provenance})`;
+      })(r.declaration);
       return [
         // The kit's own version rides on the headline, not in a footer. A stale install reports
         // success and puts an older commit on disk, and this is the only line every reader
         // certainly sees — the alternative was `acc --version`, which nobody thinks to check.
-        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}  ${r.target}  [acc ${r.kitVersion}]`,
+        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}${declarationNote}  ${r.target}  [acc ${r.kitVersion}]`,
         configLine,
         "",
         ...lines,
