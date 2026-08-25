@@ -375,10 +375,21 @@ the code.
 It survived contact with the implementation: identity stayed global, 24 flags went per-verb, 107
 tests passed unmodified.
 
-**Disposition: agreed on-channel and credited to this session; not yet on the page.** As of this
-report's `examined` state, `STANDARD.md` does not carry it. The census limit from the modelled run
-did land (the "A caller may declare" section), but with acc's own CLI as the worked `0 of 4` example
-rather than bounty's, and the sentence `trellis` wrote is paraphrased there rather than quoted.
+**Disposition: actioned.** As of this report's `examined` state, `STANDARD.md` did not carry it;
+it now does, in [Part 1 §2](../../STANDARD.md#2-generate-it-from-what-implements-the-behaviour) —
+the section on generating a declaration from what implements the behaviour, which is where the
+finding bites, because here what implements the behaviour is partly a document. The quote, the
+general claim, the `24 / 107` measurement marked as reported-not-verified, and a `[—]` on the claim
+itself all land there, with a matching row in Part 4's
+[nothing outside can check it](../../STANDARD.md#nothing-outside-can-check-it).
+
+The same revision corrected the overstatement recorded above. The census limit from the modelled run
+had landed (the "A caller may declare" section), but with acc's own CLI as the worked `0 of 4`
+example rather than bounty's, and `trellis`'s sentence paraphrased rather than quoted. The sentence
+is now quoted and attributed, and the section says outright that its worked example is acc's own CLI
+measured in this tree rather than the run the sentence came from. **bounty's own numbers were not
+put on the page**: they are not verifiable from this checkout, and the page does not carry
+measurements it cannot stand behind.
 
 ## What this session did not establish
 
@@ -423,5 +434,5 @@ Recorded as its own section because every claim above is narrower than it will b
 | `SG-4` | A green headline over an emitted declaration contradicting its own tool                                         | Actioned — `a8e30ec`, provenance-differentiated clause         |
 | `SG-5` | One remedy sentence where the reader's next action differs by provenance                                        | Actioned — `a8e30ec`, split by provenance, test-gated          |
 | `SG-6` | Part 2 described fields declaration v0 structurally cannot carry, and omitted two it requires                   | Actioned — `099a328`, per-field `In v0` column                 |
-| `SG-7` | A flag is global when the tool's shipped instructions to callers make it global                                 | Agreed and credited; not yet on the page                       |
+| `SG-7` | A flag is global when the tool's shipped instructions to callers make it global                                 | Actioned — `STANDARD.md` Part 1 §2, quoted and marked `[—]`    |
 | `SG-8` | Pre-registered: `~17 of 21 accepted-not-declared` for bounty's `state` once the kit probes below the root       | Registered — Spellbook `5c98726`; falsifiable in advance       |
