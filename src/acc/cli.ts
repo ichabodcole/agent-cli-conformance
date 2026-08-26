@@ -12,6 +12,7 @@ import { Command, CommanderError, Option } from "commander";
 import { checkCommand } from "./commands/check.ts";
 import { compareCommand } from "./commands/compare.ts";
 import { pathCommand } from "./commands/path.ts";
+import { probePlanCommand } from "./commands/probe-plan.ts";
 import { rulesCommand } from "./commands/rules.ts";
 import { schemaCommand } from "./commands/schema.ts";
 import { showCommand } from "./commands/show.ts";
@@ -318,6 +319,18 @@ for (const spec of COMMANDS) {
         return tagsCommand(resolved, startedAt);
       case "schema":
         return schemaCommand(resolved);
+      case "probe-plan":
+        return probePlanCommand(
+          positionals[0] as string,
+          {
+            declaration: opts.declaration as string | undefined,
+            paths: opts.paths as string | undefined,
+            out: opts.out as string | undefined,
+            force: Boolean(opts.force),
+          },
+          resolved,
+          startedAt,
+        );
       case "check":
         return checkCommand(
           positionals[0] as string,

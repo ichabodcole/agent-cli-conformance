@@ -312,6 +312,78 @@ export const COMMANDS: CommandSpec[] = [
     examples: ["acc check ./mycli", "acc check $(which gh) --json"],
   },
   {
+    name: "probe-plan",
+    description: "Emit a capture harness for the command paths below the root.",
+    // `idempotent`, and the two neighbours are both wrong for a reason worth stating.
+    //
+    // NOT `read_only`: with `--out` this command writes a file the caller named, and the effects
+    // claim covers what a command CAUSES. An earlier draft put the harness on stdout to keep this
+    // `read_only` — that failed on the CLI's own machine-mode rule, since a redirect is not a
+    // terminal and `> capture.sh` therefore resolves to JSON and writes an envelope into a file
+    // named like a script. Nothing in the standard says a conforming CLI has no mutating commands;
+    // it says a CLI declares its effects honestly.
+    //
+    // NOT `non_idempotent` either, which is where `check` sits: this command spawns nothing. Same
+    // inputs in, same bytes out, and a second run leaves the same state — which is exactly what
+    // `idempotent` claims.
+    effects: "idempotent",
+    // The command's output is the PLAN, and it is data. The harness is a file the plan writes.
+    // `opaque` was considered and is the wrong fit: with `--out` there is a real envelope on
+    // stdout, and `opaque` promises no JSON is expected there.
+    output_kind: "data",
+    cardinality: "single",
+    positionals: [
+      {
+        name: "target",
+        description: "Path to the binary or script to plan a capture for.",
+        required: true,
+      },
+    ],
+    args: [
+      {
+        name: "--declaration",
+        type: "string",
+        description:
+          "Derive the command paths from this declaration's commands[].path. The convenient source, and the one that can only ever probe paths you have already named.",
+        valueHint: "file",
+      },
+      {
+        name: "--paths",
+        type: "string",
+        description:
+          'Command paths as a JSON array of arrays, e.g. [["state"], ["send", "note"]]. The source that can find a verb your declaration does not name, because it comes from wherever you actually enumerate them.',
+        valueHint: "file",
+      },
+      {
+        name: "--out",
+        type: "string",
+        description:
+          "Write the harness here. Omitted, nothing is written and the script is carried in the JSON payload — a redirect cannot substitute, because stdout carries the envelope.",
+        valueHint: "file",
+      },
+      {
+        name: "--force",
+        type: "boolean",
+        description:
+          "Overwrite the --out file if it exists. Without it an existing file is refused rather than replaced.",
+      },
+    ],
+    // `not_found` for a target, declaration or path list that is not there and for a missing
+    // parent directory; `conflict` for an --out that exists; `permission` for one that cannot be
+    // written. The last two are the kinds only this command can reach, because it is the only one
+    // that writes.
+    errors: [ErrorKind.NotFound, ErrorKind.Conflict, ErrorKind.Permission],
+    notes: [
+      "The harness is a script YOU run: the kit never executes below the root. Hand what it writes back with `acc check <target> --recorded-surfaces batch.json`.",
+      "`completeness` and `streams` are derived by the harness, not asked of you — it redirects to files rather than piping, so nothing downstream can cut a stream.",
+    ],
+    examples: [
+      "acc probe-plan ./mycli --declaration ./declaration.json --out ./capture.sh",
+      "acc probe-plan ./mycli --paths ./paths.json --out ./capture.sh",
+      "acc probe-plan ./mycli --declaration ./declaration.json --json",
+    ],
+  },
+  {
     name: "compare",
     // "Where they disagree", not "whether they conform". Every other command in this list judges
     // one tool against the catalogue; this one holds several tools against EACH OTHER and reports

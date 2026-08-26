@@ -67,3 +67,32 @@ export function notFoundError(
 ): AccError {
   return new AccError(ErrorKind.NotFound, message, opts);
 }
+
+/**
+ * A named path already holds something, and replacing it is the caller's decision to make.
+ *
+ * `acc probe-plan --out` refuses an existing file rather than overwriting it: the harness is
+ * meant to be read and may have been edited, and a generator that silently replaces one is the
+ * same class of surprise this catalogue exists to object to. `conflict` rather than `usage`
+ * because the invocation was well-formed — the world was not what it assumed.
+ */
+export function conflictError(
+  message: string,
+  opts: { hint?: string; choices?: string[]; details?: Record<string, unknown> } = {},
+): AccError {
+  return new AccError(ErrorKind.Conflict, message, opts);
+}
+
+/**
+ * The caller may not do that, and no retry or reformulation will change it.
+ *
+ * Distinct from `not_found` on purpose: a missing parent directory is something the caller can
+ * create, and an unwritable one is something they cannot. Collapsing the two would send a reader
+ * to fix the wrong thing.
+ */
+export function permissionError(
+  message: string,
+  opts: { hint?: string; choices?: string[]; details?: Record<string, unknown> } = {},
+): AccError {
+  return new AccError(ErrorKind.Permission, message, opts);
+}
