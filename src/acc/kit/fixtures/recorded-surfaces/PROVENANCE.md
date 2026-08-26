@@ -116,3 +116,53 @@ and has not happened — so the claim is recorded as theirs, not verified here. 
 capture method is verifiable from the bytes either: that the streams were separated, that no shell
 was involved, and that the capture was complete are all the recorder's attestation, which is exactly
 what the `recorded-by-caller` label exists to say.
+
+---
+
+## `magpie.empty-enumeration.json` — a different capture, for a defect it exposed
+
+Added 2026-08-26, and **not** part of the four above. Two records, vendored verbatim, cut from the
+third census of a second adopter's tool with nothing changed but the record selection.
+
+|                   |                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------- |
+| Captured by       | **`flint`**, the agent that took `magpie` to L0 and through three censuses        |
+| Source tool       | `magpie` at `plugins/spellbook/skills/magpie/scripts/cli.ts`, Spellbook `cd06cb5` |
+| Source repository | `ichabodcole/spellbook`, branch `feat/magpie-acc-l0`, unpushed at time of capture |
+| Captured against  | this repository's batch spec, unchanged at `formatVersion: "0"`                   |
+| sha256            | `73e40c606497d22a7e5cb4fba8b0efbcbae726aa3d66b425c8ffbb5eeecb1577`                |
+
+**What it is for.** `magpie`'s `sessions` and `help` accept no flags, by design. Asked with one
+sentinel flag, each answered with an explicit, present, empty enumeration:
+
+```json
+{ "ok": false, "error": { "kind": "usage", "…": "…", "choices": [] } }
+```
+
+`choices` is present and it is `[]`. The tool was asked what it accepts there and said "nothing".
+
+**The kit reads that as `not-enumerated` and drops both paths from the census**, then renders
+`none named a set (NOT a tool with no flags)` — which is the precise opposite of what the target
+said. The clause responsible is `value.length > 0` in `keyedSets`
+([`surface.ts`](../surface.ts)), which discards the empty array before anything can read it.
+
+That status's own definition asserts _"the tool has flags, it simply does not list them"_, so the
+kit does not merely fail to record the answer: it asserts its negation. The type already separates
+"we did not look" (`no-evidence`) from "we looked and found nothing" (`not-enumerated`) — two of
+the three states [Part 3 of `STANDARD.md`](../../../../../STANDARD.md) requires of any field — and
+has no way to say **"we looked and it said none."**
+
+**Why it is vendored before the fix.** The naive repair — delete the length clause — turns any
+recognised key holding an empty array into an enumeration of zero flags, and every flag a
+declaration names at that path then becomes a `declared-not-accepted` finding. A false empty
+enumeration GENERATES findings where a false `not-enumerated` only suppresses them, so this needs
+the missing state rather than the clause removed. These bytes are the before-case for that sweep,
+and they are a real tool's real answer, which is not something that can be fabricated honestly.
+
+**The severity argument is the adopter's**, and it is the one that makes this disqualifying rather
+than cosmetic: every tool that takes this project's advice about per-verb flag scoping acquires
+flagless verbs, and each one costs it census coverage while the report claims it enumerated
+nothing. _"The fraction moves the wrong way as the tool improves, which is the one direction a
+measurement must never move."_
+
+**Nothing in this tree reads this file yet**, exactly as with the four batches above.

@@ -1,0 +1,37 @@
+{
+  "formatVersion": "0",
+  "records": [
+    {
+      "path": [
+        "sessions"
+      ],
+      "argv": [
+        "sessions",
+        "--acc-not-a-flag"
+      ],
+      "exitCode": 2,
+      "streams": "separated",
+      "stdout": "",
+      "stderr": "{\"ok\":false,\"error\":{\"kind\":\"usage\",\"exit_code\":2,\"retryable\":false,\"message\":\"Unknown option '--acc-not-a-flag'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- \\\"--acc-not-a-flag\\\"\",\"hint\":\"flags are scoped to the verb \u2014 choices lists what `sessions` accepts; for free text containing dashes use --stdin, or put it after a bare --\",\"choices\":[]},\"meta\":{\"command\":\"sessions\"}}\n",
+      "completeness": "complete",
+      "recordedBy": "flint (agent) via bun subprocess, magpie working tree feat/magpie-acc-l0",
+      "recordedAt": "2026-08-26T19:50:27Z"
+    },
+    {
+      "path": [
+        "help"
+      ],
+      "argv": [
+        "help",
+        "--acc-not-a-flag"
+      ],
+      "exitCode": 2,
+      "streams": "separated",
+      "stdout": "",
+      "stderr": "{\"ok\":false,\"error\":{\"kind\":\"usage\",\"exit_code\":2,\"retryable\":false,\"message\":\"Unknown option '--acc-not-a-flag'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- \\\"--acc-not-a-flag\\\"\",\"hint\":\"flags are scoped to the verb \u2014 choices lists what `help` accepts; for free text containing dashes use --stdin, or put it after a bare --\",\"choices\":[]},\"meta\":{\"command\":\"help\"}}\n",
+      "completeness": "complete",
+      "recordedBy": "flint (agent) via bun subprocess, magpie working tree feat/magpie-acc-l0",
+      "recordedAt": "2026-08-26T19:50:27Z"
+    }
+  ]
+}
