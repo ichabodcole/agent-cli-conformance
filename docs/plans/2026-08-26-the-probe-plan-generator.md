@@ -472,9 +472,17 @@ A third of the same family was found while repairing them: excludes joined into 
 on a repo path containing a space, so they are built as positional arguments instead.
 
 **The requirement this leaves behind: a regression test for the generated harness must run from a
-subdirectory.** A root-level run cannot distinguish a working exclusion from an inert one, and "the
-tool lives in a subdirectory of a larger repo" is the ordinary case for a monorepo rather than an
-exotic one.
+subdirectory AND through a symlinked path.** A root-level run cannot distinguish a working
+exclusion from an inert one, and a run through a physical path cannot detect the
+logical-versus-physical defect below. "The tool lives in a subdirectory of a larger repo" is the
+ordinary case for a monorepo rather than an exotic one, and `/tmp` is symlinked on macOS, so the
+throwaway fixture repo is itself the second topology.
+
+The adopter's sentence for it, which is stronger than the requirement: **a harness whose
+correctness depends on where it is standing cannot be verified from one place.** Neither party
+could have produced this defect list alone — one had a fixture repo at a root, the other a nested
+skill directory in a monorepo on a machine where `/tmp` is a symlink — and no amount of additional
+care on either side substitutes for the second topology.
 
 All three defects, plus the relative launcher above, have one shape: **the harness's correctness
 depends on where it is standing, and nothing in its output records where that was.**
