@@ -60,6 +60,17 @@ const BASE = {
  * checkout unusable. It was invisible when the suite was run directly, because there is no hook
  * environment then — green standalone, destructive under a hook, and only from a worktree.
  *
+ * HOW A CHECKOUT ENDS UP UNUSABLE, since "unusable" is otherwise a story rather than a mechanism.
+ * Reproduced in a throwaway clone: with `GIT_DIR` inherited from a worktree commit and — decisively
+ * — no `GIT_WORK_TREE`, the fixture's `git init` re-initialises that git-dir, cannot determine a
+ * work tree for it, and records `core.bare = true`. Worktrees share one config file, so that lands
+ * on the main checkout, which then answers every command with `fatal: this operation must be run in
+ * a work tree`.
+ *
+ * `GIT_WORK_TREE` is what would have prevented it, and the real hook does not export it. An earlier
+ * attempt to reproduce this by setting all three variables by hand therefore could not fail —
+ * supplying the one variable git omits is what makes the repository look non-bare.
+ *
  * Stripping all of them is deliberately broader than the measured danger. The exported set is
  * git's to change, and a fixture that runs git has no business inheriting any of it.
  */
