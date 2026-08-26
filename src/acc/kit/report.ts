@@ -1,5 +1,15 @@
 import type { AccConfig, ConfigSource } from "./config.ts";
-import { type Declaration, type DeclarationDiff, diffDeclaration } from "./declaration.ts";
+import {
+  type Declaration,
+  type DeclarationDiff,
+  diffDeclaration,
+  type PathSurface,
+} from "./declaration.ts";
+import {
+  type RecordedReading,
+  type RecordedSurfacesReport,
+  recordedPathSummary,
+} from "./recorded.ts";
 import { captureSurface, type Surface } from "./surface.ts";
 import type {
   Checker,
@@ -321,6 +331,15 @@ export interface Report {
    * means the diff did not happen, not that everything agreed.
    */
   declaration?: DeclarationDiff;
+  /**
+   * THE BATCH OF SURFACES THE CALLER RECORDED — present only when they supplied one.
+   *
+   * Evidence, exactly as `surface` and `declaration` are: no rule reads it, it moves no count, and
+   * a fabricated batch buys a sentence rather than a pass. What it changes is the SCOPE of the
+   * census — paths below the root the kit cannot probe — and what it therefore owes is the label
+   * saying who observed each of them, which lives on `declaration.paths[].surfaceProvenance`.
+   */
+  recordedSurfaces?: RecordedSurfacesReport;
   knownFailures: Array<{ ruleId: string; reason: string }>;
   /** Excused rules that now pass. The ratchet: remove these from `knownFailures`. */
   staleExpectations: string[];
@@ -480,6 +499,12 @@ export function buildReport(
    * `Report.declaration` absent rather than an empty diff claiming a comparison happened.
    */
   declaration?: Declaration | null,
+  /**
+   * Surfaces the caller recorded and handed in, already parsed and read. Optional for the reason
+   * `declaration` is: a run without a batch is the normal case, and the report says so by having
+   * no `recordedSurfaces` field rather than by carrying an empty one.
+   */
+  recorded?: { source: string; reading: RecordedReading } | null,
 ): Report {
   const byId = new Map<string, Checker | UncheckedRule>(checkers.map((c) => [c.ruleId, c]));
   // A REAL CHECKER WINS over a declaration for the same id. The declaration is the kit's copy of
@@ -675,10 +700,34 @@ export function buildReport(
     // Captured from the history, because the projection below is about to discard the streams it
     // is read from. Nothing about it feeds `conformant`, `fullyVerified` or any count.
     surface,
-    // ONE evidence entry, and it is the root — `captureSurface` reads root-level rejections only.
-    // Every other declared path comes back `checked: false` naming that as the reason, which is
-    // the honest shape: a diff over 1 of 25 paths must not be reported as a diff over 25.
-    ...(declaration ? { declaration: diffDeclaration(declaration, [{ path: [], surface }]) } : {}),
+    // THE ROOT IS ALWAYS THE KIT'S, and it is the only path the kit probes — `captureSurface`
+    // reads root-level rejections only. Everything below it comes from a batch the caller
+    // recorded, if they supplied one, and each entry carries who observed it. A declared path
+    // neither reached nor recorded comes back `checked: false` with the reason saying which of
+    // those it was: a diff over 1 of 25 paths must not be reported as a diff over 25.
+    ...(declaration
+      ? {
+          declaration: diffDeclaration(
+            declaration,
+            pathSurfaces(surface, recorded?.reading),
+            recorded != null,
+          ),
+        }
+      : {}),
+    ...(recorded
+      ? {
+          recordedSurfaces: {
+            source: recorded.source,
+            records: recorded.reading.records,
+            readings: recorded.reading.surfaces.map((p) => ({
+              path: p.path,
+              summary: recordedPathSummary(p),
+            })),
+            recordedBy: recorded.reading.recordedBy,
+            identity: recorded.reading.identity,
+          },
+        }
+      : {}),
     knownFailures: Object.entries(config.knownFailures).map(([ruleId, reason]) => ({
       ruleId,
       reason,
@@ -752,4 +801,19 @@ export function toReportedObservation(o: Observation): ReportedObservation {
     stderrLossy: o.stderrLossy,
     truncated: o.truncated,
   };
+}
+
+/**
+ * Every path the differ has evidence for: the kit's own root capture, then whatever the caller
+ * recorded below it.
+ *
+ * A RECORDED ROOT CANNOT ARRIVE HERE — the batch reader refuses a `path: []` record outright — so
+ * there is no path with two provenances to reconcile, which is the property that lets every census
+ * line name exactly one observer.
+ */
+function pathSurfaces(root: Surface, reading?: RecordedReading): PathSurface[] {
+  return [
+    { path: [], surface: root, surfaceProvenance: "probed-by-kit" },
+    ...(reading?.surfaces ?? []),
+  ];
 }

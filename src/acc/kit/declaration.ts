@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { type Surface, surfaceSummary } from "./surface.ts";
+import { type Surface, type SurfaceProvenance, surfaceSummary } from "./surface.ts";
 
 /**
  * WHAT A TARGET SAYS ITS INTERFACE IS — read from a file, checked against what the target's own
@@ -242,12 +242,42 @@ export interface DeclarationFinding {
   readings: [string, string];
 }
 
+/**
+ * WHY A PATH HAD NO SURFACE AT ALL — and there are two, not three.
+ *
+ * The difference between them is what the reader would do next, which is the only thing that
+ * justifies two sentences instead of one.
+ *
+ * A third, `no-warrant` — _reachable in principle, but the declaration claims nothing the kit may
+ * act on_ — was specified in an earlier round and is WITHDRAWN with the item that would have
+ * produced it. The probe warrant is a decision not to build, so no declaration can carry one, the
+ * distinction has no referent, and the member must not be stored or emitted. An inert name in a
+ * stored enum acquires apparent authority and invites a consumer to infer a distinction the kit
+ * cannot make.
+ */
+export type NoEvidenceReason =
+  /** The kit sent no probe there and none was possible. */
+  | "unreachable"
+  /** A batch WAS supplied and carries no record at this path. Never printed without one. */
+  | "not-recorded";
+
 /** Whether one declared path could be diffed at all, and when not, why. */
 export interface DeclarationPathResult {
   path: string[];
   checked: boolean;
   /** Present only when `checked` is false. The sentence a reader gets instead of a result. */
   reason?: string;
+  /**
+   * WHO OBSERVED THIS PATH — present whenever a surface existed for it, absent when none did.
+   *
+   * A census line that does not say who observed it is the defect this project is named after, so
+   * this is not optional decoration: a caller-modelled declaration diffed against kit-probed
+   * evidence and a tool-emitted declaration diffed against caller-recorded evidence are both
+   * ordinary combinations, and a reader checking one is checking exactly this field.
+   */
+  surfaceProvenance?: SurfaceProvenance;
+  /** Present only when no surface existed for the path. See `NoEvidenceReason`. */
+  noEvidenceReason?: NoEvidenceReason;
 }
 
 export interface DeclarationDiff {
@@ -461,6 +491,21 @@ export function loadDeclaration(file: string): Declaration {
 export interface PathSurface {
   path: string[];
   surface: Surface;
+  /**
+   * HOW THIS PATH'S EVIDENCE WAS OBTAINED. Required, on every entry.
+   *
+   * Named `surfaceProvenance` rather than `provenance` deliberately: `DeclarationDiff.provenance`
+   * already means `emitted | modelled` — who wrote the DOCUMENT — and the two answer different
+   * questions about the same line. One spelling for both would make the report unreadable at
+   * exactly the place a reader is checking who observed what.
+   */
+  surfaceProvenance: SurfaceProvenance;
+  /**
+   * Sentences naming records at this path that were NOT read, and why — caller-recorded surfaces
+   * only. A record excluded by its shape or by its declared completeness is not a missing one, and
+   * a line that did not say so would send a caller to capture a path they had already captured.
+   */
+  notes?: string[];
 }
 
 const samePath = (a: string[], b: string[]) =>
@@ -500,6 +545,17 @@ function readings(
 }
 
 /**
+ * The sentence each no-evidence reason prints. Two entries, and the enum has two members.
+ *
+ * `not-recorded` is only ever reachable when a batch was supplied — with no batch, a path the kit
+ * could not reach is `unreachable`, which is what it is.
+ */
+const NO_EVIDENCE_SENTENCE: Record<NoEvidenceReason, string> = {
+  unreachable: "the kit probes the root only, so nothing reached this path",
+  "not-recorded": "the caller supplied recorded surfaces and recorded nothing at this path",
+};
+
+/**
  * Diff a declaration against what the target said it accepts.
  *
  * PURE, exactly as a checker's `check` is: nothing here spawns, and the evidence has already been
@@ -508,6 +564,16 @@ function readings(
 export function diffDeclaration(
   declaration: Declaration,
   evidence: readonly PathSurface[],
+  /**
+   * Whether the run was given a batch of caller-recorded surfaces.
+   *
+   * It changes only the sentence a path with no evidence gets, and it has to be passed rather than
+   * inferred from `evidence`: a batch that was supplied and happens to say nothing about THIS path
+   * is `not-recorded`, and with no batch at all the same path is `unreachable`, which is what it
+   * is. Inferring from a non-empty `evidence` would also mislabel every path on a run where the
+   * batch's records were all excluded.
+   */
+  recordedBatchSupplied = false,
 ): DeclarationDiff {
   const findings: DeclarationFinding[] = [];
   const add = (kind: DeclarationFindingKind, path: string[], subject: string) =>
@@ -539,24 +605,35 @@ export function diffDeclaration(
     const declared = declaration.commands.find((c) => samePath(c.path, path));
     const found = evidence.find((e) => samePath(e.path, path));
     if (!found) {
+      // Named as a property of THE KIT or of the BATCH, never of the target: nothing was learned
+      // about this command. One sentence used to serve both, which was right for a path nothing
+      // reached and wrong for a path the caller simply did not record — and those lead to
+      // different next actions.
+      const noEvidenceReason: NoEvidenceReason = recordedBatchSupplied
+        ? "not-recorded"
+        : "unreachable";
       results.push({
         path,
         checked: false,
-        // Named as a property of THE KIT, not of the target: nothing was learned about this
-        // command, and the reason is that nothing probed it.
-        reason:
-          "no flag-surface evidence for this path — the kit probes the root only; evidence below it comes from surfaces a caller recorded",
+        noEvidenceReason,
+        reason: NO_EVIDENCE_SENTENCE[noEvidenceReason],
       });
       continue;
     }
     if (found.surface.status !== "enumerated" || !found.surface.flags) {
       // THE HONESTY CASE. A target that did not enumerate has not agreed with anything; it has
       // said nothing, and the diff did not happen. Reusing `surfaceSummary` so this sentence
-      // cannot drift from the one the surface block prints two lines above it.
-      results.push({ path, checked: false, reason: surfaceSummary(found.surface) });
+      // cannot drift from the one the surface block prints two lines above it — and passing the
+      // PATH, so it names the path it is about instead of claiming the root.
+      results.push({
+        path,
+        checked: false,
+        surfaceProvenance: found.surfaceProvenance,
+        reason: [surfaceSummary(found.surface, path), ...(found.notes ?? [])].join("; "),
+      });
       continue;
     }
-    results.push({ path, checked: true });
+    results.push({ path, checked: true, surfaceProvenance: found.surfaceProvenance });
     const accepted = new Set(found.surface.flags);
     const args = declared?.args ?? [];
     for (const arg of args) {

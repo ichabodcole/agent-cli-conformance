@@ -112,6 +112,42 @@ function enforceClosedSets(argv: string[]): void {
   }
 }
 
+/**
+ * Flags that may be given AT MOST ONCE, with the reason each one refuses its own repetition.
+ *
+ * Commander is LAST-WINS for a repeated string option: `--declaration a.json --declaration b.json`
+ * silently reads `b.json`. That is the wrong default for a batch of recorded surfaces, and the
+ * reason is not tidiness — one batch is ONE SESSION ASSERTION, the caller's statement that these
+ * records came from one tool on one machine in one sitting. Merging two batches would erase the
+ * binding the batch exists to assert, and keeping one of them silently is a caller's claim deleted
+ * without a word. A caller with two sessions runs twice.
+ *
+ * Enforced over raw argv, before commander parses, for the same reason `enforceClosedSets` is: the
+ * option's own parser never sees the first occurrence again once the second overwrites it.
+ */
+const AT_MOST_ONCE: Record<string, string> = {
+  "--recorded-surfaces":
+    "One batch is one session assertion — these records came from one tool, on one machine, in one sitting. Merging two would erase the binding the batch exists to assert. Run acc check once per batch.",
+};
+
+function refuseRepeated(argv: string[]): void {
+  const counts = new Map<string, number>();
+  for (const token of argv.slice(2)) {
+    // Everything after the terminator is positional DATA, never a flag (rule A6).
+    if (token === "--") break;
+    const name =
+      token.startsWith("--") && token.includes("=") ? token.slice(0, token.indexOf("=")) : token;
+    if (!(name in AT_MOST_ONCE)) continue;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  for (const [name, n] of counts) {
+    if (n > 1)
+      throw usageError(`${name} was given ${n} times, and it may be given at most once`, {
+        hint: AT_MOST_ONCE[name],
+      });
+  }
+}
+
 const argv = process.argv;
 const mode = earlyMode(argv);
 const startedAt = performance.now();
@@ -120,6 +156,7 @@ const startedAt = performance.now();
 // wrong, whether or not the path it took would have needed to parse.
 try {
   enforceClosedSets(argv);
+  refuseRepeated(argv);
 } catch (err) {
   process.exit(emitError({ mode, command: argv[2] ?? "", error: err }));
 }
@@ -287,6 +324,7 @@ for (const spec of COMMANDS) {
           {
             configDir: opts.configDir as string | undefined,
             declaration: opts.declaration as string | undefined,
+            recordedSurfaces: opts.recordedSurfaces as string | undefined,
           },
           resolved,
           startedAt,
