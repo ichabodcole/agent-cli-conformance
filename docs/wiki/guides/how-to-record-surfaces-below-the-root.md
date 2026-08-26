@@ -44,17 +44,23 @@ with an empty `path` would give one census line two observers. It is refused, an
 the **whole batch** — sweep your tool from the top if that is how you work, then file every record
 below the root and drop the `path: []` one on the way out.
 
-**So you will be looking at two denominators, and they differ by exactly one.** Your batch counts
-**records**, all of them below the root. The census counts **declared command paths**, and a
-declaration normally declares the root too. A 25-record batch against a 26-path declaration is
-therefore the right shape and not a mis-built batch: a full house there reads `26 of 26 declared
-command paths compared`, 25 of them on your records and the twenty-sixth on the kit's own root
-probe. If your declaration does **not** declare a root, the root is still compared — against nothing
-declared, which is what turns the flags it accepts into `accepted-not-declared` — and it is counted
-in the compared figure while missing from the declared one. So 25 records against a rootless 25-path
-declaration reads `26 of 25 declared command paths compared`. That line looks wrong and is not: it
-is the count of paths compared over the count of paths declared, and the root is in one and not the
-other.
+**So your batch will hold one fewer record than your declaration holds paths**, and that is the
+right shape rather than a mis-built batch. Your batch counts **records**, all of them below the
+root; the census counts **declared command paths**, and a declaration normally declares the root
+too. A full house of 25 records against a 26-path declaration reads `26 of 26 declared command
+paths compared` — 25 of them on your records, the twenty-sixth on the kit's own root probe.
+
+If your declaration does **not** declare a root, the root is still compared, against nothing
+declared — which is exactly what turns the flags it accepts into `accepted-not-declared`. It is
+**not** counted toward the fraction, because it is not one of the paths the fraction's denominator
+counts. It gets a clause of its own instead, so 25 records against a rootless 25-path declaration
+read:
+
+```
+25 of 25 declared command paths compared; 1 path the declaration does not name — (root) — was also compared
+```
+
+The count on the left never exceeds the count on the right, whatever your batch reaches.
 
 ### 2. Provoke one rejection per path, and keep the bytes verbatim
 

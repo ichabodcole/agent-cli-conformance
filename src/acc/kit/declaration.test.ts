@@ -265,8 +265,14 @@ describe("the set difference", () => {
     expect(d.findings.map((f) => [f.kind, f.subject])).toEqual([
       ["accepted-not-declared", "--format"],
     ]);
-    expect(d.checkedCommands).toBe(1);
+    // The root was compared and `info` was not, so the DECLARED count is zero — the one path
+    // that was diffed is not among the paths the document declares, and folding it into the
+    // fraction is what used to make the numerator a member of a different set.
+    expect(d.checkedCommands).toBe(0);
+    expect(d.checkedUndeclared).toBe(1);
     expect(d.declaredCommands).toBe(1);
+    // A diff that ran only outside the declaration still ran, and it found something.
+    expect(d.status).toBe("checked");
   });
 
   test("a path the kit cannot reach is reported as not compared, with the kit as the reason", () => {
@@ -462,13 +468,43 @@ describe("anthill v2.3.0 against its own manifest", () => {
     expect(self.map((f) => f.subject)).toEqual(["help"]);
   });
 
-  test("the honest denominator: 1 of 25 paths compared, and the other 24 say why", () => {
+  test("the honest denominator: NONE of the 25 declared paths was compared, and the root was", () => {
     const d = diffDeclaration(manifest(), rootSurface(["--format"]));
     expect(d.declaredCommands).toBe(25);
     // 26 results: the 25 declared paths, plus the root, which the manifest has no entry for.
     expect(d.paths).toHaveLength(26);
-    expect(d.checkedCommands).toBe(1);
-    expect(declarationSummary(d)).toMatch(/1 of 25 declared command paths compared/);
+    // This read `1 of 25` for as long as the kit counted the union, and the 1 was the root —
+    // not one of the 25, which is why 1 + 24 never added up to the 26 rows above. The kit
+    // probes the root only, and the manifest declares no root, so the honest figure is ZERO
+    // declared paths compared. That is the case for recording surfaces below the root, stated
+    // in the number rather than in a paragraph next to it.
+    expect(d.checkedCommands).toBe(0);
+    expect(d.checkedUndeclared).toBe(1);
+    expect(d.paths.filter((r) => r.undeclared).map((r) => r.path)).toEqual([[]]);
+    expect(declarationSummary(d)).toMatch(/0 of 25 declared command paths compared/);
+    expect(declarationSummary(d)).toContain(
+      "1 path the declaration does not name — (root) — was also compared",
+    );
+  });
+
+  test("the invariant: the numerator never exceeds the denominator, whatever a batch reaches", () => {
+    // `26 of 25` was the same defect one step further along: a batch carrying the root plus every
+    // declared path pushed the union past the count of declared paths, and the fraction printed a
+    // numerator larger than its own denominator.
+    const everyPath = manifest().commands.map((c) => c.path);
+    const d = diffDeclaration(
+      manifest(),
+      [[], ...everyPath].map((path) => ({
+        path,
+        surface: enumerated(["--format"]),
+        surfaceProvenance: "recorded-by-caller" as const,
+      })),
+    );
+    expect(d.paths).toHaveLength(26);
+    expect(d.checkedCommands).toBe(25);
+    expect(d.checkedUndeclared).toBe(1);
+    expect(d.checkedCommands).toBeLessThanOrEqual(d.declaredCommands);
+    expect(declarationSummary(d)).toMatch(/25 of 25 declared command paths compared/);
   });
 
   test("DT-2: eight refused flags, each published as valid and absent from the accepted set", () => {
