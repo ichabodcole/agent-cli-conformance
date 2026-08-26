@@ -273,7 +273,7 @@ export const COMMANDS: CommandSpec[] = [
         name: "--recorded-surfaces",
         type: "string",
         description:
-          "Path to a batch of surfaces you recorded yourself, below the root the kit probes. Give it at most once — one batch is one session assertion, and a second is refused rather than merged. Every census line says who observed it; nothing here passes or fails.",
+          "Path to a batch of surfaces you recorded yourself, below the root the kit probes. Give it at most once — one batch is one session assertion, and a second is refused rather than merged. Every census line says who observed it; nothing here passes or fails. For the format: acc show how-to-record-surfaces-below-the-root",
         valueHint: "file",
       },
     ],
