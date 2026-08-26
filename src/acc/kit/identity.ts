@@ -193,13 +193,54 @@ export function captureIdentity(observations: readonly Observation[]): TargetIde
  * to work out whether they mean different things — the only thing that differs is WHO OBSERVED IT,
  * and that is the one distinction the two are there to draw.
  *
- * THE QUOTE IS CLIPPED TO ITS FIRST LINE HERE AND NOWHERE ELSE, and this is the one place the two
- * renderings part company. The caller sized their own capture before handing it in; the kit's is
- * whatever the target chose to write under a probe the kit sent, and a `--version` that answers
- * with a help screen would displace the report it is a footnote in. The JSON keeps every byte, the
- * line says how many lines it did not show, and nothing about which line was kept is a judgement
- * about what the bytes MEAN.
+ * THE QUOTE IS CLIPPED HERE AND NOWHERE ELSE, and this is the one place the two renderings part
+ * company. The caller sized their own capture before handing it in; the kit's is whatever the
+ * target chose to write under a probe the kit sent, and a `--version` that answers with a help
+ * screen would displace the report it is a footnote in. THE CLIP IS ON THE RENDERING ONLY: the
+ * JSON keeps every byte of `said`, the line says what it did not show — lines and bytes both —
+ * and nothing about which part was kept is a judgement about what the bytes MEAN.
+ *
+ * It is clipped on TWO axes because one axis does not bound it. The first line alone is bounded
+ * only by the runner's stream ceiling (`MAX_STREAM_BYTES`, 4 MiB), and a machine-mode-default CLI
+ * answering `--version` with a single line of JSON is the ordinary shape rather than the exotic
+ * one — anthill's real answer is 152 bytes on one line. Measured before the byte cap existed, a
+ * one-line 200 KB answer rendered as 94% of the whole text report: the exact displacement the
+ * line clip is here to prevent, arriving on the axis it does not watch.
  */
+
+/**
+ * How much of the first line the RENDERED head may carry.
+ *
+ * The condition, not the number: the head has to stay small enough that a reader meeting it as a
+ * footnote in a report reads the report rather than the quote, and long enough that a real
+ * `--version` answer arrives whole. The largest honest one measured here is anthill's enveloped
+ * `{"ok":true,"data":{"version":"2.3.0","source":"…/cli.ts"},"meta":…}` at 152 bytes; `D1`'s own
+ * rendering of an unusable payload clips at 40, which is too short to show an envelope at all.
+ * If a class of tool turns up whose ordinary answer is longer than this, raise it and say which
+ * tool — a quote cut mid-envelope is worse than a slightly long line. Nothing reads this but the
+ * renderer, so moving it cannot change a verdict, a count or a stored byte.
+ */
+const MAX_QUOTED_HEAD_BYTES = 240;
+
+/**
+ * A prefix of `s` no longer than `max` bytes of UTF-8, cut on a code-point boundary.
+ *
+ * `for...of` iterates code points, so a cut never lands inside a surrogate pair and turns a
+ * character the target wrote into a replacement character the renderer invented — the same
+ * distinction `Observation.stdoutLossy` exists to keep.
+ */
+function clipToBytes(s: string, max: number): string {
+  if (Buffer.byteLength(s, "utf8") <= max) return s;
+  let out = "";
+  let bytes = 0;
+  for (const ch of s) {
+    const n = Buffer.byteLength(ch, "utf8");
+    if (bytes + n > max) break;
+    out += ch;
+    bytes += n;
+  }
+  return out;
+}
 export function identitySummaryLines(identity: TargetIdentity): string[] {
   const argv = JSON.stringify(identity.argv);
   if (identity.status === "no-evidence")
@@ -214,11 +255,19 @@ export function identitySummaryLines(identity: TargetIdentity): string[] {
     ];
   const whole = identity.said ?? "";
   const lines = whole.split("\n");
-  const head = lines[0] as string;
+  const first = lines[0] as string;
+  const head = clipToBytes(first, MAX_QUOTED_HEAD_BYTES);
+  const cutBytes = Buffer.byteLength(first, "utf8") - Buffer.byteLength(head, "utf8");
   const rest = lines.length - 1;
+  // Both omissions in one parenthetical, and each says WHICH axis it was cut on, because "+2 more
+  // lines" and "+900 more bytes on this line" are different facts about the same quote.
+  const omitted = [
+    ...(rest > 0 ? [`+${rest} more line${rest === 1 ? "" : "s"}`] : []),
+    ...(cutBytes > 0 ? [`+${cutBytes} more bytes on this line`] : []),
+  ];
   const out = [
     `identity: the kit ran ${argv} and the target answered with ${JSON.stringify(head)}${
-      rest > 0 ? ` (+${rest} more line${rest === 1 ? "" : "s"}, in the JSON)` : ""
+      omitted.length ? ` (${omitted.join(", ")}, in the JSON)` : ""
     } (${exit})`,
     "          (the tool's own bytes, probed by the kit — not verified to be a version)",
   ];
