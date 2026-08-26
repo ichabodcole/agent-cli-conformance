@@ -93,3 +93,48 @@ find these numbers, how long it takes, where the guidance fails them and what th
 subject of the run, not of this registration. A result that matches while the agent needed three
 rounds of help to reach it is a finding about the documentation, and this file says nothing that
 would let us pretend otherwise afterwards.
+
+## Amendment, 2026-08-26 — the target moved under the registration, and R-3 is dead
+
+**Everything above is left exactly as filed.** What follows was found before the adopter's census
+ran, and is recorded now rather than afterwards, because a registration adjusted once the result
+is in is not a registration.
+
+**The build moved.** The claims above were measured against Spellbook `2b2ce93`. The adopter has
+since reached L0 and committed `d7dfacf`, and that is the artifact their census will measure. This
+is [DT-10](./2026-08-24-first-drift-trial-anthill-manifest.md#dt-10--two-builds-of-the-same-declared-version-disagree-about-whether-the-root-enumerates)
+arriving from the other direction: there, one version string covered two builds that disagreed;
+here, our own registration named a build and the tool moved past it while we watched.
+
+Re-measured on `d7dfacf`:
+
+- **R-1 holds.** All verbs still enumerate the same nineteen flags, same order.
+- **R-2 is at risk, and its fate now depends on a modelling choice.** See below.
+- **R-3 IS FALSIFIED.** The accepted registry is nineteen. The union of the flags help declares is
+  now **twenty**. They are no longer equal, and the registry is a strict subset.
+- **R-4 holds.** The root still does not enumerate.
+- **R-5's arithmetic moves with R-3** and was registered as soft for this class of reason.
+
+**What falsified it is the adopter's own conformance fix.** D1 said magpie reported no version.
+They added `--version`, documented it in help, and implemented it above the parser — so it works
+at the root and is refused at every verb:
+
+```
+magpie --version        -> exit 0  {"name":"magpie","version":"2.2.0"}
+magpie state --version  -> exit 2  Unknown option '--version'
+```
+
+Help now names a flag the per-path parser does not accept. Whether the census reports it as
+`declared-not-accepted` depends entirely on how the adopter models it — a root-only flag produces
+nothing, a global flag produces one finding at every verb. Their own registration predicts **zero
+declared-but-refused**, which that modelling choice now decides.
+
+**This is the finding, and it is bigger than the prediction it killed.** Reaching L0 introduced
+declaration drift. The remediation this project recommends — add `--version`, say so in help —
+creates exactly the defect the census exists to find, on any tool with no binding between its help
+text and its per-path parser. Nothing in the L0 guide warns about it, and the two halves of this
+kit have never before been shown to work against each other.
+
+**Not told to the adopter.** Their census will find it or it will not, and which of those happens
+is worth more than the three hours of confusion this note would save them. This paragraph is the
+record that we knew first.
