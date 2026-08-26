@@ -181,10 +181,21 @@ export interface Declaration {
  *  usable without this CLI's error taxonomy, and the command layer owns the mapping. */
 export class DeclarationError extends Error {
   readonly path: string;
-  constructor(path: string, message: string) {
+  /**
+   * WHETHER THE FILE WAS ABSENT, as opposed to present and unreadable.
+   *
+   * The two are different mistakes with different repairs — you create a missing file, and you
+   * edit a malformed one — so the command layer owes them different error kinds. Carried as a
+   * field rather than left for a caller to recognise from the message: three call sites map these
+   * errors, and a rule enforced by matching prose is one that breaks the first time the prose is
+   * reworded, silently and in the direction of the wrong remedy.
+   */
+  readonly missing: boolean;
+  constructor(path: string, message: string, missing = false) {
     super(message);
     this.name = "DeclarationError";
     this.path = path;
+    this.missing = missing;
   }
 }
 
@@ -492,7 +503,7 @@ export function parseDeclaration(path: string, raw: unknown): Declaration {
  *  they asked for it, and continuing without it would silently withdraw every check it unlocks. */
 export function loadDeclaration(file: string): Declaration {
   const abs = resolve(file);
-  if (!existsSync(abs)) throw new DeclarationError(abs, "no such file");
+  if (!existsSync(abs)) throw new DeclarationError(abs, "no such file", true);
   let parsed: unknown;
   try {
     parsed = JSON.parse(readFileSync(abs, "utf8"));

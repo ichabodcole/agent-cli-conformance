@@ -12,7 +12,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
 import { chmodSync, copyFileSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CREDENTIAL_PATTERNS } from "./kit/checkers/safety/no-secrets-in-help.ts";
 import type { AccConfig } from "./kit/config.ts";
@@ -545,6 +545,20 @@ describe("every published example runs as written", () => {
       writeFileSync(written, r.stdout);
       compareReports.push(written);
     }
+    // FILE ARGUMENTS AN EXAMPLE NAMES BUT THIS REPOSITORY CANNOT HAVE. `./declaration.json` and
+    // `./paths.json` are the caller's own files, exactly as `./mycli` is the caller's own binary,
+    // so they get the same treatment: a real fixture stands in, and the example still RUNS rather
+    // than being excused from the test.
+    writeFileSync(
+      join(compareDir, "declaration.json"),
+      JSON.stringify({
+        formatVersion: "0",
+        provenance: "modelled",
+        selfDescription: null,
+        commands: [{ path: ["rules"], args: [], positionals: [] }],
+      }),
+    );
+    writeFileSync(join(compareDir, "paths.json"), JSON.stringify([["rules"], ["show"]]));
   }, 120_000);
 
   afterAll(() => {
@@ -617,6 +631,20 @@ describe("every published example runs as written", () => {
             args[i] = compareReports[n++] as string;
           }
         }
+      }
+
+      // The substitution for FILE-VALUED FLAGS, keyed on the declared `valueHint` rather than on
+      // the placeholder text — so an example that renames its file cannot quietly opt out of
+      // being run. `--out` names a file that must NOT already exist, because the command refuses
+      // to overwrite one; each example gets its own.
+      for (const arg of spec?.args ?? []) {
+        if (arg.valueHint !== "file") continue;
+        const i = args.indexOf(arg.name);
+        if (i < 0 || i + 1 >= args.length) continue;
+        args[i + 1] =
+          arg.name === "--out"
+            ? join(compareDir, `out-${(example as string).replace(/\W+/g, "-")}.sh`)
+            : join(compareDir, basename(args[i + 1] as string));
       }
 
       const r = await run(args);
