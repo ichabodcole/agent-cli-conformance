@@ -1,8 +1,8 @@
 ---
 type: plan
 generated: { by: claude-opus-5, at: 2026-08-25 }
-status: draft
-lifecycle: live
+status: stable
+lifecycle: discharged
 description:
   The pinned shape of a batch of caller-recorded surfaces, and what the kit does with each field.
   Raw observation-shaped records, a merged-stream attribution and a required completeness
@@ -259,8 +259,20 @@ itself `complete` is excluded from the read.
 Rule 3 is what makes a record evidence about **that path** and not about a deeper one: a token that
 is not flag-shaped is a verb or a positional, and the set a tool names when refusing one of those
 belongs somewhere else. So a rejection provoked by a bad positional — `state notacommand` — is not
-read, and neither is `state --json --acc-not-a-flag`, because `--json` is a second flag the kit
-cannot tell from the sentinel and the set that comes back may be the one that flag opened.
+read.
+
+**More than one flag after the prefix is read, and this paragraph used to say the opposite.**
+It claimed `state --json --acc-not-a-flag` was refused, because `--json` is a second flag the kit
+cannot tell from the sentinel and the set that comes back may be the one that flag opened — two
+sentences after Rule 3, which admits it, since both tokens are flag-shaped. **Implementing the
+reader is what settled it**, and the deciding fact was in the tree the whole time: the kit's own
+machine-mode probe is a two-flag argv it reads **at the root today** —
+`{ "args": ["--acc-probe-xyzzy-flag", "--json"], "inertness": "sentinel" }`, sent on every
+`acc check` against a machine-mode target. Refusing multi-flag argv for a record would either split
+the shape test by provenance — against this section's own premise that one rule governs both — or
+take away a root read the kit already makes. Rule 3 stands as written and the implementation
+matches it; the echo guard below, not a token count, is what stops a caller's own flag being read
+back as the tool's set.
 
 **A record that fails any of the three is not read, and the report is not silent about it.** It
 contributes nothing to the path's surface, it does not count toward `probesRead`, and if no other
@@ -926,3 +938,13 @@ This document is a shape, not a home. When ingestion ships, what an adopter need
 envelope, the record, the loss fields — belongs in the wiki as a guide, and this plan discharges. Until
 then it is the only place the format is written down, and a batch that disagrees with it is the one
 that is wrong.
+
+**Discharged 2026-08-25.** Ingestion shipped in `98ed3b6`, and what an adopter needs to keep is now
+[How to record surfaces below the root](../wiki/guides/how-to-record-surfaces-below-the-root.md) —
+which is the page to read to **write** a batch, and the page the flag's own description points at.
+This document stays as the record of intent and as the argument behind each choice, and it is not
+maintained: where the two disagree about what an adopter should do, the guide is the one that is
+kept true. The single edit made after the fact is the one this section is the exception for — the
+[multi-flag paragraph](#which-records-the-kit-will-read-stated-rather-than-left-to-be-discovered),
+which contradicted its own normative rule and had already been implemented from, so leaving it
+would have left an adopter-facing contradiction rather than a record of intent.
