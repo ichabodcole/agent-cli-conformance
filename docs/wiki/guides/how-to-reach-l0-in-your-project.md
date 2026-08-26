@@ -87,6 +87,33 @@ Two shapes qualify, and the second is the common one:
 
 B5 then probes your error path with no selector — the path your callers actually take.
 
+**On a tool whose errors are prose, this key is not an unlock and does not belong in your
+cheap-first pile.** Declaring `defaultOutput` is not a fix. It is the act of making a claim
+checkable, and the claim covers your ERROR path as well as your data path. So if every data verb
+emits JSON and your parser still answers `unknown option --nope` in prose on stderr — a very
+common shape, and the one the second adopter of this guide had — then declaring moves B5 from
+`unverified` to **fail**, and your report gets one violation longer for telling the truth.
+
+That is the intended gradient, and here is the sequence it intends:
+
+1. **Declare it anyway**, if it is true of your tool. `unverified` is the kit saying it knows
+   nothing about your error path; `fail` is the kit telling you something true you can act on.
+   The second is the more useful report even though it is the longer one.
+2. **Hold the failure as debt**, with a reason: `"knownFailures": { "B5": "error path is still
+prose; JSON error envelope is scheduled" }`. A reason is required. The gate goes green, the
+   debt is visible, and the ratchet stops it from growing.
+3. **Then build the error envelope**, and delete the entry.
+
+**Do not reach for `"rules": { "B5": { "severity": "off" } }` here.** That is a waiver, it means
+_this rule does not apply to my design_, and it never goes stale. Using it for work you intend to
+do records a temporary gap as a permanent decision. The config refuses to hold a waiver and a
+known failure for the same rule, deliberately, so this is a choice you make once and out loud.
+
+The alternative sequence — build the envelope FIRST, declare afterwards, never see a red B5 — is
+also legitimate and costs nothing but time. Choose it if a red gate would block other people. What
+is not legitimate is leaving the key undeclared **because** the report is shorter without it: that
+buys a better-looking result by keeping the kit ignorant of the path your callers actually take.
+
 **Say it in your help as well.** `acc.config.json` is the kit's file, and D3 asks what a caller of
 _your_ CLI can find out — so the key does not answer it. A sentence in help does, as far as
 anything can: D3 moves from `fail` to `unverified` and tells you it matched a claim rather than

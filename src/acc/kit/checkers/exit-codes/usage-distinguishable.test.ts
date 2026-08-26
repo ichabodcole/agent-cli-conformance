@@ -262,7 +262,10 @@ describe("C2 — the contrast says what it assumed about the first positional", 
       verdict: "fail",
       discloses: true,
     });
-    expect(f.detail).toContain("2,1,2");
+    // Each code named by the shape that produced it — which on THIS target is the whole finding:
+    // the stray `1` is the verb shape, ripgrep's documented no-match code from a search that ran,
+    // and the label says so without the reader opening the rule page to recover the probe order.
+    expect(f.detail).toContain("unknown-flag 2, unknown-verb 1, bare 2");
   });
 
   test("carries it on the conforming fixture's pass", async () => {
