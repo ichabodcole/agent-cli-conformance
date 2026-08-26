@@ -107,6 +107,38 @@ A tool shaped like that gets **nothing** from `acc check` on this axis and every
 because the one path the kit can reach for itself is the one path that says nothing. Measured on
 magpie, the second adopter's target.
 
+**A recorded path is a path you assert exists. Nothing in a batch establishes that it does.**
+
+The reader checks that each record's `path` is a prefix of its `argv`, which catches a record
+filed under the wrong path. It cannot catch a path that is not real, because on many tools the
+bytes are identical either way. Measured on `mind-mapper`, whose parser rejects an unknown flag
+before anything decides whether the token before it names a subcommand:
+
+```
+zone create   --acc-not-a-flag   exit 2   Unknown option '--acc-not-a-flag'
+zone bogusxyz --acc-not-a-flag   exit 2   Unknown option '--acc-not-a-flag'
+                                          byte-identical
+```
+
+So a record at `["zone", "bogusxyz"]` is **valid**: the prefix holds, `completeness` is honestly
+`complete`, the bytes are verbatim, and the reader accepts it. **The census fraction counts it.**
+
+**This is not about a dishonest caller, and that is the point.** The adopter who found it derived
+their paths from the tool's own `usage:` strings — the source this guide recommends. A stale line
+in that output produces a dead path recorded in perfect good faith, and nothing anywhere says so.
+`pathSource: "target"` means _derived from the implementation_; it has never meant _complete_, and
+this is what that cashes out as.
+
+**It is worse when both sides share a source.** If your declaration and your path list come from
+the same `usage:` output, a stale entry lands in the denominator and the numerator together, and
+the fraction reads `40 of 40` while one of the forty does not exist. The cross-check you might
+hope for is not there, because there is only one source.
+
+**What you can do about it.** Derive the path list and the declaration from _different_ artifacts
+where you can — the dispatch table for one, help for the other — so a disagreement between them is
+visible instead of averaged away. That is the same argument this page makes for a
+caller-supplied path list, arriving from the other end.
+
 ### 2. Provoke one rejection per path, and keep the bytes verbatim
 
 Send a flag no tool would ever accept, after the path:
