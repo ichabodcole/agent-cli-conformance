@@ -242,6 +242,10 @@ describe("the document", () => {
         targetArgv0: ["bun", "/tmp/seven"],
         kitVersion: "0.1.0",
         configOrigin: "none",
+        // `null`, and it is a fact about these FIXTURES rather than about the tools: they are
+        // hand-built reports predating the identity capture, which is exactly the case
+        // `ComparedTarget.identity` documents as a property of the file.
+        identity: null,
       },
       {
         label: "one",
@@ -249,8 +253,35 @@ describe("the document", () => {
         targetArgv0: ["bun", "/tmp/one"],
         kitVersion: "0.1.0",
         configOrigin: "none",
+        identity: null,
       },
     ]);
+  });
+
+  // THE `DT-10` SHAPE, which is what put the identity on `ComparedTarget` at all: two targets
+  // calling themselves the same thing while answering the same argv differently. The comparison
+  // must carry both quotes across and must NOT group on them — differing here is two tools, and
+  // agreeing here is not evidence of one binary.
+  test("carries each target's own account of itself across, without making it an axis", () => {
+    const said = (label: string, version: string) => {
+      const { report: r } = report(label, [
+        observation("p1", { args: ["--acc-probe-xyzzy-flag"], exitCode: label === "old" ? 1 : 2 }),
+      ]);
+      (r as { targetIdentity?: unknown }).targetIdentity = {
+        status: "stated",
+        argv: ["--version"],
+        said: version,
+        observationId: "v1",
+        exitCode: 0,
+      };
+      return { label, report: r } satisfies LabelledReport;
+    };
+    const c = compareReports([said("new", "2.3.0"), said("old", "2.3.0")]);
+    expect(c.targets.map((t) => t.identity?.said)).toEqual(["2.3.0", "2.3.0"]);
+    // One divergence, found on the observations. The identical identities did not suppress it and
+    // did not create one either.
+    expect(c.counts.divergent).toBe(1);
+    expect(c.divergent[0]?.axes.map((a) => a.axis)).toEqual(["ending", "placement"]);
   });
 
   // Two kit versions means two instruments as well as two tools, and nothing else in the

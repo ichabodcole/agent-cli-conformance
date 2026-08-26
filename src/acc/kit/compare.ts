@@ -1,3 +1,4 @@
+import type { TargetIdentity } from "./identity.ts";
 import type { Report, ReportedObservation } from "./report.ts";
 import type { Surface, SurfaceStatus } from "./surface.ts";
 
@@ -125,6 +126,28 @@ export interface ComparedTarget {
   /** Where that run's `acc.config.json` came from — `none`, `flag` or `discovered`. A waiver
    *  cannot move an observation, but `defaultOutput` changes which probes discovery builds. */
   configOrigin: string;
+  /**
+   * WHAT THAT TARGET SAID ABOUT ITSELF — carried across from its report's own capture, and the
+   * reason this command is the right home for it.
+   *
+   * `acc compare` aligns observations across two targets, and "same declared version, different
+   * behaviour" is precisely the shape it exists to render — it is also the shape that produced
+   * `DT-10` in docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md, where two builds of
+   * anthill both said `2.3.0` and only one enumerated its root flags. A comparison that showed
+   * the divergence and not what each side called itself would leave the reader to reconstruct
+   * the interesting half from two file paths.
+   *
+   * DELIBERATELY NOT AN AXIS, on the identical argument `SurfaceRow` makes: an axis groups targets
+   * by what one probe DID, and this is a coordinate on the target rather than a probe result, so
+   * grouping by it would mark every fleet row divergent and measure nothing. That is a statement
+   * about what belongs in `axes`, and NOT a licence to read this column the other way: `identity.ts`
+   * forbids reading two different quotes as two builds exactly as it forbids reading two equal ones
+   * as one binary. It lives here beside `targetArgv0` and `kitVersion` for that reason.
+   *
+   * `null` when the report predates this capture — a fact about the FILE, exactly as
+   * `SurfaceRow.status: "not-recorded"` is.
+   */
+  identity: TargetIdentity | null;
 }
 
 /**
@@ -298,6 +321,7 @@ export function compareReports(inputs: LabelledReport[]): Comparison {
       targetArgv0: report.targetArgv0,
       kitVersion: report.kitVersion,
       configOrigin: report.configSource.origin,
+      identity: report.targetIdentity ?? null,
     })),
     kitVersions: [...new Set(inputs.map((i) => i.report.kitVersion))].sort(),
     counts: {

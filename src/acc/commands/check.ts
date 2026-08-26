@@ -19,6 +19,7 @@ import {
   declarationSummary,
   loadDeclaration,
 } from "../kit/declaration.ts";
+import { identitySummaryLines } from "../kit/identity.ts";
 import { record, TargetNotExecutableError } from "../kit/record.ts";
 import {
   identityLines,
@@ -501,6 +502,23 @@ export async function checkCommand(
               "    tracked before removing them.",
             ]
           : []),
+        "",
+        // WHAT THE TARGET SAID ABOUT ITSELF, printed on every report including the ones where it
+        // said nothing — because "this tool has no --version" and "the probe never ran" are two
+        // different facts and a section that appeared only on the talkative targets would leave a
+        // reader unable to tell them apart. It sits immediately above the flag surface because the
+        // two are the same kind of thing: the target's own words, captured and not judged.
+        //
+        // It answers a question the report could not answer before. `target` is a path,
+        // `targetArgv0` is how the kit launched it, `kitVersion` is OURS — so two reports produced
+        // by one kit against two builds of one tool were distinguishable only by a path, which is
+        // how this project's `1 of 25` figure came to be build-dependent with nothing in a stored
+        // report saying which build. See docs/reports/2026-08-24-first-drift-trial-anthill-
+        // manifest.md, DT-10.
+        "  TARGET IDENTITY — what the target said about itself under --version, which D1 already",
+        "  runs. Evidence, not a rule: nothing in this report passes or fails on it, and the quote",
+        "  is bytes rather than a parsed version.",
+        ...identitySummaryLines(r.targetIdentity).map((l) => `    ${l}`),
         "",
         // THE TARGET'S OWN ACCOUNT OF ITS SURFACE, printed on every report including the ones
         // where it is empty — because "this tool does not enumerate" is the finding for most
