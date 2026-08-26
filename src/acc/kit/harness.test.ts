@@ -240,7 +240,7 @@ describe("the -dirty flag, across the topologies that can falsify it", () => {
     let cwd = workdir;
     let linkRoot: string | null = null;
     if (viaSymlink) {
-      linkRoot = mkdtempSync(join(tmpdir(), "acc-link-")) + "-link";
+      linkRoot = `${mkdtempSync(join(tmpdir(), "acc-link-"))}-link`;
       symlinkSync(root, linkRoot);
       cwd = nested ? join(linkRoot, "sub", "deep") : linkRoot;
       const logical = sh(["sh", "-c", `cd '${cwd}' && pwd`], workdir).stdout.trim();
