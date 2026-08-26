@@ -204,6 +204,12 @@ export function buildHarness(input: HarnessInput): string {
 set -u
 LC_ALL=C; export LC_ALL
 
+# AN INHERITED GIT ENVIRONMENT WOULD MAKE THE BUILD STRING NAME THE WRONG REPOSITORY. Git exports
+# these to the environment of a hook, so a harness run from one — or from anything a hook invoked —
+# would compute its provenance from the repository being committed to rather than from the tree
+# holding the target. The build string would be a true fact about a repository nobody was measuring.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR 2>/dev/null || :
+
 # How the tool is STARTED. Never part of any recorded argv — \`argv\` is what the tool received.
 #
 # A FUNCTION rather than a variable, and that is not style. \`LAUNCHER='bun' '/abs/cli.ts'\` parses

@@ -37,8 +37,26 @@ const BASE = {
   out: "batch.json",
 };
 
+/**
+ * EVERY `GIT_*` VARIABLE IS STRIPPED, and that is not hygiene — it is the difference between this
+ * file testing a throwaway repository and this file editing the real one.
+ *
+ * Git sets `GIT_DIR`, `GIT_INDEX_FILE` and `GIT_WORK_TREE` in the environment of a hook. This
+ * suite runs inside `bun run check`, which runs from the pre-commit hook, so an inherited
+ * environment points every `git` spawned below at the repository being committed to — whatever
+ * `cwd` says. `git init` then reinitialises it, `git add -A` stages the fixture's files into its
+ * index, and the harness under test reads its HEAD instead of the fixture's.
+ *
+ * That is not hypothetical. It put fixture filenames into this repository's index and left the
+ * checkout unusable, and it was invisible when the suite was run directly because there is no hook
+ * environment then — green standalone, destructive under the hook.
+ */
+const GIT_FREE_ENV = Object.fromEntries(
+  Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_")),
+) as Record<string, string>;
+
 function sh(args: string[], cwd: string): { code: number; stdout: string; stderr: string } {
-  const p = Bun.spawnSync(args, { cwd, stdout: "pipe", stderr: "pipe" });
+  const p = Bun.spawnSync(args, { cwd, stdout: "pipe", stderr: "pipe", env: GIT_FREE_ENV });
   return {
     code: p.exitCode,
     stdout: new TextDecoder().decode(p.stdout),

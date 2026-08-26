@@ -22,7 +22,12 @@ function acc(args: string[], cwd?: string): { code: number; stdout: string; stde
     cwd: cwd ?? dirname(dirname(import.meta.dir)),
     stdout: "pipe",
     stderr: "pipe",
-    env: { ...process.env, ACC_FORMAT: "json" },
+    // `GIT_*` stripped for the reason given in `kit/harness.test.ts`: under a pre-commit hook an
+    // inherited git environment reaches anything these commands spawn.
+    env: {
+      ...Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_"))),
+      ACC_FORMAT: "json",
+    } as Record<string, string>,
   });
   return {
     code: p.exitCode,
