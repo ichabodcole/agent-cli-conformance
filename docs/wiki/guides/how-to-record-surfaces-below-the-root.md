@@ -26,23 +26,20 @@ recording, handed over.
 **What it buys, exactly.** Every census line names who observed it — `probed-by-kit` or
 `recorded-by-caller` — and the paths you recorded stop coming back "the kit probes the root only".
 **Nothing here reaches a verdict.** No rule reads a batch, no finding from one feeds `conformant`,
-and no exit code moves. A fabricated batch buys a sentence, not a pass.
+and no exit code moves.
 
 **There are two routes to a batch, and they part at step 2.** `acc probe-plan` generates the
 capture — a shell script you run, which sends the rejections, keeps the bytes, and writes the batch
 file. Capturing by hand is the other route: it is what you do when the generated script does not
 suit your tool, and it is what every field below means, generated or not. **The document is the
-same either way.** `formatVersion` is `"0"` for both, the reader has no field for which route
+same either way.** `formatVersion` is `"0"` for both, the batch reader has no field for which route
 produced a batch, and nothing downstream can tell.
 
 You need a working `acc check` first — [Check your first CLI](./check-your-first-cli.md) if you have
 not run one.
 
 **The diff half of this page also needs a declaration file, and nothing else documents its shape at
-a level you can write one from.** That sentence used to send you to
-[How to reach L0 in your project](./how-to-reach-l0-in-your-project.md), which does not use
-`--declaration` and says twice that L0 needs no declaration. The second adopter followed it, found
-nothing, and got the format by reading this repository's test fixtures. Here is the minimum:
+a level you can write one from.** Here is the minimum:
 
 ```json
 {
@@ -90,20 +87,20 @@ below the root and drop the `path: []` one on the way out.
 **So your batch will hold one fewer record than your declaration holds paths**, and that is the
 right shape rather than a mis-built batch. Your batch counts **records**, all of them below the
 root; the census counts **declared command paths**, and a declaration normally declares the root
-too. A full house of 25 records against a 26-path declaration reads `26 of 26 declared command
-paths compared` — 25 of them on your records, the twenty-sixth on the kit's own root probe.
+too. Recording all 25 paths below the root, against a 26-path declaration, reads `26 of 26 declared
+command paths compared` — 25 of them on your records, the twenty-sixth on the kit's own root probe.
 
 If your declaration does **not** declare a root, the root is still compared, against nothing
 declared — which is exactly what turns the flags it accepts into `accepted-not-declared`. It is
-**not** counted toward the fraction, because it is not one of the paths the fraction's denominator
-counts. It gets a clause of its own instead, so 25 records against a rootless 25-path declaration
-read:
+**not** counted in the `N of M declared command paths compared` line, whose two counts cover only
+the paths the declaration names. It gets a clause of its own instead, so 25 records against a
+rootless 25-path declaration read:
 
 ```
 25 of 25 declared command paths compared; 1 path the declaration does not name — (root) — was also compared
 ```
 
-The count on the left never exceeds the count on the right, whatever your batch reaches.
+In `N of M declared command paths compared`, `N` never exceeds `M`, whatever your batch reaches.
 
 **If your root does not enumerate, you get neither line, and that is the case this page is most
 for.** The root is then not compared at all — there is nothing to compare it against — so it is
@@ -113,10 +110,6 @@ reported as a limit rather than as a path:
 17 of 17 declared command paths compared; 289 disagreements (modelled declaration)
 NOT COMPARED: (root) — did not enumerate at the root; 5 rejections read, none named a set
 ```
-
-A tool shaped like that gets **nothing** from `acc check` on this axis and everything from a batch,
-because the one path the kit can reach for itself is the one path that says nothing. Measured on
-magpie, the second adopter's target.
 
 **A recorded path is a path you assert exists. Nothing in a batch establishes that it does.**
 
@@ -224,10 +217,10 @@ sent**, not about the answer:
    not `-abc`; those are a verb or a positional as far as any parser is concerned, and the set a
    tool names when refusing one of those belongs at a different path. More than one flag is fine.
 
-**The sentinel spelling is the thing that will bite you twice.** The kit refuses any candidate set
-containing a token your own argv sent — the cheapest guard against an error document echoing your
-input back as the tool's accepted set. So a sentinel your tool genuinely lists erases the whole read.
-Use `--acc-not-a-flag`, or something else no tool would ever accept, and never a plausible flag.
+**The kit refuses any candidate set containing a token your own argv sent** — the cheapest guard
+against an error document echoing your input back as the tool's accepted set. So a sentinel your
+tool genuinely lists erases the whole read. Use `--acc-not-a-flag`, or something else no tool would
+ever accept, and never a plausible flag.
 
 **Verbatim means verbatim.** Keep what the tool wrote, decoded as UTF-8, with nothing stripped: no
 colour removal, no trailing-newline tidying, no reflowing. The kit matches marker phrases as a
@@ -318,9 +311,8 @@ one tool, on one machine, in one sitting. Nothing in the bytes establishes that,
 flag may be given at most once: a second `--recorded-surfaces` is refused rather than merged, and a
 caller with two sessions runs `acc check` twice.
 
-**The reader refuses a document it half-understands.** An unknown key anywhere, a missing required
-key, or a `formatVersion` that is not `"0"` rejects the whole batch, and the run continues with no
-recorded surfaces rather than with some. Keys the kit computes or judges for itself — observation
+**An unknown key anywhere, a missing required key, or a `formatVersion` that is not `"0"` rejects
+the whole batch**, and the run continues with no recorded surfaces rather than with some. Keys the kit computes or judges for itself — observation
 ids, digests, `inertness`, `truncated`, timings — are unknown keys here, and sending one refuses the
 batch: you attest to what the tool **did**, never to what it means.
 
@@ -395,15 +387,13 @@ Three things to check, in this order:
    once without and compare those three. If any of them moved, that is a defect in the kit, not in
    your batch.
 
-   **The verdict LINE does change**, and that is correct — it grows a `· but see N declaration
-disagreements (modelled)` clause. This step used to open by saying the line was identical, which
-   the sentence after it then contradicted; an adopter followed it literally, saw the line move, and
-   was told by this page that they had found a kit defect. Compare the three things named above,
-   not the line.
+   **The verdict LINE does change**, and that is correct — it grows a
+   `· but see N declaration disagreements (modelled)` clause. Compare the three things named
+   above, not the line.
 
-   **Timing rows differ between runs and are not a change.** `F2 --version first byte in 15ms (runs:
-15, 15, 16ms)` against `(runs: 16, 15, 15ms)` is jitter. A mechanical diff of the two reports
-   will flag it; ignore that row.
+   **Timing rows differ between runs and are not a change.**
+   `F2 --version first byte in 15ms (runs: 15, 15, 16ms)` against `(runs: 16, 15, 15ms)` is
+   jitter. A mechanical diff of the two reports will flag it; ignore that row.
 
 When the whole batch is refused, the run says so and continues with no recorded surfaces — the
 message names the first thing it could not understand, and a `formatVersion` complaint always comes
