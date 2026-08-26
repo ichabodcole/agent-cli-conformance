@@ -288,12 +288,20 @@ axis 1 is fixed:
 - **Effects gets no field** until a concrete consumer with a testable semantic contract exists —
   already decided, and the standard's withdrawal of the record-it-inert advice is right: an
   inert field lends its names apparent authority.
-- The one measurement this axis is owed, found nowhere in the tree and now cheap: **whether a
-  modelled declaration is useful below the root.** Recorded surfaces removed the blocker; the
-  pre-registered `SG-8` prediction — a modelled declaration diffed against recorded surfaces of
-  bounty's `state`
+- The measurement this axis owed has been run, and it answers yes: **a modelled declaration is
+  useful below the root.** The pre-registered `SG-8` prediction — a modelled declaration diffed
+  against recorded surfaces of bounty's `state`
   ([the plan, item 2a](../plans/2026-08-24-below-the-root-before-a-second-cli.md#2a-recorded-surface-ingestion)) —
-  is exactly this experiment. Run it before designing anything modelled-specific.
+  [hit on both numbers on 2026-08-26](./2026-08-24-first-outside-application-grapevine.md#outcome-2026-08-26--hit-and-re-derived-here-rather-than-transcribed):
+  18 `accepted-not-declared` of 22 against a registration of roughly 18, and 0 in reverse — run
+  by the adopter on their side and re-derived from the vendored fixtures in this tree. The
+  caveat travels with it, as the outcome itself states it, asserted rather than proven: the
+  differ changed once after the bytes were vendored (a denominator fix that moved no finding),
+  and a pre-registered result is worth its registration only if nothing was tuned against those
+  bytes. _Correction: an earlier revision of this bullet called the measurement "owed" and
+  "found nowhere in the tree"; the outcome was already recorded at this report's base commit.
+  A wrong claim about what the tree holds, caught by a reader — this project's own defect
+  class, in the report about its bounds._
 
 ---
 
@@ -383,10 +391,11 @@ is where it will surface as evidence.
 - **The size of the census blind-spot family** (a root-level surface a per-path parser refuses).
   One instance confirmed here, adopter-verified with controlled declarations; the addendum
   records a second.
-- **Grapevine's and bounty's census numbers** are reported-not-verified in this checkout, as
-  [the plan](../plans/2026-08-24-below-the-root-before-a-second-cli.md) itself states; the
-  vendored fixtures narrow this but that plan's regression-fixture item — vendor the granted
-  artifacts, reconstruct in-tree — is still open.
+- **Grapevine's census numbers** are reported-not-verified in this checkout, as
+  [the plan](../plans/2026-08-24-below-the-root-before-a-second-cli.md) itself states.
+  Bounty's no longer are: the `SG-8` outcome is re-derived from the vendored fixtures in this
+  tree (§3). The plan's regression-fixture item — vendor the granted break variants, reconstruct
+  in-tree — is still open for grapevine.
 - **Which report treatment is _correct_ for "nothing declared"** — B3's `notApplicable` or
   A3/B5/D1's `unverified`. No principle in the tree decides it; dissolving the ladder forces the
   choice. The lean here — all four become `unverified` with reason `nothing-declared`, since
