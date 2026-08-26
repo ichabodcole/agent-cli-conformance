@@ -401,12 +401,11 @@ closed-key rule was written before anyone had built a generator. But **"grow a k
 additive and this format's design makes it not**, and the plan should say so before anyone prices
 it as cheap.
 
-### Still open, and they are decisions rather than questions
+### Both remaining decisions were taken
 
-Every question this review raised now has an answer or an argument attached. What remains is
-**which of them to accept** — in particular whether `acc probe-plan` writes a file or emits on
-stdout (F), and whether the batch format takes a breaking change to carry `pathSource` (A). Both
-are the kind of choice this plan exists to make deliberately rather than by whoever typed first.
+They are recorded at the end of this document, under
+[the decisions](#the-decisions-taken-2026-08-26). Neither was settled internally: both were put to
+the adopter, who had personally proposed the position that lost in each case.
 
 ## The harness trial, 2026-08-26
 
@@ -479,3 +478,66 @@ exotic one.
 
 All three defects, plus the relative launcher above, have one shape: **the harness's correctness
 depends on where it is standing, and nothing in its output records where that was.**
+
+## The decisions, taken 2026-08-26
+
+Both were put to the magpie adopter rather than settled between maintainers, because on each one
+the internal lean ran against a request that adopter had made. They withdrew both of their own
+proposals on arguments that arrived after them — `acc-magpie` message 37.
+
+**`acc probe-plan` emits on stdout and stays `read_only`.** The `--out ./capture.sh` request is
+withdrawn: _"no, a redirect would not have cost me anything real… `sh capture.sh` runs without the
+executable bit, so the only thing `--out` was buying me was not typing `>`."_ The positive-control
+argument outweighs the keystroke, and the overwrite / parent-directory / executable-bit /
+read-only-filesystem questions are avoided rather than answered.
+
+**But redirection has its own failure mode, and it is this project's founding one.**
+`acc probe-plan > capture.sh` truncates the file **before** `acc` runs, so a failure leaves a
+zero-byte script behind — and an empty script is a valid script that does nothing, successfully,
+exit `0`. The adopter would get a harness that appears to run, produces no batch, and reports
+success. `--out` does not save anyone who typed `>` anyway. **The generator buffers the whole
+document and writes it in one call**, so a failure produces an empty file rather than half a
+script: half a script may capture three paths of seventeen and write a batch that is short and
+complete-looking, which is the `head`-in-the-capture defect arriving through the generator instead
+of the harness. This belongs in the guide as well as in the code.
+
+**The batch format does not grow `pathSource`, and the requirement it carried is met in
+`recordedBy`.** Its proposer priced the breaking change and withdrew it, then identified what the
+key was actually buying: not a label, but **who hears the sentence.** Generation time reaches the
+person who chose the source; the census reaches the person who draws a conclusion from the report,
+and those are frequently not the same person. So `acc probe-plan` appends the source to the
+`recordedBy` string, which the report already prints on its own line:
+
+    recorded by flint (agent) via sh harness, build cd06cb5-dirty, paths derived from the declaration
+
+No format change, nothing refused by any existing reader, and **nothing parses it** — the kit never
+reads that field, so this is not the free-text pattern-matching the review and the adopter both
+argued against. It is prose printed to a human on a line that already exists.
+
+It is strictly weaker than an enumerated key: no machine can act on it, and a hand-written batch
+can say anything there. That is the right trade at two adopters. **The requirement to keep, in the
+proposer's words: _the limit must reach the person reading the census, not only the person running
+the generator._** If the format ever breaks for a reason of its own, ride `pathSource` along on
+that break rather than causing one — at which point the census line becomes machine-driven and the
+string retires.
+
+### A fourth defect, and the class it completes
+
+The adopter flagged a hypothesis with a named mechanism rather than a finding, because their only
+reproduction was confounded. **It reproduces.** `git rev-parse --show-toplevel` reports a
+_physical_ path while `pwd` and an absolute `$0` may both be _logical_ — `/tmp` is a symlink to
+`/private/tmp` on macOS, and symlinked checkouts and automounted homes do the same. When they
+disagree the prefix match fails, the excludes vanish, and the harness reports its own artifacts as
+dirt: the original `-dirty` inversion, reappearing wherever a path is symlinked, and reappearing
+in every throwaway fixture repo built under `/tmp`.
+
+`pwd -P` is not sufficient, which only running it reveals: that fixes a relative `$0`, but
+`sh /tmp/…/capture.sh` supplies an `$0` already absolute and already logical, so the fallback never
+runs. The resolution has to physicalise `$0`'s own directory.
+
+**Four defects, and all four are one class**: the relative launcher, the CWD-relative pathspec, the
+CWD-scoped dirt check, and the logical-versus-physical path. Every one of them is the harness
+behaving differently depending on where it was standing, and **nothing in its output records where
+that was.** Three of the four were found by the adopter, from a machine and a directory layout the
+author did not have — which is the argument for the subdirectory regression test stated above, and
+against trusting a matrix run in a repo built for convenience.
