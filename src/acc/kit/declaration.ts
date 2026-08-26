@@ -278,6 +278,16 @@ export interface DeclarationPathResult {
   surfaceProvenance?: SurfaceProvenance;
   /** Present only when no surface existed for the path. See `NoEvidenceReason`. */
   noEvidenceReason?: NoEvidenceReason;
+  /**
+   * PRESENT ONLY WHEN THE DECLARATION HAS NO ENTRY FOR THIS PATH — absent, never `false`, in the
+   * ordinary case, matching how `flags` is absent rather than empty.
+   *
+   * A path reaches this list two ways: the declaration names it, or evidence arrived for it. The
+   * second is the `DT-1` case — anthill's manifest has no slot for root flags at all — and it is
+   * the reason the two counts below are separate. Without this field a reader cannot tell which
+   * set a row came from, and the summary cannot say so either.
+   */
+  undeclared?: true;
 }
 
 export interface DeclarationDiff {
@@ -302,11 +312,26 @@ export interface DeclarationDiff {
   /** How many command paths the document declares. */
   declaredCommands: number;
   /**
-   * How many of them were actually diffed. The denominator that keeps "no findings" honest:
-   * `1 of 25` is a different claim from `25 of 25`, and today it is always at most one, because
-   * the kit enumerates the ROOT only.
+   * HOW MANY OF THOSE DECLARED PATHS WERE DIFFED — never more, which is the invariant this field
+   * exists to hold. The denominator that keeps "no findings" honest: `0 of 25` is a different
+   * claim from `25 of 25`.
+   *
+   * It counted the UNION of declared and observed paths once, and that produced a fraction whose
+   * numerator was not drawn from its denominator: anthill's `1 of 25` was the root, which is not
+   * one of the 25, and a batch reaching further printed `26 of 25`. A path that was compared and
+   * is not declared is counted by `checkedUndeclared` and named in the summary instead.
    */
   checkedCommands: number;
+  /**
+   * HOW MANY COMPARED PATHS THE DECLARATION DOES NOT NAME. Usually the root, which the kit always
+   * probes and which a manifest listing subcommands has no slot for.
+   *
+   * Reported rather than folded in, because the two numbers answer different questions: how much
+   * of the document was checked, and how much was looked at. `status` is `checked` when EITHER is
+   * above zero — an undeclared path that enumerates still produces real `accepted-not-declared`
+   * findings, and calling that "the diff did not run" would suppress them.
+   */
+  checkedUndeclared: number;
 }
 
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
@@ -630,10 +655,16 @@ export function diffDeclaration(
         checked: false,
         surfaceProvenance: found.surfaceProvenance,
         reason: [surfaceSummary(found.surface, path), ...(found.notes ?? [])].join("; "),
+        ...(declared === undefined ? { undeclared: true as const } : {}),
       });
       continue;
     }
-    results.push({ path, checked: true, surfaceProvenance: found.surfaceProvenance });
+    results.push({
+      path,
+      checked: true,
+      surfaceProvenance: found.surfaceProvenance,
+      ...(declared === undefined ? { undeclared: true as const } : {}),
+    });
     const accepted = new Set(found.surface.flags);
     const args = declared?.args ?? [];
     for (const arg of args) {
@@ -658,11 +689,18 @@ export function diffDeclaration(
     }
   }
 
-  const checkedCommands = results.filter((r) => r.checked).length;
+  // TWO COUNTS, ONE TOTAL. `checkedCommands` is the fraction's numerator and must come from the
+  // same set as its denominator; `checkedUndeclared` carries everything else that was compared.
+  // `status` and `reason` read the TOTAL, because a diff that ran only at an undeclared root
+  // still ran — reading `checkedCommands` here would report `not-checked` on a census that
+  // produced findings.
+  const checkedCommands = results.filter((r) => r.checked && !r.undeclared).length;
+  const checkedUndeclared = results.filter((r) => r.checked && r.undeclared).length;
+  const checkedTotal = checkedCommands + checkedUndeclared;
   return {
     provenance: declaration.provenance,
-    status: checkedCommands > 0 ? "checked" : "not-checked",
-    ...(checkedCommands === 0
+    status: checkedTotal > 0 ? "checked" : "not-checked",
+    ...(checkedTotal === 0
       ? {
           reason:
             results[0]?.reason ??
@@ -673,6 +711,7 @@ export function diffDeclaration(
     findings,
     declaredCommands: declaration.commands.length,
     checkedCommands,
+    checkedUndeclared,
   };
 }
 
@@ -706,14 +745,22 @@ export function declarationSummary(d: DeclarationDiff | undefined): string {
   const scope = `${d.checkedCommands} of ${d.declaredCommands} declared command path${
     d.declaredCommands === 1 ? "" : "s"
   } compared`;
+  // NAMED, NOT JUST COUNTED. A reader who sees that some path outside the declaration was
+  // compared immediately wants to know which one, and the answer is almost always `(root)` —
+  // which is also the sentence that explains why the fraction ahead of it can be `0 of 25`.
+  const outside = d.paths.filter((p) => p.checked && p.undeclared).map((p) => showPath(p.path));
+  const alsoCompared =
+    outside.length === 0
+      ? ""
+      : `; ${outside.length} path${outside.length === 1 ? "" : "s"} the declaration does not name — ${outside.join(", ")} — ${outside.length === 1 ? "was" : "were"} also compared`;
   if (d.status === "not-checked") {
     // The zero-probe check still ran, so its findings are counted here — otherwise a document
     // that omits its own discovery verb would look clean on a target that never enumerated.
     const zero = d.findings.length;
-    return `THE DIFF DID NOT RUN — ${scope}. ${d.reason} (this is not agreement: nothing was compared)${
+    return `THE DIFF DID NOT RUN — ${scope}${alsoCompared}. ${d.reason} (this is not agreement: nothing was compared)${
       zero > 0 ? `; ${zero} disagreement${zero === 1 ? "" : "s"} found without probing` : ""
     }. ${NOT_CHECKED_REMEDY[d.provenance]}`;
   }
   const n = d.findings.length;
-  return `${scope}; ${n} disagreement${n === 1 ? "" : "s"} (${d.provenance} declaration)`;
+  return `${scope}${alsoCompared}; ${n} disagreement${n === 1 ? "" : "s"} (${d.provenance} declaration)`;
 }

@@ -866,8 +866,44 @@ That pair — **25 records, 26 declared paths** — is the friction the adopter 
 you to omit the root, and the report then counts a denominator that includes it, and it took them a
 second read to be sure the batch was not mis-built. Both numbers are right and they count different
 things.
-[The guide now says so at the step that creates the gap](../wiki/guides/how-to-record-surfaces-below-the-root.md#1-list-the-paths-to-record-and-leave-the-root-out),
-including the `26 of 25` line a rootless declaration produces.
+[The guide now says so at the step that creates the gap](../wiki/guides/how-to-record-surfaces-below-the-root.md#1-list-the-paths-to-record-and-leave-the-root-out).
+It described the `26 of 25` line a rootless declaration produced; the kit no longer produces one —
+see the amendment below.
+
+#### Amendment, 2026-08-26 — the fraction was the defect, and both errors above were symptoms
+
+Everything above stands as measured. What changed afterwards is the instrument: the two paragraphs
+of prose it took to explain why `26 of 25` was honest were the evidence that it was not.
+
+`checkedCommands` counted the **union** of declared paths and paths evidence arrived for;
+`declaredCommands` counted the declaration alone. So the numerator was drawn from a different set
+than its denominator, and the fraction was never a fraction. `26 of 25` was the visible end of it.
+The quieter end was in this tree the whole time: the gated `1 of 25` case printed a numerator — the
+root — that is **not one of the 25**, while its own test asserted "the other 24 say why" over 26
+rows. 1 + 24 has never been 26.
+
+The kit now counts the two sets apart. `checkedCommands` counts only declared paths, so
+`checkedCommands <= declaredCommands` holds whatever a batch reaches, and paths compared from
+outside the declaration are named on a clause of their own:
+
+```
+0 of 25 declared command paths compared; 1 path the declaration does not name — (root) — was also compared
+```
+
+**That figure reads worse than `1 of 25` and is the true one.** The kit probes the root only, the
+manifest declares no root, so **none** of the 25 declared paths was compared. `1 of 25` understated
+the gap it was quoted to demonstrate.
+
+Two consequences for what is written above. The registration's `9 of 25` correction is **withdrawn**:
+under the split counters the registered `8 of 25` is right for its own batch, because the root the
+kit probes for itself is exactly the path that no longer counts toward the fraction. The
+registration's reasoning — "the count is the eight recorded paths" — was the reasoning the kit now
+follows. It was still an assumption written down without being run, and that remains the finding;
+what it got wrong was the instrument of the day, not the arithmetic.
+
+The reconciliation of `23 of 26` is unaffected: it rests on their modelled declaration declaring a
+root of its own, and a declared root is counted by the fraction exactly as before. It remains **our
+inference**, on a declaration file nobody here has read.
 
 **The zero held across 23 paths rather than the 8 it was registered at.** That is a broader result
 than the registration claimed, and it is not a bigger hit: the registration bound only the eight,

@@ -136,10 +136,11 @@ They then answered it against their own tool, and their reasons are the ones att
 
 2. **Second, and contingent on the first, the v0 emitter** — the format described in
    [Part 2](#the-fields-and-why-each-exists). Contingent, because on their tool the emitter **alone —
-   with nothing recorded below the root** — buys `1 of 25 declared command paths compared`, and the
-   one path that does compare is the root, which their manifest has no slot for
-   ([DT-1](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-1--root---format-is-declared-in-code-absent-from-the-manifest-and-inert-where-it-looks-like-it-works)).
-   **That `1` is a figure about the kit's root-only probing, not a ceiling on the emitter**: the same
+   with nothing recorded below the root** — buys `0 of 25 declared command paths compared`, because
+   the only path that does compare is the root, which their manifest has no slot for
+   ([DT-1](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-1--root---format-is-declared-in-code-absent-from-the-manifest-and-inert-where-it-looks-like-it-works)),
+   and the summary names it on a clause of its own rather than counting it toward the 25.
+   **That `0` is a figure about the kit's root-only probing, not a ceiling on the emitter**: the same
    tool, with the census's own captures handed back as a
    [recorded-surface batch](docs/wiki/guides/how-to-record-surfaces-below-the-root.md), compares
    [`23 of 26`](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three).
@@ -693,9 +694,11 @@ on this repository's own CLI, which is verb-first: `acc --nope` answers `unknown
 and lists its verbs, naming no flag, so the root surface reads `did not enumerate` — and a
 four-command modelled declaration for it reports `THE DIFF DID NOT RUN — 0 of 4 declared command
 paths compared`. anthill v2.3.0 is the better case and still a narrow one: its root rejection does
-name `--format`, so **1 of 25** paths compares, and its manifest has no slot for root flags, so the
-only comparable path is the one it cannot speak to (DT-1). That `1 of 25` is **measured in this
-tree** against the anthill repo checkout, and it is the build that matters: the published `2.3.0`
+name `--format`, so the root does compare — but its manifest has no slot for root flags, so the only
+comparable path is one the document never declares (DT-1), and the summary reads **`0 of 25`
+declared command paths compared**, naming the root beside the fraction instead of inside it. That
+figure is **measured in this tree** against the anthill repo checkout, and it is the build that
+matters: the published `2.3.0`
 launcher answers the same probe `No command specified.`, naming no flag at all, so on that build
 nothing compares and the figure is a property of the build rather than of the version
 ([DT-10](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-10--two-builds-of-the-same-declared-version-disagree-about-whether-the-root-enumerates)).
@@ -704,7 +707,7 @@ nothing compares and the figure is a property of the build rather than of the ve
 ceiling.** Hand the same anthill checkout a batch recorded below the root and the same modelled
 declaration compares
 [`23 of 26` paths](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three)
-rather than `1 of 25`. The limit the rest of this section states is unchanged: it is a limit on
+rather than `0 of 25`. The limit the rest of this section states is unchanged: it is a limit on
 probing, and the caller who can lift it is the one who may already run the tool.
 
 So the `[C?]` on this Part, and every `yes` in the [`In v0` column](#the-fields-and-why-each-exists),
