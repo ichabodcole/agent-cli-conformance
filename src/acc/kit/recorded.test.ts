@@ -24,6 +24,7 @@ import {
   RecordedSurfacesError,
   readRecordedBatch,
 } from "./recorded.ts";
+import { captureSurface } from "./surface.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const batchFixture = (name: string) => join(HERE, "fixtures", "recorded-surfaces", name);
@@ -339,6 +340,26 @@ describe("which records the kit reads, and what it says about the ones it does n
     expect(s?.surface.probesRead).toBe(1);
   });
 
+  test("a surface that enumerated nothing carries NO `flags` key, in either non-enumerated state", () => {
+    // "Enumerated zero flags" is the one output a `Surface` minter must never produce: an empty
+    // array is indistinguishable from a tool with no flags, and from a serializer that dropped the
+    // list. `captureSurface` is guarded for exactly this (surface.test.ts, "a signpost to help is
+    // not a list" and "an empty set declares nothing"); `readRecordedBatch` is the SECOND place in
+    // the tree that mints a `Surface`, and it was not — inserting `flags: []` into its
+    // non-enumerated branch passed the whole suite.
+    const echoed = read({ stderr: "Unknown option. Valid flags: --acc-not-a-flag\n" });
+    expect(echoed?.surface.status).toBe("not-enumerated");
+    expect(echoed?.surface.flags).toBeUndefined();
+    // An explicit `flags: undefined` would satisfy the line above and still serialize the key, so
+    // the absence is asserted as absence.
+    expect(Object.hasOwn(echoed?.surface ?? {}, "flags")).toBe(false);
+
+    const unread = read({ argv: ["state"] });
+    expect(unread?.surface.status).toBe("no-evidence");
+    expect(unread?.surface.flags).toBeUndefined();
+    expect(Object.hasOwn(unread?.surface ?? {}, "flags")).toBe(false);
+  });
+
   test("several records at one path union, and disagreement publishes `consistent: false`", () => {
     const reading = readRecordedBatch(
       parse({
@@ -499,14 +520,32 @@ describe("the vendored batches, read with the kit's own extraction", () => {
     expect(reading.surfaces).toHaveLength(32);
     expect(reading.surfaces.every((s) => s.surface.status === "enumerated")).toBe(true);
 
-    const d = diffDeclaration(declaration("grapevine.declaration.json"), reading.surfaces, true);
+    // THE ROOT IS PREPENDED HERE BECAUSE `report.ts` ALWAYS PREPENDS IT. `pathSurfaces` puts
+    // `{ path: [], surfaceProvenance: "probed-by-kit" }` in front of every recorded surface, so a
+    // run in which the root has no `PathSurface` at all is a state the product cannot reach — and
+    // asserting `noEvidenceReason: "not-recorded"` for the root pinned exactly that, telling the
+    // caller to record a path `path: []` refuses. `captureSurface([])` is the honest root for this
+    // fixture: the kit probed and read nothing, which is why the count is 32 and not 33.
+    const d = diffDeclaration(
+      declaration("grapevine.declaration.json"),
+      [
+        { path: [], surface: captureSurface([]), surfaceProvenance: "probed-by-kit" },
+        ...reading.surfaces,
+      ],
+      true,
+    );
     expect(d.declaredCommands).toBe(33);
     expect(d.checkedCommands).toBe(32);
-    // The 33rd is the root, and the reason names the batch rather than the kit: a batch WAS
-    // supplied, and it is silent there by design.
+    // The 33rd is the root, and it is the KIT's path rather than the batch's: the root surface is
+    // present and says nothing, so there is no `noEvidenceReason` to give — the sentence a real run
+    // prints is the one `surfaceSummary` writes for an empty root capture, over `probed-by-kit`.
     const root = d.paths.find((p) => p.path.length === 0);
     expect(root?.checked).toBe(false);
-    expect(root?.noEvidenceReason).toBe("not-recorded");
+    expect(root?.surfaceProvenance).toBe("probed-by-kit");
+    expect(root?.noEvidenceReason).toBeUndefined();
+    expect(root?.reason).toBe(
+      "nothing readable was recorded at the root, so nothing was read (not a statement about the tool)",
+    );
   });
 
   test("grapevine's identity is present, and the census still refuses to call it a version", () => {
@@ -606,6 +645,6 @@ describe("acc check --recorded-surfaces", () => {
     // ...and the batch states no identity, so every line resting on it says so.
     expect(r.stdout).toContain("identity unstated");
     // Nothing here moved the verdict.
-    expect(r.stdout).toMatch(/census line[s]? rest on recorded surfaces/);
+    expect(r.stdout).toMatch(/census line(s)? rests? on recorded surfaces/);
   });
 });
