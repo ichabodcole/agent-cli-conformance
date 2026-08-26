@@ -425,6 +425,17 @@ meant would put words in a target's mouth in a section labelled as the target's 
       [the amendment](../reports/2026-08-24-first-outside-application-grapevine.md#amendment-2026-08-25--the-denominator-was-22-and-the-correction-preceded-the-diff).
       It must be run **before anything in the differ is tuned**, which is the whole value of having
       registered it, and which the ordering below now makes possible.
+- [ ] **Run `DT-11`.** anthill enumerates at all eight of `DT-2`'s paths, on both builds, and the
+      kit's own `readStream` reads every one of the eight sets — verified 2026-08-26 and recorded
+      with the commands in
+      [the registration](../reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-11--the-pre-registered-prediction-the-census-against-dt-2).
+      So the batch is eight captures and the run is one command. It tests the sentence
+      [`STANDARD.md` puts first](../../STANDARD.md#where-to-start-if-you-already-have-a-cli): that
+      the census catches a defect two root-probing `acc check` runs missed. Registered at **8**
+      `declared-not-accepted` and **0** `accepted-not-declared`, with the ninth finding and the
+      modelling choice that produces it named in advance. Like `SG-8`, it must be run **before
+      anything in the differ is tuned**, and the run must quote anthill's `--version` bytes so it
+      names its build rather than repeating [`DT-10`](../reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-10--two-builds-of-the-same-declared-version-disagree-about-whether-the-root-enumerates).
 - [ ] **Pre-registered alongside it: `32 of 33 compared` for the grapevine pair.** Registered by
       `trellis` at Spellbook `d45def2` and pinned here on 2026-08-25, under the same discipline and
       for the same reason — before any ingestion code exists. Grapevine's emitted declaration carries

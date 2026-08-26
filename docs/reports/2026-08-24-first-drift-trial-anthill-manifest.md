@@ -29,6 +29,11 @@ examined:
 > `DT-` series is where findings about this target live and a second report would split the
 > namespace. They are `DT-9` and `DT-10`, and neither is the trial's.
 >
+> **Amended 2026-08-26.** A pre-registration is filed at the end as
+> [`DT-11`](#dt-11--the-pre-registered-prediction-the-census-against-dt-2), under the same rule: it
+> is about this target, so it lives in this namespace. It is a registration rather than a finding,
+> it is dated before the run it predicts, and it changes nothing above it.
+>
 > **Finding ids are prefixed `DT-` throughout**, and map one-to-one onto the trial's own `D1`–`D8`.
 > The prefix is not decoration: unprefixed `C2`, `D2`, `A1`, `A7` and the like are **rule ids from
 > the catalogue**, a different namespace, and this report contains both — `DT-2` is the finding
@@ -368,7 +373,9 @@ accounts for the least consequential finding here.
 
 Two further findings about this target, `DT-9` and `DT-10`, were filed after the trial and are not
 counted in that table or that sentence — see
-[findings that arrived after the trial](#findings-that-arrived-after-the-trial).
+[findings that arrived after the trial](#findings-that-arrived-after-the-trial). Neither is
+[`DT-11`](#dt-11--the-pre-registered-prediction-the-census-against-dt-2), which is a
+pre-registration rather than an observation and counts as nothing until it is run.
 
 ## What the kit found, and what it structurally could not
 
@@ -635,3 +642,151 @@ That is this finding, rendered from two stored artifacts by a command that was g
 NOTE is for the case these two builds are **not** — two targets whose quotes are byte-identical
 while their probes disagree — which is the reading a reader could otherwise reach by accident, and
 in the wrong direction, by taking equal quotes for one binary.
+
+## `DT-11` — the pre-registered prediction: the census against `DT-2`
+
+**Registered 2026-08-26, before the run that tests it, and nothing in the differ was touched to
+write it.** `DT-11` is a registration rather than a finding, so it is absent from
+[the classification table](#classification) and moves none of the trial's counts. It takes an id in
+this series for the reason the amendment at the top gives: this is where material about this target
+lives, and a second document would split the namespace.
+
+### The claim being tested, and whose it is
+
+The adopter behind anthill read [`STANDARD.md`](../../STANDARD.md) cold, having already run the
+checker twice, and their ordering is now the page's — census first, with a measurement of their own
+tool as the reason rather than an argument. Recorded on the page at `ed13111`, 2026-08-25:
+
+> the census caught a live defect in anthill that **two full `acc check` runs had missed, because
+> both probed the root and the defect lives below it**
+
+The defect is [`DT-2`](#dt-2--eight-refused-flags-published-as-valid). The two runs are
+[the first-contact trial](./2026-08-21-anthill-first-contact-trial.md) and
+[the eight-CLI run](./2026-08-24-eight-owner-clis.md).
+
+That claim is sharper than the rest of the page's advice, and it is about **us**: it says our own
+instrument, handed the paths, finds a defect our own instrument failed to find twice. It was made
+by someone else, about their own tool, and it has never been run. What follows pins the result
+before the run, so neither side can move it afterwards.
+
+### The prediction
+
+Run `acc check` on anthill with a recorded-surface batch covering the eight paths `DT-2` names, and
+a declaration modelled from anthill's own manifest.
+
+**Population — the eight paths, and no others recorded:** `info show`, `info env`, `comms read`,
+`comms positions`, `scan`, `feedback`, `field-notes`, `migrate`. Eight records, none at the root.
+
+**Primary count: exactly 8 `declared-not-accepted`, one per path**, on `--team` at `info show`,
+`info env`, `scan`, `feedback`, `field-notes` and `migrate`, and on `--as` at `comms read` and
+`comms positions` — `DT-2`'s table, flag for flag.
+
+**Second direction, bounded rather than guessed: exactly 0 `accepted-not-declared`, at every one of
+the eight.** At each path the accepted set is a strict subset of the manifest's `flags[]`, so there
+is no flag the parser names that the document does not. This half is as falsifiable as the first: a
+single finding in that direction falsifies it.
+
+**Path count: `8 of 25 declared command paths compared`.** The manifest declares 25 command paths
+and no root — [`DT-1`](#dt-1--root---format-is-declared-in-code-absent-from-the-manifest-and-inert-where-it-looks-like-it-works)
+is that it has nowhere to put one — so the root the kit probes for itself compares against nothing
+and the count is the eight recorded paths.
+
+**The one number that turns on a modelling choice, named in advance so it cannot be retrofitted.**
+`feedback`'s manifest entry carries `message` inside `flags[]` with `type: "positionals"`, which is
+[`DT-3`](#dt-3--positionals-are-emitted-inside-flags-and-every-one-is-rejected-as-a-flag). acc's
+declaration format has a `positionals[]` container, and a positional yields no
+`declared-not-accepted` by construction. So a modeller that reads the **type** files `message`
+there and the count is **8**; a modeller that iterates the **container** files it as a valid
+argument and the count is **9**, the ninth being `--message` at `feedback` — a `DT-3` finding, not a
+`DT-2` one. Both numbers are registered. No third is.
+
+**Every one of the eight is declared `status: "valid"`**, because the declaration is modelled from
+the manifest and the manifest has no slot for refusal — that is `DT-2` itself. A document that
+marks any of the eight `refused` is not a model of anthill's manifest, produces
+`refused-but-enumerated` or nothing instead, and tests a different claim. **Provenance is
+`modelled`**: a batch recorded by hand is not the tool speaking.
+
+### The falsification condition
+
+**A result of 0 findings at these paths falsifies the reader, not the prediction** — it would mean
+the census as this kit ships it cannot see `DT-2`, and that the sentence putting the census first in
+`STANDARD.md` rests on a shell loop and `jq` rather than on anything here. That is the outcome worth
+naming, because it is the expensive one: the page would be recommending a first move on the strength
+of a method the project does not actually ship, and the repair is to the page.
+
+Anything between is a finding about **our model of the target**, in the manner of `SG-8`'s
+`3 of 22`: a count of 4 or 6 says some of the eight paths stopped enumerating, or the modeller
+dropped flags, and which of those it is has to be established rather than assumed. A
+`declared-not-accepted` at a path outside the eight, or on a flag other than the nine named above,
+is the same class of result and is not a rounding error.
+
+**A result the differ arrives at after being tuned against these bytes is worth nothing at all.**
+
+### What makes it predictable
+
+The census can only compare a path where the tool **names a set**, and `DT-2`'s "tool's advertised
+valid set" column came from the trial's own generated differ rather than from this kit. Whether a
+recorded-surface capture at those paths yields an enumeration _the kit can read_ is the question
+that could have invalidated the whole registration, so it was established first. Measured
+2026-08-26, from a scratch directory outside both trees, with inert probes only — an unknown flag
+that fails at parse, no verb that does work.
+
+**Both builds, named, because [`DT-10`](#dt-10--two-builds-of-the-same-declared-version-disagree-about-whether-the-root-enumerates)
+is what happens to a measurement that does not name its build:**
+
+```
+$ anthill --version                       # the PATH launcher, ~/.bun/bin/anthill
+{"ok":true,"data":{"version":"2.3.0","source":"/Users/…/plugins/cache/anthill-marketplace/anthill/2.3.0/scripts/anthill/cli.ts"},"meta":{"command":"version"}}
+
+$ bun …/dreamwood/anthill/plugin/scripts/anthill/cli.ts --version
+{"ok":true,"data":{"version":"2.3.0","source":"/Users/colereed/Projects/dreamwood/anthill/plugin/scripts/anthill/cli.ts"},"meta":{"command":"version"}}
+```
+
+**anthill enumerates below the root, at all eight paths, and the two builds answer identically.**
+Every path was probed on both, with the sentinel the guide tells adopters to use; all sixteen
+invocations exited `1`, wrote nothing to stdout, and wrote one line to stderr:
+
+```
+$ anthill info show --acc-not-a-flag
+{"ok":false,"error":"Unknown option '--acc-not-a-flag'. Valid flags: --format","meta":{"command":"info show"}}
+$ anthill info env --acc-not-a-flag
+{"ok":false,"error":"Unknown option '--acc-not-a-flag'. Valid flags: --file, --format, --show-values","meta":{"command":"info env"}}
+$ anthill comms read --acc-not-a-flag
+{"ok":false,"error":"Unknown option '--acc-not-a-flag'. Valid flags: --channel, --format, --id, --last, --since, --team","meta":{"command":"comms read"}}
+$ anthill comms positions --acc-not-a-flag
+{"ok":false,"error":"Unknown option '--acc-not-a-flag'. Valid flags: --channel, --format, --team","meta":{"command":"comms positions"}}
+$ anthill scan --acc-not-a-flag
+{"ok":false,"error":"Unknown option '--acc-not-a-flag'. Valid flags: --format, --root","meta":{"command":"scan"}}
+$ anthill feedback --acc-not-a-flag
+{"ok":false,"error":"Unknown option '--acc-not-a-flag'. Valid flags: --category, --format, --skill, --submit","meta":{"command":"feedback"}}
+$ anthill field-notes --acc-not-a-flag
+{"ok":false,"error":"Unknown option '--acc-not-a-flag'. Valid flags: --format","meta":{"command":"field-notes"}}
+$ anthill migrate --acc-not-a-flag
+{"ok":false,"error":"Unknown option '--acc-not-a-flag'. Valid flags: --dry-run, --format, --keep-paths","meta":{"command":"migrate"}}
+```
+
+Eight sets, matching `DT-2`'s table token for token, from a differ that is not the one that
+produced the table. The manifests of the two builds were also compared and are byte-identical at
+23,075 bytes, which is what makes one modelled declaration good for both.
+
+**The kit's own extractor reads all eight.** `readStream` from `src/acc/kit/surface.ts`, run over
+the captured stderr bytes rather than over a paraphrase of them, returns `shape: "prose-marker"`,
+`matched: "Valid flags:"`, and the same eight sets. This is the load-bearing check: anthill puts
+its enumeration inside the `error` string of a JSON envelope, and the reader that gets there walks
+the document's string values after finding no keyed set.
+
+**The guide's three readable-rejection rules admit the argv**, confirmed by `isRejectionShape`
+returning true for `["--acc-not-a-flag"]`: no `--` anywhere, one token after the path, and that
+token flag-shaped. The sentinel is absent from all eight advertised sets, so the echo guard does
+not erase the read — the failure
+[the guide warns will bite you twice](../wiki/guides/how-to-record-surfaces-below-the-root.md#steps).
+
+**What the batch will be:** eight records, `argv` the path followed by `--acc-not-a-flag`,
+`exitCode: 1`, `streams: "separated"`, `stdout: ""`, stderr verbatim, `completeness: "complete"`.
+
+### What would make this untestable
+
+The eight sets are a property of a build, not of the string `2.3.0`. A newer anthill that adds
+`refused` to its manifest type fixes `DT-2` and the prediction then measures nothing — which is a
+good outcome for the adopter and a dead registration for us, so the run should quote the same
+`--version` bytes as above or say plainly that it did not.
