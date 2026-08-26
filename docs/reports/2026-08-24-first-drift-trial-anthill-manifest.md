@@ -577,5 +577,23 @@ nobody diffs: not the declaration against the code, but two builds against each 
 **Disposition.** `STANDARD.md`'s `1 of 25` sentence now carries the build it was measured on and
 points here. The in-tree expectation in `declaration.test.ts` is **not** changed: its fixture is the
 recorded surface `["--format"]`, which is what the repo checkout answers, and re-baselining it on
-this finding would delete the record rather than correct it. What is owed is that any future
+this finding would delete the record rather than correct it. What was owed is that any future
 re-measurement names its build.
+
+**Discharged 2026-08-26, and by construction rather than by discipline.** Every report now carries
+`targetIdentity` — what the target said about itself under `--version`, quoted from the probe `D1`
+already runs on every target, and rendered under `TARGET IDENTITY` in the text report and beside
+each target in `acc compare`. It is what the report was missing: `target` is a path, `targetArgv0`
+is how the kit launched it, and `kitVersion` is **ours**, so nothing in a stored report was the
+tool's own account of itself. A re-measurement no longer has to remember to name its build; the
+artifact carries the bytes.
+
+**What it establishes is narrower than the disposition it discharges**, and the scope is the one
+this finding argued for: **a binary that answers this way existed at capture time**, and nothing
+more. It does not establish which build, which release, or — when two reports quote different
+bytes — that they came from different builds. It is not a verification that the target reported a
+version either: `D1`'s detector is a non-empty stdout at exit `0`, and its standing coverage gap
+says stdout is never checked to carry a version string. The two anthill builds would still both
+quote `2.3.0` here. What changes is that the quote is **in the artifact**, so the two reports are
+comparable on the axis this finding is about instead of on a file path — and `acc compare` says so
+out loud when every target quotes the same bytes and answers probes differently.

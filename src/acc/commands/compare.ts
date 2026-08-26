@@ -11,6 +11,7 @@ import {
   type ProbeComparison,
   type SurfaceRow,
 } from "../kit/compare.ts";
+import { identitySummaryLines } from "../kit/identity.ts";
 import type { Report } from "../kit/report.ts";
 import { type Surface, surfaceSummary } from "../kit/surface.ts";
 
@@ -188,7 +189,35 @@ function renderText(c: Comparison): string {
   return [
     `${bold}COMPARISON${reset} — ${c.counts.targets} targets, ${c.counts.aligned} probes aligned, ${c.counts.divergent} divergent  [acc ${c.kitVersions.join(", ")}]`,
     "",
-    ...c.targets.map((t) => `  ${pad(t.label, width)}  ${t.target}`),
+    // WHAT EACH TARGET SAID ABOUT ITSELF, on the line under the path it was said from.
+    //
+    // Here rather than in a section of its own because it is a COORDINATE on the target, like the
+    // path above it — not a probe anybody is comparing. A target whose report predates the capture
+    // gets no second line rather than an invented one.
+    ...c.targets.flatMap((t) => [
+      `  ${pad(t.label, width)}  ${t.target}`,
+      ...(t.identity
+        ? identitySummaryLines(t.identity).map((l) => `  ${pad("", width)}  ${l}`)
+        : []),
+    ]),
+    // THE SENTENCE THIS FIELD WAS ADDED FOR, printed only when the situation it describes is
+    // actually on screen. Two targets that call themselves the same thing and answer probes
+    // differently is `DT-10` — and it is the one reading of this column a reader could otherwise
+    // reach by accident and in the wrong direction, by taking equal quotes for one binary.
+    ...(() => {
+      const stated = c.targets.map((t) => t.identity).filter((i) => i?.status === "stated");
+      const said = new Set(stated.map((i) => i?.said));
+      return stated.length === c.targets.length &&
+        c.targets.length > 1 &&
+        said.size === 1 &&
+        c.counts.divergent > 0
+        ? [
+            "",
+            `  NOTE: every target here said the same thing about itself and they answered ${c.counts.divergent} probe${c.counts.divergent === 1 ? "" : "s"}`,
+            "  differently. Identical bytes under --version are not evidence of one binary.",
+          ]
+        : [];
+    })(),
     // Only when it happened. Two reports from two kit versions compare two instruments as well
     // as two tools, and the counts above cannot show it.
     ...(c.kitVersions.length > 1

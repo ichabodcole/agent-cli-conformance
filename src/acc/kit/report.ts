@@ -5,6 +5,7 @@ import {
   diffDeclaration,
   type PathSurface,
 } from "./declaration.ts";
+import { captureIdentity, type TargetIdentity } from "./identity.ts";
 import {
   type RecordedReading,
   type RecordedSurfacesReport,
@@ -157,6 +158,24 @@ export interface Report {
    * decides several verdicts.
    */
   targetArgv0: string[];
+  /**
+   * WHAT THE TARGET SAID ABOUT ITSELF, quoted from the `--version` probe `D1` already runs.
+   *
+   * The companion to `targetArgv0`, and the two are different kinds of fact. `targetArgv0` is OUR
+   * bookkeeping — the argv the kit assembled, including any interpreter it resolved. This is the
+   * TOOL'S OWN WORDS, read back off its own stdout. Both belong, because the case that forced this
+   * field is exactly where they diverge: two builds of anthill, same declared `2.3.0`, two argv0s,
+   * two behaviours (`docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md` § `DT-10`).
+   * Until this existed, `Report.kitVersion` was the only version coordinate a stored report
+   * carried, and it is ours.
+   *
+   * EVIDENCE, exactly as `surface` is: no rule reads it, no count moves on it, and it touches
+   * neither `conformant` nor `fullyVerified`. Read `status` before `said`, and read `identity.ts`
+   * before quoting it anywhere — a present identity establishes that a binary answering this way
+   * existed at capture time, and nothing further. It is NOT a verification that the target
+   * reported a version, and its absence is NOT `D1`'s verdict.
+   */
+  targetIdentity: TargetIdentity;
   /**
    * The version of the kit that produced this report.
    *
@@ -666,6 +685,10 @@ export function buildReport(
   // against it. Two calls would be two captures of the same observations, and a reader comparing
   // the two blocks would have no guarantee they came from one read.
   const surface = captureSurface(h.observations);
+  // Read from the same history and for the same reason: `toReportedObservation` below drops the
+  // streams, so bytes not extracted before that projection are unrecoverable from the artifact.
+  // No probe is added — `D1` already ran this argv on every target.
+  const targetIdentity = captureIdentity(h.observations);
 
   return {
     target: h.target.path,
@@ -693,6 +716,7 @@ export function buildReport(
       waived: waived.length,
     },
     targetArgv0: [...h.target.argv0],
+    targetIdentity,
     evidenceGaps,
     findings: reported,
     observations: h.observations.map(toReportedObservation),
