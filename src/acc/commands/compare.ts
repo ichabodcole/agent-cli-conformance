@@ -204,8 +204,16 @@ function renderText(c: Comparison): string {
     // actually on screen. Two targets that call themselves the same thing and answer probes
     // differently is `DT-10` — and it is the one reading of this column a reader could otherwise
     // reach by accident and in the wrong direction, by taking equal quotes for one binary.
+    //
+    // A TRUNCATED OR LOSSY QUOTE CANNOT ESTABLISH THE PREMISE, so it withholds the sentence. The
+    // NOTE asserts that these targets said the same thing, and `truncated` means the quote is a
+    // prefix while `lossy` means (in the field's own words) that equality of these strings is not
+    // equality of bytes — either way, equal renderings are consistent with different answers.
+    // Withholding rather than qualifying: the NOTE's whole job is to be believed on sight.
     ...(() => {
-      const stated = c.targets.map((t) => t.identity).filter((i) => i?.status === "stated");
+      const stated = c.targets
+        .map((t) => t.identity)
+        .filter((i) => i?.status === "stated" && !i.truncated && !i.lossy);
       const said = new Set(stated.map((i) => i?.said));
       return stated.length === c.targets.length &&
         c.targets.length > 1 &&

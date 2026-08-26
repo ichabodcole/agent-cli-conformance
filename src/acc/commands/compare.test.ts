@@ -322,3 +322,106 @@ describe("bad input", () => {
     expect(c.counts.aligned).toBeGreaterThan(5);
   });
 });
+
+// THE NOTE — the sentence this feature was added to say, and the one rendered surface that had no
+// test. It is a four-clause guard inlined into the renderer: any clause could invert and every
+// assertion above would still pass. So it is exercised BOTH ways here, because a guard nobody has
+// seen stay silent is a guard that could be printing on everything.
+describe("the NOTE about targets that call themselves the same thing", () => {
+  /**
+   * A real report, copied with its identity quote rewritten.
+   *
+   * Only `status` and `said` move: the observations, and therefore every divergence the
+   * comparison finds, are the ones `acc check` actually recorded. Rewriting the quote is the only
+   * way to reach the case — the fixtures in this population do not share a `--version` answer,
+   * and inventing the observations instead would test the renderer against a comparison no run
+   * produces.
+   */
+  const quoting = (name: string, said: string, as: string): string => {
+    const path = join(dir, `identity-${as}.json`);
+    const envelope = JSON.parse(readFileSync(reports[name] as string, "utf8"));
+    envelope.data.targetIdentity = { ...envelope.data.targetIdentity, status: "stated", said };
+    writeFileSync(path, JSON.stringify(envelope));
+    return path;
+  };
+
+  const text = (paths: string[]) => run(["compare", ...paths, "--format", "text"]);
+
+  test("it FIRES when every target quotes the same bytes and probes diverged", async () => {
+    const r = await text([
+      quoting(TARGETS.seven, "tool 2.3.0", "same-a"),
+      quoting(TARGETS.anthill, "tool 2.3.0", "same-b"),
+    ]);
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain("NOTE: every target here said the same thing about itself");
+    expect(r.stdout).toContain("Identical bytes under --version are not evidence of one binary");
+    // The quote is on screen too, under each path — the NOTE without it is an assertion the
+    // reader cannot check.
+    expect(r.stdout).toContain('the target answered with "tool 2.3.0"');
+  }, 60_000);
+
+  test("it stays SILENT when the quotes differ, divergences and all", async () => {
+    const r = await text([
+      quoting(TARGETS.seven, "tool 2.3.0", "diff-a"),
+      quoting(TARGETS.anthill, "tool 2.4.0", "diff-b"),
+    ]);
+    expect(r.stdout).not.toContain("NOTE:");
+    // The negative control on the negative control: these two really do diverge, so silence here
+    // is the guard's `said.size === 1` clause and not an empty comparison.
+    const { c } = await compare([
+      reports[TARGETS.seven] as string,
+      reports[TARGETS.anthill] as string,
+    ]);
+    expect(c.counts.divergent).toBeGreaterThan(0);
+  }, 60_000);
+
+  test("it stays SILENT when a target said nothing, which is not agreement", async () => {
+    // Undoctored, and the ordinary case: `exits-2-no-version` writes nothing to stdout under
+    // `--version`, so its identity is `not-stated`. One quote and one absence is not two targets
+    // saying the same thing, and the NOTE must not read the absence as a match.
+    const r = await text([reports[TARGETS.seven] as string, reports[TARGETS.anthill] as string]);
+    expect(r.stdout).toContain("wrote nothing to stdout");
+    expect(r.stdout).not.toContain("NOTE:");
+  }, 60_000);
+
+  test("it stays SILENT when identical targets agree everywhere", async () => {
+    // Same bytes, and nothing to warn about: the NOTE is about a CONTRADICTION between what two
+    // targets call themselves and how they behave, so with no divergence there is no reading to
+    // pre-empt and printing it would be noise on every fleet of clones.
+    const r = await text([
+      quoting(TARGETS.seven, "tool 2.3.0", "clone-a"),
+      quoting(TARGETS.seven, "tool 2.3.0", "clone-b"),
+    ]);
+    expect(r.stdout).toContain('the target answered with "tool 2.3.0"');
+    expect(r.stdout).not.toContain("NOTE:");
+  }, 60_000);
+
+  // §5's repair, and the reason the premise needed one: `truncated` says the quote is a PREFIX
+  // and `lossy` says (in the field's own words) that equality of these strings is not equality of
+  // bytes. Either way two equal renderings are consistent with two different answers, so the
+  // sentence "they said the same thing" is not established and is withheld.
+  test.each([["truncated"], ["lossy"]])(
+    "it stays SILENT on a %s quote",
+    async (flag) => {
+      const doctor = (name: string, as: string): string => {
+        const path = join(dir, `identity-${as}.json`);
+        const envelope = JSON.parse(readFileSync(reports[name] as string, "utf8"));
+        envelope.data.targetIdentity = {
+          ...envelope.data.targetIdentity,
+          status: "stated",
+          said: "tool 2.3.0",
+          [flag]: true,
+        };
+        writeFileSync(path, JSON.stringify(envelope));
+        return path;
+      };
+      const r = await text([
+        doctor(TARGETS.seven, `${flag}-a`),
+        doctor(TARGETS.anthill, `${flag}-b`),
+      ]);
+      expect(r.stdout).toContain('the target answered with "tool 2.3.0"');
+      expect(r.stdout).not.toContain("NOTE:");
+    },
+    60_000,
+  );
+});
