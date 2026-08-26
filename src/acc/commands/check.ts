@@ -566,7 +566,7 @@ export async function checkCommand(
                 return r.recordedSurfaces?.identity
                   ? identityLines(r.recordedSurfaces.identity).map((l) => `    ${l}`)
                   : [
-                      `    ${resting} census line${resting === 1 ? "" : "s"} rest on recorded surfaces; ${resting} of them on a batch that states no identity.`,
+                      `    ${resting} census line${resting === 1 ? "" : "s"} rest${resting === 1 ? "s" : ""} on recorded surfaces; ${resting === 1 ? "that one" : `${resting} of them`} on a batch that states no identity.`,
                     ];
               })(),
               "",

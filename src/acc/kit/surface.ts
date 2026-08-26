@@ -97,10 +97,14 @@ export interface SurfaceEvidence {
    * is `recorded:<index>` over `records[]` OF THE BATCH SUPPLIED TO THE RUN THAT PRODUCED THIS
    * REPORT — its own namespace, so the two id spaces cannot collide in a stored report.
    *
-   * The narrower invariant is deliberate, and the comment must not claim the wider one:
-   * `Report.surface` is serialized, so a `recorded:` id ships inside the JSON while the batch it
-   * indexes is an INPUT the artifact neither carries nor names. Once the batch file is gone, that
-   * id resolves nowhere. A recorded record can never be minted into `Report.observations[]`
+   * The narrower invariant is deliberate, and the comment must not claim the wider one: the batch
+   * a `recorded:` id indexes is an INPUT to one run, which no artifact carries or names, so once
+   * the batch file is gone that id resolves nowhere. No such id reaches a stored report today —
+   * `Report.surface` is the ROOT's and is always `probed-by-kit`, and `Report.recordedSurfaces`
+   * carries rendered summaries rather than evidence — but the id lives on `SurfaceEvidence`, so
+   * whatever serializes one of these next inherits the problem, and the field is documented for
+   * that reader rather than for the current call sites. A recorded record can never be minted into
+   * `Report.observations[]`
    * either — `ReportedObservation` carries stream digests, `inertness` and timings, which are
    * derived facts and kit-side judgements a caller is forbidden to send and the kit has no honest
    * way to fill.
