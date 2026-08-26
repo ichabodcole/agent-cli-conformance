@@ -41,15 +41,27 @@ const BASE = {
  * EVERY `GIT_*` VARIABLE IS STRIPPED, and that is not hygiene — it is the difference between this
  * file testing a throwaway repository and this file editing the real one.
  *
- * Git sets `GIT_DIR`, `GIT_INDEX_FILE` and `GIT_WORK_TREE` in the environment of a hook. This
- * suite runs inside `bun run check`, which runs from the pre-commit hook, so an inherited
- * environment points every `git` spawned below at the repository being committed to — whatever
- * `cwd` says. `git init` then reinitialises it, `git add -A` stages the fixture's files into its
- * index, and the harness under test reads its HEAD instead of the fixture's.
+ * Git exports index and directory locations into a hook's environment, and WHAT it exports depends
+ * on where the commit was made from. Measured on this machine, git 2.x, 2026-08-26:
  *
- * That is not hypothetical. It put fixture filenames into this repository's index and left the
- * checkout unusable, and it was invisible when the suite was run directly because there is no hook
- * environment then — green standalone, destructive under the hook.
+ *     from the main checkout:    GIT_INDEX_FILE=.git/index            (RELATIVE)
+ *     from a linked worktree:    GIT_DIR=<main>/.git/worktrees/<name>  (ABSOLUTE)
+ *                                GIT_INDEX_FILE=<same>/index           (ABSOLUTE)
+ *
+ * `GIT_WORK_TREE` is exported in neither.
+ *
+ * The relative form is harmless to a fixture that runs git with its own `cwd`: `.git/index`
+ * resolves inside the fixture. **The absolute form is not.** A commit made from a linked worktree
+ * points every `git` spawned below at the real repository whatever `cwd` says — `git add -A`
+ * stages the fixture's files into its index, and the harness under test reads its HEAD instead of
+ * the fixture's.
+ *
+ * That is not hypothetical: it put fixture filenames into this repository's index and left a
+ * checkout unusable. It was invisible when the suite was run directly, because there is no hook
+ * environment then — green standalone, destructive under a hook, and only from a worktree.
+ *
+ * Stripping all of them is deliberately broader than the measured danger. The exported set is
+ * git's to change, and a fixture that runs git has no business inheriting any of it.
  */
 const GIT_FREE_ENV = Object.fromEntries(
   Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_")),
