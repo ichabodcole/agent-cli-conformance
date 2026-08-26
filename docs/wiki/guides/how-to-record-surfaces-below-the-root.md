@@ -29,8 +29,40 @@ recording, handed over.
 and no exit code moves. A fabricated batch buys a sentence, not a pass.
 
 You need a working `acc check` first — [Check your first CLI](./check-your-first-cli.md) if you have
-not run one. The diff half of this page also needs a declaration file, which is the same file
-[How to reach L0 in your project](./how-to-reach-l0-in-your-project.md) uses with `--declaration`.
+not run one.
+
+**The diff half of this page also needs a declaration file, and nothing else documents its shape at
+a level you can write one from.** That sentence used to send you to
+[How to reach L0 in your project](./how-to-reach-l0-in-your-project.md), which does not use
+`--declaration` and says twice that L0 needs no declaration. The second adopter followed it, found
+nothing, and got the format by reading this repository's test fixtures. Here is the minimum:
+
+```json
+{
+  "formatVersion": "0",
+  "provenance": "modelled",
+  "commands": [
+    {
+      "path": ["state"],
+      "args": [{ "name": "--full", "type": "boolean", "status": "valid" }],
+      "positionals": []
+    }
+  ]
+}
+```
+
+- **`formatVersion`** is the string `"0"`, compared for exact equality. Not `"0.1"`, not `0`.
+- **`provenance`** is `"modelled"` if you wrote it by hand from help, `"emitted"` if the tool
+  produced it. They are not interchangeable: the remedy sentence you get when a diff cannot run is
+  chosen by this field, and claiming `emitted` for a file you transcribed will tell you to fix
+  something you cannot fix.
+- **`path`** is the argv tokens before the flags, as an array. `[]` is the root.
+- **`status`** is `"valid"` or `"refused"` — what the document claims about that flag AT THAT PATH.
+- **Unknown keys are refused anywhere in the file**, and the version is checked before the sweep,
+  so fix a version complaint first and re-run rather than hunting keys.
+
+[Part 2 of `STANDARD.md`](../../../STANDARD.md#the-fields-and-why-each-exists) argues why each field
+exists and what a fuller document carries.
 
 ## Steps
 
@@ -61,6 +93,19 @@ read:
 ```
 
 The count on the left never exceeds the count on the right, whatever your batch reaches.
+
+**If your root does not enumerate, you get neither line, and that is the case this page is most
+for.** The root is then not compared at all — there is nothing to compare it against — so it is
+reported as a limit rather than as a path:
+
+```
+17 of 17 declared command paths compared; 289 disagreements (modelled declaration)
+NOT COMPARED: (root) — did not enumerate at the root; 5 rejections read, none named a set
+```
+
+A tool shaped like that gets **nothing** from `acc check` on this axis and everything from a batch,
+because the one path the kit can reach for itself is the one path that says nothing. Measured on
+magpie, the second adopter's target.
 
 ### 2. Provoke one rejection per path, and keep the bytes verbatim
 
@@ -239,9 +284,19 @@ Three things to check, in this order:
    is still `NOT COMPARED` was refused, and the line says which of the three argv rules it missed or
    which `completeness` value excluded it. Those are different fixes: one is a recapture with a
    different argv, the other a recapture without the `head`.
-3. **The verdict line did not change.** Run once with the flag and once without; `conformant`, the
-   exit code and the rule table are identical. If any of them moved, that is a defect in the kit,
-   not in your batch.
+3. **`conformant`, the exit code and the rule table did not change.** Run once with the flag and
+   once without and compare those three. If any of them moved, that is a defect in the kit, not in
+   your batch.
+
+   **The verdict LINE does change**, and that is correct — it grows a `· but see N declaration
+disagreements (modelled)` clause. This step used to open by saying the line was identical, which
+   the sentence after it then contradicted; an adopter followed it literally, saw the line move, and
+   was told by this page that they had found a kit defect. Compare the three things named above,
+   not the line.
+
+   **Timing rows differ between runs and are not a change.** `F2 --version first byte in 15ms (runs:
+15, 15, 16ms)` against `(runs: 16, 15, 15ms)` is jitter. A mechanical diff of the two reports
+   will flag it; ignore that row.
 
 When the whole batch is refused, the run says so and continues with no recorded surfaces — the
 message names the first thing it could not understand, and a `formatVersion` complaint always comes
