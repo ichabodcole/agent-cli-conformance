@@ -409,6 +409,13 @@ command and needs no cooperation beyond one property most strict parsers already
 with no kit at all — a shell loop and `jq` will do it. If you build one thing from this page before
 anything else, build that.
 
+**Or have the loop written for you.** `acc probe-plan <target> --paths ./paths.json --out
+./capture.sh` emits a shell harness that sends one sentinel-bearing rejection per command path,
+keeps both streams verbatim, and writes a batch `acc check --recorded-surfaces` reads —
+[the guide](docs/wiki/guides/how-to-record-surfaces-below-the-root.md). That changes nothing about
+the ordering above: the census is first because it is cheap and needs no declaration, and a loop
+you wrote yourself is the same census.
+
 **Note what a spec-to-spec differ is not.** `usage diff` is the closest existing thing to a CLI
 contract differ, and it is genuinely good: it classifies every change as breaking, compatible or
 metadata under one stated rule, with a published edge-case table
@@ -563,10 +570,12 @@ back the recordings, executing nothing on the checker's authority and reading no
 `effects` is not being added, so v0's missing slot costs nothing.
 
 What is genuinely unbuilt is narrower, and naming it exactly is the honest thing this page can do
-today: the kit cannot yet **read** a recorded surface, it generates no probe plan to make producing
-one cheap, and it owns no execution boundary of its own. The cost that leaves is that below-root
-coverage depends on somebody else doing the running — a limit on convenience, and on who can be
-checked without their cooperation, rather than on what is knowable from outside.
+today: the kit owns no execution boundary of its own. The two limits that used to stand beside that
+one are gone — `acc check --recorded-surfaces` reads a recorded surface, and `acc probe-plan`
+generates the capture harness that produces one
+([the guide](docs/wiki/guides/how-to-record-surfaces-below-the-root.md)). The cost that leaves is
+that below-root coverage depends on somebody else doing the running — a limit on convenience, and
+on who can be checked without their cooperation, rather than on what is knowable from outside.
 
 ## The two things a declaration must never carry
 

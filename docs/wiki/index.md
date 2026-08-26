@@ -26,18 +26,18 @@ wiki.
 The catalogue below is organised by what a page **is**. This is the same wiki organised by what
 you are **doing**, which is usually the faster way in.
 
-| If you are…                              | Start at                                                                                                                                       |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| an install that gave you the wrong bytes | [How to fix a broken install](./guides/how-to-fix-a-broken-install.md) — three failures, two of them silent at exit `0`                        |
-| meeting the kit for the first time       | [Check your first CLI](./guides/check-your-first-cli.md) — run it against a target, read a real verdict                                        |
-| making your own CLI pass                 | [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — triage each failure into a fix, a waiver, or named debt       |
-| holding a failing rule id                | `acc show <id>`, or find it in [the rules table](#coverage-at-a-glance) below                                                                  |
-| wondering what a verdict means           | [Conformance](./concepts/conformance.md) for `pass`/`fail`/`unverified`, [probing](./concepts/probing.md) for what produced it                 |
-| looking up an exit code                  | [the taxonomy](./concepts/exit-codes.md#the-taxonomy)                                                                                          |
-| looking up an error shape                | [the error envelope](./concepts/error-envelope.md#two-shapes-and-confirmation_required-is-one-of-the-errors)                                   |
-| covering paths below the root            | [How to record surfaces below the root](./guides/how-to-record-surfaces-below-the-root.md) — record your own tool's rejections, hand them over |
-| writing a checker                        | [How to add a checker](./guides/how-to-add-a-checker.md)                                                                                       |
-| editing these pages                      | [SCHEMA.md](./SCHEMA.md) for the contract, [STYLE.md](./STYLE.md) for how they are written                                                     |
+| If you are…                              | Start at                                                                                                                                                       |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| an install that gave you the wrong bytes | [How to fix a broken install](./guides/how-to-fix-a-broken-install.md) — three failures, two of them silent at exit `0`                                        |
+| meeting the kit for the first time       | [Check your first CLI](./guides/check-your-first-cli.md) — run it against a target, read a real verdict                                                        |
+| making your own CLI pass                 | [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — triage each failure into a fix, a waiver, or named debt                       |
+| holding a failing rule id                | `acc show <id>`, or find it in [the rules table](#coverage-at-a-glance) below                                                                                  |
+| wondering what a verdict means           | [Conformance](./concepts/conformance.md) for `pass`/`fail`/`unverified`, [probing](./concepts/probing.md) for what produced it                                 |
+| looking up an exit code                  | [the taxonomy](./concepts/exit-codes.md#the-taxonomy)                                                                                                          |
+| looking up an error shape                | [the error envelope](./concepts/error-envelope.md#two-shapes-and-confirmation_required-is-one-of-the-errors)                                                   |
+| covering paths below the root            | [How to record surfaces below the root](./guides/how-to-record-surfaces-below-the-root.md) — generate the capture with `acc probe-plan`, or record it yourself |
+| writing a checker                        | [How to add a checker](./guides/how-to-add-a-checker.md)                                                                                                       |
+| editing these pages                      | [SCHEMA.md](./SCHEMA.md) for the contract, [STYLE.md](./STYLE.md) for how they are written                                                                     |
 
 ## Concepts
 
@@ -230,8 +230,8 @@ How to actually do things.
   waiver, or named debt.
 
 - [How to record surfaces below the root](./guides/how-to-record-surfaces-below-the-root.md) —
-  Capture your own tool's rejections below the root, hand them to `acc check` as a batch, and get a
-  census that covers the command paths the kit cannot probe.
+  Record your tool's rejections below the root — with a harness `acc probe-plan` generates, or by
+  hand — and hand the batch to `acc check` for a census covering the paths the kit cannot probe.
 
 - [How to add a checker](./guides/how-to-add-a-checker.md) — Take a rule from a page with no
   enforcement to one the gate holds — declaring probes, writing the check, wiring the registry,
