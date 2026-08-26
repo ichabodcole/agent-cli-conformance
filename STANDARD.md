@@ -135,9 +135,16 @@ They then answered it against their own tool, and their reasons are the ones att
    [found none of the eight findings and could not have](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#what-the-kit-found-and-what-it-structurally-could-not).
 
 2. **Second, and contingent on the first, the v0 emitter** — the format described in
-   [Part 2](#the-fields-and-why-each-exists). Contingent, because on their tool the emitter **alone**
-   buys `1 of 25 declared command paths compared`, and the one path that does compare is the root,
-   which their manifest has no slot for ([DT-1](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-1--root---format-is-declared-in-code-absent-from-the-manifest-and-inert-where-it-looks-like-it-works)).
+   [Part 2](#the-fields-and-why-each-exists). Contingent, because on their tool the emitter **alone —
+   with nothing recorded below the root** — buys `1 of 25 declared command paths compared`, and the
+   one path that does compare is the root, which their manifest has no slot for
+   ([DT-1](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-1--root---format-is-declared-in-code-absent-from-the-manifest-and-inert-where-it-looks-like-it-works)).
+   **That `1` is a figure about the kit's root-only probing, not a ceiling on the emitter**: the same
+   tool, with the census's own captures handed back as a
+   [recorded-surface batch](docs/wiki/guides/how-to-record-surfaces-below-the-root.md), compares
+   [`23 of 26`](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three).
+   The qualifier is theirs to ask for and the correction is theirs: they cited the bare number in the
+   cold read this ordering came from, and it was adopted here on their say-so.
    An emitter written before you have below-root evidence to compare it against buys a report about
    what could not be compared. Written after, every path the census already reads becomes a path the
    emitter is checked at.
@@ -678,7 +685,8 @@ The kit probes **the root only** — `captureSurface` in
 [`src/acc/kit/surface.ts`](src/acc/kit/surface.ts) reads a flag set out of root-level rejections,
 and the kit does not execute a subcommand of a target on that target's own say-so. Evidence below
 the root has to be recorded by somebody who already holds the authority to run the tool and handed
-to the kit, which cannot yet accept it.
+to the kit as a [recorded-surface batch](docs/wiki/guides/how-to-record-surfaces-below-the-root.md),
+which it reads — what stops at the root is what the kit will **send**.
 A verb-first tool's declaration is a document about its **verbs**, so every path it declares is a
 path nothing probes, and the one path that is probed is often the one it does not declare. Measured
 on this repository's own CLI, which is verb-first: `acc --nope` answers `unknown option '--nope'`
@@ -691,6 +699,13 @@ tree** against the anthill repo checkout, and it is the build that matters: the 
 launcher answers the same probe `No command specified.`, naming no flag at all, so on that build
 nothing compares and the figure is a property of the build rather than of the version
 ([DT-10](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-10--two-builds-of-the-same-declared-version-disagree-about-whether-the-root-enumerates)).
+
+**Every figure in this section is about what the kit probes for itself, and none of them is a
+ceiling.** Hand the same anthill checkout a batch recorded below the root and the same modelled
+declaration compares
+[`23 of 26` paths](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three)
+rather than `1 of 25`. The limit the rest of this section states is unchanged: it is a limit on
+probing, and the caller who can lift it is the one who may already run the tool.
 
 So the `[C?]` on this Part, and every `yes` in the [`In v0` column](#the-fields-and-why-each-exists),
 carry a condition already stated in both places and worth stating plainly: **on any target that

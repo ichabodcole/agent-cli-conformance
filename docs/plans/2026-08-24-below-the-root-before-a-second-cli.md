@@ -425,7 +425,12 @@ meant would put words in a target's mouth in a section labelled as the target's 
       [the amendment](../reports/2026-08-24-first-outside-application-grapevine.md#amendment-2026-08-25--the-denominator-was-22-and-the-correction-preceded-the-diff).
       It must be run **before anything in the differ is tuned**, which is the whole value of having
       registered it, and which the ordering below now makes possible.
-- [ ] **Run `DT-11`.** anthill enumerates at all eight of `DT-2`'s paths, on both builds, and the
+- [x] **Run `DT-11`.** **Run 2026-08-26 by the adopter, and
+      [the outcome is recorded beside the registration](../reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three)**:
+      the **8** and the **0** landed exactly; the path count did not — `23 of 26` against a
+      registered `8 of 25`, because the run recorded all 25 paths where the registration had
+      specified eight. Nothing in the differ was touched before or after. The item as written
+      follows. anthill enumerates at all eight of `DT-2`'s paths, on both builds, and the
       kit's own `readStream` reads every one of the eight sets — verified 2026-08-26 and recorded
       with the commands in
       [the registration](../reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-11--the-pre-registered-prediction-the-census-against-dt-2).
