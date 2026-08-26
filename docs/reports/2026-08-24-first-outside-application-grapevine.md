@@ -374,6 +374,62 @@ That is the number `SG-8` is now registered at. It stays falsifiable in the same
 of 22 is a finding about our model of the fleet, and a result the differ arrives at after being tuned
 against these bytes is worth nothing at all.
 
+### Outcome, 2026-08-26 — HIT, and re-derived here rather than transcribed
+
+**The registration above is left exactly as filed.**
+
+The prediction was run twice, by two parties, and both got the registered number.
+
+**Their run.** Spellbook `2b2ce93`, recorded in their own backlog: **18 `accepted-not-declared` of
+22 enumerated, 0 `declared-not-accepted`.** Their note: _"Substance held exactly: help declares 4,
+the parser accepts 22 — 5.5×. The hand-written model understated, never misstated: a better finding
+than the one registered."_
+
+**Our run, and the reason it was worth doing separately.** The census was re-derived here from
+[the vendored fixtures](../../src/acc/kit/fixtures/recorded-surfaces/PROVENANCE.md), through
+`loadDeclaration` → `loadRecordedBatch` → `diffDeclaration`, on `develop` at `de6fa14`:
+
+```
+3 of 4 declared command paths compared; 60 disagreements (modelled declaration)
+  accepted-not-declared on state: 18
+  declared-not-accepted total:     0
+```
+
+**18 and 0. The registered numbers, reached independently.**
+
+**What the registration did not cover, and the run supplies.** `SG-8` bounded `state` only. All
+three recorded paths enumerate the same 22, and the full census is:
+
+| path    | declared            | `accepted-not-declared` |
+| ------- | ------------------- | ----------------------- |
+| `state` | 4 args              | **18**                  |
+| `claim` | 1 arg, 1 positional | **20**                  |
+| `list`  | nothing             | **22**                  |
+
+`claim` is the row worth reading. 22 − 1 arg is 21, and the census reports 20, because `claim`
+declares a **positional** named `id` and the differ compares positional names as flag spellings —
+so an accepted `--id` is deliberately not a finding on this side.
+[That is `DT-3`'s mechanism](./2026-08-24-first-drift-trial-anthill-manifest.md) working as
+designed, and it is invisible in a headline that counts only `state`.
+
+**The root is declared and was not compared**, which is the honest shape rather than a gap: the
+modelled declaration declares `path: []` with `--help`, no batch may carry a root record, and this
+run performed no probe of its own. `3 of 4` states exactly that, and the fraction's denominator and
+numerator now come from the same set — see
+[the census fraction fix](./2026-08-24-first-drift-trial-anthill-manifest.md#amendment-2026-08-26--the-fraction-was-the-defect-and-both-errors-above-were-symptoms).
+
+**On the tuning caveat the registration itself raised.** It said a result the differ reaches _"after
+being tuned against these bytes is worth nothing at all."_ These bytes have been in this tree as
+fixtures since `2026-08-25` and nothing reads them — they are vendored evidence, not test inputs,
+and no checker or differ has ever been run against them in CI. The differ has changed once since
+they landed, in the census-fraction fix, which moved a denominator and no finding. **We assert that
+rather than prove it**, and an adopter re-running this against a differ they build themselves is
+the only thing that would settle it.
+
+**This is the modelled-declaration case**, which was the direction still untested: a document
+hand-written from help rather than emitted by the tool. It compared, it produced findings, and the
+findings were the registered ones.
+
 ## What it cost the adopter
 
 The move from a global 26-flag registry to per-verb sets is a **breaking change**: flags that were
