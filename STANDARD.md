@@ -123,8 +123,12 @@ They then answered it against their own tool, and their reasons are the ones att
    loop and `jq` will do it. Their reason for putting it first is a measurement of their own tool
    rather than an argument — the census caught a live defect in anthill that **two full `acc check`
    runs had missed, because both probed the root and the defect lives below it**. The two runs are
-   [the first-contact trial](docs/reports/2026-08-21-anthill-first-contact-trial.md) and
-   [the eight-CLI run](docs/reports/2026-08-24-eight-owner-clis.md); the defect is
+   theirs: [the first-contact trial](docs/reports/2026-08-21-anthill-first-contact-trial.md), and
+   their re-run against `v0.1.0`, which has no report of its own — it is message 8 of the
+   `acc-trial-anthill` channel, recorded in
+   [the runway plan](docs/plans/2026-08-23-clear-the-runway-then-take-off.md). Neither ran
+   `--declaration`. This attribution was wrong when first published — it named the eight-CLI run,
+   which is not theirs and which they never ran — and was corrected by them; the defect is
    [DT-2](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-2--eight-refused-flags-published-as-valid),
    eight flags the same binary publishes and refuses. The drift trial's own record of the kit's
    contribution says the same thing from the other side: it
