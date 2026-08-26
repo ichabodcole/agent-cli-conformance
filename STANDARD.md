@@ -105,6 +105,19 @@ reader, and [mixing them produces something that serves neither](CHARTER.md#what
 
 ### Where to start, if you already have a CLI
 
+**Two readers arrive here and this section is written for the second one.**
+
+- **You have not run `acc check` against your tool yet.** Start at
+  [how to reach L0 in your project](docs/wiki/guides/how-to-reach-l0-in-your-project.md) instead —
+  a baseline, then triage, then a config. Come back here afterwards.
+- **You have a baseline and are going after the gap between what your tool says and what it
+  does.** That is this section. Everything below assumes you have already measured.
+
+The distinction was not drawn until a second adopter, briefed to reach L0 and routed here, worked
+through all three steps below before finding that none of them moved their verdict — because the
+census and the emitter are drift work and their brief was not. The quote below is the tell and it
+is three sentences in: its author had _"run the checker twice"_ before reading this page.
+
 **The rest of this page is in reading order, not in dependency order.** That is a defect a reader
 found and this section is the repair, in their ordering rather than in one invented for the fix. The
 adopter behind anthill — the CLI the drift trial below measured — read this page for the first time
