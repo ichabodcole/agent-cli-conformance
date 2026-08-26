@@ -142,6 +142,14 @@ export function validatePaths(paths: string[][]): void {
       // Rule 3, applied to the path rather than the sentinel: a flag-shaped token in the PATH
       // means this is not a command path, and the set a tool names when refusing it belongs
       // somewhere else.
+      // PATHS IS LINE-DELIMITED, so a token carrying a newline splits into two lines the runner
+      // reads as two paths — and the second is an unterminated quote, which fails the `eval` mid
+      // record and leaves a batch that is not JSON. Refused here because the emitted script cannot
+      // represent it, not because the token is implausible.
+      if (/[\r\n]/.test(token))
+        throw new HarnessError(
+          `the command path ${JSON.stringify(path)} contains a line break, and the harness lists one path per line, so the token cannot survive the round trip`,
+        );
       if (token.startsWith("-"))
         throw new HarnessError(
           `the command path ${JSON.stringify(path)} contains ${JSON.stringify(token)}, which is flag-shaped. A path is the tokens BEFORE the flags; a flag here would make the capture about a different question`,
@@ -359,7 +367,22 @@ ACC_RUN_EOF
   fi
   printf '\\n}\\n'
 } > "$TMP/batch" || exit 1
-mv "$TMP/batch" "$OUT"
+
+# THE LAST STEP IS CHECKED, AND SO IS WHAT IT IS ABOUT TO MOVE.
+#
+# Everything above exists so that a failure leaves no batch rather than a short one. An unchecked
+# \`mv\` gave that away at the last line: an unwritable directory printed its error, the success
+# line ran anyway, and the script exited 0 having written nothing — which is the silent no-op this
+# whole project reports in other people's tools.
+#
+# The closing brace test catches the general case behind it: any step that died mid-record leaves a
+# document that stops early, and a truncated batch that still parses is the outcome with no
+# downstream detector at all.
+case "$(tail -c 2 "$TMP/batch" 2>/dev/null)" in
+  *'}') ;;
+  *) echo "capture did not complete; $OUT not written" >&2; exit 1 ;;
+esac
+mv "$TMP/batch" "$OUT" || exit 1
 
 echo "wrote $OUT" >&2
 `;

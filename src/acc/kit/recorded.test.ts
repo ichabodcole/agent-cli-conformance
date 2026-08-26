@@ -597,8 +597,14 @@ describe("acc check --recorded-surfaces", () => {
   });
 
   test("a named path that does not exist is an error, never an empty census", () => {
+    // `not_found`, not `usage`: the invocation was well-formed and the world was not what it
+    // assumed. A missing file is created and a malformed one is edited, so the two get different
+    // kinds — the same rule `--declaration` and `acc probe-plan` answer with, rather than one each
+    // command decides for itself. This assertion used to read `2`, which pinned the older
+    // classification without meaning to; what it exists to establish is that the run STOPS rather
+    // than continuing with an empty census, and that still holds.
     const r = run(["--recorded-surfaces", join(tmp, "nope.json")]);
-    expect(r.status).toBe(2);
+    expect(r.status).toBe(5);
     expect(`${r.stdout}${r.stderr}`).toMatch(/no such file/);
   });
 

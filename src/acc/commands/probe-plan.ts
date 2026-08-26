@@ -4,7 +4,7 @@ import { emit, type OutputMode, useColor } from "../envelope.ts";
 import { conflictError, notFoundError, permissionError, usageError } from "../errors.ts";
 import { DeclarationError, loadDeclaration } from "../kit/declaration.ts";
 import { buildHarness, HarnessError, type PathSource } from "../kit/harness.ts";
-import { toTarget } from "./check.ts";
+import { isExecutable, toTarget } from "./check.ts";
 
 /**
  * EMIT A CAPTURE HARNESS for the command paths below the root.
@@ -95,6 +95,21 @@ export function probePlanCommand(
     throw notFoundError(`no such file: ${targetPath}`, {
       hint: "Pass a path to an executable or a .ts entry point — the same target you would give acc check.",
     });
+  // A TARGET THAT CANNOT BE SPAWNED, REFUSED HERE RATHER THAN CAPTURED LATER.
+  //
+  // `acc check` discovers this by spawning and reports it as `not_found`; this command spawns
+  // nothing, so it asks the question statically instead — `toTarget` resolved argv0 to the file
+  // itself, meaning no interpreter will be prepended, and the file is not executable.
+  //
+  // Without this the harness runs and captures its OWN shell's "Permission denied" at every path,
+  // honestly and completely, and the census then reports what the target accepts on the strength
+  // of an error the target never emitted. Every field in that batch is true and the conclusion
+  // drawn from it is about the wrong program.
+  if (target.argv0.length === 1 && !isExecutable(target.path))
+    throw notFoundError(`target could not be executed: ${targetPath}`, {
+      hint: "The file exists but nothing would be able to spawn it. Check the exec bit, the shebang, and the architecture — the harness would otherwise record its own shell's error as if the target had written it.",
+      details: { argv0: target.argv0 },
+    });
 
   // TWO SOURCES, AND THE CHOICE IS THE CALLER'S TO STATE. Guessing paths from help is refused
   // outright: discovery's verb extraction is a heuristic tuned for the root, and a wrong path list
@@ -122,7 +137,17 @@ export function probePlanCommand(
         .commands.map((c) => c.path)
         .filter((p) => p.length > 0);
     } catch (err) {
-      if (err instanceof DeclarationError) throw usageError(`${err.path} ${err.message}`);
+      // A FILE THAT IS NOT THERE IS `not_found`, WHATEVER FLAG NAMED IT. Mapping every
+      // `DeclarationError` to `usage` made the same mistake answer differently depending on which
+      // source the caller chose — `--paths ./missing.json` said not_found and
+      // `--declaration ./missing.json` said usage — and it made this command's own declared error
+      // list false, which is the worse half.
+      if (err instanceof DeclarationError)
+        throw err.missing
+          ? notFoundError(`no such file: ${opts.declaration}`, {
+              hint: "--declaration takes a declaration file; its commands[].path entries become the paths to probe.",
+            })
+          : usageError(`${err.path} ${err.message}`);
       throw err;
     }
     pathSource = "declaration";
@@ -210,7 +235,17 @@ export function probePlanCommand(
       : [
           {
             exec: "acc",
-            args: ["probe-plan", targetPath, "--out", "./capture.sh"],
+            // CARRYING THE SOURCE FLAG THROUGH. Suggesting the bare invocation dropped the
+            // `--paths`/`--declaration` the caller supplied and this command requires, so the
+            // proposal `next` made was one the tool refuses at exit 2.
+            args: [
+              "probe-plan",
+              targetPath,
+              opts.paths ? "--paths" : "--declaration",
+              (opts.paths ?? opts.declaration) as string,
+              "--out",
+              "./capture.sh",
+            ],
             when: "to write the harness to a file you can run",
           },
         ],

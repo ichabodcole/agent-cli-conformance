@@ -92,7 +92,7 @@ function shebangInterpreter(abs: string): string | null {
 }
 
 /** True when this process may execute the file — the ownership bits, not just `0o111`. */
-function isExecutable(abs: string): boolean {
+export function isExecutable(abs: string): boolean {
   try {
     accessSync(abs, constants.X_OK);
     return statSync(abs).isFile();
@@ -201,10 +201,20 @@ export async function checkCommand(
       declaration = loadDeclaration(opts.declaration);
     } catch (err) {
       if (err instanceof DeclarationError) {
-        throw usageError(`${err.path} ${err.message}`, {
-          hint: "Fix that file, or drop --declaration — a run without one is a full report with no comparison in it.",
+        // A FILE THAT IS NOT THERE IS `not_found`; A FILE THAT IS THERE AND WRONG IS `usage`.
+        // The two are different repairs — create it, or edit it — and the kind is how a machine
+        // caller tells them apart without reading the prose. Applied identically to
+        // `--recorded-surfaces` below and to `acc probe-plan`, so the same mistake does not answer
+        // differently depending on which flag or which command met it.
+        const opts = {
+          hint: err.missing
+            ? "Create that file, or drop --declaration — a run without one is a full report with no comparison in it."
+            : "Fix that file, or drop --declaration — a run without one is a full report with no comparison in it.",
           details: { path: err.path },
-        });
+        };
+        throw err.missing
+          ? notFoundError(`no such file: ${err.path}`, opts)
+          : usageError(`${err.path} ${err.message}`, opts);
       }
       throw err;
     }
@@ -224,10 +234,14 @@ export async function checkCommand(
       };
     } catch (err) {
       if (err instanceof RecordedSurfacesError) {
-        throw usageError(`${err.path} ${err.message}`, {
-          hint: "Fix that file, or drop --recorded-surfaces — a run without one reports the root the kit probes and says every other path was not reached.",
+        // Same rule as `--declaration` above, and stated there.
+        const opts = {
+          hint: `${err.missing ? "Create" : "Fix"} that file, or drop --recorded-surfaces — a run without one reports the root the kit probes and says every other path was not reached.`,
           details: { path: err.path },
-        });
+        };
+        throw err.missing
+          ? notFoundError(`no such file: ${err.path}`, opts)
+          : usageError(`${err.path} ${err.message}`, opts);
       }
       throw err;
     }

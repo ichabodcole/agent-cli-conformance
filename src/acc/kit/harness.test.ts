@@ -1,7 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { buildHarness, HarnessError, shQuote, validatePaths, validateSentinel } from "./harness.ts";
 import { parseRecordedBatch } from "./recorded.ts";
 
@@ -44,8 +52,14 @@ function sh(args: string[], cwd: string): { code: number; stdout: string; stderr
  *  reports real dirt and the suite fails honestly and confusingly — which is exactly what happened
  *  to the adopter who first tried this. */
 function makeRepo(nested: boolean): { root: string; workdir: string } {
-  const root = mkdtempSync(join(tmpdir(), "acc-harness-"));
-  const workdir = nested ? join(root, "sub", "deep") : root;
+  // THE PATH CONTAINS A SPACE, DELIBERATELY. The exclusion pathspecs are built as positional
+  // arguments rather than joined into a string precisely so a repo path with a space survives —
+  // and with every fixture coming from a bare `mkdtemp`, reverting that fix left the whole suite
+  // green. The failure it guards is the silent direction: word-split pathspecs match nothing, so
+  // the dirt check goes VACUOUS and real dirt stops being reported.
+  const root = join(mkdtempSync(join(tmpdir(), "acc-harness-")), "a repo");
+  mkdirSync(root, { recursive: true });
+  const workdir = nested ? join(root, "sub dir", "deep") : root;
   mkdirSync(workdir, { recursive: true });
   writeFileSync(join(root, "tracked-root.txt"), "root\n");
   writeFileSync(
@@ -246,7 +260,9 @@ describe("the -dirty flag, across the topologies that can falsify it", () => {
     if (viaSymlink) {
       linkRoot = `${mkdtempSync(join(tmpdir(), "acc-link-"))}-link`;
       symlinkSync(root, linkRoot);
-      cwd = nested ? join(linkRoot, "sub", "deep") : linkRoot;
+      // Derived from the fixture rather than restated: the two drifted apart the moment the
+      // fixture path gained a space, and the divergence assertion below is what caught it.
+      cwd = join(linkRoot, relative(root, workdir));
       const logical = sh(["sh", "-c", `cd '${cwd}' && pwd`], workdir).stdout.trim();
       const physical = sh(["sh", "-c", `cd '${cwd}' && pwd -P`], workdir).stdout.trim();
       expect(logical).not.toBe(physical);
@@ -460,5 +476,70 @@ describe("the byte encoder", () => {
     expect(captured).toContain("—");
     expect(captured).toContain("café");
     expect(captured).toContain("🔥");
+  });
+});
+
+describe("the harness fails loudly, or not at all", () => {
+  test("a signalled target yields completeness unknown, not complete", () => {
+    // The derivation's other branch. `_completeness="complete"` unconditionally passed the whole
+    // suite, so the signal-detection half was asserted nowhere: a process killed mid-write may
+    // have lost bytes, and `unknown` is the format's answer for a capture whose completeness
+    // cannot be established.
+    const { root, workdir } = makeRepo(false);
+    const target = join(workdir, "suicide.sh");
+    writeFileSync(target, `#!/bin/sh\nkill -TERM $$\n`);
+    writeFileSync(
+      join(workdir, "capture.sh"),
+      buildHarness({
+        launcher: ["sh", target],
+        paths: [["state"]],
+        sentinel: "--acc-not-a-flag",
+        identityArgv: null,
+        pathSource: "declaration",
+        out: "batch.json",
+      }),
+    );
+    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    const batch = parseRecordedBatch(
+      "test",
+      JSON.parse(readFileSync(join(workdir, "batch.json"), "utf8")),
+    );
+    rmSync(root, { recursive: true, force: true });
+    expect(batch.records[0]?.completeness).toBe("unknown");
+    expect(batch.records[0]?.exitCode).toBeGreaterThanOrEqual(128);
+  });
+
+  test("an unwritable destination exits non-zero and writes nothing", () => {
+    // The move was unchecked and the success line unconditional, so this printed mv's error,
+    // announced "wrote batch.json", and exited 0 having written no batch — the silent no-op this
+    // project reports in other people's tools, in the script it hands them.
+    const { root, workdir } = makeRepo(true);
+    writeFileSync(
+      join(workdir, "capture.sh"),
+      buildHarness({
+        launcher: ["sh", join(workdir, "toy.sh")],
+        paths: [["state"]],
+        sentinel: "--acc-not-a-flag",
+        identityArgv: null,
+        pathSource: "declaration",
+        out: "batch.json",
+      }),
+    );
+    sh(["chmod", "555", workdir], workdir);
+    const r = sh(["sh", "capture.sh"], workdir);
+    sh(["chmod", "755", workdir], workdir);
+    const wrote = existsSync(join(workdir, "batch.json"));
+    rmSync(root, { recursive: true, force: true });
+    expect(r.code).not.toBe(0);
+    expect(wrote).toBe(false);
+  });
+});
+
+describe("validatePaths refuses what the emitted script cannot represent", () => {
+  test("a line break in a token, which the line-delimited path block would split", () => {
+    // It reached the emitted script, split one path into two lines, failed the eval on an
+    // unterminated quote, and still produced a file — one that is not JSON.
+    expect(() => validatePaths([["multi\nline"]])).toThrow(/line break/);
+    expect(() => validatePaths([["carriage\rreturn"]])).toThrow(/line break/);
   });
 });
