@@ -593,7 +593,45 @@ this finding argued for: **a binary that answers this way existed at capture tim
 more. It does not establish which build, which release, or — when two reports quote different
 bytes — that they came from different builds. It is not a verification that the target reported a
 version either: `D1`'s detector is a non-empty stdout at exit `0`, and its standing coverage gap
-says stdout is never checked to carry a version string. The two anthill builds would still both
-quote `2.3.0` here. What changes is that the quote is **in the artifact**, so the two reports are
-comparable on the axis this finding is about instead of on a file path — and `acc compare` says so
-out loud when every target quotes the same bytes and answers probes differently.
+says stdout is never checked to carry a version string.
+
+**What discharges this disposition is anthill's own answer, not the field's general power.** The
+version literal is `2.3.0` on both builds, and if that were the whole answer the field would carry
+the same bytes twice and settle nothing. It is not the whole answer: anthill's `--version` names
+the file it ran from, which is visible in [DT-9](#dt-9--the-manifest-is-a-bare-document-while-every-other-output-is-enveloped)'s
+own specimen above and in [DT-1](#dt-1--root---format-is-declared-in-code-absent-from-the-manifest-and-inert-where-it-looks-like-it-works)'s
+`--format text --version` line. Re-measured 2026-08-26, on the same pair this finding is about:
+
+```
+$ anthill --version                       # the PATH launcher, ~/.bun/bin/anthill
+{"ok":true,"data":{"version":"2.3.0","source":"/Users/…/plugins/cache/anthill-marketplace/anthill/2.3.0/scripts/anthill/cli.ts"},"meta":{"command":"version"}}
+
+$ bun …/dreamwood/anthill/plugin/scripts/anthill/cli.ts --version
+{"ok":true,"data":{"version":"2.3.0","source":"/Users/colereed/Projects/dreamwood/anthill/plugin/scripts/anthill/cli.ts"},"meta":{"command":"version"}}
+```
+
+Same declared version, **different bytes**. So a report of either build now carries, in the tool's
+own words, which of the two it was, and a re-measurement does not have to remember to name its
+build. That is a property of the answer anthill happens to give: a tool whose `--version` prints
+the bare literal would leave two of its builds quoting identically, and this field would be silent
+about which one ran.
+
+**What `acc compare` adds here, and what it does not.** Run on the two reports, it renders both
+quotes side by side and **does not** print its NOTE — the NOTE fires only when every target quotes
+the same bytes, and these do not. Nor does DT-10's own divergence appear among the divergent
+probes: `compare`'s axes are **ending** and **placement**, both builds reject `--acc-probe-xyzzy-flag`
+at exit `1` on stderr, and so that probe lands in **AGREED** with the difference between
+`Valid flags: --format` and `No command specified.` inside it. Where the difference does surface is
+the `SELF-DECLARED FLAGS` block, which reads each target's rejection rather than comparing exit
+codes:
+
+```
+  SELF-DECLARED FLAGS — …
+    launcher  did not enumerate at the root; 4 rejections read, none named a set (NOT a tool with no flags)
+    checkout  enumerated 1 flag at the root: --format
+```
+
+That is this finding, rendered from two stored artifacts by a command that was given no prose. The
+NOTE is for the case these two builds are **not** — two targets whose quotes are byte-identical
+while their probes disagree — which is the reading a reader could otherwise reach by accident, and
+in the wrong direction, by taking equal quotes for one binary.
