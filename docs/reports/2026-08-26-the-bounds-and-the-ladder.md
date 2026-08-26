@@ -516,8 +516,14 @@ one place the consumer signal constrains without answering.
 - Whether operators actually **read** per-record hazard warnings in a generated probe plan —
   the one §5 question the survey does not answer, and
   [the plan document](../plans/2026-08-24-below-the-root-before-a-second-cli.md#what-a-second-application-would-and-would-not-establish)
-  says this answer decides whether moving authorization to the operator improved anything. The
-  generator is shipped (`acc probe-plan`), so the question can be asked of a real artifact.
+  says this answer decides whether moving authorization to the operator improved anything.
+  _Correction: an earlier revision said the shipped generator made this question askable of a
+  real artifact. It does not — `acc probe-plan` deliberately carries no per-record hazard text;
+  it emits one generation-time limit line about the path list's reach, a design taken with the
+  adopters ([design record](../plans/2026-08-26-the-probe-plan-generator.md)). So the question
+  is open and not cheaper than before: asking it would first require building per-record
+  warnings, which should wait for an operator to ask — a warning added because a document called
+  for it is not evidence that anyone reads warnings._
 - The sandbox: sable's "never build it" is explicitly a view, not a measurement — the strongest
   signal yet against [roadmap step 3](../roadmap.md#3-control-the-observation-environment-which-is-also-the-l0-safety-work),
   but consistent with, not additional to, §2's "don't build until a consumer asks."
