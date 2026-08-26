@@ -252,6 +252,41 @@ echo $?
 that means "not conformant" (anything else is `acc` itself failing — see
 [outcomes are not errors](../concepts/exit-codes.md#outcomes-are-not-errors)).
 
+### 6. Check what you just added is reachable below the root
+
+**Reaching L0 can introduce drift one level down, and the checks on this page cannot see it.**
+
+Every fix above adds a token at the ROOT — `--version` for D1, a machine-mode flag or a sentence
+for D3 — and documents it in help. On a tool whose parser has a single global flag registry with
+no per-path binding, that is a token help now names and the per-path parser does not accept.
+Measured on the second adopter's tool, three hours after they reached L0:
+
+```
+mycli --version          -> exit 0   {"name":"mycli","version":"2.2.0"}
+mycli <verb> --version   -> exit 2   Unknown option '--version'
+```
+
+Both correct in isolation. Together they are a documented flag that works at exactly one path.
+
+**Whether that matters depends on what the token IS**, and the honest answer is that this is a
+modelling question the declaration format does not currently settle. A `--version` dispatched
+alongside `help`, in the verb switch and listed in help's verb block, is a root token that was
+never a flag, and nothing disagrees. A `--version` sitting in your flag registry at the root only
+is a flag with a path restriction nothing states. The two look identical from outside.
+
+So, two minutes of checking rather than a rule:
+
+1. Run your new token after a verb, not just at the root. `mycli <any-verb> --version`.
+2. If it is refused there, decide **deliberately** whether it is a verb or a root-scoped flag, and
+   write that down where your help says so.
+
+**The census will not catch this for you** on a tool whose root does not enumerate. The token
+lives at the root; the kit probes the root but reads no flag set from a root that names none, and
+a [recorded-surface batch](./how-to-record-surfaces-below-the-root.md) refuses a root record by
+construction. The report says so — the declared-path fraction falls short and a `NOT COMPARED:
+(root)` line names why — so it is a reach limit rather than a silent failure. It is still a limit,
+and it sits exactly where this page's advice lands.
+
 ## Verification
 
 You are done when all of the following hold:
