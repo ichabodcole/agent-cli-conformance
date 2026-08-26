@@ -130,7 +130,7 @@ So a record at `["zone", "bogusxyz"]` is **valid**: the prefix holds, `completen
 **This is not about a dishonest caller, and that is the point.** The adopter who found it derived
 their paths from the tool's own `usage:` strings — the source this guide recommends. A stale line
 in that output produces a dead path recorded in perfect good faith, and nothing anywhere says so.
-`pathSource: "target"` means _derived from the implementation_; it has never meant _complete_, and
+A path list you supplied is derived from the implementation, which has never meant complete, and
 this is what that cashes out as.
 
 **It is worse when both sides share a source.** If your declaration and your path list come from
@@ -162,8 +162,7 @@ line.** A declaration-derived plan probes the paths your declaration already nam
 parser accepts and your declaration omits is not a disagreement in the census — it is absent from
 it, and nothing in the batch or the report records that it is missing. A list taken from wherever
 you actually enumerate verbs — the dispatch table, the command registry — is the source that can
-catch that one. It is not a completeness claim either: `--paths` means derived from the
-implementation, which is not the same as complete.
+catch that one.
 
 **`--out` is how you get the script, and `>` is not a substitute.** Stdout carries the report, as
 it does for every other `acc` command, so `acc probe-plan ./mycli --paths ./paths.json >
