@@ -92,10 +92,21 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
  * message.
  */
 const QUOTE_BUDGET = 120;
-function clip(text: string): string {
+export function clip(text: string): string {
   const head = text.split("\n")[0] ?? "";
-  if (head.length <= QUOTE_BUDGET) return head;
-  const cut = head.slice(0, QUOTE_BUDGET);
+  // CODE POINTS, NOT CODE UNITS. `slice` counts UTF-16 units, so a budget landing inside a
+  // surrogate pair cuts a character in half and the renderer prints `\ud83d` where the target
+  // wrote an emoji — a replacement character the kit invented, attributed to the tool. The word
+  // boundary below hides it most of the time, which is what makes it worth fixing rather than
+  // leaving: the case that reaches it is a long unbroken token, which is exactly what an error
+  // quoting a path or a URL looks like.
+  //
+  // `identity.ts` already got this right with `clipToBytes`, for the same reason and in the same
+  // words. That one budgets BYTES because it is bounding a JSON payload; this one budgets
+  // CHARACTERS because it is bounding a line of rendered text. Same hazard, two budgets.
+  const points = [...head];
+  if (points.length <= QUOTE_BUDGET) return head;
+  const cut = points.slice(0, QUOTE_BUDGET).join("");
   const boundary = cut.lastIndexOf(" ");
   return `${boundary > 0 ? cut.slice(0, boundary) : cut}…`;
 }

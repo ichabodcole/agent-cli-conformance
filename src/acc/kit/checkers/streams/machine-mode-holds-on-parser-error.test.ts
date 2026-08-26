@@ -4,7 +4,10 @@ import { fileURLToPath } from "node:url";
 import { record } from "../../record.ts";
 import { digestOfText } from "../../runner.ts";
 import type { History, TargetInfo } from "../../types.ts";
-import { machineModeHoldsOnParserErrorChecker } from "./machine-mode-holds-on-parser-error.ts";
+import {
+  clip,
+  machineModeHoldsOnParserErrorChecker,
+} from "./machine-mode-holds-on-parser-error.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const fixture = (rel: string): TargetInfo => {
@@ -270,5 +273,31 @@ describe("B5 — machine mode holds on the parser-error path", () => {
     const f = machineModeHoldsOnParserErrorChecker.check(h);
     expect(f.evidence.length).toBeGreaterThan(0);
     for (const id of f.evidence) expect(h.byId.has(id)).toBe(true);
+  });
+});
+
+describe("B5 — the quoted head never invents a character the target did not write", () => {
+  test("a budget landing inside a surrogate pair does not emit a lone surrogate", () => {
+    // No space anywhere, so the word-boundary cut cannot rescue it, and a character straddling
+    // the budget. That shape is not exotic: an error quoting a long path or URL has no spaces.
+    const noSpace = `${"x".repeat(119)}\u{1F44D}${"y".repeat(20)}`;
+    const out = clip(noSpace);
+    const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+    expect(lone.test(out)).toBe(false);
+    // Slicing by code UNITS produced "xx\ud83d…" here — a replacement character the renderer
+    // invented, attributed to the tool.
+    expect(out.endsWith("…")).toBe(true);
+  });
+
+  test("a multi-byte character inside the budget survives byte-exact", () => {
+    const short = "magpie: unknown option — try --stdin";
+    expect(clip(short)).toBe(short);
+  });
+
+  test("the word boundary still wins when there is one", () => {
+    const spaced = `${"word ".repeat(40)}tail`;
+    const out = clip(spaced);
+    expect(out.endsWith("…")).toBe(true);
+    expect(out).not.toContain("wor…");
   });
 });
