@@ -4,9 +4,10 @@ generated: { by: claude-opus-5, at: 2026-08-26 }
 status: draft
 lifecycle: live
 description:
-  A rule candidate raised by the anthill adopter and NOT minted. A group command that refuses a
-  flag while naming no valid set leaves a caller with nowhere to go. Six tools measured, three
-  name a set and three do not, and the case that decides the rule is the one in between.
+  A rule candidate raised by the anthill adopter, decided and still NOT minted. A group command
+  that refuses a flag while naming no valid set leaves a caller with nowhere to go. Six tools
+  measured, three name a set and three do not; naming it inline is now the recommendation, as a
+  design choice rather than a defect, and the append-only id is deliberately still unspent.
 tags: [conformance, evidence, adoption, parsing, discoverability, rule-candidate]
 subject: whether a node that holds subcommands owes the caller a set when it refuses a flag
 examined:
@@ -105,15 +106,54 @@ more tools would split the same way. It is a judgement about what a rejection ow
 The machinery cost is therefore **low and well-precedented**. The permanence is the real cost, and
 it is paid on a boundary nobody has drawn.
 
+## Decided, 2026-08-26 — strict is the recommendation, as a design choice
+
+**Tier 2 does not satisfy it. Naming the set inline is what this standard recommends.** A node that
+refuses a flag should name the valid set, and pointing the caller at another invocation is a
+legitimate design that this standard would not choose.
+
+The principle behind it, in the deciding party's terms: **when a caller makes a mistake, return
+more information rather than less.** A rejection is the moment the tool knows most and the caller
+knows least, and it is the cheapest place in the whole interaction to close that gap.
+
+Four supporting reasons, in the order they carry weight:
+
+1. **The tool already knows.** `docker` holds `image`'s subcommand list at the moment it declines
+   to print it — it has just printed the word `Usage:` about that node. It is not being asked to
+   compute anything.
+2. **Agents pay in turns, not milliseconds.** The cost of _"go run `--help`"_ is not the process
+   spawn; it is that reading and reasoning about a help screen is usually a model round-trip.
+3. **Recovery crosses a format boundary.** The rejection may be JSON and help is prose, so the
+   agent switches parsers mid-recovery for information it was already offered a pointer to.
+4. **The bloat objection does not survive its own evidence.** It is the strongest case for tier 2
+   and the survey refutes it: **`gh repo` prints 19 subcommands in a rejection** and nobody
+   considers that broken, while the two tools declining to print have 12 and 16. The tool with the
+   most to say says it.
+
+**The deviation is `design-choice`, not `defect`, and that is the whole of what makes this
+sayable.** It puts this project on record recommending against Docker and Kubernetes, and the
+`design-choice` tier is what lets that read as _"they chose differently and it is legitimate"_
+rather than _"they are broken"_. That position is taken deliberately rather than arrived at.
+
+**One consequence to accept openly.** A rule carries a single `deviation` value, so one rule cannot
+call tier 2 a legitimate choice and tier 3 — naming nothing at all — a defect. The recommendation
+is one rule at `design-choice` whose checker DETAIL distinguishes the tiers, so a tool that names
+nothing reads differently from one that names a pointer even though neither satisfies the rule.
+Splitting tier 3 into a defect of its own is possible and means a second id for one shape, which
+this file argues against.
+
 ## Status
 
-**Not minted. Not declined.** The evidence is sufficient — six tools, five vendors, a genuine
-split — and the definition is not, because tier 2 is unresolved.
+**Still not minted, and that is the reversible half.** The recommendation above can be revised at
+no cost while it lives here. `rule_id` values are append-only — never reused, never re-pointed —
+so minting is the step that cannot be taken back, and it has not been taken. Anyone reading this
+as settled catalogue policy is reading it wrong: it is a recorded recommendation with its
+evidence, waiting on a decision to mint.
 
-**What would move it:** a decision on tier 2, in either direction. If a pointer does not count, the
-rule is well-defined and buildable today. If it does count, then only `anthill` fails among the six
-and the case returns to `n=1`, which argues for leaving this file as the record and revisiting when
-a second tier-3 tool appears.
+**What minting now needs** is no longer a definition — tier 2 is settled — but a judgement that the
+permanent cost is worth paying: an append-only id, a moved denominator, and a checker reporting
+`unverified` on every target until `L1` exists.
 
-The adopter was told they would get a straight answer either way rather than silence, and this file
-is not yet that answer.
+The adopter was told they would get a straight answer either way rather than silence. The answer is
+that their reading was right, the shape is real, the standard now recommends what they asked for,
+and the id is deliberately still unspent.
