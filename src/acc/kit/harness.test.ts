@@ -448,7 +448,13 @@ describe("the byte encoder", () => {
     const target = join(workdir, "unicode.sh");
     writeFileSync(
       target,
-      `#!/bin/sh\nprintf 'unknown option — try: --alpha … caf\\xc3\\xa9 \\xf0\\x9f\\x94\\xa5\\n' >&2\nexit 2\n`,
+      // THE BYTES ARE LITERAL, NOT ESCAPED. `\x` hex escapes are not POSIX printf: macOS `/bin/sh`
+      // interprets them and dash — which is `/bin/sh` on most Linux — emits them as text. The
+      // fixture therefore produced no multi-byte output on CI at all, so the encoder was never
+      // asked the question this test exists to ask, and the round-trip assertion still passed
+      // because both sides were equally wrong. `%s` takes the argument verbatim, so no shell on
+      // any platform gets a say.
+      `#!/bin/sh\nprintf '%s\\n' 'unknown option — try: --alpha … café 🔥' >&2\nexit 2\n`,
     );
     writeFileSync(
       join(workdir, "capture.sh"),
@@ -476,6 +482,13 @@ describe("the byte encoder", () => {
     expect(captured).toContain("—");
     expect(captured).toContain("café");
     expect(captured).toContain("🔥");
+    // ASSERT THE WIDTHS, not just the characters. The comment above claims 2-, 3- and 4-byte
+    // sequences; without this the claim rests on the fixture actually having emitted them, which
+    // is exactly what silently stopped being true on a platform whose `printf` differs.
+    const widths = new Set(
+      [...captured].map((c) => Buffer.byteLength(c, "utf8")).filter((n) => n > 1),
+    );
+    expect([...widths].sort()).toEqual([2, 3, 4]);
   });
 });
 
