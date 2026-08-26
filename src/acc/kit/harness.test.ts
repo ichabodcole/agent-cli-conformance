@@ -9,7 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { buildHarness, HarnessError, shQuote, validatePaths, validateSentinel } from "./harness.ts";
 import { parseRecordedBatch } from "./recorded.ts";
 
@@ -69,13 +69,51 @@ function sh(args: string[], cwd: string): { code: number; stdout: string; stderr
  *  THE TOY TARGET IS COMMITTED. An uncommitted one is a genuinely untracked file, so every run
  *  reports real dirt and the suite fails honestly and confusingly — which is exactly what happened
  *  to the adopter who first tried this. */
+/**
+ * REFUSE TO OPERATE ON A REPOSITORY THIS SUITE DID NOT CREATE.
+ *
+ * `tmpdir()` reads `TMPDIR`, so a relative value puts `mkdtempSync` in the PROCESS CWD — which,
+ * under a pre-commit hook, is the repository root. Every `git init`, `git add -A` and `git commit`
+ * below would then run against the real checkout. The environment fix above closes one route to
+ * that; this closes the route that does not depend on the environment being inherited.
+ *
+ * Asserted rather than corrected on purpose: a suite that quietly relocates its fixtures is a
+ * suite whose location nobody can reason about. Loud is the whole requirement.
+ */
+function disposableBase(): string {
+  const base = resolve(tmpdir());
+  if (!isAbsolute(base) || base === "/")
+    throw new Error(`TMPDIR does not resolve to a usable absolute path: ${tmpdir()}`);
+  const cwd = resolve(process.cwd());
+  // CHECKED BEFORE ANYTHING IS CREATED, so a bad TMPDIR leaves no fixture directories behind in
+  // the repository. Checking the created path instead still refuses to run git, but only after
+  // scattering the litter it was trying to avoid.
+  if (base === cwd || base.startsWith(`${cwd}/`))
+    throw new Error(
+      `TMPDIR resolves to ${base}, inside the working directory ${cwd}. These tests run git and must never do so against a repository they did not create`,
+    );
+  return base;
+}
+
+/** Run a git command in the fixture and refuse to continue if it failed.
+ *
+ *  Nothing used to check these. `git init`, `git add` and `git commit` could each fail and the
+ *  fixture would carry on as though it held a repository — which turns any fixture defect into a
+ *  mystery further down, where the symptom is an assertion about `-dirty` rather than a repo that
+ *  was never created. */
+function git(args: string[], cwd: string): void {
+  const r = sh(["git", ...args], cwd);
+  if (r.code !== 0)
+    throw new Error(`fixture setup failed: git ${args.join(" ")} in ${cwd}\n${r.stderr}`);
+}
+
 function makeRepo(nested: boolean): { root: string; workdir: string } {
   // THE PATH CONTAINS A SPACE, DELIBERATELY. The exclusion pathspecs are built as positional
   // arguments rather than joined into a string precisely so a repo path with a space survives —
   // and with every fixture coming from a bare `mkdtemp`, reverting that fix left the whole suite
   // green. The failure it guards is the silent direction: word-split pathspecs match nothing, so
   // the dirt check goes VACUOUS and real dirt stops being reported.
-  const root = join(mkdtempSync(join(tmpdir(), "acc-harness-")), "a repo");
+  const root = join(mkdtempSync(join(disposableBase(), "acc-harness-")), "a repo");
   mkdirSync(root, { recursive: true });
   const workdir = nested ? join(root, "sub dir", "deep") : root;
   mkdirSync(workdir, { recursive: true });
@@ -84,9 +122,9 @@ function makeRepo(nested: boolean): { root: string; workdir: string } {
     join(workdir, "toy.sh"),
     `#!/bin/sh\nif [ "\${1:-}" = "--version" ]; then echo "toy 1.0.0"; exit 0; fi\necho "unknown option '$2'. valid flags: --alpha --beta" >&2\nexit 2\n`,
   );
-  sh(["git", "init", "-q", "."], root);
-  sh(["git", "add", "-A"], root);
-  sh(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"], root);
+  git(["init", "-q", "."], root);
+  git(["add", "-A"], root);
+  git(["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"], root);
   return { root, workdir };
 }
 
