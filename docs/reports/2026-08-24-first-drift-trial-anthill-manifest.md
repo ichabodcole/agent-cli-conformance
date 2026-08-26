@@ -32,7 +32,9 @@ examined:
 > **Amended 2026-08-26.** A pre-registration is filed at the end as
 > [`DT-11`](#dt-11--the-pre-registered-prediction-the-census-against-dt-2), under the same rule: it
 > is about this target, so it lives in this namespace. It is a registration rather than a finding,
-> it is dated before the run it predicts, and it changes nothing above it.
+> it is dated before the run it predicts, and it changes nothing above it. **Its outcome is filed
+> beneath it the same day**, after an external adopter ran it on their own tool; the registration is
+> left exactly as filed and the outcome changes nothing above it either.
 >
 > **Finding ids are prefixed `DT-` throughout**, and map one-to-one onto the trial's own `D1`–`D8`.
 > The prefix is not decoration: unprefixed `C2`, `D2`, `A1`, `A7` and the like are **rule ids from
@@ -375,7 +377,9 @@ Two further findings about this target, `DT-9` and `DT-10`, were filed after the
 counted in that table or that sentence — see
 [findings that arrived after the trial](#findings-that-arrived-after-the-trial). Neither is
 [`DT-11`](#dt-11--the-pre-registered-prediction-the-census-against-dt-2), which is a
-pre-registration rather than an observation and counts as nothing until it is run.
+pre-registration rather than an observation. It has since been run — by the adopter, on their own
+tool — and [its outcome](#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three)
+moves none of these counts either: what it found was already `DT-2` and `DT-6`.
 
 ## What the kit found, and what it structurally could not
 
@@ -790,3 +794,137 @@ The eight sets are a property of a build, not of the string `2.3.0`. A newer ant
 `refused` to its manifest type fixes `DT-2` and the prediction then measures nothing — which is a
 good outcome for the adopter and a dead registration for us, so the run should quote the same
 `--version` bytes as above or say plainly that it did not.
+
+### Outcome, 2026-08-26 — run by the adopter; two of the three numbers exact, the path count out by a factor of three
+
+**The registration above is left exactly as it was filed**, in the manner of
+[`SG-8`'s amendment](./2026-08-24-first-outside-application-grapevine.md#amendment-2026-08-25--the-denominator-was-22-and-the-correction-preceded-the-diff).
+What follows is the result. **The run is the adopter's**, on their own tool, and the numbers below
+are theirs as reported; the accounting around them is this report's.
+
+**Coordinates, because a registration that does not name the build it was tested on settles
+nothing** ([DT-10](#dt-10--two-builds-of-the-same-declared-version-disagree-about-whether-the-root-enumerates)):
+
+- **Kit:** `acc` at **`5dbe020`** — the commit that filed the registration, so nothing in
+  the differ, the reader or any expectation moved between filing and running.
+- **Target:** `plugin/scripts/anthill/cli.ts` at anthill `develop` **`c010bc5`** — the repo checkout,
+  which is the build that enumerates at the root.
+- **`DT-2` confirmed unfixed before the run**, so the prediction still had something to measure.
+  Re-confirmed here from the same inert `help --json`: all eight rows of `DT-2`'s table are still in
+  the manifest at `c010bc5`.
+- **Declaration `provenance: "modelled"`** — an emitted manifest transformed by a script. The
+  adopter names that as the weaker claim under this project's own rule, and it is: a document a
+  script derived is not the tool speaking.
+- **Modelled by type**, so the number under test is the registered **8** and not the registered `9`.
+
+| registered                                          | actual                                                  |
+| --------------------------------------------------- | ------------------------------------------------------- |
+| exactly **8** `declared-not-accepted`, one per path | **8** — the same eight, flag for flag and path for path |
+| exactly **0** `accepted-not-declared`               | **0**                                                   |
+| **8 of 25** declared command paths compared         | **23 of 26**                                            |
+
+The eight are `DT-2`'s table: `--team` at `info show`, `info env`, `scan`, `feedback`,
+`field-notes` and `migrate`; `--as` at `comms read` and `comms positions`.
+
+**Two of three hit exactly. The third missed by about a factor of three, in the direction of more
+coverage than predicted, and the miss is the part of this worth keeping.**
+
+#### The miss, and its cause
+
+`8 of 25` was not a prediction about anthill. It was a restatement of the batch the registration
+specified — eight records, one per `DT-2` path — with the other seventeen paths left out of the
+population and, silently, out of the reasoning. The run recorded **all 25**, and 22 of them
+enumerated. What the registration actually established was that the eight paths it cared about
+enumerate, verified one at a time; what it carried alongside that, unexamined, was an assumption
+about the seventeen it had not probed.
+
+**That is a finding about our model of the target, not about the reader** — the class
+[the falsification condition](#the-falsification-condition) named in advance, and the reason the
+condition was written that way. The reader did what it was registered to do at every path it was
+given.
+
+**And the registered figure was not even right for the batch it described.** The registration argued
+that "the root the kit probes for itself compares against nothing and the count is the eight
+recorded paths". The kit does not count it that way, and the proof was already in this tree: the
+gated `1 of 25` case is the root **being** the one compared path against a declaration that does not
+declare it. Re-run here on the same fixture — 25 records plus the kit's root probe against the
+rootless 25-path manifest — the summary reads `26 of 25 declared command paths compared`. So the
+registration's own batch would have reported `9 of 25`, not `8 of 25`. That is a second, smaller
+error of the same kind: an assumption about the instrument, written down without being run.
+
+The denominators reconcile exactly, and are worth walking because they are the second thing this
+outcome is about. The manifest declares 25 command paths and no root — re-counted from
+`help --json` on `c010bc5` while writing this, and still 25. `declaredCommands` is
+`declaration.commands.length`, so a **26** means the modelled document declares a root path of its
+own, which is a modelling choice the registration did not anticipate and which the manifest cannot
+supply ([DT-1](#dt-1--root---format-is-declared-in-code-absent-from-the-manifest-and-inert-where-it-looks-like-it-works)).
+`23` is that root, compared on the kit's own probe, plus 22 of the 25 recorded paths. **This
+reconciliation is ours, not theirs**: it is the only reading consistent with how the kit computes
+those two numbers, and their declaration file was not read here.
+
+That pair — **25 records, 26 declared paths** — is the friction the adopter reported: the guide tells
+you to omit the root, and the report then counts a denominator that includes it, and it took them a
+second read to be sure the batch was not mis-built. Both numbers are right and they count different
+things.
+[The guide now says so at the step that creates the gap](../wiki/guides/how-to-record-surfaces-below-the-root.md#1-list-the-paths-to-record-and-leave-the-root-out),
+including the `26 of 25` line a rootless declaration produces.
+
+**The zero held across 23 paths rather than the 8 it was registered at.** That is a broader result
+than the registration claimed, and it is not a bigger hit: the registration bound only the eight,
+and the other fifteen paths are a result the run produced rather than one anything predicted.
+
+#### The three that did not compare, and what the adopter is doing with them
+
+`info`, `comms` and `team` — group commands with subcommands and no flags of their own. Reported
+verbatim:
+
+```
+$ anthill comms --acc-not-a-flag
+{"ok":false,"error":"Unknown option '--acc-not-a-flag'",…}   exit 1
+```
+
+Refused by name, at exit `1`, **naming no set**. So the census reads `not-enumerated` at those
+three, which is what that status exists to say. The adopter credits the wording this project
+insisted on — _"none named a set (NOT a tool with no flags)"_ — as the right distinction, and is
+filing it on their side as an anthill finding: an agent that mistypes a flag on a group command gets
+a refusal with no route forward. That is theirs to fix and is recorded here only because it is what
+the three uncompared paths turned out to be.
+
+#### The unregistered ninth finding: `DT-6` arrived through the census, with no probe
+
+The run returned a ninth disagreement nobody registered:
+**`self-description-not-declared` on `help` at the root** — _"the declaration omits the door it came
+through."_ That is
+[`DT-6`](#dt-6--present-but-undeclared-the-entire-universal-surface-including-the-discovery-verb-itself),
+whose headline is that the manifest does not list the command that produces the manifest, arriving
+as a census finding rather than as a reading of the source.
+
+**The mechanism, stated rather than generalised.** The check is set membership over two fields of
+the declaration and nothing else: `selfDescription.args` names `help` as the invocation that emits
+the document, `commands[]` has no path beginning `help`, and the finding is minted before any
+evidence is consulted. It sends no probe, reads no bytes from the target, and would have fired on a
+target that never enumerates at all.
+
+**What that says about the census's reach, and the boundary is narrow.** It says the census is not
+only a set difference against an enumeration — one of its four finding kinds costs nothing and
+needs no cooperation from the target. It does **not** say the census reaches `DT-6`: `DT-6` is a
+list of undeclared surfaces, and this catches exactly one of them, the verb. `--help`, `-h`, `--version`,
+`-v`, `--scope`, `--no-*` and `--` are undeclared in the same way and none of them appeared, because
+none of them is the token in `selfDescription`. Nor is the check free of the modeller: a document
+that had left `selfDescription: null`, or pointed at a flag rather than a verb, produces nothing
+here. **One instance**, on one declaration, of a check that had previously fired only on
+[a deliberately broken variant](./2026-08-24-first-outside-application-grapevine.md#the-break-it-experiment)
+in the grapevine break-it experiment. This is the first time it has landed on a declaration nobody
+broke on purpose.
+
+#### What it cost, in their words
+
+Under an hour, most of it reading
+[the format guide](../wiki/guides/how-to-record-surfaces-below-the-root.md) and building the two
+files. 25 invocations, every one of them failing at parse; they verified on `down`, `migrate`,
+`spawn` and `commit` that the parser rejects before `run()` is reached, so nothing executed.
+
+> I did not have to guess at anything, which is not what I could have said about the first trial.
+
+**Nothing in the differ, the reader or any expectation was changed on the strength of this result**,
+which is the only thing that makes the two exact numbers worth reading.
