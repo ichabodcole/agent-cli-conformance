@@ -143,9 +143,13 @@ describe("buildHarness — the emitted script", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  test("omits the identity key entirely when none was asked for", () => {
+  test("asks for no identity by leaving the CONFIG value empty", () => {
+    // The identity block is always EMITTED and gated at run time on `IDENTITY_ARGV`, so that an
+    // adopter can turn it on by editing config rather than by writing shell. Asking the script
+    // whether it mentions identity is therefore the wrong question; what matters is the value it
+    // ships with, and what the run produces — asserted by running it further down this file.
     const script = buildHarness({ ...BASE, paths: [["a"]], identityArgv: null });
-    expect(script).not.toContain('"identity"');
+    expect(script).toContain('IDENTITY_ARGV=""');
   });
 
   test("names the path source in recordedBy, in prose nothing parses", () => {
@@ -305,5 +309,156 @@ describe("the -dirty flag, across the topologies that can falsify it", () => {
     const build = buildStringOf(readFileSync(join(workdir, "batch.json"), "utf8"));
     rmSync(root, { recursive: true, force: true });
     expect(build).toContain("-dirty");
+  });
+});
+
+describe("the identity capture", () => {
+  test("its argv actually reaches the record", () => {
+    // REGRESSION, and it was live. Moving the identity call behind an `eval` lost the escaping on
+    // its empty first argument, so the emitted line CONCATENATED instead of passing one — the
+    // capture ran with no argv at all and recorded `argv: []` at exit 2. The script stayed valid
+    // sh and the batch stayed valid JSON, so nothing but running it and reading the argv catches
+    // this.
+    const { root, workdir } = makeRepo(false);
+    writeFileSync(
+      join(workdir, "capture.sh"),
+      buildHarness({
+        launcher: ["sh", join(workdir, "toy.sh")],
+        paths: [["state"]],
+        sentinel: "--acc-not-a-flag",
+        identityArgv: ["--version"],
+        pathSource: "declaration",
+        out: "batch.json",
+      }),
+    );
+    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    const batch = parseRecordedBatch(
+      "test",
+      JSON.parse(readFileSync(join(workdir, "batch.json"), "utf8")),
+    );
+    rmSync(root, { recursive: true, force: true });
+    expect(batch.identity?.argv).toEqual(["--version"]);
+    expect(batch.identity?.exitCode).toBe(0);
+    expect(batch.identity?.stdout).toContain("toy 1.0.0");
+  });
+
+  test("is exposed in the CONFIG block, above the line telling you not to edit the capture", () => {
+    // An adopter whose tool names itself some other way has to be able to ask for that. The value
+    // was baked in below the do-not-edit boundary, so the only way to change it was to edit the
+    // part the header forbids editing.
+    const script = buildHarness({ ...BASE, paths: [["a"]], identityArgv: ["--version"] });
+    const config = script.indexOf("IDENTITY_ARGV=");
+    const doNotEdit = script.indexOf("DO NOT EDIT THE CAPTURE");
+    expect(config).toBeGreaterThan(doNotEdit);
+    expect(script).toContain(`IDENTITY_ARGV="'--version'"`);
+    // And it is readable rather than doubly-quoted: this value is edited by hand.
+    expect(script).not.toContain(`IDENTITY_ARGV=''`);
+  });
+
+  test("emptying it in the emitted script skips the identity entirely", () => {
+    const { root, workdir } = makeRepo(false);
+    const script = buildHarness({
+      launcher: ["sh", join(workdir, "toy.sh")],
+      paths: [["state"]],
+      sentinel: "--acc-not-a-flag",
+      identityArgv: ["--version"],
+      pathSource: "declaration",
+      out: "batch.json",
+    }).replace(/^IDENTITY_ARGV=.*$/m, 'IDENTITY_ARGV=""');
+    writeFileSync(join(workdir, "capture.sh"), script);
+    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    const raw = JSON.parse(readFileSync(join(workdir, "batch.json"), "utf8"));
+    rmSync(root, { recursive: true, force: true });
+    expect(raw.identity).toBeUndefined();
+    expect(parseRecordedBatch("test", raw).records.length).toBe(1);
+  });
+});
+
+describe("files the workflow told the adopter to create", () => {
+  test("are excluded from the dirt check, or -dirty fires on every documented run", () => {
+    // Found on a cold run against a third tool. The harness excluded itself and its batch but not
+    // the `--paths` file the instructions tell you to write, which lands untracked in the same
+    // directory — so the documented workflow reported a dirty tree from a clean checkout, every
+    // time. Same inversion as before, through an artifact created after the fix.
+    const { root, workdir } = makeRepo(true);
+    const pathsFile = join(workdir, "paths.json");
+    writeFileSync(pathsFile, JSON.stringify([["state"]]));
+    writeFileSync(
+      join(workdir, "capture.sh"),
+      buildHarness({
+        launcher: ["sh", join(workdir, "toy.sh")],
+        paths: [["state"]],
+        sentinel: "--acc-not-a-flag",
+        identityArgv: null,
+        pathSource: "caller-supplied",
+        out: "batch.json",
+        sourceFiles: [pathsFile],
+      }),
+    );
+    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    const build = buildStringOf(readFileSync(join(workdir, "batch.json"), "utf8"));
+    rmSync(root, { recursive: true, force: true });
+    expect(build).not.toContain("-dirty");
+  });
+
+  test("but an unexcluded file in the repo is still real dirt", () => {
+    const { root, workdir } = makeRepo(true);
+    writeFileSync(join(workdir, "paths.json"), JSON.stringify([["state"]]));
+    writeFileSync(
+      join(workdir, "capture.sh"),
+      buildHarness({
+        launcher: ["sh", join(workdir, "toy.sh")],
+        paths: [["state"]],
+        sentinel: "--acc-not-a-flag",
+        identityArgv: null,
+        pathSource: "caller-supplied",
+        out: "batch.json",
+        // Deliberately NOT declared, so the exclusion cannot be a blanket one.
+      }),
+    );
+    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    const build = buildStringOf(readFileSync(join(workdir, "batch.json"), "utf8"));
+    rmSync(root, { recursive: true, force: true });
+    expect(build).toContain("-dirty");
+  });
+});
+
+describe("the byte encoder", () => {
+  test("round-trips a multi-byte rejection byte-exact", () => {
+    // Covered only incidentally until now: two adopters' captures happened to carry an em dash,
+    // but in the IDENTITY record rather than in a rejection, which is luck rather than coverage.
+    // This target emits multi-byte bytes on the path the encoder actually exists for.
+    const { root, workdir } = makeRepo(false);
+    const target = join(workdir, "unicode.sh");
+    writeFileSync(
+      target,
+      `#!/bin/sh\nprintf 'unknown option — try: --alpha … caf\\xc3\\xa9 \\xf0\\x9f\\x94\\xa5\\n' >&2\nexit 2\n`,
+    );
+    writeFileSync(
+      join(workdir, "capture.sh"),
+      buildHarness({
+        launcher: ["sh", target],
+        paths: [["state"]],
+        sentinel: "--acc-not-a-flag",
+        identityArgv: null,
+        pathSource: "declaration",
+        out: "batch.json",
+      }),
+    );
+    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    const batch = parseRecordedBatch(
+      "test",
+      JSON.parse(readFileSync(join(workdir, "batch.json"), "utf8")),
+    );
+    // The live bytes, for comparison against what the harness recorded.
+    const live = sh(["sh", target, "state", "--acc-not-a-flag"], workdir).stderr;
+    rmSync(root, { recursive: true, force: true });
+    const captured = batch.records[0]?.stderr ?? "";
+    expect(captured).toBe(live);
+    // 2-byte, 3-byte and 4-byte sequences all present, so a naive byte-at-a-time encoder that
+    // mangled continuation bytes could not pass this.
+    expect(captured).toContain("—");
+    expect(captured).toContain("café");
+    expect(captured).toContain("🔥");
   });
 });

@@ -137,6 +137,10 @@ export function probePlanCommand(
       identityArgv: IDENTITY_ARGV,
       pathSource,
       out: "batch.json",
+      // The file the caller was told to create. It sits untracked in their repo beside the
+      // harness and the batch, so it has to be excluded from the harness's own dirt check for
+      // the same reason those two are.
+      sourceFiles: [resolve((opts.paths ?? opts.declaration) as string)],
     });
   } catch (err) {
     if (err instanceof HarnessError) throw usageError(err.message);

@@ -56,6 +56,19 @@ export interface HarnessInput {
   pathSource: PathSource;
   /** The batch file the emitted script writes. */
   out: string;
+  /**
+   * FILES THIS WORKFLOW ASKED THE ADOPTER TO CREATE INSIDE THEIR REPOSITORY.
+   *
+   * The path list or declaration `probe-plan` was pointed at. They are untracked files in the tree
+   * being measured, exactly as the harness and the batch are, so leaving them out of the dirt
+   * exclusion makes `-dirty` fire on every run of the documented workflow from a clean checkout —
+   * the same inversion the exclusion exists to prevent, arriving through an artifact that was
+   * created after it. Documenting "keep your paths file outside the repo" is the wrong repair: it
+   * makes the correct workflow the unusual one and leaves the failure silent for anyone who does
+   * the obvious thing. The generator knows every one of these at generation time, so it emits
+   * them rather than hard-coding two.
+   */
+  sourceFiles?: string[];
 }
 
 /** A plan that cannot produce a readable batch. Its own type, as `DeclarationError` is. */
@@ -76,6 +89,24 @@ export class HarnessError extends Error {
  */
 export function shQuote(value: string): string {
   return `'${value.replaceAll("'", `'\\''`)}'`;
+}
+
+/**
+ * A CONFIG assignment whose value is pre-quoted shell words, written to be EDITED.
+ *
+ * `IDENTITY_ARGV` holds already-single-quoted tokens that a later `eval` re-splits. Passing that
+ * through `shQuote` a second time does not merely look bad — it nests the quoting one level deeper
+ * than the single `eval` unwinds, and the capture silently runs with NO argv at all. Double quotes
+ * carry the pre-quoted text verbatim whenever it holds nothing the shell would expand inside them,
+ * which is the readable form an adopter can edit; anything else is refused rather than mangled,
+ * because this value sits in the CONFIG block precisely so it can be changed by hand.
+ */
+export function shConfigValue(preQuoted: string): string {
+  if (/[$"\\]/.test(preQuoted) || preQuoted.includes("`"))
+    throw new HarnessError(
+      `cannot place ${JSON.stringify(preQuoted)} in the harness CONFIG block: it contains a character the shell would expand inside double quotes, and re-quoting it would nest one level deeper than the capture unwinds`,
+    );
+  return `"${preQuoted}"`;
 }
 
 /**
@@ -144,7 +175,9 @@ export function buildHarness(input: HarnessInput): string {
 
   const launcher = input.launcher.map(shQuote).join(" ");
   const pathLines = input.paths.map((p) => p.map(shQuote).join(" ")).join("\n");
-  const identity = input.identityArgv?.length ? input.identityArgv.map(shQuote).join(" ") : "";
+  const identityLine = input.identityArgv?.length ? input.identityArgv.map(shQuote).join(" ") : "";
+  // Emitted into the exclusion loop's word list, pre-quoted, so a path with a space survives.
+  const sourceList = (input.sourceFiles ?? []).map((f) => ` ${shQuote(f)}`).join("");
   const sourceNote =
     input.pathSource === "declaration"
       ? "paths derived from the declaration"
@@ -172,6 +205,10 @@ LC_ALL=C; export LC_ALL
 # forwards "$@" without re-splitting either.
 run_target() { ${launcher} "$@"; }
 SENTINEL=${shQuote(input.sentinel)}
+# What the target is asked to say about itself. Empty skips the identity capture entirely. This is
+# CONFIG and you may change it: a tool with no \`--version\` may name itself some other way, and the
+# batch records what you asked for either way. It is not read as a verification of anything.
+IDENTITY_ARGV=${shConfigValue(identityLine)}
 OUT=${shQuote(input.out)}
 RECORDED_BY=\${ACC_RECORDED_BY:-"$(id -un 2>/dev/null || echo unknown) via acc probe-plan harness"}
 
@@ -215,7 +252,7 @@ _rel() {
 # \`set --\` deliberately consumes $@; this harness takes no arguments.
 set --
 if [ -n "$_top" ]; then
-  for _f in "$0" "$OUT"; do
+  for _f in "$0" "$OUT"${sourceList}; do
     _r=$(_rel "$_f")
     [ -n "$_r" ] && set -- "$@" ":(exclude,top)$_r"
   done
@@ -316,12 +353,10 @@ emit_record() {
 $PATHS
 ACC_RUN_EOF
   printf '\\n  ]'
-${
-  identity
-    ? `  printf ',\\n  "identity":\\n'
-  emit_record "" ${identity}`
-    : `  : # no identity capture was requested`
-}
+  if [ -n "$IDENTITY_ARGV" ]; then
+    printf ',\\n  "identity":\\n'
+    eval "emit_record '' $IDENTITY_ARGV"
+  fi
   printf '\\n}\\n'
 } > "$TMP/batch" || exit 1
 mv "$TMP/batch" "$OUT"
