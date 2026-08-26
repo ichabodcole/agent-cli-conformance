@@ -137,10 +137,12 @@ export interface ComparedTarget {
    * the divergence and not what each side called itself would leave the reader to reconstruct
    * the interesting half from two file paths.
    *
-   * DELIBERATELY NOT AN AXIS, on the identical argument `SurfaceRow` makes: two tools saying
-   * different things about themselves is two tools, not a divergence, and grouping targets by it
-   * would mark every fleet row divergent and mean nothing. It is a coordinate on the target,
-   * which is why it lives here beside `targetArgv0` and `kitVersion` rather than in `axes`.
+   * DELIBERATELY NOT AN AXIS, on the identical argument `SurfaceRow` makes: an axis groups targets
+   * by what one probe DID, and this is a coordinate on the target rather than a probe result, so
+   * grouping by it would mark every fleet row divergent and measure nothing. That is a statement
+   * about what belongs in `axes`, and NOT a licence to read this column the other way: `identity.ts`
+   * forbids reading two different quotes as two builds exactly as it forbids reading two equal ones
+   * as one binary. It lives here beside `targetArgv0` and `kitVersion` for that reason.
    *
    * `null` when the report predates this capture — a fact about the FILE, exactly as
    * `SurfaceRow.status: "not-recorded"` is.
