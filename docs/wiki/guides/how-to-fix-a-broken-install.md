@@ -2,8 +2,9 @@
 type: guide
 title: How to fix a broken install
 description:
-  Diagnose the three ways installing `acc` from a private git ref delivers the wrong bytes — two
-  of which succeed at exit 0 — and apply the remedy that matches the one you hit.
+  Diagnose the three ways installing `acc` from a private git ref delivers the wrong bytes —
+  each of which has a form that succeeds at exit 0 — and apply the remedy that matches the one
+  you hit.
 tags: [guide, install, bun, troubleshooting]
 related: [concept/conformance, tutorial/check-your-first-cli]
 status: stable
@@ -16,21 +17,40 @@ generated: { by: claude-opus-5, at: 2026-08-21 }
 
 The `acc` you are running is the `acc` you asked for.
 
-**You do not need this page for a first install.** All three failures below need a previous
-install of this package to already exist. If you have never installed it, run the command in the
-README and come back only if something surprises you.
+**A first install is not automatically safe.** Failure 1 needs a previous entry in your
+project's `package.json`; failures 2 and 3 live in **bun's machine-global caches**, so a fresh
+install into a project that never had `acc` still hits them if this package was ever installed
+anywhere on the machine — measured, on the fourth adopter's first install, where an unpinned add
+silently delivered the previous release. If this machine has never seen the package, run the
+command in the README and come back only if something surprises you.
 
 ## Steps
 
 ### Confirm you have a problem
 
 ```sh
+acc version --check
+```
+
+One network call, and it does the comparison for you: it reads the published tags with
+`git ls-remote` over the same ssh access the install line already required, and tells you whether
+what you have installed is the newest release. Three answers — up to date (exit `0`), a newer
+release exists (exit `10`), or **could not check** (exit `0`, plainly stated: an unreachable
+remote is not a failure of your invocation).
+
+**It goes to the remote directly rather than through bun's clone cache**, which matters here: the
+cache is the thing that lied in the incident this page exists for, so a check that consulted it
+would agree with it and prove nothing.
+
+Offline, or want only the number:
+
+```sh
 acc --version
 ```
 
-Compare it against the release you meant to install. **Two of the three failures below succeed at
-exit `0` while giving you the old kit**, so this is the only thing that distinguishes them from a
-clean install.
+Compare it against the release you meant to install. **Each of the three failures below has a
+form that succeeds at exit `0` while giving you the old kit**, so this is the only thing that
+distinguishes them from a clean install.
 
 If it matches what you asked for, your install is fine.
 
@@ -40,9 +60,12 @@ currently being asked to make runs `1.0.1` → `0.1.0` — measured, by an adopt
 move. A "did it go up" check reads that successful upgrade as a failure, and reads the stale
 `1.0.1` that a silent no-op leaves behind as the newer kit.
 
-And it only distinguishes anything if you pinned a **tag**. The version changes when a release is
-cut and not otherwise, so on a **branch** pin a stale copy and a fresh one answer identically —
-see [how far the version check reaches](#how-far-the-version-check-reaches) below, and clear the
+And the check only settles anything if you pinned a **tag**, because a tag names the value to
+compare against. The version changes when a release is cut and not otherwise, so on a **branch**
+pin or no pin a stale copy answers identically to a fresh one **within** a release — and when
+the staleness spans a release the number does change, but nothing has told you what it should
+be, so an accurate `acc --version` reads as fine — see
+[how far the version check reaches](#how-far-the-version-check-reaches) below, and clear the
 cache before installing rather than trusting the number.
 
 ### The remedy, if you just want the command
@@ -83,17 +106,29 @@ it**. Measured, after re-pointing at a ref:
 **Remedy:** `bun remove` before `bun add`. If your `package.json` already has two, fix the file
 and the lockfile.
 
-### 2. The stale bare clone — loud
+### 2. The stale bare clone — loud when pinned, silent when not
 
-Bun keeps a bare clone of each git dependency and does not re-fetch it, so **a tag pushed after
-your first install is invisible**. The install fails with `no commit matching "…" found (but
+Bun keeps a bare clone of each git dependency and does not re-fetch it, so **anything pushed
+after the clone was made is invisible**. What that does to you depends on whether your install
+line names a ref:
+
+**Pinned, the failure is loud.** The install fails with `no commit matching "…" found (but
 repository exists)`, which is indistinguishable from a tag that does not exist
-([oven-sh/bun#18947](https://github.com/oven-sh/bun/issues/18947)).
+([oven-sh/bun#18947](https://github.com/oven-sh/bun/issues/18947)). **An upgrade always meets
+this one**, because a release tag is by definition pushed after the install you are upgrading
+from.
 
-**An upgrade always meets this one**, because a release tag is by definition pushed after the
-install you are upgrading from.
+**Unpinned, the same stale clone answers silently instead.** With no `#ref`, bun resolves from
+the default-branch state the clone already holds and never asks the remote whether anything
+moved: exit `0`, a resolved commit in the lockfile, and an older kit on disk. Measured, on the
+fourth adopter's first install — a fresh project that had never had `acc` received the previous
+release while reading the current release's documents, because the machine's cache held a
+resolution from before the release was cut. Same root as the loud form, opposite symptom: name a
+ref the clone lacks and it refuses; name nothing and it quietly hands you what it already had.
 
-**Remedy:** `bun pm cache rm`.
+**Remedy:** `bun pm cache rm` — and pin a tag, which keeps this failure loud for as long as tags
+are never moved: a force-updated tag would resolve silently from a stale clone even pinned. This
+project's tags do not move.
 
 A `#semver:` range is a different matter — Bun does not support one
 ([oven-sh/bun#4978](https://github.com/oven-sh/bun/issues/4978)).
@@ -110,12 +145,33 @@ does not clear the other. Nothing in the output says so.
 
 ### How far the version check reaches
 
-`acc --version` catches staleness that **spans a release** and not staleness **within** one,
-because the version only changes when a release is cut.
+Catching staleness takes two things: **the number has to differ, and something has to have told
+you what to expect.** The version only changes when a release is cut, so the number differs
+**across** a release and never **within** one — and `acc version --check` is what supplies the
+second half, reading the published tags so the expected value comes from somewhere rather than
+from memory.
 
-- **Pin a tag** and the check is meaningful.
-- **Pin a branch, or nothing,** and a stale copy reports the same version as a fresh one. There,
-  `bun pm cache rm` before installing is the only reliable answer, and it costs a re-download.
+That pairing is also the limit. `--check` supplies the expectation and automates the comparison;
+it does not extend the reach. Where the number cannot differ, no amount of knowing what to expect
+helps — so **failure 3 above stays invisible to it**, because a stale extracted package at the
+same version but different bytes compares equal against the tag name.
+
+- **Pin a tag** and the check is meaningful: the tag names the value the output must match.
+- **Pin a branch, or nothing,** and the check reaches less than it looks like it reaches. Within
+  a release, a stale copy reports the same version as a fresh one. Across a release the number
+  does differ — measured, on the fourth adopter's first install, where a silently stale unpinned
+  install reported the previous release's version accurately — and with no pinned tag nothing in
+  the flow named the value to compare against, so an accurate old number read as a fine install.
+  **That is the half `acc version --check` closes**: it names the expected value even where the
+  pin does not. What it cannot close is the within-a-release case, where the number is identical
+  and there is nothing to compare. There, `bun pm cache rm` before installing is still the only
+  reliable answer, and it costs a re-download.
+
+**And the reason `--check` is the proof step rather than a convenience beside it:** the remedy
+below cannot demonstrate that it worked. `bun pm cache rm` reported
+`Cleared 0 cached 'bunx' packages` on a machine that **was** poisoned, and the git-clone cache it
+actually needed to clear reports nothing at all. Only the version after reinstalling settles it —
+so run `acc version --check` **after** the remedy, not instead of it.
 
 ### Why this is on a page of its own
 
