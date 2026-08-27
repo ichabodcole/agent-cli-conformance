@@ -49,7 +49,10 @@ defect reported once by each rule that governs half of it.
 
 The defect is one of **ordering**: the parser fails before the output layer is configured, so
 there is nothing to emit into. Resolve the mode from the **raw argv** before the parser runs, and
-hand it to one emitter that every exit path goes through. A fix that only patches the parser's
+hand it to one emitter that every exit path goes through. On failure that emitter writes the
+envelope to **stderr**, stdout staying empty —
+[B1](./stdout-carries-only-data.md)'s rule, stated here because the emitter you are building is
+the one that must satisfy both. A fix that only patches the parser's
 error handler leaves the next parser error — a missing value, an out-of-set value, an arity
 violation — to be found separately.
 

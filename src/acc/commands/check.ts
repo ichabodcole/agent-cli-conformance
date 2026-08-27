@@ -492,6 +492,19 @@ export async function checkCommand(
         `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}${declarationNote}  ${r.target}  [acc ${r.kitVersion}]`,
         configLine,
         "",
+        // THE LEGEND COMES BEFORE THE TABLE IT EXPLAINS. It sat at the foot until an adopter met
+        // `PASS+` twenty lines before its explanation and read the `+` as "pass, plus something
+        // extra" — close to the opposite of what it means. A legend is needed at the FIRST
+        // marker, not the last.
+        "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable to this run",
+        "  PASS+ passed, but the checker establishes only part of its rule — see the gaps below",
+        // N/A covers two reasons and the legend has to say both, or a rule with no checker
+        // reads as one that was merely deferred to a higher level and will be picked up there.
+        "  N/A   out of scope at this level, or no checker exists for the rule at any level",
+        // The glyph is explained even when nothing carries it, exactly as the four above are: a
+        // legend that changes shape between runs is one a reader has to re-read.
+        "  WVD  waived by config — the probe still ran, and the verdict it reached binds nothing",
+        "",
         ...lines,
         "",
         `  core ${r.counts.corePassed}/${r.counts.core} · violations ${r.counts.coreFailures} · unverified ${r.counts.unverified} (all tiers; ${r.counts.coreUnverified} core) · partial coverage ${r.counts.corePartial} core · diagnostics ${r.counts.diagnosticFailures}`,
@@ -714,18 +727,6 @@ export async function checkCommand(
         `    acc check ${r.target} --json  →  .data.findings[].probes  (the argv behind each verdict, already resolved)`,
         `    acc check ${r.target} --json  →  .data.observations[]     (the full record, including outcome and digests)`,
         "    acc show resolves wiki pages, not these ids.",
-        "",
-        "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable to this run",
-        "  PASS+ passed, but the checker establishes only part of its rule — see the gaps above",
-        // N/A now covers two reasons and the legend has to say both, or a rule with no checker
-        // reads as one that was merely deferred to a higher level and will be picked up there.
-        "  N/A   out of scope at this level, or no checker exists for the rule at any level",
-        // The glyph is explained even when nothing carries it, exactly as the four above are: a
-        // legend that changes shape between runs is one a reader has to re-read.
-        "  WVD  waived by config — the probe still ran, and the verdict it reached binds nothing",
-        // Its own sentence, not the stale one. "Now passing, remove them" and "not being
-        // evaluated" call for opposite actions, and sharing a line would teach a reader to
-        // delete on both — where the second deletion loses the only record of a live defect.
       ].join("\n");
     },
   });
