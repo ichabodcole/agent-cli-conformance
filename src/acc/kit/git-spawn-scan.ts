@@ -1,6 +1,9 @@
 /**
  * A SOURCE-LEVEL check that a fixture cannot spawn git with the environment it inherited.
  *
+ * The incident this exists for, including the three confident explanations of it that were
+ * wrong, is recorded in `docs/reports/2026-08-27-the-repository-went-bare-three-times.md`.
+ *
  * WHY THIS IS NOT A BEHAVIOURAL TEST, which is the whole design and was established by
  * measurement rather than argument. The damage needs `GIT_DIR` in the environment, and only a
  * pre-commit hook supplies it. Run by hand there is no `GIT_DIR`, the fixtures build their own

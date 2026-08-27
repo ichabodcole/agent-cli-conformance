@@ -4,6 +4,8 @@ import { isAbsolute, resolve } from "node:path";
 /**
  * Running git in a TEST FIXTURE, without touching the repository the tests live in.
  *
+ * The three occurrences and the mechanism are recorded in `docs/reports/2026-08-27-the-repository-went-bare-three-times.md`.
+ *
  * This is the third occurrence's fix. The guard was written once, in `harness.test.ts`, and two
  * new `git init` sites on a feature branch did not have it — because having it required the
  * author to remember, and remembering is what failed. Defining it once and importing it is the

@@ -23,8 +23,8 @@ function acc(args: string[], cwd?: string): { code: number; stdout: string; stde
     cwd: cwd ?? dirname(dirname(import.meta.dir)),
     stdout: "pipe",
     stderr: "pipe",
-    // `GIT_*` stripped for the reason given in `kit/harness.test.ts`: under a pre-commit hook an
-    // inherited git environment reaches anything these commands spawn.
+    // `GIT_*` stripped for the reason given in `kit/git-fixture-env.ts`: under a pre-commit hook
+    // an inherited git environment reaches anything these commands spawn.
     env: { ...GIT_FREE_ENV, ACC_FORMAT: "json" },
   });
   return {
