@@ -431,7 +431,7 @@ export function readRecordedBatch(batch: RecordedBatch): RecordedReading {
   const order: string[] = [];
   const byPath = new Map<string, RecordedRecord[]>();
   for (const record of batch.records) {
-    const key = record.path.join(" ");
+    const key = record.path.join("\0");
     const existing = byPath.get(key);
     if (existing) existing.push(record);
     else {
@@ -480,7 +480,7 @@ export function readRecordedBatch(batch: RecordedBatch): RecordedReading {
       }
     }
 
-    const sets = evidence.map((e) => e.flags.join(" "));
+    const sets = evidence.map((e) => e.flags.join("\0"));
     const surface: Surface =
       evidence.length === 0
         ? {

@@ -483,7 +483,7 @@ export function parseDeclaration(path: string, raw: unknown): Declaration {
   const commands = raw.commands.map((c, i) => parseCommand(path, i, c));
   const seen = new Set<string>();
   for (const c of commands) {
-    const key = c.path.join(" ");
+    const key = c.path.join("\0");
     if (seen.has(key))
       throw new DeclarationError(
         path,
