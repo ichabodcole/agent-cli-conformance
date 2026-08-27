@@ -2,7 +2,7 @@
 type: report
 generated: { by: claude-fable-5, at: 2026-08-27 }
 status: stable
-lifecycle: live
+lifecycle: discharged
 description:
   The claims from both adopter trial runs — halley against astrolabe, tansy against media-buffet's
   mb — sorted into what an adopter observed, what they asked for in their own words, and what we
@@ -337,3 +337,25 @@ and the framing paragraph (verified cold). "The guidance, working on me again" �
 for the moment an enumerated rejection, not a document, told them which kit they were holding —
 is the strongest single sentence either trial produced about the project's direction, and it
 belongs beside the open list rather than under any one claim.
+
+## Disposition — added 2026-08-27, after the owner took the claims up
+
+Everything above this heading is the record as written and stands unedited. This section was
+added the same day, before the release that carries both the report and the work it caused, so a
+reader holding the two together is not told a claim is outstanding by one document and shipped by
+the other. Where a claim is marked done, the commit is on `develop` in the same range.
+
+| Claim                                                | What happened                                                                                                                                      |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T1 — report JSON shape undocumented                  | Done: `docs/wiki/guides/how-to-read-the-check-report-json.md`, routed from SKILL.md and an `acc schema` note.                                      |
+| T2 — evidence join by hand                           | Done: findings carry `probes` — each cited id resolved in place — in JSON and under FAIL/UNVR lines in text.                                       |
+| T3 — safety gate unreachable, method absent          | Done: `docs/wiki/guides/how-to-establish-your-target-is-safe-to-check.md`, routed unconditionally from SKILL.md, the tutorial, and `check --help`. |
+| T5 — the next-hint that always fails on upgrade      | Done: the stale hint now carries the guide's full remedy sequence.                                                                                 |
+| D3 near-miss silence (one-adopter)                   | Done: both machine-mode tokens present with no matching claim now says so instead of the byte-identical fail line.                                 |
+| `batch.json` destination (one-adopter, acknowledged) | Done: the generated harness takes a destination.                                                                                                   |
+| PASS+/D2-waiver/project-root/B5 legibility           | Done: the legend precedes the table it explains; the waiver, config-directory, and stderr passages were repaired in two reviewed batches.          |
+| Tier/deviation read as one axis                      | Prose half done (the guide states the axes are independent where D2 crosses them); the JSON encoding question is with the owner.                   |
+| Still open                                           | The step-1 pin (owner-flagged above, still the owner's); A6 for launcher-run targets; a re-check regression view; `acc report <file>`.             |
+
+The two `probes`/`recordedBy` residues acknowledged at r1 §12 that are not named above have no
+closure shown in the record this addendum was written from; they stay acknowledged, not done.
