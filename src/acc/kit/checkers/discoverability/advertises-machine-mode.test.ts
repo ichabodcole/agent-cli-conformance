@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseHelp } from "../../discovery.ts";
 import { record } from "../../record.ts";
 import { digestOfText } from "../../runner.ts";
 import type { History, TargetInfo } from "../../types.ts";
@@ -122,6 +123,44 @@ describe("D3 — help advertises the machine-readable path", () => {
       );
       expect({ line, verdict: f.verdict }).toEqual({ line, verdict: "unverified" });
     }
+  });
+
+  // THE FALSE PASS, PINNED BEFORE THE FIX — and pinned where it originates, which is NOT here.
+  //
+  // A help text that DENIES having the flag is credited with it. `historyWithHelp` above hardcodes
+  // `machineModeFlag: null`, so this rule's own tests cannot see the defect at all: it is born in
+  // `parseHelp`, which scans the whole help text for a machine-flag token whenever there is no
+  // `Options:` block, and D3 then reports that faithfully. **The checker is not the bug; it is the
+  // messenger, and the assertion below points at the source.**
+  //
+  // Vendored as `fixtures/denies-the-json-flag-it-lacks.ts`. Single-variable control, measured
+  // through the whole pipeline with a declared `defaultOutput` — only the sentence differs:
+  //
+  //   "…prints JSON by default on stdout."          -> UNVR D3 (correct), A3 pass
+  //   "…has no --json flag because JSON is default" -> PASS+ D3 (false),  A3 UNVR
+  //
+  // A3's move is why this earns a fixture rather than a comment: the phantom flag reaches
+  // `machineSelector`, so it steers probes for A3, B2, B4 and B5 too. One substring match, five
+  // rules — and the damage is decided by the verdict the partial reach was allowed to produce.
+  //
+  // WHEN THE FIX LANDS this inverts: `machineModeFlag` becomes `null` on the denial and the
+  // pipeline line above stops being true. Deliberate — this pins the before.
+  test("BEFORE THE FIX: parseHelp reads a DENIAL of the flag as an advertisement of it", () => {
+    const body = "fixture — a tool\n\nUsage:\n  fixture list\n\nOutput: fixture ";
+    const denial = `${body}is machine-first and has no --json flag because JSON is the default.\n`;
+    const affirmative = `${body}prints JSON by default on stdout.\n`;
+
+    // The defect, at its source. One variable between the two: whether the sentence names the
+    // token it disclaims.
+    expect(parseHelp(denial).machineModeFlag).toBe("--json");
+    expect(parseHelp(affirmative).machineModeFlag).toBe(null);
+
+    // And what the rule does with it, given discovery telling it a flag exists.
+    const withPhantom = historyWithHelp(denial);
+    withPhantom.discovery.machineModeFlag = "--json";
+    const f = advertisesMachineModeChecker.check(withPhantom);
+    expect(f.verdict).toBe("pass");
+    expect(f.detail).toContain("--json");
   });
 
   // The property that removes the incentive: the honest sentence is never the expensive choice.
