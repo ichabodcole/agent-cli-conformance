@@ -22,9 +22,19 @@ nothing.
 
 ## 1. What the adopter is given
 
-- The repository at tag **`v0.1.1`**, not `develop`. Every fix landed mid-trial would otherwise
-  make the result unattributable. `skills/acc/` and `docs/wiki/` are byte-identical between
-  `v0.1.1` and `develop` as of this writing, so the pin costs nothing this round.
+- The repository at **the newest released tag, named in the `acc-trial` channel topic before the
+  round starts** — not `develop`. Every fix landed mid-trial would otherwise make the result
+  unattributable, and that reason does not change between rounds. The pin is stated as a rule
+  rather than a number because a literal tag here rots: this line read `v0.1.1` through the first
+  round and would have silently sent the second round at a superseded release.
+
+  > **Superseded, kept as the record.** Written 2026-08-26 for round 1: _"`skills/acc/` and
+  > `docs/wiki/` are byte-identical between `v0.1.1` and `develop` as of this writing, so the pin
+  > costs nothing this round."_ True when written and false afterwards — measured later the same
+  > day at 138 insertions across exactly those two paths. **Do not refresh this to today's state;
+  > it would be wrong again on the next commit, which is how it got here.** Whether the pin costs
+  > anything is a question to answer per round, against the tag that round is using.
+
 - The `acc` skill, and the guides it names.
 - The channel `acc-trial`, which is where `skills/acc/REPORTING.md` sends them.
 - No briefing on our reasoning, no session summary, no target chosen for them.
