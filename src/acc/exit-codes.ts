@@ -52,6 +52,20 @@ export type ExitCodeValue = (typeof ExitCode)[keyof typeof ExitCode];
 export const Outcome = {
   /** The check ran successfully; the target does not conform. */
   NonConformant: 9,
+  /**
+   * `version --check` ran successfully; the installed kit is behind the newest release.
+   *
+   * An OUTCOME rather than an error, by this file's own rule: the invocation did its job and the
+   * answer was negative. It is non-zero for the reason stated above — non-zero-ness is what makes
+   * a finding visible to a harness that does not parse JSON — which is the whole argument for a
+   * CI step that fails when the kit doing the checking is stale.
+   *
+   * ⚠ ADDITIVE TO A STABLE SURFACE. The README promises `0` conformant, `9` not, `1`-`8` the kit
+   * failing. This adds a code in the documented 9-123 outcome band rather than reinterpreting an
+   * existing one, so nothing that branches on 0/9/1-8 changes meaning. Flagged for review because
+   * it touches a published promise at all.
+   */
+  Stale: 10,
 } as const;
 
 export type OutcomeValue = (typeof Outcome)[keyof typeof Outcome];

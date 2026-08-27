@@ -17,7 +17,7 @@ import { rulesCommand } from "./commands/rules.ts";
 import { schemaCommand } from "./commands/schema.ts";
 import { showCommand } from "./commands/show.ts";
 import { tagsCommand } from "./commands/tags.ts";
-import { versionCommand } from "./commands/version.ts";
+import { versionCommand, versionVerbCommand } from "./commands/version.ts";
 import { emitError, type OutputMode, resolveMode } from "./envelope.ts";
 import { AccError, usageError } from "./errors.ts";
 import { ExitCode } from "./exit-codes.ts";
@@ -317,6 +317,8 @@ for (const spec of COMMANDS) {
         return pathCommand(positionals[0] as string, positionals[1] as string, resolved, startedAt);
       case "tags":
         return tagsCommand(resolved, startedAt);
+      case "version":
+        return versionVerbCommand({ check: Boolean(opts.check) }, resolved, startedAt);
       case "schema":
         return schemaCommand(resolved);
       case "probe-plan":

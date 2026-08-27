@@ -10,7 +10,15 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
-import { chmodSync, copyFileSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -536,9 +544,45 @@ describe("every published example runs as written", () => {
   const POPULATION = join(dirname(CLI), "kit/fixtures/population");
   let compareDir: string;
   let compareReports: string[] = [];
+  /**
+   * Held and passed PER INVOCATION, never written to `process.env`.
+   *
+   * Setting it globally leaked into every target this suite spawns, and three checkers assert
+   * that a probed target sees an unchanged environment across repeated probes — so a variable
+   * added here surfaced as five failures in C3, D4 and F2, in files that pass in isolation. The
+   * kit's own rule about not putting probe identity in a target's environment, broken by a test
+   * fixture.
+   */
+  let releaseRemote = "";
 
   beforeAll(async () => {
     compareDir = mkdtempSync(join(tmpdir(), "acc-examples-"));
+    // `acc version --check` reaches a REMOTE, and this suite must not touch the network. The
+    // remote is a parameter of the command in the same sense `./mycli` is a parameter of
+    // `check`, so it gets the same treatment: a real repository with real tags stands in, and
+    // the example RUNS rather than being excused. `git ls-remote` against a filesystem path is
+    // a local operation.
+    const tagged = join(compareDir, "release-remote");
+    mkdirSync(tagged, { recursive: true });
+    for (const args of [
+      ["git", "init", "-q", "."],
+      ["git", "config", "user.email", "t@t"],
+      ["git", "config", "user.name", "t"],
+    ]) {
+      Bun.spawnSync(args, { cwd: tagged });
+    }
+    writeFileSync(join(tagged, "f.txt"), "x\n");
+    for (const args of [
+      ["git", "add", "-A"],
+      ["git", "commit", "-qm", "init"],
+      // Tagged at the INSTALLED version, read from the same constant the command compares
+      // against, so the example demonstrates the genuine up-to-date answer and stays true
+      // across every release without anyone editing this line.
+      ["git", "tag", `v${VERSION}`],
+    ]) {
+      Bun.spawnSync(args, { cwd: tagged });
+    }
+    releaseRemote = tagged;
     for (const name of ["exits-2-no-version", "exits-1-with-version"]) {
       const written = join(compareDir, `${name}.json`);
       const r = await run(["check", join(POPULATION, `${name}.ts`), "--json"]);
@@ -647,7 +691,7 @@ describe("every published example runs as written", () => {
             : join(compareDir, basename(args[i + 1] as string));
       }
 
-      const r = await run(args);
+      const r = await run(args, command === "version" ? { ACC_RELEASE_REMOTE: releaseRemote } : {});
       // `check` answers 9 when the target is not conformant — a successful invocation with a
       // negative answer, not a failure. Every other example is a plain success.
       const acceptable = command === "check" ? [0, 9] : [0];
