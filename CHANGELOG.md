@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.4](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.3...v0.1.4) (2026-08-27)
+
+
+### Features
+
+* findings carry the argv behind every evidence id they cite ([a648a98](https://github.com/ichabodcole/agent-cli-conformance/commit/a648a98a7d32a2209f27e1d7320d158aae9e07b3))
+* **report:** findings carry the probe behind each evidence id ([3ee2ca7](https://github.com/ichabodcole/agent-cli-conformance/commit/3ee2ca7a018483ccbe6e9e6e065fc4f127350a80))
+
+
+### Bug Fixes
+
+* **kit:** two source files were invisible to grep, for one byte each ([5b839c3](https://github.com/ichabodcole/agent-cli-conformance/commit/5b839c34a8ef4aff3b7bd2284a27cd0e1e5eb658))
+* **report,wiki:** the legibility batch — five misreads, four fixed, one split ([5b7559a](https://github.com/ichabodcole/agent-cli-conformance/commit/5b7559ab36cd98127741ee2fd41ea10d683dba05))
+* **spec:** the check help note sends readers on the join T2 removed ([e79a81d](https://github.com/ichabodcole/agent-cli-conformance/commit/e79a81d66bf279e66ec7bb84c18bbe304448492d))
+* three things both adopter trials hit ([f0964b5](https://github.com/ichabodcole/agent-cli-conformance/commit/f0964b5462160c13eb9204c40d8853639ad816c0))
+
 ## [0.1.3](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.2...v0.1.3) (2026-08-27)
 
 
