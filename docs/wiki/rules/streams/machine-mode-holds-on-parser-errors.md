@@ -97,10 +97,11 @@ parser-error path is the highest-traffic failure surface in any CLI an agent dri
 the path most likely to be written before the emitter exists, because it lives in the parser
 rather than in a command.
 
-The failure mode is worse than a missing feature. An agent that pipes a tool and branches on
-`.ok` does not get a degraded signal on this path, it gets `undefined` — and a caller that wraps
-the invocation in `JSON.parse` gets an exception whose message is about a syntax error at position
-0, which names nothing about what actually went wrong. The archaeology's sharpest instance is a
+The failure mode is worse than a missing feature. Where the answer is prose, an agent that pipes
+a tool and branches on `.ok` does not get a degraded signal, it gets `undefined` — there is no
+envelope for `.ok` to come from — and a caller that wraps the invocation in `JSON.parse` gets an
+exception whose message is about a syntax error at position 0, which names nothing about what
+actually went wrong. The archaeology's sharpest instance is a
 whole team consuming non-envelopes on the **most-executed command in the product** without anyone
 noticing, because every consumer's error handling was reached through a path that never ran.
 
@@ -124,8 +125,9 @@ carries the sentinel, so the invocation is admissible twice over under the
 [inertness gate](../../concepts/probing.md#inertness-classifies-an-invocation-it-does-not-make-the-run-safe).
 
 `--output` is not accepted as a selector. It names an output **file** at least as often as an
-output format, so a target advertising machine mode only that way is never probed here — the third
-[gap](#current-checker-coverage) below.
+output format, so a target advertising machine mode only that way is never probed here — an
+instance of the [gap](#current-checker-coverage) below: machine mode is reached only through a
+declaration.
 
 **A target that is machine-first sends no selector at all**, and that path is the more important
 one. A CLI whose data commands emit JSON unless asked for prose declares
@@ -139,10 +141,10 @@ becomes the bare unrecognised flag:
 That is the same invocation [A1](../parsing/unknown-flag-exits-nonzero.md) already sends, so the
 recorder deduplicates them and the declaration costs no extra spawn.
 
-It also closes this rule's first gap rather than widening the rule. Selecting machine mode
-explicitly never exercises the **piped-default resolution path** — the row where a tool's own
-emitted commands pass no format flag at all, and the row the archaeology says the same defect most
-often breaks. A declared default _is_ that row.
+It also closes a gap rather than widening the rule. Selecting machine mode explicitly never
+exercises the **piped-default resolution path** — the row where a tool's own emitted commands pass
+no format flag at all, and the row the archaeology says the same defect most often breaks. A
+declared default _is_ that row.
 
 The declaration is falsifiable, which is why it is a declaration and not an inference: a target
 that claims machine mode by default and answers a parser error in prose fails here. That is the
@@ -178,12 +180,11 @@ accepted the unknown flag — [A1](../parsing/unknown-flag-exits-nonzero.md)'s v
 where this rule's subject never occurred. Convicting it here would report one defect twice under a
 rule that was never reached.
 
-**The selection gap is the one to read before trusting a pass**, and it is first on the list
-below. This probe selects machine mode **explicitly**, and the row that matters most is the other
-one: piped output already defaults to machine mode and a tool's own emitted commands pass no
-format flag at all, so the piped-default resolution path is where this defect most often survives
-a fix. Reaching it means contrasting two invocations that differ only in the flag, which this
-checker does not do.
+**The selection gap is the one to read before trusting a pass.** This probe selects machine mode
+**explicitly**, and the row that matters most is the other one: piped output already defaults to
+machine mode and a tool's own emitted commands pass no format flag at all, so the piped-default
+resolution path is where this defect most often survives a fix. Reaching it means contrasting two
+invocations that differ only in the flag, which this checker does not do.
 
 ## Current checker coverage
 
@@ -220,5 +221,6 @@ The defect population — five commits in one repository, two independent fixes,
 its absolute form across a second — is catalogued as class 4 in
 [`research/2026-08-15-defect-archaeology.md`](../../../research/2026-08-15-defect-archaeology.md),
 alongside the measurement that gives the rule its urgency: `ok:true` counted **112 times and
-`ok:false` zero** across one tree, with every failure printing prose. A piping agent receives
-`ok:true` and exit 0 — not a degraded signal but no signal, and a positively reassuring one.
+`ok:false` zero** across one tree, with every failure printing prose **to stderr** while stdout
+still carried a success envelope. A piping agent receives `ok:true` and exit 0 — not a degraded
+signal but a false one, and positively reassuring.
