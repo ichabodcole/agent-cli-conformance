@@ -1,17 +1,23 @@
 ---
 name: acc
 description:
-  Check a command-line tool against the acc conformance standard. Use when someone wants to know
-  whether their CLI is usable by agents and scripts, when they have run `acc check` and do not
-  know what to do with the result, or when they want to cover the command paths a root-only probe
-  cannot reach.
+  Build a command-line tool that agents and scripts can genuinely use, with the acc guidance and
+  the kit that holds it in place. Use when someone wants to know whether their CLI is usable by
+  agents and scripts, when they have run `acc check` and do not know what to do with the result,
+  or when they want to cover the command paths a root-only probe cannot reach.
 ---
 
 # Checking a CLI with `acc`
 
-`acc` runs against a command-line tool and reports how well it behaves for agents and scripts. This
-skill is the order to do things in. Every guide it names is a file in the `acc` repository, at the
-path given.
+`acc` runs against a command-line tool and reports how well it behaves for agents and scripts.
+**The guidance is the goal**: the guides this skill routes to say how to build a CLI that agents
+can genuinely use, and following them without ever running the kit still gets you the better
+CLI. The checks are the smallest part of this — they exist to hold what you adopt in place. Each
+thing you adopt — a declared default, an enumerated rejection — converts more of the report from
+`unverified` to checked and kept that way.
+
+This skill is the order to do things in. Every guide it names is a file in the `acc` repository,
+at the path given.
 
 ## 1. Install it and run it
 
@@ -80,7 +86,9 @@ anything.
 a non-enumerating tool, recording buys **observation, not comparison** — the kit reads what your
 subcommands did, but a declaration is compared only at paths where a rejection named the set it
 refused from. The comparison starts when your rejections name their set: that is the SHOULD in
-`A3` (`acc show A3 --body`), and it is the fix worth making before more recording.
+`A3` (`acc show A3 --body`), and adopting it is the actual goal — a rejection that names its set
+is what makes your tool legible to the agents that drive it. The census is how what you adopted
+stays adopted.
 
 Neither is a failure, and either way the guide is the same one.
 
