@@ -171,6 +171,35 @@ export function helpStatesMachineDefault(help: string): boolean {
   return unwrapped.split(/[;\n]|\.(?=\s|$)/).some(isMachineDefaultClause);
 }
 
+/**
+ * DID THE HELP CARRY THE TOKENS, in an arrangement `helpStatesMachineDefault` did not accept?
+ *
+ * Not a looser matcher, and deliberately not used to reach any verdict. An adopter wrote "Output:
+ * machine-readable by default — every command answers with structured JSON on stdout", got a
+ * report line byte-identical to the one a tool with no such sentence gets, and concluded that
+ * prose claims did not work at all. They found out otherwise by reading checker source inside
+ * `node_modules`. The defect was not the narrowness — the rule body argues for that, and two
+ * reviewers broke every looser version — it was that a near miss and a silence produced the same
+ * output, so nothing told them which one they had.
+ *
+ * This answers only "was there something here to look at", so the report can say so. It stays
+ * cheap and dumb on purpose: a structured-output word AND a default word, anywhere in the help.
+ * It cannot promote a verdict, so a false positive costs a sentence rather than a wrong finding.
+ *
+ * IT DOES NOT EXCLUDE HELP THAT NAMES FLAGS, and that is the correction that made it work: an
+ * earlier version screened the WHOLE help through `FLAG_OR_CALLER_ACTION`, meaning to skip tools
+ * that advertise a flag. Every help screen has an `Options:` block, so the screen matched on
+ * `--help` and the function returned false for every real target — while passing a unit test that
+ * fed it the bare sentence. The exclusion was also unnecessary: D3 returns `pass` before reaching
+ * this, when a machine-mode flag exists.
+ */
+export function mentionsMachineDefaultTokens(help: string): boolean {
+  if (helpStatesMachineDefault(help)) return false;
+  const structured = /\b(json|machine[- ]readable|structured|ndjson|yaml|machine[- ]first)\b/i;
+  const isDefault = /\bby default\b|\bdefaults? to\b|\bis the default\b|\bdefault(?:s)?\b/i;
+  return structured.test(help) && isDefault.test(help);
+}
+
 function isMachineDefaultClause(clause: string): boolean {
   // Documenting a FLAG is not declaring a default — "--json is recommended when output is piped"
   // and "use json when piped" both describe a choice the caller makes.
