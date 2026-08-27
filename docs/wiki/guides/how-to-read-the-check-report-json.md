@@ -125,7 +125,11 @@ The first finding of the fixture run, whole:
 - **`verdict` / `tier` / `deviation`** — the verdict is `pass`, `fail`, or `unverified`; `tier`
   says whether a fail gates the run (`core`) or is reported only (`diagnostic`); `deviation`
   says what a violation means — `defect`, or `design-choice` where a waiver records a decision.
-- **`detail`** — one clause per thing observed, in the order the probes are cited.
+- **`detail`** — the verdict in one line. Its clauses are written per checker and stand in no
+  fixed relation to `probes`: a rule may cite nineteen probes and say one sentence about them.
+  A1 above happens to group its clauses by probe — that is the checker's wording, not a
+  contract, and most findings in this same report do not. Use `probes` for what was sent, never
+  the clause order.
 - **`probes`** — what was sent, resolved in place: one entry per cited evidence id, in
   `evidence`'s order. `args` is the argv after the target. `env` and `repeat` appear only where
   they are the thing that distinguishes two probes — `--version` under a hostile `HOME`, or the
