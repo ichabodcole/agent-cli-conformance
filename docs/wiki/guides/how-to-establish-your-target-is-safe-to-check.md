@@ -92,13 +92,49 @@ When you cannot answer it, narrow what a run can touch instead of guessing: give
 a scratch `HOME` —
 
 ```
-HOME="$(mktemp -d)" XDG_CONFIG_HOME="$HOME/.config" bunx acc check ./your-tool
+scratch=$(mktemp -d)
+HOME="$scratch" XDG_CONFIG_HOME="$scratch/.config" bunx acc check ./your-tool
 ```
+
+Name the directory first, and do not write `XDG_CONFIG_HOME="$HOME/.config"` in the same command
+as the `HOME` assignment. Whether one assignment in a command prefix sees another is **unspecified
+in POSIX**, so both readings are conforming and you cannot tell which you will get by looking at
+the line. When you get the one where `$HOME` is still your own, the variable meant to redirect
+config reads points at the directory you were protecting, and nothing reports it.
+
+That is not theoretical. On one macOS machine, the same line, four shells:
+
+| shell                                  | `XDG_CONFIG_HOME` became |
+| -------------------------------------- | ------------------------ |
+| `/bin/sh`, `/bin/bash` (bash 3.2.57)   | the real home            |
+| `/opt/homebrew/bin/bash` (bash 5.3.15) | the scratch directory    |
+| `zsh` 5.9, `dash`                      | the scratch directory    |
+
+Two versions of the same shell disagree, so the answer does not follow from the shell's name — and
+the reading that leaks is the one you get from that machine's `/bin/sh`, which is what a `#!` line
+and a CI runner reach for. Other platforms will divide differently. Naming the directory first is
+unambiguous under all of them, which is why it is worth doing rather than checking.
+
+**If the target has its own home override, set that too.** A tool that reads `MYTOOL_HOME`,
+`MYTOOL_CONFIG_DIR` or similar re-derives its location from that and ignores `HOME` entirely, so
+moving `HOME` moves nothing: the check runs, the report looks ordinary, and the writes land where
+you believed you had prevented them. This is the reported case, not a hypothetical. To find one,
+look for the tool's own name in its environment reads before you rely on containment:
+
+```
+grep -rEo '[A-Z][A-Z0-9_]*_(HOME|CONFIG|CONFIG_DIR|DIR|PATH)' path/to/target | sort -u
+strings ./your-tool | grep -E '_(HOME|CONFIG_DIR)$' | sort -u   # for a compiled binary
+env | grep -iE '^[A-Z0-9_]*(HOME|CONFIG)' | sort               # what is already set for you
+```
+
+The last line matters most: a variable already in your environment is one you will not think to
+set, and it is the one that will be used.
 
 The probes inherit the environment they are run under, so the target's config reads and
 dot-file writes land in a directory you will delete. This does **not** cover everything, and
-what it leaves uncovered is what you still have to judge: absolute paths, subprocesses,
-credentials elsewhere in the environment, and the network are all still reachable. If what the
+what it leaves uncovered is what you still have to judge: absolute paths, subprocesses, a home
+the target derives from its own variable rather than from `HOME`, credentials elsewhere in the
+environment, and the network are all still reachable. If what the
 scratch `HOME` does not contain is exactly the behaviour you cannot afford — the target is
 known to talk to a live service on startup — then the answer is **no**: do not run the check,
 and record that as a limit of your report rather than running it anyway.
