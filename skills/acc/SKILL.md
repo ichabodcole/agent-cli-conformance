@@ -21,10 +21,14 @@ at the path given.
 
 ## 1. Install it and run it
 
+<!-- x-release-please-start-version -->
+
 ```bash
-bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#v0.1.1' # x-release-please-version
+bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#v0.1.1'
 bunx acc check ./path/to/your-cli
 ```
+
+<!-- x-release-please-end -->
 
 Needs Bun 1.4+ on macOS or Linux, and access to the repository — it is private and not on npm.
 **Keep the `#v0.1.1` pin**: without a ref, bun resolves from a bare clone it may already hold and
@@ -86,9 +90,8 @@ anything.
 a non-enumerating tool, recording buys **observation, not comparison** — the kit reads what your
 subcommands did, but a declaration is compared only at paths where a rejection named the set it
 refused from. The comparison starts when your rejections name their set: that is the SHOULD in
-`A3` (`acc show A3 --body`), and adopting it is the actual goal — a rejection that names its set
-is what makes your tool legible to the agents that drive it. The census is how what you adopted
-stays adopted.
+`A3` (`acc show A3 --body`) — **naming the set is the guidance**, the thing that makes your tool
+legible to the agents that drive it, **and the census is how it sticks.**
 
 Neither is a failure, and either way the guide is the same one.
 

@@ -61,9 +61,13 @@ You need [Bun](https://bun.sh) 1.4 or later, on **macOS or Linux**. `acc` is not
 and this repository is **private** while the first few projects are run through it — so install it
 over SSH, into the project whose CLI you want to check:
 
+<!-- x-release-please-start-version -->
+
 ```bash
-bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#v0.1.1' # x-release-please-version
+bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#v0.1.1'
 ```
+
+<!-- x-release-please-end -->
 
 That needs GitHub access to this repository. The shorter
 `bun add -d github:ichabodcole/agent-cli-conformance` goes through GitHub's tarball API, which

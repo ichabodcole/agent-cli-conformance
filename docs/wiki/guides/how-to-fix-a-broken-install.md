@@ -110,7 +110,9 @@ release while reading the current release's documents, because the machine's cac
 resolution from before the release was cut. Same root as the loud form, opposite symptom: name a
 ref the clone lacks and it refuses; name nothing and it quietly hands you what it already had.
 
-**Remedy:** `bun pm cache rm` — and pin a tag, so this failure can only ever be the loud form.
+**Remedy:** `bun pm cache rm` — and pin a tag, which keeps this failure loud for as long as tags
+are never moved: a force-updated tag would resolve silently from a stale clone even pinned. This
+project's tags do not move.
 
 A `#semver:` range is a different matter — Bun does not support one
 ([oven-sh/bun#4978](https://github.com/oven-sh/bun/issues/4978)).
