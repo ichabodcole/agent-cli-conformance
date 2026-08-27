@@ -47,10 +47,6 @@ In a terminal you get a human report. Redirected or piped, you get JSON.
 
 The first line is the verdict. Below it, one line per rule.
 
-If your own test suite is green and the report still found something, that is the expected shape
-rather than a contradiction: these are interface-contract properties — what your tool owes a
-caller that is a program — and a feature suite structurally does not assert them.
-
 Then find the block headed `NOT FULLY VERIFIED`. It says, rule by rule, what a pass did **not**
 establish. Read it. A `pass` means nothing the kit could reach was violated — it does not mean the
 rule holds.
