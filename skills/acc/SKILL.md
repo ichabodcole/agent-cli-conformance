@@ -9,76 +9,98 @@ description:
 
 # Checking a CLI with `acc`
 
-**This skill is the order of operations. It holds no facts of its own** — every claim below either
-points at a document or is something you verify by running a command. If you find a sentence here
-that does neither, that is a defect and the last section says where to report it.
+`acc` runs against a command-line tool and reports how well it behaves for agents and scripts. This
+skill is the order to do things in. Every guide it names is a file in the `acc` repository, at the
+path given.
 
-`acc` is two things: a **standard** (a written argument about how CLIs should behave for agents)
-and a **kit** that checks part of it. The standard covers more than the kit can measure, and the
-kit says so about itself on every run.
+## 1. Install it and run it
 
-## 1. Run it
-
-```
-acc check <target>
+```bash
+bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
+bunx acc check ./path/to/your-cli
 ```
 
-Takes ten minutes, needs no config, and executes the target — **read the safety note in
-`acc check --help` first if your CLI does real work on a bare invocation.**
+Needs Bun 1.4+ on macOS or Linux, and access to the repository — it is private and not on npm. If
+the install fails, `docs/wiki/guides/how-to-fix-a-broken-install.md` covers the three ways it goes
+wrong, two of them silently.
 
-Add `--format text` if you are reading it yourself; without it you get JSON, which is what CI
-wants.
+The target is the path to your executable or script, the same thing you would type to run it.
 
-## 2. Find out which branch you are on
+**`acc check` executes your tool.** If your CLI does real work when run with no arguments, read the
+safety note in `bunx acc check --help` before pointing it at anything.
 
-**This is the step nothing else tells you, and it decides everything after it.** Look in the report
-for the flag-surface block:
+In a terminal you get a human report. Redirected or piped, you get JSON.
 
-- **`enumerated N flags at the root:`** — your root names its accepted flags when it refuses one.
-  A census can compare a declaration against that.
-- **`did not enumerate at the root; N rejections read, none named a set`** — it refuses without
-  saying what it accepts. **`acc check` alone will reach a verdict on almost nothing below your
-  root**, and a batch is not an improvement on the census, it is the whole of it.
+## 2. Read the result
 
-Neither is a failure. They decide which guide is next.
+The first line is the verdict. Below it, one line per rule.
 
-## 3. Go to the guide for what you found
+Then find the block headed `NOT FULLY VERIFIED`. It says, rule by rule, what a pass did **not**
+establish. Read it. A `pass` means nothing the kit could reach was violated — it does not mean the
+rule holds.
 
-| what you have                                       | where to go                                                                        |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| core violations you want to clear                   | `acc show <rule-id> --body`, then **how to reach L0 in your project**              |
-| a verdict you cannot read                           | the **conformance** concept page for `pass`/`fail`/`unverified`                    |
-| coverage below the root                             | **how to record surfaces below the root** — `acc probe-plan` generates the capture |
-| drift between what you document and what you accept | the same guide's census half                                                       |
-| a restructure in front of you                       | **how to derive your surface from one registry**                                   |
+`acc show <rule-id> --body` prints any rule in full, with the argument behind it. `acc rules` lists
+them all.
 
-`acc rules` lists everything the catalogue holds. `acc show <id>` is one rule; `--body` is its full
-text and its argument.
+## 3. Fix what it found
 
-## 4. Read what the report says it did NOT establish
+`docs/wiki/guides/how-to-reach-l0-in-your-project.md` takes each failure and sorts it into a fix, a
+deliberate exception, or debt you write down. It covers the config file, and which failures are
+worth clearing first because they unblock others.
 
-**Do not stop at the verdict line.** The `NOT FULLY VERIFIED` block states, per rule, what a pass
-did not cover — and it is the most useful part of the report. A `pass` here means _nothing
-reachable was violated_, not _this rule holds_.
+If a verdict itself is unclear, `docs/wiki/concepts/conformance.md` explains `pass`, `fail` and
+`unverified`.
 
-Adopters have consistently found this section worth more than the verdict, and one of them did work
-no check required because the report was honest that it could not see it.
+**Most tools should stop here.** Steps 4 and 5 are for covering more than the top level, and they
+cost more.
 
-## 5. Report what happened — including if you got stuck
+## 4. Optional: cover your subcommands
 
-**This is part of the toolkit, not a courtesy.** The most useful thing you can send is the point
-where you stopped.
+`acc check` only probes your tool at the **top level** — no subcommand is ever run. So a flag that
+`mytool deploy` accepts is not looked at, and neither is anything below it.
 
-**When you report, say which of these it was:**
+To cover those paths you record your tool's own error messages and hand them back.
+`docs/wiki/guides/how-to-record-surfaces-below-the-root.md` walks through it; `acc probe-plan`
+generates a script that does the recording for you.
 
-1. **A gap in understanding** — the tool works, you could not tell what to do with it, or what
-   something meant.
-2. **The tooling did not work in your scenario** — it did the wrong thing, or nothing, on your
-   actual CLI.
+**Two situations, and your report tells you which you are in.** Look for one of these lines:
 
-**Those are completely different problems and only you can tell them apart at the moment it
-happens.** We will guess wrong afterwards, and we will guess in the direction that flatters us.
+```
+enumerated N flags at the root:
+did not enumerate at the root; N rejections read, none named a set
+```
 
-Include the command you ran and what came back. A finding nobody ran is a hypothesis.
+**`enumerated`** means that when your tool refuses an unknown flag, it lists the flags it does
+accept. That listing is what the comparison reads, so you already get some coverage without doing
+anything.
 
-**Where to send it:** see `REPORTING.md` beside this skill.
+**`did not enumerate`** means your tool refuses without saying what it would have accepted. Then
+recording your subcommands is not an improvement on what you have — it is the only coverage you
+will get, because nothing above it worked.
+
+Neither is a failure, and either way the guide is the same one.
+
+## 5. Optional: stop the drift instead of finding it
+
+If you are restructuring anyway, `docs/wiki/guides/how-to-derive-your-surface-from-one-registry.md`
+shows how to make one table in your code drive your parser, your help text, your error messages and
+your published interface. Tools built that way cannot disagree with themselves, and the comparison
+in step 4 becomes a check that stays passed.
+
+## 6. Tell us what happened
+
+Especially if you got stuck. The most useful thing you can send is the point where you stopped, and
+you do not need to have got far.
+
+Say which of these it was:
+
+1. **You could not tell what to do.** The tool works; the instructions or the output did not tell
+   you enough.
+2. **It did the wrong thing on your CLI.** It crashed, or it reported something untrue about your
+   tool.
+3. **It worked, and you wanted more.** Something is missing, or something here could be better.
+
+If it is the third, say what you were doing when you wanted it. What you hit tells us more than
+what you imagined.
+
+Send the command you ran and what came back. `skills/acc/REPORTING.md` says where.

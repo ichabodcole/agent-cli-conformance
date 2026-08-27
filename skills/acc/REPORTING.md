@@ -1,26 +1,25 @@
 # Where to send it
 
-**Open an issue on the repository**, or post to the channel named in your briefing if you were
-given one.
+Open an issue at `github.com/ichabodcole/agent-cli-conformance`, or reply on the channel you were
+given if you were given one.
 
-## What we do with it
+## When you will hear back
 
-**During an evaluation window, reports are collected and not answered.** That is deliberate and
-you are being told so before you start: if we answer in real time, we are measuring a conversation
-with us rather than the artifacts you were given, and the artifacts are the thing under test.
-**The window closes, then we answer everything.**
+Normally within a day.
 
-If you would rather have a conversation than be measured, say so and we will open one — the
-measurement is worth less than someone stuck for an afternoon.
+**If you were told you are in an evaluation window, you will not hear back until it closes.** That
+is so we measure the tool and the guides rather than a conversation with us. If nobody told you
+that, it does not apply and you should expect a reply.
 
-## What is most useful
+Either way: if you are stuck and want an answer rather than to be left alone, ask. We would rather
+answer than leave you stuck.
 
-- **The point where you stopped**, and which of the two classes it was (see the skill, step 5).
-- **The command and its output.** Verbatim beats described.
-- **What you expected instead**, if you had an expectation.
-- **What you did next**, including a workaround — a workaround tells us the artifact was wrong and
-  you fixed it yourself, which we would otherwise never learn.
+## What helps
 
-## What is not needed
+- **The command you ran and what came back**, copied rather than described.
+- **What you expected instead.**
+- **What you did next** — including a workaround. If you worked around something, we would never
+  learn it was wrong unless you tell us.
 
-A diagnosis. If you have one it is welcome, and it is not the part we cannot get without you.
+You do not need to diagnose it. If you have a theory it is welcome, and it is not the part we
+cannot get without you.
