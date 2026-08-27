@@ -114,6 +114,42 @@ describe("checkRelease", () => {
     expect(calls).toBe(2);
   });
 
+  test("an unparseable installed version cannot tell, and must not claim STALE", () => {
+    // The one line in this command that used to BELIEVE rather than verify: a version that does
+    // not parse fell through to `upToDate: false`, so the command reported a newer release and
+    // exited 10 on the strength of nothing. The remote answered fine here — the tags are real
+    // and the comparison is the part that cannot happen.
+    for (const bad of ["", "unknown", "0.1", "v0.1.1", "0.1.1-rc.1+meta"]) {
+      const r = checkRelease(bad, ok(two));
+      if (bad === "0.1.1-rc.1+meta") continue; // leading X.Y.Z parses; asserted separately below
+      expect({ bad, checked: r.checked }).toEqual({ bad, checked: false });
+      if (r.checked) throw new Error("unreachable");
+      expect(r.reason).toBe("unparseable-version");
+      expect(r.detail).toContain("v0.1.1");
+    }
+  });
+
+  test("a prerelease whose leading X.Y.Z parses is still compared, not refused", () => {
+    // The guard keys on "no X.Y.Z at the front", not on "not exactly X.Y.Z". `0.1.1-rc.1` is a
+    // build ahead of v0.1.1's tag, and refusing to compare it would be the opposite defect.
+    expect(checkRelease("0.1.1-rc.1+meta", ok(two))).toMatchObject({
+      checked: true,
+      upToDate: true,
+    });
+  });
+
+  test("not knowing is reported the same shape whichever way it happened", () => {
+    // Two reasons, one state. A consumer branching on `checked` must not have to know which.
+    const unreachable = checkRelease("0.1.1", () => ({ code: 128, stdout: "", stderr: "boom" }));
+    const unparseable = checkRelease("nope", ok(two));
+    expect(unreachable.checked).toBe(false);
+    expect(unparseable.checked).toBe(false);
+    if (unreachable.checked || unparseable.checked) throw new Error("unreachable");
+    expect(typeof unreachable.detail).toBe("string");
+    expect(typeof unparseable.detail).toBe("string");
+    expect(unreachable.reason).not.toBe(unparseable.reason);
+  });
+
   test("a reachable remote with no version tags is unreachable-shaped, not a false 'up to date'", () => {
     const r = checkRelease("0.1.1", ok(`${"a".repeat(40)}\trefs/tags/nightly`));
     expect(r.checked).toBe(false);

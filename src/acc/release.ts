@@ -26,7 +26,17 @@ export type ReleaseCheck =
       latestSha: string;
       upToDate: boolean;
     }
-  | { checked: false; reason: "unreachable"; detail: string; attempted: string[] };
+  | {
+      checked: false;
+      /**
+       * TWO WAYS TO NOT KNOW, kept distinct because they send the reader to different repairs.
+       * `unreachable` is about the network; `unparseable-version` is about this build. Collapsing
+       * them would tell someone with a malformed install to check their connection.
+       */
+      reason: "unreachable" | "unparseable-version";
+      detail: string;
+      attempted: string[];
+    };
 
 /** One `git ls-remote` invocation, injectable so the tests never touch the network. */
 export type LsRemote = (remote: string) => { code: number; stdout: string; stderr: string };
@@ -128,9 +138,20 @@ export function checkRelease(
     }
     const latest = tags[0] as { tag: string; sha: string; parts: number[] };
     const mine = /^(\d+)\.(\d+)\.(\d+)/.exec(installed);
-    const upToDate = mine
-      ? cmp([Number(mine[1]), Number(mine[2]), Number(mine[3])], latest.parts) >= 0
-      : false;
+    if (!mine) {
+      // AN UNPARSEABLE INSTALLED VERSION IS NOT EVIDENCE OF STALENESS. This used to fall to
+      // `upToDate: false`, which reports "a newer release exists" and exits 10 — asserting a
+      // negative nothing established, in the one command whose whole argument is that it
+      // verifies rather than believes. Reachable only on a malformed build, and that is the
+      // build least able to afford a confident wrong answer.
+      return {
+        checked: false,
+        reason: "unparseable-version",
+        detail: `the installed version ${JSON.stringify(installed)} is not X.Y.Z, so it cannot be compared against ${latest.tag}`,
+        attempted,
+      };
+    }
+    const upToDate = cmp([Number(mine[1]), Number(mine[2]), Number(mine[3])], latest.parts) >= 0;
     return {
       checked: true,
       installed,

@@ -41,7 +41,8 @@ export function versionCommand(mode: OutputMode): void {
  *
  *   up to date        exit 0            the answer is yes
  *   newer release     exit 10 (Stale)   the invocation succeeded, the answer is negative
- *   COULD NOT CHECK   exit 0            no network, no key, remote unreachable
+ *   COULD NOT CHECK   exit 0            no network, no key, remote unreachable — or the
+ *                                       installed version is not X.Y.Z and cannot be compared
  *
  * The third is the one that is easy to get wrong. It is NOT a failure: nothing about the
  * invocation was wrong, and a network blip must not put an alarming line in someone's first run.
@@ -118,7 +119,12 @@ export function versionVerbCommand(
         : [
             `acc ${VERSION} installed — COULD NOT CHECK for a newer release.`,
             `  ${d.detail}`,
-            "  This is not a failure: the remote was unreachable, not your invocation.",
+            // The closing line names the reason rather than assuming the network one. Telling
+            // someone with a malformed install that the remote was unreachable sends them to
+            // debug a connection that worked.
+            d.reason === "unparseable-version"
+              ? "  This is not a failure: the remote answered, but this build's version cannot be compared."
+              : "  This is not a failure: the remote was unreachable, not your invocation.",
           ].join("\n"),
   });
 }
