@@ -1,0 +1,1 @@
+spawnSync(bin, args, { encoding: "utf8" });
