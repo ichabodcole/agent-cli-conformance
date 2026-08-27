@@ -10,12 +10,21 @@
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
-import { chmodSync, copyFileSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CREDENTIAL_PATTERNS } from "./kit/checkers/safety/no-secrets-in-help.ts";
 import type { AccConfig } from "./kit/config.ts";
+import { gitFixture } from "./kit/git-fixture-env.ts";
 import { record } from "./kit/record.ts";
 import { CHECKERS } from "./kit/registry.ts";
 import { buildReport, runCheckers } from "./kit/report.ts";
@@ -536,9 +545,41 @@ describe("every published example runs as written", () => {
   const POPULATION = join(dirname(CLI), "kit/fixtures/population");
   let compareDir: string;
   let compareReports: string[] = [];
+  /**
+   * Held and passed PER INVOCATION, never written to `process.env`.
+   *
+   * Setting it globally leaked into every target this suite spawns, and three checkers assert
+   * that a probed target sees an unchanged environment across repeated probes — so a variable
+   * added here surfaced as five failures in C3, D4 and F2, in files that pass in isolation. The
+   * kit's own rule about not putting probe identity in a target's environment, broken by a test
+   * fixture.
+   */
+  let releaseRemote = "";
 
   beforeAll(async () => {
     compareDir = mkdtempSync(join(tmpdir(), "acc-examples-"));
+    // `acc version --check` reaches a REMOTE, and this suite must not touch the network. The
+    // remote is a parameter of the command in the same sense `./mycli` is a parameter of
+    // `check`, so it gets the same treatment: a real repository with real tags stands in, and
+    // the example RUNS rather than being excused. `git ls-remote` against a filesystem path is
+    // a local operation.
+    // EVERY git call here goes through `gitFixture`: the environment is stripped of `GIT_*`, and
+    // a failure throws instead of leaving a fixture that only looks like a repository. Spawning
+    // git directly here — as this block first did — is what set `core.bare = true` on the real
+    // checkout under a pre-commit hook from a linked worktree.
+    const tagged = join(compareDir, "release-remote");
+    mkdirSync(tagged, { recursive: true });
+    gitFixture(["init", "-q", "."], tagged);
+    gitFixture(["config", "user.email", "t@t"], tagged);
+    gitFixture(["config", "user.name", "t"], tagged);
+    writeFileSync(join(tagged, "f.txt"), "x\n");
+    gitFixture(["add", "-A"], tagged);
+    gitFixture(["commit", "-qm", "init"], tagged);
+    // Tagged at the INSTALLED version, read from the same constant the command compares against,
+    // so the example demonstrates the genuine up-to-date answer and stays true across every
+    // release without anyone editing this line.
+    gitFixture(["tag", `v${VERSION}`], tagged);
+    releaseRemote = tagged;
     for (const name of ["exits-2-no-version", "exits-1-with-version"]) {
       const written = join(compareDir, `${name}.json`);
       const r = await run(["check", join(POPULATION, `${name}.ts`), "--json"]);
@@ -647,7 +688,7 @@ describe("every published example runs as written", () => {
             : join(compareDir, basename(args[i + 1] as string));
       }
 
-      const r = await run(args);
+      const r = await run(args, command === "version" ? { ACC_RELEASE_REMOTE: releaseRemote } : {});
       // `check` answers 9 when the target is not conformant — a successful invocation with a
       // negative answer, not a failure. Every other example is a plain success.
       const acceptable = command === "check" ? [0, 9] : [0];

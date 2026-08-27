@@ -375,6 +375,7 @@ pull request — so it cannot quietly stop conforming. The hook is the faster of
 bypassable one; CI is what the claim rests on.
 
 ```bash
+acc version --check        # is the installed kit the current release? (see the install note above)
 acc rules --tier core      # the rules a conforming CLI must satisfy
 acc show A1                # one rule, with its links in and out
 acc show exit-codes --body # ...and the full text

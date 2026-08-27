@@ -29,6 +29,22 @@ command in the README and come back only if something surprises you.
 ### Confirm you have a problem
 
 ```sh
+acc version --check
+```
+
+One network call, and it does the comparison for you: it reads the published tags with
+`git ls-remote` over the same ssh access the install line already required, and tells you whether
+what you have installed is the newest release. Three answers — up to date (exit `0`), a newer
+release exists (exit `10`), or **could not check** (exit `0`, plainly stated: an unreachable
+remote is not a failure of your invocation).
+
+**It goes to the remote directly rather than through bun's clone cache**, which matters here: the
+cache is the thing that lied in the incident this page exists for, so a check that consulted it
+would agree with it and prove nothing.
+
+Offline, or want only the number:
+
+```sh
 acc --version
 ```
 
@@ -129,18 +145,33 @@ does not clear the other. Nothing in the output says so.
 
 ### How far the version check reaches
 
-`acc --version` catches staleness that **spans a release** and not staleness **within** one,
-because the version only changes when a release is cut. And catching it takes two things: the
-number has to differ, **and something has to have told you what to expect.**
+Catching staleness takes two things: **the number has to differ, and something has to have told
+you what to expect.** The version only changes when a release is cut, so the number differs
+**across** a release and never **within** one — and `acc version --check` is what supplies the
+second half, reading the published tags so the expected value comes from somewhere rather than
+from memory.
+
+That pairing is also the limit. `--check` supplies the expectation and automates the comparison;
+it does not extend the reach. Where the number cannot differ, no amount of knowing what to expect
+helps — so **failure 3 above stays invisible to it**, because a stale extracted package at the
+same version but different bytes compares equal against the tag name.
 
 - **Pin a tag** and the check is meaningful: the tag names the value the output must match.
 - **Pin a branch, or nothing,** and the check reaches less than it looks like it reaches. Within
   a release, a stale copy reports the same version as a fresh one. Across a release the number
   does differ — measured, on the fourth adopter's first install, where a silently stale unpinned
-  install reported the previous release's version accurately — but with no pinned tag, nothing
-  in the flow names the value to compare against, so an accurate old number reads as a fine
-  install. There, `bun pm cache rm` before installing is the only reliable answer, and it costs
-  a re-download.
+  install reported the previous release's version accurately — and with no pinned tag nothing in
+  the flow named the value to compare against, so an accurate old number read as a fine install.
+  **That is the half `acc version --check` closes**: it names the expected value even where the
+  pin does not. What it cannot close is the within-a-release case, where the number is identical
+  and there is nothing to compare. There, `bun pm cache rm` before installing is still the only
+  reliable answer, and it costs a re-download.
+
+**And the reason `--check` is the proof step rather than a convenience beside it:** the remedy
+below cannot demonstrate that it worked. `bun pm cache rm` reported
+`Cleared 0 cached 'bunx' packages` on a machine that **was** poisoned, and the git-clone cache it
+actually needed to clear reports nothing at all. Only the version after reinstalling settles it —
+so run `acc version --check` **after** the remedy, not instead of it.
 
 ### Why this is on a page of its own
 

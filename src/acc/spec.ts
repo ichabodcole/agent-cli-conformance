@@ -197,6 +197,35 @@ export const COMMANDS: CommandSpec[] = [
     examples: ["acc tags", "acc tags --json"],
   },
   {
+    name: "version",
+    description: "Show the installed version, and with --check whether it is the current release.",
+    // `read_only` WITH `--check`, deliberately. The flag makes one outbound `git ls-remote` and
+    // writes nothing anywhere — no file, no cache, no state. `effects` covers what a command
+    // CAUSES, and a read of a remote ref advertisement causes nothing.
+    effects: "read_only",
+    output_kind: "data",
+    cardinality: "single",
+    positionals: [],
+    args: [
+      {
+        name: "--check",
+        type: "boolean",
+        description:
+          "Compare against the newest published release tag. One network call; reports 'could not check' plainly when the remote is unreachable rather than failing.",
+      },
+    ],
+    // No `not_found` and no `auth`: an unreachable remote or a missing key is NOT an error here.
+    // It is the third outcome, reported on `ok: true` with `checked: false`.
+    errors: ["usage", "internal"],
+    examples: ["acc version", "acc version --check", "acc version --check --json"],
+    notes: [
+      "SEPARATE FROM `--version` on purpose: the D1 checker probes `--version` on every target, so",
+      "a network call there would make this CLI's own version path non-inert during dogfooding.",
+      "REACH: this catches staleness that SPANS A RELEASE. A stale extracted package at the same",
+      "version but different bytes is invisible to it — only a version string is compared.",
+    ],
+  },
+  {
     name: "schema",
     description: "Emit this CLI's machine-readable interface description.",
     effects: "read_only",
