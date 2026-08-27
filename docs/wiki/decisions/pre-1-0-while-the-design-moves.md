@@ -67,6 +67,41 @@ binds to, and moving them silently would turn a green build red for reasons nobo
 of a changelog. Everything an adopter automates against is in the left column; everything the
 project is still designing is in the right.
 
+### The left column can still be broken, and this is the bar
+
+The table above reads as a flat promise and is not one. **It is a default, not a wall**, and
+stating it without saying so has already had a cost: it was read as making a decision unavailable
+that was in fact available, and the reading slowed a call it should not have slowed.
+
+**The default holds.** Do not break the left column for convenience, for tidiness, or because a
+different shape would have been nicer to design. Those items are there because something outside
+this repository binds to them, and today that is not hypothetical — an adopter's
+`acc.config.json` carries `knownFailures` keyed by rule id, on disk, in another repository, and
+re-pointing an id silently changes what that file means.
+
+**The caveat is that this is not released to the public.** There is no large user base and the
+design is still being worked out. So a break is available when it is the right long-term call, and
+the bar is narrow:
+
+- **A corner is being painted.** Keeping the promise would foreclose a design the evidence now
+  supports.
+- **The item is a mistake made on thin evidence.** It was decided before the consumer signal
+  existed, and the signal has since arrived and disagrees.
+
+Neither bar is _"the current shape is awkward."_
+
+**And it is discussed before it is done, never decided at a terminal.** The point of the
+conversation is to establish that the reason is real — that the break buys something, rather than
+that living with the decision has become annoying. **Not having to live with a design mistake made
+on insufficient evidence is a genuine advantage of this stage, and it expires.** The whole
+programme of adoption trials exists to convert that advantage into evidence, so that fewer of
+these decisions need revisiting at all.
+
+**Append is not a break.** Minting a new rule id, adding an exit code, adding a report field —
+these are what append-only exists to permit, and they need none of the above. What the left column
+forbids is reusing an id, re-pointing one at different behaviour, or changing what `conformant`
+means. That distinction was lost once already, so it is written here rather than assumed.
+
 ## Consequences
 
 **A pinned tag stops resolving.** Anyone who pinned `#v1.0.1` gets

@@ -20,6 +20,7 @@ coverage_gaps:
   - the exit code is only required to be non-zero here and not the declared 2
   - naming the offending verb on stderr is not asserted
   - only a sentinel-shaped token is probed so a verb that near-misses a real command is never offered
+  - the first positional is assumed to select a subcommand so a target that reads it as free-form data is judged on the work it did rather than on a rejection
 coverage_established:
   - one unknown verb given at the root exits non-zero and leaves stdout empty
 ---
@@ -105,6 +106,7 @@ the rest of this page, unexamined.
 - the exit code is only required to be non-zero here and not the declared 2
 - naming the offending verb on stderr is not asserted
 - only a sentinel-shaped token is probed so a verb that near-misses a real command is never offered
+- the first positional is assumed to select a subcommand so a target that reads it as free-form data is judged on the work it did rather than on a rejection
 
 ## Evidence
 

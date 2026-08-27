@@ -26,17 +26,19 @@ wiki.
 The catalogue below is organised by what a page **is**. This is the same wiki organised by what
 you are **doing**, which is usually the faster way in.
 
-| If you are…                              | Start at                                                                                                                                 |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| an install that gave you the wrong bytes | [How to fix a broken install](./guides/how-to-fix-a-broken-install.md) — three failures, two of them silent at exit `0`                  |
-| meeting the kit for the first time       | [Check your first CLI](./guides/check-your-first-cli.md) — run it against a target, read a real verdict                                  |
-| making your own CLI pass                 | [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — triage each failure into a fix, a waiver, or named debt |
-| holding a failing rule id                | `acc show <id>`, or find it in [the rules table](#coverage-at-a-glance) below                                                            |
-| wondering what a verdict means           | [Conformance](./concepts/conformance.md) for `pass`/`fail`/`unverified`, [probing](./concepts/probing.md) for what produced it           |
-| looking up an exit code                  | [the taxonomy](./concepts/exit-codes.md#the-taxonomy)                                                                                    |
-| looking up an error shape                | [the error envelope](./concepts/error-envelope.md#two-shapes-and-confirmation_required-is-one-of-the-errors)                             |
-| writing a checker                        | [How to add a checker](./guides/how-to-add-a-checker.md)                                                                                 |
-| editing these pages                      | [SCHEMA.md](./SCHEMA.md) for the contract, [STYLE.md](./STYLE.md) for how they are written                                               |
+| If you are…                              | Start at                                                                                                                                                                        |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| an install that gave you the wrong bytes | [How to fix a broken install](./guides/how-to-fix-a-broken-install.md) — three failures, two of them silent at exit `0`                                                         |
+| meeting the kit for the first time       | [Check your first CLI](./guides/check-your-first-cli.md) — run it against a target, read a real verdict                                                                         |
+| making your own CLI pass                 | [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — triage each failure into a fix, a waiver, or named debt                                        |
+| holding a failing rule id                | `acc show <id>`, or find it in [the rules table](#coverage-at-a-glance) below                                                                                                   |
+| wondering what a verdict means           | [Conformance](./concepts/conformance.md) for `pass`/`fail`/`unverified`, [probing](./concepts/probing.md) for what produced it                                                  |
+| looking up an exit code                  | [the taxonomy](./concepts/exit-codes.md#the-taxonomy)                                                                                                                           |
+| looking up an error shape                | [the error envelope](./concepts/error-envelope.md#two-shapes-and-confirmation_required-is-one-of-the-errors)                                                                    |
+| covering paths below the root            | [How to record surfaces below the root](./guides/how-to-record-surfaces-below-the-root.md) — generate the capture with `acc probe-plan`, or record it yourself                  |
+| stopping drift instead of catching it    | [How to derive your surface from one registry](./guides/how-to-derive-your-surface-from-one-registry.md) — one table drives the parser, help, the rejection and the declaration |
+| writing a checker                        | [How to add a checker](./guides/how-to-add-a-checker.md)                                                                                                                        |
+| editing these pages                      | [SCHEMA.md](./SCHEMA.md) for the contract, [STYLE.md](./STYLE.md) for how they are written                                                                                      |
 
 ## Concepts
 
@@ -88,8 +90,8 @@ a decision rather than hiding a failure — and it decides what a waiver costs: 
 | Rule                                                              | Tier       | Deviation     | Level | Checker     | Coverage | Gaps |
 | ----------------------------------------------------------------- | ---------- | ------------- | ----- | ----------- | -------- | ---- |
 | [A1](./rules/parsing/unknown-flag-exits-nonzero.md)               | core       | defect        | L0    | implemented | partial  | 5    |
-| [A2](./rules/parsing/unknown-command-exits-nonzero.md)            | core       | defect        | L0    | implemented | partial  | 4    |
-| [A3](./rules/parsing/errors-name-the-offending-token.md)          | core       | defect        | L0    | implemented | partial  | 4    |
+| [A2](./rules/parsing/unknown-command-exits-nonzero.md)            | core       | defect        | L0    | implemented | partial  | 5    |
+| [A3](./rules/parsing/errors-name-the-offending-token.md)          | core       | defect        | L0    | implemented | partial  | 5    |
 | [A4](./rules/parsing/unexpected-positionals-rejected.md)          | core       | defect        | L1    | implemented | partial  | 1    |
 | [A5](./rules/parsing/no-fuzzy-auto-correction.md)                 | core       | defect        | L0    | implemented | partial  | 5    |
 | [A6](./rules/parsing/double-dash-terminator.md)                   | diagnostic | design-choice | L0    | implemented | partial  | 4    |
@@ -100,7 +102,7 @@ a decision rather than hiding a failure — and it decides what a waiver costs: 
 | [B4](./rules/streams/output-is-delivered-whole.md)                | core       | defect        | L1    | planned     | partial  | 2    |
 | [B5](./rules/streams/machine-mode-holds-on-parser-errors.md)      | core       | defect        | L0    | implemented | partial  | 5    |
 | [C1](./rules/exit-codes/help-exits-zero.md)                       | core       | defect        | L0    | implemented | partial  | 4    |
-| [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | defect        | L0    | implemented | partial  | 3    |
+| [C2](./rules/exit-codes/usage-errors-are-distinguishable.md)      | core       | defect        | L0    | implemented | partial  | 4    |
 | [C3](./rules/exit-codes/exit-codes-are-deterministic.md)          | core       | defect        | L0    | implemented | partial  | 5    |
 | [D1](./rules/discoverability/version-flag-exists.md)              | core       | defect        | L0    | implemented | partial  | 5    |
 | [D2](./rules/discoverability/bare-invocation-is-a-usage-error.md) | core       | design-choice | L0    | implemented | partial  | 4    |
@@ -111,7 +113,7 @@ a decision rather than hiding a failure — and it decides what a waiver costs: 
 | [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | design-choice | L0    | implemented | partial  | 4    |
 | [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | defect        | L0    | implemented | partial  | 4    |
 
-23 rules · 0 `complete` · 23 `partial` · 92 named gaps.
+23 rules · 0 `complete` · 23 `partial` · 95 named gaps.
 
 ### Parsing
 
@@ -210,6 +212,8 @@ cancellation, bounded shutdown, `SIGPIPE`, resumability.
 Why we chose what we chose, citing the research.
 
 - [Stay pre-1.0 while the design is still moving](./decisions/pre-1-0-while-the-design-moves.md) — A version number is a claim about stability, and this project was making one it could not keep — so the 1.x line was withdrawn, the tags deleted, and the promised surface narrowed to what is actually settled.
+- [Require a config, and never raise who owns the target](./decisions/require-a-config-never-raise-ownership.md) — Where a rule needs a declaration, requiring the caller to write one is the answer — and who owns the target is not a distinction this documentation makes, because both branches cost a second explanation for a use nobody has.
+- [If it is not in the config, the kit does not infer it](./decisions/not-in-the-config-not-inferred.md) — What a config must minimally declare resolves to one principle — a choice the kit makes for a caller is stated in the file or is not made at all — which rules out an empty object, an `acc init` that derives values by probing the target, and optional keys with defaults behind them.
 - [Exit codes stay below 125](./decisions/exit-codes-below-125.md) — Reserving the band POSIX and
   the delegators already use, rather than inventing a new one, keeps our domain codes clear of the
   shell's — on POSIX, and not without residue.
@@ -225,6 +229,10 @@ How to actually do things.
 - [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — Take a CLI
   from its first failing check to a green gate — triaging each failure into a fix, a declared
   waiver, or named debt.
+
+- [How to record surfaces below the root](./guides/how-to-record-surfaces-below-the-root.md) —
+  Record your tool's rejections below the root — with a harness `acc probe-plan` generates, or by
+  hand — and hand the batch to `acc check` for a census covering the paths the kit cannot probe.
 
 - [How to add a checker](./guides/how-to-add-a-checker.md) — Take a rule from a page with no
   enforcement to one the gate holds — declaring probes, writing the check, wiring the registry,

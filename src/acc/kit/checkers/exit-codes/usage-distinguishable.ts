@@ -1,5 +1,5 @@
 import { crashedUnverified, findingFor, truncatedUnverified } from "../../finding.ts";
-import { SENTINEL } from "../../inert.ts";
+import { SENTINEL, VERB_DISPATCH_ASSUMED } from "../../inert.ts";
 import type { Checker, Discovery, Finding, History, Invocation, Observation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -8,20 +8,47 @@ const RULE_ID = "C2";
 const finding = findingFor(RULE_ID);
 
 /**
- * Which rule classifies each of this checker's shapes as a usage error.
+ * Which rule classifies each of this checker's shapes as a usage error, and what to CALL that
+ * shape in a verdict.
  *
  * The table exists so a waiver can withdraw a shape. It is the one place the coupling between
  * these rules is written down, and it belongs in the kit rather than in a project's config.
+ *
+ * The third column is here rather than in a table of its own so the two cannot drift: a label
+ * that disagreed with the shape it names would be worse than no label at all.
  */
-const OWNERS: readonly (readonly [string, string])[] = [
-  ["C2: usage error via flag", "A1"],
-  ["C2: usage error via verb", "A2"],
-  ["C2: usage error via the bare invocation", "D2"],
-  ["C2: usage error via a value outside", "A7"],
+const OWNERS: readonly (readonly [mark: string, rule: string, label: string])[] = [
+  ["C2: usage error via flag", "A1", "unknown-flag"],
+  ["C2: usage error via verb", "A2", "unknown-verb"],
+  ["C2: usage error via the bare invocation", "D2", "bare"],
+  ["C2: usage error via a value outside", "A7", "bad-value"],
 ] as const;
 
 const hasPurpose = (o: Observation, mark: string): boolean =>
   o.purposes.some((p) => p.startsWith(mark));
+
+/**
+ * THE CODES, EACH NAMED BY THE INVOCATION THAT PRODUCED IT.
+ *
+ * A bare `(2,2,0)` tells a reader that something exited 0 and leaves them to work out WHICH —
+ * and unknown flag, unknown verb, bare invocation and out-of-set value are four different fixes.
+ * The first adopter to hit this line could not tell them apart and went to `acc show C2 --body`
+ * to read the probe order off the page, which is a detour the verdict can spare them.
+ *
+ * It also carries the coupling for free. `bare 0` says the zero is D2's shape without this
+ * checker asserting that it always is: a fixed "see D2" note would be wrong on any run where the
+ * flag or verb shape returned the zero instead.
+ *
+ * An unlabelled code is printed bare rather than guessed at — a shape with no owner in the table
+ * is a shape this function has nothing true to say about.
+ */
+const describeCodes = (usage: Observation[]): string =>
+  usage
+    .map((o) => {
+      const owner = OWNERS.find(([mark]) => hasPurpose(o, mark));
+      return owner ? `${owner[2]} ${o.exitCode}` : `${o.exitCode}`;
+    })
+    .join(", ");
 
 /** C2 — docs/wiki/rules/exit-codes/usage-errors-are-distinguishable.md */
 export const usageDistinguishableChecker: Checker = {
@@ -47,11 +74,19 @@ export const usageDistinguishableChecker: Checker = {
   // one is byte-identical to, so the recorder runs it once. What is left is the unexpected
   // positional, and it stays out of reach for the reason A4 does: a stray positional is only a
   // stray positional if there is a verb for it to be stray to, and sending a verb is L1.
+  //
+  // The fourth gap is about the population itself rather than its size: ONE OF THE FOUR SHAPES IS
+  // ONLY A USAGE ERROR IF THE TARGET DISPATCHES VERBS. Against `ripgrep` the verb shape returned
+  // `1` — its documented no-match code, from a search that ran — and this checker collected
+  // `(2,1,2)` and called one of the cleanest exit-code taxonomies in circulation inconsistent.
+  // Every verdict that compares the codes says so now (`VERB_DISPATCH_ASSUMED` in inert.ts); none
+  // of them changes, because dropping the shape needs the target to declare it.
   coverage: "partial",
   coverageGaps: [
     "the internal-fault contrast is not established at L0 because no internal fault can be provoked inertly",
     "the taxonomy codes for more specific failures are not exercised",
     "an unexpected positional is never compared because a stray positional needs a verb to be stray to and sending a verb is above L0",
+    "the verb shape assumes the first positional selects a subcommand so a target that reads it as free-form data contributes an exit code that is not a usage error at all",
   ],
   coverageEstablished: [
     "an unknown root flag and an unknown root verb and the bare invocation all exit with the same non-zero code",
@@ -162,14 +197,22 @@ export const usageDistinguishableChecker: Checker = {
 
     const evidence = usage.map((o) => o.id);
     const codes = usage.map((o) => o.exitCode);
+    const shown = describeCodes(usage);
+
+    // Attached to every verdict below that reads these codes, because the verb shape is a member
+    // of the population all of them compare. Dropped where a waiver has already withdrawn that
+    // shape, since the premise is no longer load-bearing there.
+    const assumed = usage.some((o) => hasPurpose(o, "C2: usage error via verb"))
+      ? `; ${VERB_DISPATCH_ASSUMED}`
+      : "";
 
     if (codes.some((c) => c === 0)) {
-      return finding("fail", `a usage error exited 0 (${codes.join(",")})`, evidence);
+      return finding("fail", `a usage error exited 0 (${shown})${assumed}`, evidence);
     }
     if (new Set(codes).size !== 1) {
       return finding(
         "fail",
-        `the same error class produced different codes (${codes.join(",")})`,
+        `the same error class produced different codes (${shown})${assumed}`,
         evidence,
       );
     }
@@ -187,12 +230,12 @@ export const usageDistinguishableChecker: Checker = {
     return codes[0] === 2
       ? finding(
           "pass",
-          `${codes.length} usage-error shapes all use exit 2; internal-fault contrast unverified at L0${narrowed}`,
+          `${codes.length} usage-error shapes all use exit 2; internal-fault contrast unverified at L0${narrowed}${assumed}`,
           evidence,
         )
       : finding(
           "unverified",
-          `usage errors are consistent at exit ${codes[0]}, but not the declared 2, and no taxonomy was declared${narrowed}`,
+          `usage errors are consistent at exit ${codes[0]}, but not the declared 2, and no taxonomy was declared${narrowed}${assumed}`,
           evidence,
         );
   },

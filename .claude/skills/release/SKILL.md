@@ -142,6 +142,12 @@ Judge each finding by whether it names something **wrong**, not by whether it is
 often objects to a fix an earlier one asked for; that is two readers disagreeing about taste, and
 resolving it costs a round trip and buys nothing.
 
+**Finish on a read of the edited note, not of the note that earned the last fix.** A repair earns
+the next read exactly as a defect does — the cycle above still governs, so keep going while reads
+return defects and stop when they return preferences. Do not stop on a count. Your last edits are
+the only ones nothing has checked, and a note also goes stale on its own: a sentence that was true
+when written can be false by the time it publishes.
+
 **Watch for the note arguing with its own previous reader** — a term explained three times, a
 paragraph defending against an objection this reader never raised. That is a hazard of reading it
 more than once, and only a fresh pair of eyes will see it, because the person editing remembers

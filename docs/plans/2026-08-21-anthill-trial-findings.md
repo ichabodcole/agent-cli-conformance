@@ -1,8 +1,8 @@
 ---
 type: plan
 generated: { by: claude-opus-5, at: 2026-08-21 }
-status: draft
-lifecycle: live
+status: stable
+lifecycle: discharged
 description:
   Coarse plan for the work coming out of the first outside first-contact trial (anthill, acc
   1.0.1). Splits the findings into five workstreams by kind of change, proposes a branch per
@@ -12,6 +12,13 @@ tags: [adoption, report, evidence, docs, readme, trial]
 ---
 
 # Work from the anthill trial
+
+> **Discharged 2026-08-23.** The gate below was met: two trials against `acc` 0.1.0 — `sable`'s
+> re-run of this same protocol, and a blind agent against `ripgrep` — found zero core violations
+> and zero real defects in the anthill target, with the A1/A3 fix validated by its own reporter.
+> What those trials found on the way through is planned in
+> [clear the runway, then take off](./2026-08-23-clear-the-runway-then-take-off.md). This document
+> is now a record of what was intended, which is not a record of what exists.
 
 An outside agent ran `acc` 1.0.1 against a real TypeScript CLI for about ninety minutes, cold.
 Their verdict was "worth it": one real defect fixed, one filed, one waived, one false positive.

@@ -72,36 +72,39 @@ land, which is why they are grouped below by what blocks them rather than sequen
 
 ## 1. Remediation becomes structured data
 
-**What it is.** `next` is emitted today as prose and a shell string:
+**What it is.** The injection half of this step has shipped. `next` no longer carries a shell
+string; it carries an executable and an argv array, one element per argument:
 
 ```json
-"next": [{ "command": "acc show A1 --body", "when": "to read the full text" }]
+"next": [{ "exec": "acc", "args": ["show", "A1", "--body"], "when": "to read the full text" }]
 ```
 
-It becomes an object carrying an executable plus an **argv array**, **typed placeholders**, an
-**effect classification**, a **confirmation requirement**, and **provenance** — treated by a
-consumer as a proposal to validate, never as trusted text to run.
+What remains is the description of what an offer MEANS: **typed placeholders**, an **effect
+classification**, a **confirmation requirement**, and **provenance** — the fields that let a
+consumer validate a proposal rather than merely spawn it safely.
 
-**Why it matters.** A shell string is a command-injection boundary the moment a user-controlled
-identifier, path, or remote string is interpolated into it, and it loses the distinction between
-argv and shell syntax on the way out — a semicolon, a backtick or a glob is data or syntax
-depending entirely on who executes the string. Today's placeholders make it worse by being
-undeclared: `acc link --project <name>` carries a `<name>` no schema describes, so a caller has
-to recognise the convention by reading it. That is already written down honestly in
-[the error-envelope concept](./wiki/concepts/error-envelope.md#next-carries-remediation-as-untyped-command-templates),
-which calls the typed version "the intended direction" and says plainly it is not implemented.
+**Why it matters.** The argv split closed the boundary: an identifier interpolated into a shell
+string is data or syntax depending entirely on who executes it, and in an argv element it is
+only ever data. The remaining gap is a different one. An offer still says nothing about what
+running it would do, and its placeholders are still undeclared — `acc link --project <name>`
+carries a `<name>` no schema describes, so a caller has to recognise the convention by reading
+it. A consumer can therefore run an offer safely and still not know whether it writes anything.
+[The error-envelope concept](./wiki/concepts/error-envelope.md#next-carries-remediation-as-an-executable-plus-an-argv-array)
+states both halves — what the field now is, and what it still does not carry.
 
-**Why first.** Three reasons compound. `acc` emits `next` in every success envelope right now, so
-consumers can start depending on the string shape today. The change is small, touching the
-envelope and one declaration. And the cost curve is the one the project already argued about
-somewhere else: the [exit-code decision](./wiki/decisions/exit-codes-below-125.md) rests on
-KEP-2551 having been alpha-gated behind a feature flag since 2022 — "not because the design is
-unsound, but because retrofitting exit codes onto a tool with existing consumers is nearly
-impossible." A remediation schema is the same shape of decision, at the same stage, with a safety
-consequence attached rather than an ergonomic one.
+**Why first.** Three reasons compounded; two are untouched and the third is weaker than it was.
+`acc` emits `next` in every success envelope, so consumers can start depending on its shape today.
+The remaining change is small, touching the envelope and one declaration. And the cost curve is the
+one the project already argued about somewhere else: the
+[exit-code decision](./wiki/decisions/exit-codes-below-125.md) rests on KEP-2551 having been
+alpha-gated behind a feature flag since 2022 — "not because the design is unsound, but because
+retrofitting exit codes onto a tool with existing consumers is nearly impossible." A remediation
+schema is the same shape of decision, at the same stage. What has changed is the third reason: the
+safety consequence is no longer attached, so what is left is an ergonomic argument competing on
+ergonomic terms.
 
-**Blocked on.** Nothing. The design argument is written; what is missing is the schema and the
-emitter.
+**Blocked on.** Nothing. The design argument is written; what is missing is the vocabulary for
+effects and placeholders, and the emitter that fills it in.
 
 ## 2. Version the contract, not only the rules
 
@@ -316,9 +319,14 @@ you add the second key**, while the parser and its docs are already open; it is 
 expensive once adopters have written both.
 
 It is also the largest single unblocker of the [coverage debt](#the-coverage-debt). The biggest
-group of gaps is some variant of "only the root is probed", which is not an L0 limit at all — a
-subcommand's `--help` is exactly as inert as the root's. It is a _discovery_ limit, and discovery
-today means parsing English help text.
+group of gaps is some variant of "only the root is probed", and every one of them is a _discovery_
+limit — discovery today means parsing English help text, and a declaration replaces the parsing.
+That is what this step buys, and it is not the whole blocker: **a subcommand's `--help` is not as
+inert as the root's**, and this project's own corpus is what falsifies the claim. `bounty close
+--help` closed the board; `state --help` dumped it; `tail --help` opened a stream that never exited
+([defect archaeology §6.1](./research/2026-08-15-defect-archaeology.md)). Knowing the subcommand
+exists does not license running it — see the [coverage debt](#the-coverage-debt) for what the second
+blocker is and which gaps carry it.
 
 **Blocked on.** Step 5, so a declaration can state which profile it claims, and step 2, since
 this is the most pinned-to artifact of the lot.
@@ -499,9 +507,13 @@ at runtime, and `prepare` ran `husky` unguarded. Both worked perfectly in this r
 would have failed on the consumer's first import. Both were found by hand, once, on the day the
 package was first installed anywhere — which is not a mechanism.
 
-**Also here.** A git install currently prints `Blocked 1 postinstall`, because the `prepare`
-script that sets up this repository's own hooks is shipped inside the consumer's artifact. It is
-harmless and it is noise a consumer should not have to interpret.
+**Also here.** ~~A git install prints `Blocked 1 postinstall`, because the `prepare` script that
+sets up this repository's own hooks is shipped inside the consumer's artifact.~~ _Resolved
+2026-08-23_: the script is now `hooks`, run once per clone, so nothing runs on a consumer's
+install and a git install prints no block. Kept for the record, because it is this section's own
+argument in miniature: it was harmless, it was invisible from a source checkout, three separate
+readers stopped at it on first contact, and it took someone installing the package the way an
+adopter does to see it at all.
 
 **Blocked on** nothing. The cost is one CI job and a fixture; the reason it is not done is that
 the release story is a day old.
@@ -659,10 +671,29 @@ of what they say, and — the category that was systematically absent — **whic
 universal clause reaches that no probe visits.** A page can look thorough while silently scoping a
 universal rule down to whatever the probe happened to run.
 
-**Blocked on discovery** — the largest group by some distance. None of these is an L0 safety
-limit: a subcommand's help path is exactly as inert as the root's. They are blocked on knowing
-that the subcommand exists, which today means parsing English help text. Step 6, with step 3's
-schema-based discovery as the interim improvement.
+**Blocked on discovery** — the largest group by some distance. Every gap here is blocked on knowing
+that the subcommand exists, which today means parsing English help text: step 6, with step 3's
+schema-based discovery as the interim improvement. That is the blocker they share and it is why they
+are grouped, and per the note above, a gap can carry a second one.
+
+**They do, and this entry used to deny it.** It read: _"none of these is an L0 safety limit — a
+subcommand's help path is exactly as inert as the root's."_ That is false, and this repo's own
+corpus falsifies it. `bounty close --help` **closed the board**; `state --help` dumped it;
+`tail --help` opened the stream and never exited
+([defect archaeology §6.1](./research/2026-08-15-defect-archaeology.md)). A subcommand's help path is
+a subcommand invocation, and whether it does work is a property of the target, not of the token
+`--help`. The kit already behaves correctly on this and the argument here must not be read as
+licence to change it: `classifyInertness` in [`../src/acc/kit/inert.ts`](../src/acc/kit/inert.ts)
+grants `help-path` only when **every** argv token is a help or format token, so `mycli deploy
+--help` does not classify and is refused. **That refusal is correct and stays.** So these gaps do
+not stop being blocked on discovery — they gain a second blocker: a real sandbox, or an operator
+running a kit-generated probe plan and handing back what came out. A per-command `effects: read_only`
+declaration was named here as a route and is **withdrawn** — a subject's self-description is evidence
+to test, not an execution-safety boundary, so no claim a target makes about itself licenses the kit
+to run its verbs
+([the decision](./plans/2026-08-24-below-the-root-before-a-second-cli.md#the-decision-and-it-is-now-a-decision-not-to-build)).
+The sandbox half is the same blocker the effect-observation group below already names, and by the
+rule above each gap closes with whichever of its blockers lands later.
 
 - Every gap of the form "only the root is probed", "nested subcommands are not probed at L0",
   "nested help is not probed", "a help subcommand is not probed" and "only root help is scanned".

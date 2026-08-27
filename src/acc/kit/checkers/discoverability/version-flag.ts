@@ -9,7 +9,6 @@ import type { Checker, Finding, History, Invocation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
 const RULE_ID = "D1";
-const MACHINE = "D1 machine:";
 
 const finding = findingFor(RULE_ID);
 
@@ -69,8 +68,7 @@ export const versionFlagChecker: Checker = {
     // findByPurpose, not findByArgs: both probes share args (["--version"]) and differ only by
     // env, which findByArgs ignores — it would return whichever recorded first, silently
     // collapsing the exact pair this checker exists to tell apart.
-    const runs = [...findByPurpose(h, "D1:"), ...findByPurpose(h, MACHINE)];
-    const _machine = findByPurpose(h, MACHINE)[0];
+    const runs = findByPurpose(h, "D1:");
     const plain = runs.find((o) => !o.invocation.env && o.invocation.args.length === 1);
     const hostile = runs.find((o) => o.invocation.env);
     if (!plain) {

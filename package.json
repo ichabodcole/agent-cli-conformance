@@ -11,7 +11,7 @@
   },
   "homepage": "https://github.com/ichabodcole/agent-cli-conformance#readme",
   "scripts": {
-    "prepare": "husky || true",
+    "hooks": "husky",
     "docs:lint": "bun docs/wiki/lint.ts",
     "docs:lint:artifacts": "bun docs/lint.ts",
     "docs:graph": "bun docs/wiki/lint.ts --json",

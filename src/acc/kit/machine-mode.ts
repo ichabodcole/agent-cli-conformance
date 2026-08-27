@@ -150,10 +150,25 @@ export function stringValuesOf(document: unknown): string[] {
  * off when piped." must not read as machine-first.
  */
 export function helpStatesMachineDefault(help: string): boolean {
+  // UNWRAP FIRST. Help text is hard-wrapped, and this used to split on `\n` as though a newline
+  // ended a sentence — so a claim that spanned two display lines became two clauses, neither of
+  // which matched, and the SAME sentence passed or failed depending only on where it wrapped:
+  //
+  //   "…needs no format switch because JSON is\nthe default."  -> false
+  //   "…prints JSON by default on stdout."                     -> true
+  //
+  // Reported by the second adopter, who reached the documented `unverified` ceiling on their
+  // third rewording and whose first two failures were about typography rather than about what
+  // they claimed. Rewrapping is mechanical and needs no theory of meaning: a line that does not
+  // end in sentence punctuation is a line that continues, so join it to the next.
+  //
+  // A blank line stays a break — it separates blocks, and joining across one would build a
+  // clause out of a heading and the paragraph beneath it.
+  const unwrapped = help.replace(/([^\s.;:!?])[ \t]*\n(?=[ \t]*\S)/g, "$1 ");
   // Split on SENTENCE punctuation, not on every dot: `coverage.json` must not become `coverage`
   // + `json by default`, which is how "Coverage is written to coverage.json by default" once read
   // as a promise about stdout.
-  return help.split(/[;\n]|\.(?=\s|$)/).some(isMachineDefaultClause);
+  return unwrapped.split(/[;\n]|\.(?=\s|$)/).some(isMachineDefaultClause);
 }
 
 function isMachineDefaultClause(clause: string): boolean {

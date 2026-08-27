@@ -10,7 +10,9 @@
  */
 import { Command, CommanderError, Option } from "commander";
 import { checkCommand } from "./commands/check.ts";
+import { compareCommand } from "./commands/compare.ts";
 import { pathCommand } from "./commands/path.ts";
+import { probePlanCommand } from "./commands/probe-plan.ts";
 import { rulesCommand } from "./commands/rules.ts";
 import { schemaCommand } from "./commands/schema.ts";
 import { showCommand } from "./commands/show.ts";
@@ -111,6 +113,42 @@ function enforceClosedSets(argv: string[]): void {
   }
 }
 
+/**
+ * Flags that may be given AT MOST ONCE, with the reason each one refuses its own repetition.
+ *
+ * Commander is LAST-WINS for a repeated string option: `--declaration a.json --declaration b.json`
+ * silently reads `b.json`. That is the wrong default for a batch of recorded surfaces, and the
+ * reason is not tidiness — one batch is ONE SESSION ASSERTION, the caller's statement that these
+ * records came from one tool on one machine in one sitting. Merging two batches would erase the
+ * binding the batch exists to assert, and keeping one of them silently is a caller's claim deleted
+ * without a word. A caller with two sessions runs twice.
+ *
+ * Enforced over raw argv, before commander parses, for the same reason `enforceClosedSets` is: the
+ * option's own parser never sees the first occurrence again once the second overwrites it.
+ */
+const AT_MOST_ONCE: Record<string, string> = {
+  "--recorded-surfaces":
+    "One batch is one session assertion — these records came from one tool, on one machine, in one sitting. Merging two would erase the binding the batch exists to assert. Run acc check once per batch.",
+};
+
+function refuseRepeated(argv: string[]): void {
+  const counts = new Map<string, number>();
+  for (const token of argv.slice(2)) {
+    // Everything after the terminator is positional DATA, never a flag (rule A6).
+    if (token === "--") break;
+    const name =
+      token.startsWith("--") && token.includes("=") ? token.slice(0, token.indexOf("=")) : token;
+    if (!(name in AT_MOST_ONCE)) continue;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  for (const [name, n] of counts) {
+    if (n > 1)
+      throw usageError(`${name} was given ${n} times, and it may be given at most once`, {
+        hint: AT_MOST_ONCE[name],
+      });
+  }
+}
+
 const argv = process.argv;
 const mode = earlyMode(argv);
 const startedAt = performance.now();
@@ -119,6 +157,7 @@ const startedAt = performance.now();
 // wrong, whether or not the path it took would have needed to parse.
 try {
   enforceClosedSets(argv);
+  refuseRepeated(argv);
 } catch (err) {
   process.exit(emitError({ mode, command: argv[2] ?? "", error: err }));
 }
@@ -224,7 +263,11 @@ for (const a of GLOBAL_ARGS) program.addOption(toOption(a));
 for (const spec of COMMANDS) {
   const cmd = program.command(spec.name).description(spec.description);
   for (const p of spec.positionals) {
-    cmd.argument(p.required ? `<${p.name}>` : `[${p.name}]`, p.description);
+    // A variadic positional takes every remaining token, and commander hands the action ONE
+    // argument for it: an array. `<reports...>` still requires at least one, so a command
+    // needing more enforces that in its handler, where the count can be quoted back.
+    const tail = p.variadic ? "..." : "";
+    cmd.argument(p.required ? `<${p.name}${tail}>` : `[${p.name}${tail}]`, p.description);
   }
   // Global args are attached to EVERY command in this loop as well as to the root above.
   // Declaring them once on the root is the citty gotcha: root flags do not reach subcommands,
@@ -239,7 +282,9 @@ for (const spec of COMMANDS) {
   cmd.action((...actionArgs: unknown[]) => {
     commandRan = true;
     // commander passes: ...positionals, options, command
-    const positionals = actionArgs.slice(0, spec.positionals.length) as string[];
+    // One slot per DECLARED positional, variadic included — commander collapses a variadic's
+    // tokens into a single array argument, so the slot count never varies with the argv length.
+    const positionals = actionArgs.slice(0, spec.positionals.length) as Array<string | string[]>;
     const opts = actionArgs[spec.positionals.length] as Record<string, string | boolean>;
     // Both scopes, subcommand first. Now that the globals also live on the root, `acc --json
     // rules` parses — and reading only the subcommand's options would accept the flag and
@@ -274,13 +319,31 @@ for (const spec of COMMANDS) {
         return tagsCommand(resolved, startedAt);
       case "schema":
         return schemaCommand(resolved);
-      case "check":
-        return checkCommand(
+      case "probe-plan":
+        return probePlanCommand(
           positionals[0] as string,
-          { configDir: opts.configDir as string | undefined },
+          {
+            declaration: opts.declaration as string | undefined,
+            paths: opts.paths as string | undefined,
+            out: opts.out as string | undefined,
+            force: Boolean(opts.force),
+          },
           resolved,
           startedAt,
         );
+      case "check":
+        return checkCommand(
+          positionals[0] as string,
+          {
+            configDir: opts.configDir as string | undefined,
+            declaration: opts.declaration as string | undefined,
+            recordedSurfaces: opts.recordedSurfaces as string | undefined,
+          },
+          resolved,
+          startedAt,
+        );
+      case "compare":
+        return compareCommand(positionals[0] as string[], resolved, startedAt);
       default:
         throw new AccError("internal", `no handler for command "${spec.name}"`);
     }

@@ -1,0 +1,739 @@
+{
+  "formatVersion": "0",
+  "provenance": "emitted",
+  "selfDescription": {
+    "args": [
+      "help",
+      "--json"
+    ]
+  },
+  "commands": [
+    {
+      "path": [
+        "info"
+      ],
+      "args": [],
+      "positionals": []
+    },
+    {
+      "path": [
+        "info",
+        "show"
+      ],
+      "args": [
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "info",
+        "env"
+      ],
+      "args": [
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        },
+        {
+          "name": "--file",
+          "type": "string",
+          "status": "valid"
+        },
+        {
+          "name": "--show-values",
+          "type": "boolean",
+          "status": "valid"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "convene"
+      ],
+      "args": [
+        {
+          "name": "--channel",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--force",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "join"
+      ],
+      "args": [
+        {
+          "name": "--handle",
+          "type": "string",
+          "status": "valid"
+        },
+        {
+          "name": "--channel",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "comms"
+      ],
+      "args": [],
+      "positionals": []
+    },
+    {
+      "path": [
+        "comms",
+        "send"
+      ],
+      "args": [
+        {
+          "name": "--text",
+          "type": "string",
+          "status": "valid"
+        },
+        {
+          "name": "--as",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "handle"
+        },
+        {
+          "name": "--channel",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--stdin",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--dry-run",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--as-of",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "id"
+        },
+        {
+          "name": "--anyway",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "comms",
+        "read"
+      ],
+      "args": [
+        {
+          "name": "--channel",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--since",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "id"
+        },
+        {
+          "name": "--id",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "id"
+        },
+        {
+          "name": "--last",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "N"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        },
+        {
+          "name": "--as",
+          "type": "string",
+          "status": "valid"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "comms",
+        "follow"
+      ],
+      "args": [
+        {
+          "name": "--channel",
+          "type": "string",
+          "status": "valid"
+        },
+        {
+          "name": "--as",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "handle"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "comms",
+        "positions"
+      ],
+      "args": [
+        {
+          "name": "--channel",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        },
+        {
+          "name": "--as",
+          "type": "string",
+          "status": "valid"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "comms",
+        "stand-down"
+      ],
+      "args": [
+        {
+          "name": "--as",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "handle"
+        },
+        {
+          "name": "--channel",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "spawn"
+      ],
+      "args": [
+        {
+          "name": "--handles",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "handle…"
+        },
+        {
+          "name": "--session",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--attach",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--cwd",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "path"
+        },
+        {
+          "name": "--force",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "attach"
+      ],
+      "args": [
+        {
+          "name": "--session",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "down"
+      ],
+      "args": [
+        {
+          "name": "--session",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--force",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "status"
+      ],
+      "args": [
+        {
+          "name": "--channel",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "team"
+      ],
+      "args": [],
+      "positionals": []
+    },
+    {
+      "path": [
+        "team",
+        "ls"
+      ],
+      "args": [
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "team",
+        "use"
+      ],
+      "args": [
+        {
+          "name": "--name",
+          "type": "string",
+          "status": "valid"
+        },
+        {
+          "name": "--force",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "team",
+        "show"
+      ],
+      "args": [
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "scan"
+      ],
+      "args": [
+        {
+          "name": "--root",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "dir"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "commit"
+      ],
+      "args": [
+        {
+          "name": "--paths",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "path…"
+        },
+        {
+          "name": "--message",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text"
+        },
+        {
+          "name": "--stdin",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--file",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "path"
+        },
+        {
+          "name": "--as",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "handle"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "feedback"
+      ],
+      "args": [
+        {
+          "name": "--message",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "message"
+        },
+        {
+          "name": "--category",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "bug|friction|idea|docs"
+        },
+        {
+          "name": "--skill",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--submit",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "field-notes"
+      ],
+      "args": [
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "init"
+      ],
+      "args": [
+        {
+          "name": "--templates",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "path"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "name"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    },
+    {
+      "path": [
+        "migrate"
+      ],
+      "args": [
+        {
+          "name": "--dry-run",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--keep-paths",
+          "type": "boolean",
+          "status": "valid"
+        },
+        {
+          "name": "--team",
+          "type": "string",
+          "status": "valid"
+        },
+        {
+          "name": "--format",
+          "type": "string",
+          "status": "valid",
+          "valueHint": "text|json"
+        }
+      ],
+      "positionals": []
+    }
+  ]
+}

@@ -796,6 +796,137 @@ describe("buildReport", () => {
       expect(r.counts.coreFailures).toBe(1);
     });
   });
+
+  // A rule the catalogue declares and no checker answers to. Before this it produced no finding
+  // at all: `acc rules` listed B4, `acc show B4` rendered its page, and the report was silent —
+  // the one behaviour this catalogue exists to object to, shipped by the kit itself.
+  describe("a rule with no checker is reported, not omitted", () => {
+    const B4 = {
+      ruleId: "B4",
+      rulePath: "docs/wiki/rules/streams/output-is-delivered-whole.md",
+      tier: "core" as const,
+      deviation: "defect" as const,
+      probeLevel: "L1" as const,
+    };
+
+    test("it appears as a not-applicable finding carrying its reason", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "pass")],
+        [checker("A1", "core")],
+        { rules: {}, knownFailures: {} },
+        "L0",
+        VERSION,
+        [B4],
+      );
+      const b4 = r.findings.find((f) => f.ruleId === "B4");
+      expect(b4?.applicable).toBe(false);
+      expect(b4?.detail).toContain("no checker exists");
+      expect(b4?.rulePath).toBe(B4.rulePath);
+      expect(r.notApplicable).toEqual(["B4"]);
+    });
+
+    // It must gate NOTHING. A rule nobody can check is not evidence against a target, and
+    // counting it would make every report non-conformant for a reason the target cannot fix.
+    test("it gates neither conformance nor full verification", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "pass")],
+        [checker("A1", "core")],
+        { rules: {}, knownFailures: {} },
+        "L0",
+        VERSION,
+        [B4],
+      );
+      expect(r.conformant).toBe(true);
+      expect(r.fullyVerified).toBe(true);
+      expect(r.counts.core).toBe(1);
+      expect(r.counts.unverified).toBe(0);
+      expect(r.evidenceGaps).toEqual([]);
+    });
+
+    // The distinction from A4, which is the one a reader is most likely to collapse: A4 comes
+    // back at L1 because its checker exists and declares that level. B4 has nothing to run at
+    // any level, so raising the level must not put it back in scope wearing `unverified` — "we
+    // looked and could not tell" — over a probe that does not exist.
+    test("raising the run level does NOT make it applicable, unlike a rule that has a checker", () => {
+      const r = buildReport(
+        H,
+        [finding("A4", "unverified")],
+        [checker("A4", "core", "L1")],
+        { rules: {}, knownFailures: {} },
+        "L1",
+        VERSION,
+        [B4],
+      );
+      expect(r.findings.find((f) => f.ruleId === "A4")?.applicable).toBe(true);
+      expect(r.findings.find((f) => f.ruleId === "B4")?.applicable).toBe(false);
+    });
+
+    test("it is placed in rule-id order rather than appended", () => {
+      const r = buildReport(
+        H,
+        [finding("B3", "pass"), finding("B5", "pass")],
+        [checker("B3", "core"), checker("B5", "core")],
+        { rules: {}, knownFailures: {} },
+        "L0",
+        VERSION,
+        [B4],
+      );
+      expect(r.findings.map((f) => f.ruleId)).toEqual(["B3", "B4", "B5"]);
+    });
+
+    // A checker landing for the rule wins: the declaration is the kit's copy of the rule pages,
+    // and a stale entry must not shadow a real verdict with "no checker exists".
+    test("a real finding for the same rule is not displaced by the declaration", () => {
+      const r = buildReport(
+        H,
+        [finding("B4", "fail")],
+        [checker("B4", "core")],
+        { rules: {}, knownFailures: {} },
+        "L0",
+        VERSION,
+        [B4],
+      );
+      expect(r.findings.filter((f) => f.ruleId === "B4")).toHaveLength(1);
+      expect(r.findings[0]?.verdict).toBe("fail");
+      // ...and it still BINDS. A stale declaration that merely failed to displace the finding,
+      // while marking it not-applicable, would suppress the violation just as thoroughly.
+      expect(r.findings[0]?.applicable).toBe(true);
+      expect(r.conformant).toBe(false);
+    });
+  });
+
+  // WHERE THE CONFIG CAME FROM travels with the verdict it framed. A report is read away from
+  // the shell that produced it, so "which acc.config.json was this?" has no other answer.
+  describe("the config's provenance is published", () => {
+    test("it is carried through from the loaded config", () => {
+      const source = { origin: "discovered" as const, path: "/w/acc.config.json", dir: "/w" };
+      const r = buildReport(
+        H,
+        [finding("A1", "pass")],
+        [checker("A1", "core")],
+        { rules: {}, knownFailures: {}, source },
+        "L0",
+        VERSION,
+      );
+      expect(r.configSource).toEqual(source);
+    });
+
+    // A config assembled in memory read no file, and says so rather than inventing a path.
+    test("a config that came from no file reports origin none", () => {
+      const r = buildReport(
+        H,
+        [finding("A1", "pass")],
+        [checker("A1", "core")],
+        { rules: {}, knownFailures: {} },
+        "L0",
+        VERSION,
+      );
+      expect(r.configSource.origin).toBe("none");
+      expect(r.configSource.path).toBeNull();
+    });
+  });
 });
 
 // Which rule `acc check` offers as the next thing to read. The report can carry several red

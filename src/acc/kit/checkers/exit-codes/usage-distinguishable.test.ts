@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { VERB_DISPATCH_ASSUMED } from "../../inert.ts";
 import { record } from "../../record.ts";
 import { digestOfText } from "../../runner.ts";
 import type { History, TargetInfo } from "../../types.ts";
@@ -246,5 +247,48 @@ describe("a waiver does not take evidence from the rules that did not inherit th
       expect({ rule: f.ruleId, verdict: f.verdict }).toEqual({ rule: expected, verdict: "pass" });
       expect(f.evidence).toContain(bare?.id as string);
     }
+  });
+});
+
+// THE SHAPE THAT IS ONLY A USAGE ERROR IF THE TARGET DISPATCHES VERBS. Against
+// `first-positional-is-data.ts` the verb shape returns 1 — a no-match, not an error — so this
+// checker collects (2,1,2) and reports a taxonomy as inconsistent when it is not. Unchanged
+// here: what the verdict now carries is the premise that put the 1 in the population.
+describe("C2 — the contrast says what it assumed about the first positional", () => {
+  test("still fails a target whose first positional is data, and discloses the assumption", async () => {
+    const h = await record(fixture("first-positional-is-data.ts"), [usageDistinguishableChecker]);
+    const f = usageDistinguishableChecker.check(h);
+    expect({ verdict: f.verdict, discloses: f.detail.includes(VERB_DISPATCH_ASSUMED) }).toEqual({
+      verdict: "fail",
+      discloses: true,
+    });
+    // Each code named by the shape that produced it — which on THIS target is the whole finding:
+    // the stray `1` is the verb shape, ripgrep's documented no-match code from a search that ran,
+    // and the label says so without the reader opening the rule page to recover the probe order.
+    expect(f.detail).toContain("unknown-flag 2, unknown-verb 1, bare 2");
+  });
+
+  test("carries it on the conforming fixture's pass", async () => {
+    const h = await record(fixture("conforming.ts"), [usageDistinguishableChecker]);
+    expect(usageDistinguishableChecker.check(h).detail).toContain(VERB_DISPATCH_ASSUMED);
+  });
+
+  // ...and drops it where the premise is no longer load-bearing, because a waiver of A2 has
+  // already withdrawn the verb shape from the population being compared.
+  test("omits it once a waiver has withdrawn the verb shape", async () => {
+    const h = await record(
+      fixture("broken/exits-zero-on-unknown-flag.ts"),
+      [usageDistinguishableChecker],
+      false,
+      new Set(["A2"]),
+    );
+    expect(usageDistinguishableChecker.check(h).detail).not.toContain(VERB_DISPATCH_ASSUMED);
+  });
+
+  test("names the assumption in its coverage gaps", () => {
+    const named = usageDistinguishableChecker.coverageGaps.filter((g) =>
+      g.includes("the verb shape assumes"),
+    );
+    expect(named.length).toBe(1);
   });
 });

@@ -19,6 +19,7 @@ coverage_gaps:
   - the internal-fault contrast is not established at L0 because no internal fault can be provoked inertly
   - the taxonomy codes for more specific failures are not exercised
   - an unexpected positional is never compared because a stray positional needs a verb to be stray to and sending a verb is above L0
+  - the verb shape assumes the first positional selects a subcommand so a target that reads it as free-form data contributes an exit code that is not a usage error at all
 coverage_established:
   - an unknown root flag and an unknown root verb and the bare invocation all exit with the same non-zero code
   - for a target whose help advertises a closed value set a value outside it exits with that same code
@@ -206,6 +207,7 @@ the rest of this page, unexamined.
 - the taxonomy codes for more specific failures are not exercised
 - an unexpected positional is never compared because a stray positional needs a verb to be stray to
   and sending a verb is above L0
+- the verb shape assumes the first positional selects a subcommand so a target that reads it as free-form data contributes an exit code that is not a usage error at all
 
 ## Evidence
 

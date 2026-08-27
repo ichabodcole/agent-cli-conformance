@@ -117,20 +117,23 @@ something false. `git` is the illustration, and it is a good one precisely becau
 clean sheet. One capture, with the thirteen passing rules elided:
 
 ```
-NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 13 core partially covered
+NOT CONFORMANT (L0) — 2 core violated, 2 core unverified, 13 core partially covered  /opt/homebrew/bin/git  [acc 0.1.0]
 
   UNVR  A7  root help advertises no closed value set for any flag, so this target has made no declaration to falsify
-  UNVR  B3  no machine-mode flag was advertised in help, so there is nothing to parse
-  UNVR  B5  no machine-mode flag this probe can select was advertised in help, so there is no declared mode to hold
-  FAIL  C2  the same error class produced different codes (129,1,1)
+  UNVR  B5  no machine mode was DECLARED, and a flag matched from help by spelling is a guess at one rather than evidence of one; add `defaultOutput` to acc.config.json to have this checked
+  FAIL  C2  the same error class produced different codes (unknown-flag 129, unknown-verb 1, bare 1); this verdict assumes the first positional selects a subcommand, which nothing at L0 established
   FAIL  D2  bare invocation wrote 2290 bytes to stdout
-  FAIL  D3  help names no machine-mode flag or schema command; B3 will be unverified as a result
+  FAIL  D3  help names no machine-mode flag a caller could flip and no schema command: --json, --format and --output are looked for as bare switches, and one documented with a value slot is a flag that takes a value rather than one that selects a mode
 
-  core 13/18 · violations 2 · unverified 3 (all tiers; 3 core) · partial coverage 13 core · diagnostics 1
+  core 13/17 · violations 2 · unverified 2 (all tiers; 2 core) · partial coverage 13 core · diagnostics 1
 ```
 
-_Captured 2026-08-20 from Homebrew's `git` 2.55.0 on macOS/arm64, against this catalogue at 23
-rules._ Read it as one observation with coordinates, not as the result. Every number in it moves:
+_Re-captured 2026-08-26 from Homebrew's `git` 2.55.0 on macOS/arm64, against this catalogue at 23
+rules._ The capture it replaces was taken on 2026-08-20 from the same `git` and had since drifted
+from the tool in four places at once — `B3` had left the report, the unverified count and the core
+denominator had both moved, and two findings had been reworded. **That is this project's own
+defect class, in its own documentation**: the page nobody reopens after changing the code it
+quotes. It was found because an adopter asked what `C2`'s exit codes referred to. Read it as one observation with coordinates, not as the result. Every number in it moves:
 the totals with the catalogue, the byte count and the exit codes with the build — a different
 2.55.0 build on the same machine reports a different `D2` size. What the example is for is the
 _shape_ of the answer, and that has been stable while the numbers have not.
@@ -212,6 +215,13 @@ it in both output modes, and leaves the judging to a reader — which is the mos
 tool can honestly do.
 
 ## The details
+
+`acc check` reads `acc.config.json` from the **current working directory** unless `--config-dir`
+names another one — that directory only, and finding nothing there is the normal case. So two runs
+of the same command against the same absolute target path can reach different verdicts from
+different directories, and
+[how to reach L0](../guides/how-to-reach-l0-in-your-project.md#4-write-accconfigjson) says what to
+do about it.
 
 Two mechanisms live in `acc.config.json` that make **different statements about rules**. Keeping
 them apart is load-bearing: fold one into the other and the ratchet stops meaning anything.

@@ -26,6 +26,17 @@ export interface PositionalSpec {
   name: string;
   description: string;
   required: boolean;
+  /**
+   * This positional consumes every remaining token, and the handler receives an ARRAY.
+   *
+   * Declared here rather than encoded in the name, because three consumers read this field and
+   * each needs the fact rather than a spelling convention: `cli.ts` builds `<name...>`,
+   * `schema.ts` publishes it, and the conformance suite provokes a surplus-positional error —
+   * which a variadic command cannot have, since every extra token is another value. A command
+   * that wants a MINIMUM above one enforces it in its handler, where the number can be quoted
+   * back to the caller (see `compare`).
+   */
+  variadic?: boolean;
 }
 
 export interface CommandSpec {
@@ -219,8 +230,51 @@ export const COMMANDS: CommandSpec[] = [
       {
         name: "--config-dir",
         type: "string",
-        description: "Directory holding acc.config.json.",
+        // WHAT OMITTING IT DOES is half the description, and the half that was missing. Without
+        // the flag the CURRENT WORKING DIRECTORY is searched, and a file found there is loaded —
+        // so the same command against the same absolute target gives two verdicts from two
+        // directories. An adopter hit exactly that and worked it out only because residue from an
+        // earlier run was on disk. A flag description that documents the flag and not its absence
+        // leaves the default undocumented everywhere.
+        //
+        // "That directory only, with no search upward" is carried here as well as in the README,
+        // the guide and the concept page, because this is the text `acc check --help` prints and
+        // so the one a reader reaches without leaving their shell. "The working directory is
+        // searched" on its own invites the wrong picture — a walk up to the repo root, the way
+        // most tools resolve their config — and a reader holding it would leave a config one
+        // directory up and never learn why their waivers did nothing.
+        description:
+          "Directory holding acc.config.json. Omitted, the current working directory is searched — that directory only, with no search upward — and a file found there is loaded; the report names whichever was used.",
         valueHint: "dir",
+      },
+      // A FILE, and a separate one from `acc.config.json` — the name says which, for the same
+      // reason `--config-dir` says "dir". A declaration is falsifiable and a config is a choice:
+      // they have different authors, different lifetimes, and a maintainer publishing a
+      // declaration in their own repository must not be publishing somebody's suppressions with
+      // it. See src/acc/kit/declaration.ts.
+      {
+        name: "--declaration",
+        type: "string",
+        description:
+          "Path to a declaration file to diff against what the target says it accepts. Omitted, no comparison is made and the report says so; nothing here passes or fails, because the kit cannot tell which side of a disagreement is wrong.",
+        valueHint: "file",
+      },
+      // A FILE, on the `--declaration` precedent above and for that flag's own stated reason: a
+      // recorded batch is the same kind of thing as a declaration — somebody's account of what
+      // happened, handed to the kit to be diffed — so it arrives the same way. It is NOT an
+      // `acc.config.json` key: a key describing the target's own shape belongs in a declaration
+      // file, and a repository that committed a batch would be committing one machine's afternoon.
+      //
+      // THE PLURAL IS THE FILE'S CONTENTS, NOT A REPEATABLE FLAG. One file holds a batch of
+      // surfaces, and one document is one session assertion — so a second `--recorded-surfaces` is
+      // REFUSED rather than merged, which commander does not do for a string option on its own.
+      // See `refuseRepeated` in cli.ts, which is where that departure is enforced and argued.
+      {
+        name: "--recorded-surfaces",
+        type: "string",
+        description:
+          "Path to a batch of surfaces you recorded yourself, below the root the kit probes. Give it at most once — one batch is one session assertion, and a second is refused rather than merged. Every census line says who observed it; nothing here passes or fails. For the format: acc show how-to-record-surfaces-below-the-root",
+        valueHint: "file",
       },
     ],
     errors: [ErrorKind.NotFound],
@@ -251,7 +305,122 @@ export const COMMANDS: CommandSpec[] = [
       "thing: it names no declared verb and no declared flag. That buys least against a CLI whose",
       "first positional is free-form text (claude, llm, aider), where the token is a prompt.",
       "Point this only at a binary you are willing to run.",
+      "EVIDENCE: --json adds an `observations` array under .data — every probe that ran, with its",
+      "argv, exit code and timings. The ids each finding cites in `evidence` index it. `acc show`",
+      "does not resolve them; they exist only in the report the run produced.",
     ],
     examples: ["acc check ./mycli", "acc check $(which gh) --json"],
+  },
+  {
+    name: "probe-plan",
+    description: "Emit a capture harness for the command paths below the root.",
+    // `idempotent`, and the two neighbours are both wrong for a reason worth stating.
+    //
+    // NOT `read_only`: with `--out` this command writes a file the caller named, and the effects
+    // claim covers what a command CAUSES. An earlier draft put the harness on stdout to keep this
+    // `read_only` — that failed on the CLI's own machine-mode rule, since a redirect is not a
+    // terminal and `> capture.sh` therefore resolves to JSON and writes an envelope into a file
+    // named like a script. Nothing in the standard says a conforming CLI has no mutating commands;
+    // it says a CLI declares its effects honestly.
+    //
+    // NOT `non_idempotent` either, which is where `check` sits: this command spawns nothing. Same
+    // inputs in, same bytes out, and a second run leaves the same state — which is exactly what
+    // `idempotent` claims.
+    effects: "idempotent",
+    // The command's output is the PLAN, and it is data. The harness is a file the plan writes.
+    // `opaque` was considered and is the wrong fit: with `--out` there is a real envelope on
+    // stdout, and `opaque` promises no JSON is expected there.
+    output_kind: "data",
+    cardinality: "single",
+    positionals: [
+      {
+        name: "target",
+        description: "Path to the binary or script to plan a capture for.",
+        required: true,
+      },
+    ],
+    args: [
+      {
+        name: "--declaration",
+        type: "string",
+        description:
+          "Derive the command paths from this declaration's commands[].path. The convenient source, and the one that can only ever probe paths you have already named.",
+        valueHint: "file",
+      },
+      {
+        name: "--paths",
+        type: "string",
+        description:
+          'Command paths as a JSON array of arrays, e.g. [["state"], ["send", "note"]]. The source that can find a verb your declaration does not name, because it comes from wherever you actually enumerate them.',
+        valueHint: "file",
+      },
+      {
+        name: "--out",
+        type: "string",
+        description:
+          "Write the harness here. Omitted, nothing is written and the script is carried in the JSON payload — a redirect cannot substitute, because stdout carries the envelope.",
+        valueHint: "file",
+      },
+      {
+        name: "--force",
+        type: "boolean",
+        description:
+          "Overwrite the --out file if it exists. Without it an existing file is refused rather than replaced.",
+      },
+    ],
+    // `not_found` for a target, declaration or path list that is not there and for a missing
+    // parent directory; `conflict` for an --out that exists; `permission` for one that cannot be
+    // written. The last two are the kinds only this command can reach, because it is the only one
+    // that writes.
+    errors: [ErrorKind.NotFound, ErrorKind.Conflict, ErrorKind.Permission],
+    notes: [
+      "The harness is a script YOU run: the kit never executes below the root. Hand what it writes back with `acc check <target> --recorded-surfaces batch.json`.",
+      "`completeness` and `streams` are derived by the harness, not asked of you — it redirects to files rather than piping, so nothing downstream can cut a stream.",
+    ],
+    examples: [
+      "acc probe-plan ./mycli --declaration ./declaration.json --out ./capture.sh",
+      "acc probe-plan ./mycli --paths ./paths.json --out ./capture.sh",
+      "acc probe-plan ./mycli --declaration ./declaration.json --json",
+    ],
+  },
+  {
+    name: "compare",
+    // "Where they disagree", not "whether they conform". Every other command in this list judges
+    // one tool against the catalogue; this one holds several tools against EACH OTHER and reports
+    // no verdict at all — see src/acc/kit/compare.ts for why verdicts cannot carry the finding.
+    description: "Show where several checked targets answer the same probe differently.",
+    // The strong sense of the word, and the one `check` had to give up: this command reads JSON
+    // files and executes nothing. Comparing eight targets spawns no processes at all.
+    effects: "read_only",
+    output_kind: "data",
+    cardinality: "single",
+    positionals: [
+      {
+        name: "reports",
+        description: "Two or more JSON reports written by `acc check <target> --json`.",
+        required: true,
+        variadic: true,
+      },
+    ],
+    args: [],
+    errors: [ErrorKind.NotFound],
+    notes: [
+      "INPUT IS STORED REPORTS, not targets: nothing is executed, and no probe is re-run. Write",
+      "one report per target first — `acc check <target> --json > <name>.json` — then pass them",
+      "all. The file's name becomes the target's label in the output.",
+      "NOT A VERDICT. Rows are grouped by who answered alike, nothing passes or fails, and this",
+      "command exits 0 whatever it finds. Two tools differing is a decision to surface, not a",
+      "defect to clear.",
+      "WHAT IT COMPARES: the `observations` array — how each probe ENDED (exit code, signal,",
+      "timeout) and WHERE its bytes went (stdout, stderr, both, neither), aligned across reports",
+      "by identical argv. Byte counts and digests travel on every row but never decide",
+      "divergence: two tools always have help screens of different lengths. Report CONTENT is not",
+      "carried by a report at all, so a difference visible only in the bytes — prose help versus",
+      "JSON help, both on stdout at exit 0 — is one this command cannot see.",
+    ],
+    examples: [
+      "acc compare run-a.json run-b.json",
+      "acc compare run-a.json run-b.json --json | jq '.data.divergent[].args'",
+    ],
   },
 ];

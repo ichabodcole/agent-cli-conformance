@@ -1,5 +1,5 @@
 import { discover } from "./discovery.ts";
-import { invocationId, runProbe } from "./runner.ts";
+import { DEFAULT_TIMEOUT_MS, invocationId, runProbe } from "./runner.ts";
 import type { Checker, History, Invocation, Observation, TargetInfo } from "./types.ts";
 
 /**
@@ -41,8 +41,20 @@ export async function record(
   declaredMachineDefault = false,
   /** Rule ids waived in `acc.config.json`. See `History.waived` for the one thing it is for. */
   waived: ReadonlySet<string> = new Set(),
+  /**
+   * Per-probe deadline, in milliseconds. Defaults to `DEFAULT_TIMEOUT_MS`, which is what every
+   * real run uses; nothing in the CLI passes this.
+   *
+   * It exists for the tests that record a fixture which HANGS FOREVER. Proving the deadline is
+   * enforced needs a target that never terminates on its own, and the assertion — that the probe
+   * was killed rather than awaited — is identical whether the deadline is ten seconds or one.
+   * The only thing the ten seconds buys those tests is thirty seconds of wall clock. A caller
+   * measuring a real, unknown binary must NOT set this: a short deadline there would record a
+   * merely slow tool as one that never terminated.
+   */
+  probeTimeoutMs: number = DEFAULT_TIMEOUT_MS,
 ): Promise<History> {
-  const discovery = await discover(target, declaredMachineDefault);
+  const discovery = await discover(target, declaredMachineDefault, probeTimeoutMs);
 
   // Multiple checkers legitimately request the same invocation (e.g. plain `--help`) for
   // different reasons. Keeping only the first requester's `purpose` would make every other
@@ -62,7 +74,7 @@ export async function record(
   // same lock, port, or config file, and a flaky observation is worse than a slow one.
   const observations: Observation[] = [];
   for (const { inv, purposes } of wanted.values()) {
-    const o = await runProbe(target, inv);
+    const o = await runProbe(target, inv, probeTimeoutMs);
     // Abort the whole run on the FIRST spawn failure. In practice that is the first probe —
     // a target either executes or it does not — and continuing would spend a dozen more
     // spawns to build a history of nothing, then certify it. Discovery's own `--help` probe

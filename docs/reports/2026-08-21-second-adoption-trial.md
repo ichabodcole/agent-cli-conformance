@@ -75,8 +75,19 @@ drive-by. Filed there as a real finding.
 ### SEC-2 — the release note overstated who needs to re-baseline
 
 The note said two rules changed verdicts on unchanged targets, _"D1 always"_ — inside the paragraph
-whose whole job is telling people how to upgrade safely. Measured on `grapevine`, which has a
-working `--version` and no HOME dependency:
+whose whole job is telling people how to upgrade safely. Measured on `grapevine`, ~~which has a
+working `--version`~~ (corrected below) and no HOME dependency:
+
+> _Correction, 2026-08-24._ `grapevine` has **no** `--version`. The token falls through to
+> `die()`, and [the eight-CLI measurement](./2026-08-24-eight-owner-clis.md#2-where-the-tools-disagree-with-each-other)
+> records exit `2` with empty stdout and 38 bytes on stderr, with `D1` reported as
+> `FAIL — --version reported no version`. So the reason given here for `grapevine` being a fair
+> subject — that its `--version` works — is false, and **the `PASS`/`PASS+` pair quoted below
+> cannot be reconciled with that**; the two lines are left as recorded because this report is
+> dated evidence, but they should not be relied on. The paragraph's actual point survives on
+> other grounds: `D1` moves for targets that **reached** the bad clause, and a target with no
+> `--version` is not one of them. An external audit inherited the false half of this before the
+> note was added, which is what a wrong line in a cited report does.
 
 ```
 v0.1.1: PASS   version reported with an unusable HOME and XDG_CONFIG_HOME…

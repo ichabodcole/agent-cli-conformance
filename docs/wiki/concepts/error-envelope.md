@@ -131,40 +131,40 @@ so the flags an error offers are by construction the flags the parser accepts.
 Contrast a parser that accepts `--frmat` silently: there is no error, so there is no slice, so
 there is nothing to correct.
 
-### `next` carries remediation as untyped command templates
+### `next` carries remediation as an executable plus an argv array
 
 **Success** responses may carry `next`. This addresses a real and specific agent failure: a
 command that starts something (a job, a daemon, a build) succeeds, and the agent never performs
 the follow-up that makes the result observable, because nothing told it to.
 
 ```
-"next": [{ "command": "acc show A1 --body", "when": "to read the full text" }]
+"next": [{ "exec": "acc", "args": ["show", "A1", "--body"], "when": "to read the full text" }]
 ```
 
 The error envelope has no `next` field. A failure's remediation travels in `hint` (prose) and
 `choices` (the valid alternatives) — including the `confirmation_required` case above, where
 `choices` names the flags that would resolve it.
 
-`command` is **a string**. It is not a typed structure, and the placeholders in it are not
-declared anywhere: `acc link --project <name>` carries a `<name>` that no schema describes, and
-a caller has to recognise the convention by reading it. `when` is prose. Nothing in the envelope
-tells a consumer which parts of the string are substitutable, what type they take, or what
-effects running it would have.
+`exec` is the program; `args` is every argument after it, one element per argument, already
+split. `when` is prose, for a human or for a model deciding whether to follow the offer.
 
-Saying so plainly is the honest position, because a string that looks executable invites being
-executed. Treat `next` as a **proposal to read**, not text to run — a shell string also loses
-the distinction between argv and shell syntax, so interpolating a user-controlled identifier
-into one is a command-injection boundary.
+The split is the point. A shell string loses the distinction between argv and shell syntax, so
+interpolating a caller-controlled identifier — a slug, a path, a rule id — into one is a
+command-injection boundary: a semicolon or a backtick is data or syntax depending entirely on
+who executes the string. Split into `args`, that identifier is one argument containing a
+semicolon, and cannot become a second command. A consumer that rejoins `exec` and `args` into a
+string and hands it to a shell has put the boundary back; `spawn(exec, args)` is what the shape
+is for.
 
-A typed `next` — an executable plus an argv array, declared placeholders, an effect
-classification, and provenance — is the intended direction and is not implemented. Until it is,
-this page describes what is actually emitted.
+What `next` still does not carry: declared placeholders, an effect classification, and
+provenance. Nothing in the envelope says what running an offer would do, so it remains a
+**proposal**, to be validated before it is run rather than trusted because it parsed. Those
+three are what remains of the first
+[roadmap item](../../roadmap.md#1-remediation-becomes-structured-data).
 
 `next` is advisory, never required: a caller that ignores it should still be able to reach the
-same state by other means. That is guidance too, and it is the clause most likely to change —
-the typed replacement is the first item on the
-[roadmap](../../roadmap.md#1-remediation-becomes-structured-data), so anything given a
-rule id here would be minted against a shape that is about to move.
+same state by other means. That is guidance too, and it is the clause most likely to change, so
+anything given a rule id here would be minted against a shape that is still moving.
 
 ### The prose still matters — but it is labelled
 

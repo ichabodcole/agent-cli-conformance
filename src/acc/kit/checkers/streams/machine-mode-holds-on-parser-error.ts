@@ -83,6 +83,34 @@ export const machineModeHoldsOnParserErrorChecker: Checker = {
   },
 };
 
+/**
+ * The quoted head of a prose error, cut at a WORD boundary and marked when it was cut.
+ *
+ * A hard `slice(0, 60)` cut the second adopter's message at `run: cli.ts ` and dropped `help` —
+ * the remedy, and the only actionable word in the sentence. A budget is right; landing it inside
+ * the token that tells the reader what to do next is not, and an unmarked cut reads as the whole
+ * message.
+ */
+const QUOTE_BUDGET = 120;
+export function clip(text: string): string {
+  const head = text.split("\n")[0] ?? "";
+  // CODE POINTS, NOT CODE UNITS. `slice` counts UTF-16 units, so a budget landing inside a
+  // surrogate pair cuts a character in half and the renderer prints `\ud83d` where the target
+  // wrote an emoji — a replacement character the kit invented, attributed to the tool. The word
+  // boundary below hides it most of the time, which is what makes it worth fixing rather than
+  // leaving: the case that reaches it is a long unbroken token, which is exactly what an error
+  // quoting a path or a URL looks like.
+  //
+  // `identity.ts` already got this right with `clipToBytes`, for the same reason and in the same
+  // words. That one budgets BYTES because it is bounding a JSON payload; this one budgets
+  // CHARACTERS because it is bounding a line of rendered text. Same hazard, two budgets.
+  const points = [...head];
+  if (points.length <= QUOTE_BUDGET) return head;
+  const cut = points.slice(0, QUOTE_BUDGET).join("");
+  const boundary = cut.lastIndexOf(" ");
+  return `${boundary > 0 ? cut.slice(0, boundary) : cut}…`;
+}
+
 /** One way in, evaluated on its own. `how` names it, so a report says which path answered. */
 function one(h: History, purpose: string, how: string): Finding {
   {
@@ -144,7 +172,7 @@ function one(h: History, purpose: string, how: string): Finding {
       "fail",
       // The consequence, not just the fact: an agent that branched on a field of the envelope it
       // was promised got `undefined`, and an agent that piped the stream got prose.
-      `machine mode via ${how} and the parser error came back as prose on ${streams.map((s) => s.stream).join(" and ")} (exit ${o.exitCode}): ${JSON.stringify(streams[0]?.text.slice(0, 60))}`,
+      `machine mode via ${how} and the parser error came back as prose on ${streams.map((s) => s.stream).join(" and ")} (exit ${o.exitCode}): ${JSON.stringify(clip(streams[0]?.text ?? ""))}`,
       [o.id],
     );
   }

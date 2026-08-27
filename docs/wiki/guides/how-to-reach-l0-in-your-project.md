@@ -87,6 +87,33 @@ Two shapes qualify, and the second is the common one:
 
 B5 then probes your error path with no selector — the path your callers actually take.
 
+**On a tool whose errors are prose, this key is not an unlock and does not belong in your
+cheap-first pile.** Declaring `defaultOutput` is not a fix. It is the act of making a claim
+checkable, and the claim covers your ERROR path as well as your data path. So if every data verb
+emits JSON and your parser still answers `unknown option --nope` in prose on stderr — a very
+common shape, and the one the second adopter of this guide had — then declaring moves B5 from
+`unverified` to **fail**, and your report gets one violation longer for telling the truth.
+
+That is the intended gradient, and here is the sequence it intends:
+
+1. **Declare it anyway**, if it is true of your tool. `unverified` is the kit saying it knows
+   nothing about your error path; `fail` is the kit telling you something true you can act on.
+   The second is the more useful report even though it is the longer one.
+2. **Hold the failure as debt**, with a reason: `"knownFailures": { "B5": "error path is still
+prose; JSON error envelope is scheduled" }`. A reason is required. The gate goes green, the
+   debt is visible, and the ratchet stops it from growing.
+3. **Then build the error envelope**, and delete the entry.
+
+**Do not reach for `"rules": { "B5": { "severity": "off" } }` here.** That is a waiver, it means
+_this rule does not apply to my design_, and it never goes stale. Using it for work you intend to
+do records a temporary gap as a permanent decision. The config refuses to hold a waiver and a
+known failure for the same rule, deliberately, so this is a choice you make once and out loud.
+
+The alternative sequence — build the envelope FIRST, declare afterwards, never see a red B5 — is
+also legitimate and costs nothing but time. Choose it if a red gate would block other people. What
+is not legitimate is leaving the key undeclared **because** the report is shorter without it: that
+buys a better-looking result by keeping the kit ignorant of the path your callers actually take.
+
 **Say it in your help as well.** `acc.config.json` is the kit's file, and D3 asks what a caller of
 _your_ CLI can find out — so the key does not answer it. A sentence in help does, as far as
 anything can: D3 moves from `fail` to `unverified` and tells you it matched a claim rather than
@@ -176,8 +203,19 @@ you never have to look it up twice:
 
 ### 4. Write `acc.config.json`
 
-Put it at your project root. `acc check` reads it from the working directory automatically; pass
-`--config-dir` only when running from somewhere else.
+Put it at your project root. `acc check` reads it from the **current working directory** — that
+directory only, with no search upward — and a missing file there is the normal case rather than an
+error. Pass `--config-dir` when you run from somewhere else.
+
+**That makes the directory you run from part of the verdict.** From your project root the run sees
+your waivers; the same command with the same absolute target path, run from a subdirectory, sees
+none and can fail rules you waived. It goes the other way too — a stray `acc.config.json` in the
+directory you happen to be in will excuse rules you did not mean to excuse. Each report names the
+config it read, including when it read none — the text report on its `config:` line, `--json` in
+its `configSource` field — so the two runs disagree in the open rather than silently, but somebody
+still has to read both. Pass `--config-dir` wherever CI
+and a developer need to reach the same verdict, rather than relying on someone noticing that they
+did not.
 
 ```json
 {
@@ -213,6 +251,41 @@ echo $?
 `0` is the gate. Add the same command to CI; it needs no flags, and `9` is the only exit code
 that means "not conformant" (anything else is `acc` itself failing — see
 [outcomes are not errors](../concepts/exit-codes.md#outcomes-are-not-errors)).
+
+### 6. Check what you just added is reachable below the root
+
+**Reaching L0 can introduce drift one level down, and the checks on this page cannot see it.**
+
+Every fix above adds a token at the ROOT — `--version` for D1, a machine-mode flag or a sentence
+for D3 — and documents it in help. On a tool whose parser has a single global flag registry with
+no per-path binding, that is a token help now names and the per-path parser does not accept.
+Measured on the second adopter's tool, three hours after they reached L0:
+
+```
+mycli --version          -> exit 0   {"name":"mycli","version":"2.2.0"}
+mycli <verb> --version   -> exit 2   Unknown option '--version'
+```
+
+Both correct in isolation. Together they are a documented flag that works at exactly one path.
+
+**Whether that matters depends on what the token IS**, and the honest answer is that this is a
+modelling question the declaration format does not currently settle. A `--version` dispatched
+alongside `help`, in the verb switch and listed in help's verb block, is a root token that was
+never a flag, and nothing disagrees. A `--version` sitting in your flag registry at the root only
+is a flag with a path restriction nothing states. The two look identical from outside.
+
+So, two minutes of checking rather than a rule:
+
+1. Run your new token after a verb, not just at the root. `mycli <any-verb> --version`.
+2. If it is refused there, decide **deliberately** whether it is a verb or a root-scoped flag, and
+   write that down where your help says so.
+
+**The census will not catch this for you** on a tool whose root does not enumerate. The token
+lives at the root; the kit probes the root but reads no flag set from a root that names none, and
+a [recorded-surface batch](./how-to-record-surfaces-below-the-root.md) refuses a root record by
+construction. The report says so — the declared-path fraction falls short and a `NOT COMPARED:
+(root)` line names why — so it is a reach limit rather than a silent failure. It is still a limit,
+and it sits exactly where this page's advice lands.
 
 ## Verification
 

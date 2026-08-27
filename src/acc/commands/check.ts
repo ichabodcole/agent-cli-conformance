@@ -12,15 +12,43 @@ import { basename, resolve } from "node:path";
 import { emit, type OutputMode, useColor } from "../envelope.ts";
 import { notFoundError, usageError } from "../errors.ts";
 import { Outcome } from "../exit-codes.ts";
-import { type AccConfig, ConfigError, loadConfig } from "../kit/config.ts";
+import { type AccConfig, CONFIG_FILE, ConfigError, loadConfig } from "../kit/config.ts";
+import {
+  type Declaration,
+  DeclarationError,
+  declarationSummary,
+  loadDeclaration,
+} from "../kit/declaration.ts";
+import { identitySummaryLines } from "../kit/identity.ts";
 import { record, TargetNotExecutableError } from "../kit/record.ts";
-import { CHECKERS } from "../kit/registry.ts";
+import {
+  identityLines,
+  loadRecordedBatch,
+  provenanceLabel,
+  type RecordedReading,
+  RecordedSurfacesError,
+  readRecordedBatch,
+} from "../kit/recorded.ts";
+import { CHECKERS, UNCHECKED_RULES } from "../kit/registry.ts";
 import { buildReport, primaryProblem, type ReportedFinding, runCheckers } from "../kit/report.ts";
+import { surfaceSummary } from "../kit/surface.ts";
 import type { History, TargetInfo } from "../kit/types.ts";
 import { VERSION } from "../version.ts";
 
 export interface CheckOptions {
   configDir?: string;
+  /** Path to a declaration file. A path the caller named that cannot be read is an ERROR — see
+   *  the load below, which follows `--config-dir`'s rule for the same reason. */
+  declaration?: string;
+  /**
+   * Path to a batch of caller-recorded surfaces. Read, never executed — the whole feature is a
+   * read over bytes the caller already has, which is why it needs no effects claim and no probe
+   * warrant. A named path that cannot be read is an ERROR, for the same reason `declaration`'s is.
+   *
+   * At most one. The refusal of a second lives in `cli.ts`, over raw argv, because commander is
+   * last-wins and the option's parser never sees the first occurrence again.
+   */
+  recordedSurfaces?: string;
 }
 
 /** Enough for any real interpreter line — the kernel caps it at 127 bytes on Linux and the BSDs
@@ -64,7 +92,7 @@ function shebangInterpreter(abs: string): string | null {
 }
 
 /** True when this process may execute the file — the ownership bits, not just `0o111`. */
-function isExecutable(abs: string): boolean {
+export function isExecutable(abs: string): boolean {
   try {
     accessSync(abs, constants.X_OK);
     return statSync(abs).isFile();
@@ -137,12 +165,86 @@ export async function checkCommand(
     // `usage`, not `internal`: every one of these is something the caller can fix by editing a
     // file they own. Reported as `internal` it would read as a defect in acc.
     if (err instanceof ConfigError) {
+      // THE ERROR PATH DISCLOSES WHAT THE SUCCESS PATH DOES. A report names the config it read
+      // and how the kit reached it; a config that fails to load is the one moment the caller most
+      // needs both, and it used to give neither — the file was named without its directory, and
+      // the remedy offered was to drop a flag that a caller who had not typed `--config-dir`
+      // could not drop. `err.path` is absolute (see `loadConfig`), so the file is now identified
+      // the same way the `config:` line identifies it, and the hint tells a caller who named the
+      // directory something different from a caller for whom the working directory chose it.
       throw usageError(`${err.path} ${err.message}`, {
-        hint: "Fix acc.config.json, or drop --config-dir to skip it.",
-        details: { path: err.path },
+        hint:
+          opts.configDir === undefined
+            ? // Reachable only for a file that EXISTS — a missing one in the working directory is
+              // the normal case and never an error — so "fix it" is always the right verb here,
+              // and what the caller is missing is how the kit ever reached it.
+              `Fix that file. It was DISCOVERED in the working directory, not named on the command line, so nothing but the directory you ran from selected it.`
+            : // Reachable for a missing file too, which is why this does not only say "fix".
+              `Fix or create that file, or drop --config-dir — the working directory is searched instead, and no ${CONFIG_FILE} there is not an error.`,
+        details: { path: err.path, origin: opts.configDir === undefined ? "discovered" : "flag" },
       });
     }
     throw err;
+  }
+
+  // THE DECLARATION, LIKE THE CONFIG, IS READ BEFORE THE FIRST SPAWN. A malformed document is
+  // something the caller can fix by editing a file they own, and reporting it after eighteen
+  // invocations of a stranger's binary spends the risky part of the run to deliver a message that
+  // was available before it started.
+  //
+  // A NAMED PATH THAT CANNOT BE READ IS AN ERROR, never an empty diff. Continuing would publish a
+  // report whose declaration block is absent — indistinguishable from a run where nobody asked
+  // for one — over a caller who did.
+  let declaration: Declaration | null = null;
+  if (opts.declaration !== undefined) {
+    try {
+      declaration = loadDeclaration(opts.declaration);
+    } catch (err) {
+      if (err instanceof DeclarationError) {
+        // A FILE THAT IS NOT THERE IS `not_found`; A FILE THAT IS THERE AND WRONG IS `usage`.
+        // The two are different repairs — create it, or edit it — and the kind is how a machine
+        // caller tells them apart without reading the prose. Applied identically to
+        // `--recorded-surfaces` below and to `acc probe-plan`, so the same mistake does not answer
+        // differently depending on which flag or which command met it.
+        const opts = {
+          hint: err.missing
+            ? "Create that file, or drop --declaration — a run without one is a full report with no comparison in it."
+            : "Fix that file, or drop --declaration — a run without one is a full report with no comparison in it.",
+          details: { path: err.path },
+        };
+        throw err.missing
+          ? notFoundError(`no such file: ${err.path}`, opts)
+          : usageError(`${err.path} ${err.message}`, opts);
+      }
+      throw err;
+    }
+  }
+
+  // THE BATCH IS READ BEFORE THE FIRST SPAWN TOO, and for the declaration's reason: a malformed
+  // document is something the caller can fix by editing a file they own, and reporting it after
+  // eighteen invocations of a stranger's binary spends the risky part of the run to deliver a
+  // message that was available before it started. Nothing here executes anything — this is a read
+  // over bytes the caller already has.
+  let recorded: { source: string; reading: RecordedReading } | null = null;
+  if (opts.recordedSurfaces !== undefined) {
+    try {
+      recorded = {
+        source: resolve(opts.recordedSurfaces),
+        reading: readRecordedBatch(loadRecordedBatch(opts.recordedSurfaces)),
+      };
+    } catch (err) {
+      if (err instanceof RecordedSurfacesError) {
+        // Same rule as `--declaration` above, and stated there.
+        const opts = {
+          hint: `${err.missing ? "Create" : "Fix"} that file, or drop --recorded-surfaces — a run without one reports the root the kit probes and says every other path was not reached.`,
+          details: { path: err.path },
+        };
+        throw err.missing
+          ? notFoundError(`no such file: ${err.path}`, opts)
+          : usageError(`${err.path} ${err.message}`, opts);
+      }
+      throw err;
+    }
   }
 
   // A target that cannot execute gets an ERROR, never a report. Reporting it would mean
@@ -178,7 +280,20 @@ export async function checkCommand(
   // missing file in the cwd is normal) from "the caller named a path" (a missing one is their
   // mistake, and continuing with an empty set would fail rules they believed were excused).
   // The registry goes in so a mistyped id is rejected rather than silently excusing nothing.
-  const report = buildReport(history, findings, CHECKERS, config, "L0", VERSION);
+  //
+  // `UNCHECKED_RULES` goes in so the rules the catalogue declares and the kit cannot yet check
+  // appear as `N/A` with their reason, rather than being absent from the report entirely.
+  const report = buildReport(
+    history,
+    findings,
+    CHECKERS,
+    config,
+    "L0",
+    VERSION,
+    UNCHECKED_RULES,
+    declaration,
+    recorded,
+  );
 
   // The rule that actually explains the report's headline — see primaryProblem, which owns the
   // ranking (violations before gaps, and the rule that owns a failure mode before whatever
@@ -209,7 +324,8 @@ export async function checkCommand(
     next: nextRule
       ? [
           {
-            command: `acc show ${nextRule}`,
+            exec: "acc",
+            args: ["show", nextRule],
             // Not "the FIRST violation" any more: for a hang the offer is E1, which may sit
             // well after the other rules the hang tripped. Naming a position the ranking no
             // longer guarantees would be a small lie in the field that tells the caller what
@@ -281,6 +397,21 @@ export async function checkCommand(
       // summarised because these ARE the report's caveats; the JSON carries the same list under
       // `evidenceGaps`.
       const gaps = r.evidenceGaps.map((e) => `    ${e.ruleId.padEnd(3)} ${e.gaps.join("; ")}`);
+      // WHERE THE CONFIG CAME FROM, on every run, in the same shape every time — a line that
+      // changes shape between runs is one a reader has to re-read. It sits directly under the
+      // headline because it is the frame the headline was reached inside: waivers, severity
+      // moves and `defaultOutput` all arrive through it.
+      //
+      // The DISCOVERED case says more than the other two, and deliberately. A `--config-dir` the
+      // caller typed is already on their screen, and "none" is the absence of a frame; a file
+      // picked up from the working directory is the only one that can change the verdict with
+      // nothing visible anywhere to say so — which is exactly how two runs of one command
+      // disagreed for an adopter, absolute target path and all.
+      const configLine = ((c) => {
+        if (c.origin === "none") return `  config: none — no ${CONFIG_FILE} in ${c.dir}`;
+        if (c.origin === "flag") return `  config: ${c.path}  (--config-dir)`;
+        return `  config: ${c.path}  (DISCOVERED in the working directory, not named on the command line — the same command run from elsewhere can reach a different verdict)`;
+      })(r.configSource);
       // Both claims, on one line, always. The verdict answers "did anything VIOLATE a core
       // rule"; the counts beside it answer "and was everything actually established". Naming
       // the level is part of the claim, not decoration — A4 is core and silently excluded as
@@ -300,11 +431,40 @@ export async function checkCommand(
       const waiverNote = r.counts.waived
         ? ` · ${r.counts.waived} waiver${r.counts.waived === 1 ? "" : "s"}`
         : "";
+      // A DECLARATION DISAGREEMENT RIDES ON THE HEADLINE TOO, and it is a POINTER, not a number.
+      // The census mints no rule id, feeds no verdict and gates no exit code — `declaration.ts`
+      // argues at length why the kit cannot know which side of a disagreement is wrong — and none
+      // of that changes here: this clause is a string, it touches no count on this line or the
+      // next, and the exit code below still fires on a core VIOLATION only.
+      //
+      // What it stops doing is being silent. Four deliberately broken variants of one tool each
+      // printed a clean headline while the block that caught three of them sat below the fold,
+      // and the headline is the line most readers get to the end of.
+      //
+      // The two provenances read DIFFERENTLY, because the headline is the cheapest place in the
+      // report to draw the distinction the whole `provenance` field exists for. An `emitted`
+      // document is the tool's own words, so a disagreement is one process publishing a flag and
+      // refusing it — a self-contradiction, and the strong reading. A `modelled` one is somebody's
+      // model of the tool, so the same diff says only that a file and a tool disagree. One word
+      // apart, so the shape is the same either way and a reader is not learning two clauses.
+      //
+      // Counted over `findings`, not over `status`: `self-description-not-declared` needs no probe
+      // and is a real disagreement on a target that never enumerated.
+      const declarationNote = ((d) => {
+        if (!d || d.findings.length === 0) return "";
+        const n = d.findings.length;
+        const noun =
+          d.provenance === "emitted"
+            ? `self-contradiction${n === 1 ? "" : "s"}`
+            : `disagreement${n === 1 ? "" : "s"}`;
+        return ` · but see ${n} declaration ${noun} (${d.provenance})`;
+      })(r.declaration);
       return [
         // The kit's own version rides on the headline, not in a footer. A stale install reports
         // success and puts an older commit on disk, and this is the only line every reader
         // certainly sees — the alternative was `acc --version`, which nobody thinks to check.
-        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}  ${r.target}  [acc ${r.kitVersion}]`,
+        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}${declarationNote}  ${r.target}  [acc ${r.kitVersion}]`,
+        configLine,
         "",
         ...lines,
         "",
@@ -357,8 +517,181 @@ export async function checkCommand(
             ]
           : []),
         "",
-        "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable at this level",
+        // WHAT THE TARGET SAID ABOUT ITSELF, printed on every report including the ones where it
+        // said nothing — because "this tool has no --version" and "the probe never ran" are two
+        // different facts and a section that appeared only on the talkative targets would leave a
+        // reader unable to tell them apart. It sits immediately above the flag surface because the
+        // two are the same kind of thing: the target's own words, captured and not judged.
+        //
+        // It answers a question the report could not answer before. `target` is a path,
+        // `targetArgv0` is how the kit launched it, `kitVersion` is OURS — so two reports produced
+        // by one kit against two builds of one tool were distinguishable only by a path, which is
+        // how this project's `1 of 25` figure came to be build-dependent with nothing in a stored
+        // report saying which build. See docs/reports/2026-08-24-first-drift-trial-anthill-
+        // manifest.md, DT-10.
+        "  TARGET IDENTITY — what the target said about itself under --version, which D1 already",
+        "  runs. Evidence, not a rule: nothing in this report passes or fails on it, and the quote",
+        "  is bytes rather than a parsed version.",
+        ...identitySummaryLines(r.targetIdentity).map((l) => `    ${l}`),
+        "",
+        // THE TARGET'S OWN ACCOUNT OF ITS SURFACE, printed on every report including the ones
+        // where it is empty — because "this tool does not enumerate" is the finding for most
+        // tools, and a section that appears only on the tools that do would leave the reader
+        // unable to tell a silent target from a capture that never ran. Nothing here is a
+        // verdict, and the heading says so before the reader reaches the data.
+        "  SELF-DECLARED FLAGS — read back from the target's own rejection of an unknown flag at",
+        "  the root, which is the only path the kit probes.",
+        "  Evidence, not a rule: nothing in this report passes or fails on it.",
+        `    ${surfaceSummary(r.surface)}`,
+        // Where each list came from, so a reader can re-run the probe and see the same bytes
+        // rather than take the capture's word for it.
+        //
+        // FOLDED the way `acc compare` folds its repetition families, and for the same reason:
+        // three rules record the same unknown-flag argv several times to ask about determinism, so
+        // an unfolded list shows six identical rows and a reader counts six declarations where the
+        // target made one. The JSON keeps every row, because a repetition that answered
+        // DIFFERENTLY is a real thing to see — and it shows up here as a second, unfolded line.
+        ...[
+          ...new Map(
+            r.surface.evidence.map((e) => [
+              JSON.stringify([e.args, e.stream, e.shape, e.matched, e.flags]),
+              e,
+            ]),
+          ),
+        ].map(([key, e]) => {
+          const runs = r.surface.evidence.filter(
+            (o) => JSON.stringify([o.args, o.stream, o.shape, o.matched, o.flags]) === key,
+          ).length;
+          return `    from ${e.args.join(" ")}${runs > 1 ? ` (${runs} identical rejections)` : ""} · ${e.shape} ${JSON.stringify(e.matched)} on ${e.stream} · ${e.flags.join(" ")}`;
+        }),
+        "",
+        // SURFACES THE CALLER RECORDED, printed only when they supplied a batch. It sits between
+        // the kit's own root capture above and the declared side below, because that is the order
+        // a reader needs them in: what the kit saw, what somebody else says they saw, and only
+        // then the diff over both.
+        ...(r.recordedSurfaces
+          ? [
+              "  RECORDED SURFACES — captured by the caller on their own machine, read here with the",
+              "  kit's own extraction. The kit executed nothing below the root.",
+              "  Evidence, not a rule: nothing in this report passes or fails on it.",
+              `    ${r.recordedSurfaces.records} record${r.recordedSurfaces.records === 1 ? "" : "s"} at ${r.recordedSurfaces.readings.length} path${r.recordedSurfaces.readings.length === 1 ? "" : "s"}, from ${r.recordedSurfaces.source}`,
+              `    recorded by ${r.recordedSurfaces.recordedBy.join(", ")}`,
+              // WHAT WAS READ AT EACH PATH, and what was not — printed here rather than only in
+              // the declaration block, because a batch can arrive without a declaration and a
+              // report that showed it as a count would swallow the caller's evidence entirely.
+              // The summary names its own path, so nothing prefixes it — a line reading
+              // "state: … at state" teaches a reader that one of the two is decoration.
+              ...r.recordedSurfaces.readings.map((p) => `      ${p.summary}`),
+              // BESIDE THE AFFECTED PATHS FIRST, and this total is a summary of that rather than
+              // a substitute for it — an absent identity observation withholds nothing, but it
+              // weakens the tie between the recording and the binary the kit ran, and the place a
+              // reader decides what to make of that is the census line.
+              ...(() => {
+                // Counted over the lines that actually rest on the batch: the census lines when a
+                // declaration was supplied, and the per-path readings above when none was.
+                const resting =
+                  r.declaration === undefined
+                    ? (r.recordedSurfaces?.readings.length ?? 0)
+                    : r.declaration.paths.filter(
+                        (p) => p.surfaceProvenance === "recorded-by-caller",
+                      ).length;
+                return r.recordedSurfaces?.identity
+                  ? identityLines(r.recordedSurfaces.identity).map((l) => `    ${l}`)
+                  : [
+                      `    ${resting} census line${resting === 1 ? "" : "s"} rest${resting === 1 ? "s" : ""} on recorded surfaces; ${resting === 1 ? "that one" : `${resting} of them`} on a batch that states no identity.`,
+                    ];
+              })(),
+              "",
+            ]
+          : []),
+        // THE DECLARED SIDE, printed only when a caller supplied one — a section that appeared
+        // empty on every other run would be a permanent advertisement rather than a report.
+        //
+        // The HEADING says what the block is before the reader reaches a number, and the second
+        // line says what it is not. `STANDARD.md` requires both readings of a disagreement to be
+        // named, because the kit does not know which side is wrong, so each finding prints two
+        // sentences and neither is a verdict.
+        ...(r.declaration
+          ? [
+              "  DECLARED vs ACCEPTED — a declaration the caller supplied, against the target's own",
+              "  enumeration above. Evidence, not a rule: nothing in this report passes or fails on it.",
+              `    ${declarationSummary(r.declaration)}`,
+              // Every path that could NOT be compared, with the reason, because a diff over one of
+              // twenty-five paths reported as a bare finding count is a claim about twenty-five.
+              // Folded to one line per distinct reason: the reason is the same sentence for every
+              // path the kit cannot reach below the root, and twenty-four copies of it teach a
+              // reader to skip the block.
+              // WHO OBSERVED EACH PATH rides on the line, not only in a summary. Folded on the
+              // reason AND the observer together: two paths that could not be compared for the
+              // same reason but were looked at by different parties are two different facts, and
+              // one folded line would report them as one.
+              ...(() => {
+                const identityStated = Boolean(r.recordedSurfaces?.identity);
+                const unchecked = (r.declaration?.paths ?? []).filter(
+                  (p) => !p.checked && p.reason !== undefined,
+                );
+                const keys = [
+                  ...new Set(
+                    unchecked.map((p) => JSON.stringify([p.reason, p.surfaceProvenance ?? null])),
+                  ),
+                ];
+                return keys.map((key) => {
+                  const group = unchecked.filter(
+                    (p) => JSON.stringify([p.reason, p.surfaceProvenance ?? null]) === key,
+                  );
+                  const [reason, provenance] = JSON.parse(key) as [
+                    string,
+                    "probed-by-kit" | "recorded-by-caller" | null,
+                  ];
+                  const paths = group.map((p) =>
+                    p.path.length === 0 ? "(root)" : p.path.join(" "),
+                  );
+                  const shown = paths.slice(0, 4).join(", ");
+                  const more = paths.length > 4 ? `, +${paths.length - 4} more` : "";
+                  // A path with NO surface has no observer to name, and the reason already says
+                  // so in words — inventing a label for it would be the census claiming somebody
+                  // looked.
+                  const who =
+                    provenance === null ? "" : ` [${provenanceLabel(provenance, identityStated)}]`;
+                  return `    NOT COMPARED: ${shown}${more} — ${reason}${who}`;
+                });
+              })(),
+              ...r.declaration.findings.flatMap((f) => [
+                // THE OBSERVER OF THE PATH THE FINDING RESTS ON, except for the one finding kind
+                // that rests on no observation at all: `self-description-not-declared` reads the
+                // document and never the target, so labelling it `probed-by-kit` would attribute a
+                // reading to a probe that had nothing to do with it.
+                `    ${f.kind}  ${f.subject}${f.path.length ? ` at ${f.path.join(" ")}` : " at (root)"}${((
+                  p,
+                ) =>
+                  f.kind !== "self-description-not-declared" && p?.surfaceProvenance
+                    ? ` [${provenanceLabel(p.surfaceProvenance, Boolean(r.recordedSurfaces?.identity))}]`
+                    : "")(
+                  r.declaration?.paths.find(
+                    (p) => p.path.join(" ") === f.path.join(" ") && p.path.length === f.path.length,
+                  ),
+                )}`,
+                `      either ${f.readings[0]}`,
+                `      or     ${f.readings[1]}`,
+              ]),
+              "",
+            ]
+          : []),
+        // WHERE THE EVIDENCE IS, said once, on every report. The ids each finding cites have
+        // resolved since 0.1.0 and a blind reader never found out: they tried `acc show <id>` —
+        // the obvious guess — got a hint naming rule ids and page slugs, and reconstructed the
+        // probes by hand instead, producing a wrong reproduction that nearly became a wrong bug
+        // report. A mechanism nobody can reach is not shipped. The command is written out with
+        // this run's own target rather than described, because the reader is holding the report
+        // and not the manual.
+        "  EVIDENCE — every finding cites observation ids, which resolve in the JSON report:",
+        `    acc check ${r.target} --json  →  .data.observations[]  (acc show resolves wiki pages, not these ids)`,
+        "",
+        "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable to this run",
         "  PASS+ passed, but the checker establishes only part of its rule — see the gaps above",
+        // N/A now covers two reasons and the legend has to say both, or a rule with no checker
+        // reads as one that was merely deferred to a higher level and will be picked up there.
+        "  N/A   out of scope at this level, or no checker exists for the rule at any level",
         // The glyph is explained even when nothing carries it, exactly as the four above are: a
         // legend that changes shape between runs is one a reader has to re-read.
         "  WVD  waived by config — the probe still ran, and the verdict it reached binds nothing",
