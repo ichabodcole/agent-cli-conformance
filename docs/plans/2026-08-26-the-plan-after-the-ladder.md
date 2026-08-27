@@ -16,7 +16,10 @@ tags: [roadmap, probe-level, adoption, release, consumer-signal, declaration]
 # The plan after the ladder
 
 **Status: ratified by the owner, 2026-08-27** (_"The plan looks solid to me"_), after two cold
-reads, a buildability review, and the cold consumer round. Written at the owner's direction after
+reads, a buildability review, and the cold consumer round. **Amended once post-ratification, at
+the owner's direction:** the skill as the third evolved deliverable (§3.9), and §5's contact rule
+corrected from _no contact_ to _no real-time back-and-forth_, with the skill's feedback
+touchpoint as part of the artifact under test. Written at the owner's direction after
 the direction thread
 on `acc-internal` (2026-08-26): write up what is decided with its signal, pull the open questions
 out **as questions** rather than answering them internally, then take both to the consuming
@@ -284,6 +287,20 @@ it serves the census — which is how it is scoped.
    grapevine's real code with both measured traps recorded, ending in the
    `schema | acc check --declaration -` ratchet) — the item stays listed because Round B readers
    should see what was prioritized and why, and its status is: done.
+9. **The skill — the third evolved deliverable, added by the owner post-ratification.** A Claude
+   Marketplace / `.agent` skill as the _"okay, you're going to use this to start the process"_
+   artifact: what this is, how to run it, how to read the verdict, which guide to go to next,
+   and how to send feedback — the toolkit's three evolved surfaces being the tooling, the
+   documentation, and this. It is the attempt to make **acc-the-agent into an artifact**: the
+   briefing a maintainer gave the newest adopter on a channel, packaged so nobody has to give
+   it — which is the direct answer to `trellis`'s scaling finding. **v1 is minimal by design,
+   and the minimalism is the instrument** (the owner: _"don't add information that isn't
+   actually needed"_): every gap the adopter hits is a measurement of what the skill must
+   contain — the fixed-denominator argument applied to the artifact. v1 **routes to** the guides
+   rather than containing them; three of the four answers the newest adopter needed a maintainer
+   for are already in guides the skill links. It also carries the feedback touchpoint §5's
+   amended contact rule depends on. Drafted by the survey author, who holds the empirical record
+   of what a first contact actually needed.
 
 **Deliberately absent:** the warrant/reach/hazard schema (untested; its measured fragments
 already ship), the sandbox (§2.7), kit-side below-root execution (settled, with a written
@@ -470,10 +487,20 @@ needs both:
   the trial needs, and go to all three. Recruiting is also cheaper than it first looks — the
   newest adopter _was_ exactly this at the start of their trial (a fresh agent, given the
   guides and nothing else), and the move is repeatable. Three constraints bind the trial, owned
-  by the fixture builder: the fourth gets the artifacts and **no channel to us at all** — not a
-  channel we try not to use, because the record shows we cannot help ourselves; what counts as
-  stuck is pinned in writing before they start; and they read **a pinned commit, not
-  `develop`**, or every fix landed mid-trial makes the result unattributable. One standing
+  by the fixture builder: the fourth gets the artifacts and **no real-time back-and-forth with
+  us** — _amended post-ratification at the owner's direction_: the skill (§3.9) carries an
+  async, defined feedback touchpoint that is **part of the artifact under test**, so using it is
+  data about where the artifact stops, and being visibly stuck without using it is a finding
+  about the touchpoint rather than about the adopter — what the rule forbids is the live channel
+  the record shows we cannot help ourselves on; what counts as stuck is pinned in writing before
+  they start; and they read **a pinned commit, not `develop`**, or every fix landed mid-trial
+  makes the result unattributable. With the skill in the fixture, the acceptance question
+  sharpens from _"can they survive the docs alone"_ to **"does the skill do what the maintainer
+  did"** — a more specific question with a fixable answer. The retro afterward pre-registers its
+  two failure classes before the run — **a gap in understanding how to use the tool** versus
+  **the tooling not working in their scenario** — with the evidence that separates them decided
+  in advance, because a retro run by the people whose artifact is under test will find "they
+  misunderstood" more comfortable than "our tooling did not work". One standing
   protection on the reserved population: **anyone
   needing a fresh reader for review work uses a throwaway in-session subagent — never a named
   Spellbook agent**, because a named fresh agent is exactly the trial's candidate pool, and
