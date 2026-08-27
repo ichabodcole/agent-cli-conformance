@@ -96,10 +96,24 @@ scratch=$(mktemp -d)
 HOME="$scratch" XDG_CONFIG_HOME="$scratch/.config" bunx acc check ./your-tool
 ```
 
-Name the directory first. Writing `XDG_CONFIG_HOME="$HOME/.config"` in the same command as the
-`HOME` assignment is unspecified in POSIX and genuinely differs: measured here, `zsh` and `dash`
-read the new `HOME`, while `sh` and `bash` read your real one — so the variable meant to redirect
-config reads points at the directory you were protecting.
+Name the directory first, and do not write `XDG_CONFIG_HOME="$HOME/.config"` in the same command
+as the `HOME` assignment. Whether one assignment in a command prefix sees another is **unspecified
+in POSIX**, so both readings are conforming and you cannot tell which you will get by looking at
+the line. When you get the one where `$HOME` is still your own, the variable meant to redirect
+config reads points at the directory you were protecting, and nothing reports it.
+
+That is not theoretical. On one macOS machine, the same line, four shells:
+
+| shell                                  | `XDG_CONFIG_HOME` became |
+| -------------------------------------- | ------------------------ |
+| `/bin/sh`, `/bin/bash` (bash 3.2.57)   | the real home            |
+| `/opt/homebrew/bin/bash` (bash 5.3.15) | the scratch directory    |
+| `zsh` 5.9, `dash`                      | the scratch directory    |
+
+Two versions of the same shell disagree, so the answer does not follow from the shell's name — and
+the reading that leaks is the one you get from that machine's `/bin/sh`, which is what a `#!` line
+and a CI runner reach for. Other platforms will divide differently. Naming the directory first is
+unambiguous under all of them, which is why it is worth doing rather than checking.
 
 **If the target has its own home override, set that too.** A tool that reads `MYTOOL_HOME`,
 `MYTOOL_CONFIG_DIR` or similar re-derives its location from that and ignores `HOME` entirely, so

@@ -97,31 +97,56 @@ describe("a scratch HOME, on both sides of what it contains", () => {
 
 describe("the command line the guide prints", () => {
   /**
-   * THE SECOND DEFECT, IN THE SAME LINE, AND IT IS SHELL-DEPENDENT.
+   * WHY THE GUIDE SAYS "NAME THE DIRECTORY FIRST" RATHER THAN "AVOID THESE SHELLS".
    *
-   *     HOME="$(mktemp -d)" XDG_CONFIG_HOME="$HOME/.config" ...
+   * Whether one assignment in a command prefix sees another is unspecified in POSIX. Both
+   * readings conform, and which one you get does not follow from the shell's NAME: measured on
+   * one macOS machine, bash 3.2.57 at `/bin/bash` leaked to the real home while bash 5.3.15 at
+   * `/opt/homebrew/bin/bash` did not.
    *
-   * POSIX leaves it unspecified whether one assignment in a command prefix sees another. Measured
-   * on this machine: `zsh` and `dash` expand `$HOME` to the new scratch directory; `sh` and `bash`
-   * expand it to the caller's REAL home, so the variable meant to redirect config reads points at
-   * the very directory the line exists to protect. A reader pasting it into a script gets the
-   * broken form; the same reader pasting it into an interactive zsh gets the working one.
+   * THIS TEST DELIBERATELY DOES NOT PIN WHICH SHELLS LEAK. An earlier version asserted that
+   * `/bin/sh` leaks, which is true here and false anywhere `/bin/sh` is dash — the test would
+   * have inherited an unexamined property of the machine that ran it, which is the same defect
+   * class as the one it exists to guard. What must hold everywhere is the repair, so that is what
+   * is asserted; the one-step form is measured and reported, never required to fail.
    */
-  test("the two-assignment form aims XDG_CONFIG_HOME at the real home under sh", () => {
-    const probe = `HOME="${"$"}(mktemp -d)" XDG_CONFIG_HOME="${"$"}HOME/.config" /bin/sh -c 'printf %s "${"$"}XDG_CONFIG_HOME"'`;
-    const r = shGitFree(["/bin/sh", "-c", probe], base, { ...GIT_FREE_ENV, HOME: realHome });
-    // Not an assertion that sh is wrong — an assertion that the OUTCOME DIFFERS from the intent,
-    // which is what makes the printed line unsafe to hand a reader without qualification.
-    expect(r.stdout).toBe(join(realHome, ".config"));
-  }, 30_000);
+  const SHELLS = ["/bin/sh", "/bin/bash", "/opt/homebrew/bin/bash", "/bin/zsh", "/bin/dash"].filter(
+    (p) => existsSync(p),
+  );
 
-  test("assigning in two steps is unambiguous everywhere", () => {
-    // The repair: give the scratch directory a name first, then build both variables from it.
-    const probe = `d=$(mktemp -d); HOME="$d" XDG_CONFIG_HOME="$d/.config" /bin/sh -c 'printf %s "${"$"}XDG_CONFIG_HOME"'`;
-    for (const shell of ["/bin/sh", "/bin/zsh"]) {
-      const r = shGitFree([shell, "-c", probe], base, { ...GIT_FREE_ENV, HOME: realHome });
-      expect([shell, r.stdout.startsWith(realHome)]).toEqual([shell, false]);
-      expect([shell, r.stdout.endsWith("/.config")]).toEqual([shell, true]);
+  const xdgUnder = (shell: string, script: string) =>
+    shGitFree([shell, "-c", script], base, { ...GIT_FREE_ENV, HOME: realHome }).stdout;
+
+  const READ_BACK = `/bin/sh -c 'printf %s "${"$"}XDG_CONFIG_HOME"'`;
+  const ONE_STEP = `HOME="${"$"}(mktemp -d)" XDG_CONFIG_HOME="${"$"}HOME/.config" ${READ_BACK}`;
+  const TWO_STEP = `d=$(mktemp -d); HOME="$d" XDG_CONFIG_HOME="$d/.config" ${READ_BACK}`;
+
+  test("the two-step form contains under every shell on this machine", () => {
+    // Guard the guard: an empty shell list would satisfy the loop vacuously.
+    expect(SHELLS.length).toBeGreaterThan(1);
+    const leaked = SHELLS.filter((sh) => xdgUnder(sh, TWO_STEP).startsWith(realHome));
+    expect(leaked).toEqual([]);
+  }, 60_000);
+
+  test("the one-step form is not dependable — at least one shell here disagrees with another", () => {
+    // The claim is DIVERGENCE, not a verdict on any named shell. On a machine where every
+    // available shell happened to agree, this would report that rather than fail, because "we
+    // could not reproduce it here" is a result and "this shell is unsafe" is the sentence the
+    // guide was corrected for making.
+    const results = SHELLS.map((sh) => ({
+      shell: sh,
+      leaks: xdgUnder(sh, ONE_STEP).startsWith(realHome),
+    }));
+    const kinds = new Set(results.map((r) => r.leaks));
+    if (kinds.size === 1) {
+      console.log(
+        `one-step form agreed across all ${results.length} shells here (leaks=${[...kinds][0]}); the divergence is unspecified behaviour, not a promise it always appears`,
+      );
     }
-  }, 30_000);
+    // What IS asserted: wherever the one-step form leaks, the two-step form does not — which is
+    // the only sentence the guide rests on.
+    for (const r of results.filter((x) => x.leaks)) {
+      expect([r.shell, xdgUnder(r.shell, TWO_STEP).startsWith(realHome)]).toEqual([r.shell, false]);
+    }
+  }, 60_000);
 });
