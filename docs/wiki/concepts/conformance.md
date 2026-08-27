@@ -114,7 +114,10 @@ Splitting the two claims is a correctness fix, not a softening.
 
 Conflating them — treating an unverified core rule as disqualifying — makes the verdict say
 something false. `git` is the illustration, and it is a good one precisely because it is not a
-clean sheet. One capture, with the thirteen passing rules elided:
+clean sheet. One capture — taken with acc `0.1.0`, and kept as taken, because a capture whose
+version stamp is refreshed without re-running it would claim a run that never happened; the
+subject here is the shape of the two claims, not the line's current format — with the thirteen
+passing rules elided:
 
 ```
 NOT CONFORMANT (L0) — 2 core violated, 2 core unverified, 13 core partially covered  /opt/homebrew/bin/git  [acc 0.1.0]

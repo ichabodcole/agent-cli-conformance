@@ -19,22 +19,24 @@ thing you adopt — a declared default, an enumerated rejection — converts mor
 This skill is the order to do things in. Every guide it names is a file in the `acc` repository,
 at the path given.
 
-## 1. Install it and run it
-
-<!-- x-release-please-start-version -->
+## 1. Install it, verify it, run it
 
 ```bash
-bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#v0.1.2'
+bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
+bunx acc version --check
 bunx acc check ./path/to/your-cli
 ```
 
-<!-- x-release-please-end -->
-
 Needs Bun 1.4+ on macOS or Linux, and access to the repository — it is private and not on npm.
-**Keep the `#v0.1.1` pin**: without a ref, bun resolves from a bare clone it may already hold and
-can deliver an older kit at exit `0` with nothing visible. If the install fails or surprises you,
-`docs/wiki/guides/how-to-fix-a-broken-install.md` covers the three ways it goes wrong, each with
-a form that succeeds while handing you the old kit.
+
+**The second line is part of the install.** A git install can silently hand you an older kit than
+the newest release — exit `0`, nothing visible — so `version --check` confirms the first line did
+what you asked. Its three answers: **up to date** (exit `0`); **a newer release exists** (exit
+`10` — clear the cache, reinstall, check again; `docs/wiki/guides/how-to-fix-a-broken-install.md`
+has the full remedy and the three ways an install goes wrong); **could not check** (exit `0`,
+said plainly — an unreachable remote is not a failure of your invocation). And if `version` is
+not a command your kit recognises, the rejection you get back lists the commands it does have:
+you are on an older kit, and the same guide's remedy applies.
 
 The target is the path to your executable or script, the same thing you would type to run it.
 
