@@ -234,6 +234,15 @@ export const COMMANDS: CommandSpec[] = [
     positionals: [],
     args: [],
     errors: [],
+    // The one documented misroute for this command: a reader holding a check report reaches
+    // for `schema` expecting the REPORT's shape, and this command describes acc itself. The
+    // maintainer nearly made that misroute answering an adopter, so the boundary is stated at
+    // the wrong turn rather than only in the guide it should have led to.
+    notes: [
+      "THIS DESCRIBES acc's OWN surface — its commands, flags and errors. It does not describe",
+      "the report `acc check` writes. For that shape, worked against a real run:",
+      "acc show how-to-read-the-check-report-json",
+    ],
     // `.data.commands`, not `.commands`: the schema is enveloped in BOTH modes, so the query
     // path does not change when the command is piped.
     examples: ["acc schema", "acc schema | jq '.data.commands[].name'"],
