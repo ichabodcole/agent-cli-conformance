@@ -31,7 +31,8 @@ bunx acc check ./path/to/your-cli
 <!-- x-release-please-end -->
 
 Needs Bun 1.4+ on macOS or Linux, and access to the repository — it is private and not on npm.
-**Keep the `#v0.1.1` pin**: without a ref, bun resolves from a bare clone it may already hold and
+**Keep the `#v0.1.2` pin.** <!-- x-release-please-version -->
+Without a ref, bun resolves from a bare clone it may already hold and
 can deliver an older kit at exit `0` with nothing visible. If the install fails or surprises you,
 `docs/wiki/guides/how-to-fix-a-broken-install.md` covers the three ways it goes wrong, each with
 a form that succeeds while handing you the old kit.
