@@ -40,8 +40,12 @@ you are on an older kit, and the same guide's remedy applies.
 
 The target is the path to your executable or script, the same thing you would type to run it.
 
-**`acc check` executes your tool.** If your CLI does real work when run with no arguments, read the
-safety note in `bunx acc check --help` before pointing it at anything.
+**`acc check` executes your tool**, with a bounded set of probes — risk-reduced, not a sandbox.
+Before the third line, `docs/wiki/guides/how-to-establish-your-target-is-safe-to-check.md` is one
+page with the three questions that establish a target is safe to point it at — each answerable
+from the target's own documentation, no source audit needed. The first is decisive on its own: if
+your tool treats its first argument as free-form input — a prompt, a pattern, a filename — the
+probes are input to it, and you should not run the check.
 
 In a terminal you get a human report. Redirected or piped, you get JSON.
 

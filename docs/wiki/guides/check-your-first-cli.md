@@ -180,8 +180,10 @@ anything else on your `PATH` and run it. Most tools fail something.
 
 > **Before you point this at your own work:** `acc check` **executes** the target. `L0` is
 > risk-reduced — only help paths, bare invocations, and arguments carrying a nonsense sentinel
-> token — but it is not a sandbox. Run `bun run acc check --help` and read the safety note
-> before aiming it at anything whose bare invocation might do real work.
+> token — but it is not a sandbox.
+> [How to establish your target is safe to check](./how-to-establish-your-target-is-safe-to-check.md)
+> is the three-question decision method, answerable from the target's own documentation;
+> `bun run acc check --help` carries the full list of what the gate does not prevent.
 
 ## What we learned
 
