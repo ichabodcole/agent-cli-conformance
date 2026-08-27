@@ -179,15 +179,18 @@ reported as something to repay.
 
 Do not reach for a waiver because a rule is inconvenient. Reach for it when the rule genuinely
 does not bind your tool — the canonical case is
-[D2](../rules/discoverability/bare-invocation-is-a-usage-error.md), where printing help on a
-bare invocation is a defensible design position that dogfooding found in three of four real CLIs.
+[D2](../rules/discoverability/bare-invocation-is-a-usage-error.md), for a tool that **chose**
+help on a bare invocation as its interface — a defensible design position, and the majority
+one: three of four real CLIs choose it. The same behaviour from a bare path nobody finished is
+not that case — it is a plain D2 failure, fixed rather than waived.
 
 **What a waiver costs depends on the rule's `deviation`.** Every rule is classified `defect` or
 `design-choice`, and the two are not waived at the same price:
 
 - **`design-choice` — the waiver costs nothing.** The rule leaves no `evidenceGaps` entry and
   `fullyVerified` is unaffected. You are stating a design the catalogue never required, not
-  hiding a failure. D2 above is one of these, so waiving it costs you nothing at all.
+  hiding a failure. D2 above is one of these — and it is a **core** rule: tier (does a `FAIL`
+  gate the run) and deviation (what a waiver costs) are independent axes, and D2 crosses them.
 - **`defect` — the waiver also costs `fullyVerified`,** and puts the rule in `evidenceGaps`, even
   where the probe would have passed. It still buys the gate: `conformant` excludes the rule
   either way. What it cannot buy is the evidence claim, because a rule you chose not to be
@@ -203,9 +206,10 @@ you never have to look it up twice:
 
 ### 4. Write `acc.config.json`
 
-Put it at your project root. `acc check` reads it from the **current working directory** — that
-directory only, with no search upward — and a missing file there is the normal case rather than an
-error. Pass `--config-dir` when you run from somewhere else.
+Put it in the directory you will run `acc check` from. That is the only place it is read — the
+**current working directory**, that directory only, with no search upward — and a missing file
+there is the normal case rather than an error. Pass `--config-dir` when you run from somewhere
+else.
 
 **That makes the directory you run from part of the verdict.** From your project root the run sees
 your waivers; the same command with the same absolute target path, run from a subdirectory, sees

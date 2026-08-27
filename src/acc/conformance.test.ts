@@ -1595,7 +1595,7 @@ describe("the text report puts findings about the reader's config in sections", 
   };
   const CONFORMING = join(dirname(CLI), "kit/fixtures/conforming.ts");
 
-  test("each is a titled section, not a line trailing the legend", async () => {
+  test("each is a titled section, and the legend precedes the table it explains", async () => {
     // A1 passes on this fixture (stale); B3 is not applicable at L0 (inert).
     const dir = configDir({ knownFailures: { A1: "tracked", B3: "tracked in #412" } });
     try {
@@ -1604,12 +1604,16 @@ describe("the text report puts findings about the reader's config in sections", 
       expect(r.stdout).toContain("STALE EXPECTATIONS (1)");
       expect(r.stdout).toContain("NOT BEING EVALUATED (1)");
 
-      // The legend explains abbreviations. A finding about the reader's configuration is not an
-      // abbreviation, so both sections must come BEFORE it — which is the defect that was found.
+      // The legend used to close the report, which put the first `PASS+` twenty lines before
+      // its explanation — an adopter read the `+` as "pass, plus something extra". It now sits
+      // between the headline and the rule table: after the verdict, before the first marker it
+      // explains, and before every configuration section.
       const legend = r.stdout.indexOf("PASS pass · FAIL fail");
       expect(legend).toBeGreaterThan(-1);
-      expect(r.stdout.indexOf("STALE EXPECTATIONS")).toBeLessThan(legend);
-      expect(r.stdout.indexOf("NOT BEING EVALUATED")).toBeLessThan(legend);
+      expect(legend).toBeLessThan(r.stdout.indexOf("PASS+ A1"));
+      expect(legend).toBeGreaterThan(r.stdout.indexOf("CONFORMANT"));
+      expect(r.stdout.indexOf("STALE EXPECTATIONS")).toBeGreaterThan(legend);
+      expect(r.stdout.indexOf("NOT BEING EVALUATED")).toBeGreaterThan(legend);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
