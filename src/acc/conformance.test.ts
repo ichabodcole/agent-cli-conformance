@@ -1702,6 +1702,24 @@ describe("a finding carries the probe behind it", () => {
     );
   }, 60_000);
 
+  // THE POINTERS, ASSERTED TOGETHER — because this is the shape of defect the project keeps
+  // finding: a rule with no home gets re-decided at every call site. Three user-facing surfaces
+  // tell a reader where evidence lives, and they drifted apart once already — `acc check --help`
+  // has described the ids-into-observations join correctly since two releases before either
+  // adopter trial, and neither adopter reached it. Documenting harder is the arm that has been
+  // tried; keeping the three in step is what stops a reader who DOES reach one from being sent
+  // on the join anyway.
+  test("every surface that says where evidence lives names the resolved probes", async () => {
+    const help = await run(["check", "--help", "--format", "text"]);
+    const report = await run(["check", CONFORMING, "--format", "text"]);
+    const show = await run(["show", "b8d1ef65cae5", "--json"]);
+    expect({
+      help: help.stdout.includes("probes"),
+      report: report.stdout.includes(".data.findings[].probes"),
+      show: JSON.parse(show.stderr).error.hint.includes(".data.findings[].probes"),
+    }).toEqual({ help: true, report: true, show: true });
+  }, 60_000);
+
   test("acc show, asked to resolve an evidence id, names the field that answers it", async () => {
     // The command a blind reader actually tried. Its refusal is the highest-traffic pointer at
     // the evidence mechanism, so it is where the shorter path has to be named.
