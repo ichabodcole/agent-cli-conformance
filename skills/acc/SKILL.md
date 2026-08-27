@@ -1,10 +1,10 @@
 ---
 name: acc
 description:
-  Build a command-line tool that agents and scripts can genuinely use, with the acc guidance and
-  the kit that holds it in place. Use when someone wants to know whether their CLI is usable by
-  agents and scripts, when they have run `acc check` and do not know what to do with the result,
-  or when they want to cover the command paths a root-only probe cannot reach.
+  Check a command-line tool against the acc conformance standard. Use when someone wants to know
+  whether their CLI is usable by agents and scripts, when they have run `acc check` and do not
+  know what to do with the result, or when they want to cover the command paths a root-only probe
+  cannot reach.
 ---
 
 # Checking a CLI with `acc`
