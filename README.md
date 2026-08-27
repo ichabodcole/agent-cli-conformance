@@ -15,7 +15,7 @@ agent-harness authors second. It is a conformance suite for _ordinary CLIs consu
 not for agent applications that happen to have a CLI. If a person types your tool and a script
 also runs it, it is in scope.
 
-> **Status.** The kit runs today, and a release carries a tag of the form `v0.1.0` <!-- x-release-please-version -->
+> **Status.** The kit runs today, and a release carries a tag of the form `v0.1.1` <!-- x-release-please-version -->
 > — until one is cut, install from a branch or a commit SHA. `L0` is the
 > only probe level that exists so far, and it is the shallow one — see
 > [where this is going](#where-this-is-going) for what it does and does not reach yet.
@@ -73,7 +73,7 @@ if and when this one opens up.
 
 Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
 commit or a release tag after the `#`. Where no tag has been cut yet, pin a **commit SHA**; the
-tag form is `…agent-cli-conformance.git#v0.1.0`. <!-- x-release-please-version -->
+tag form is `…agent-cli-conformance.git#v0.1.1`. <!-- x-release-please-version -->
 
 > **⚠ Re-installing, or moving to a different ref?** Three separate failures can hand you the old
 > kit instead, and **two of them succeed at exit `0`** — so a diff that shows no change may mean
@@ -131,12 +131,12 @@ The first line is the verdict, and the exit code is the gate:
 <!-- x-release-please-start-version -->
 
 ```
-NOT CONFORMANT (L0) — 2 core violated, 2 core unverified, 13 core partially covered  /opt/homebrew/bin/git  [acc 0.1.0]
+NOT CONFORMANT (L0) — 2 core violated, 2 core unverified, 13 core partially covered  /opt/homebrew/bin/git  [acc 0.1.1]
 ```
 
 <!-- x-release-please-end -->
 
-That line also ends with the kit's own version — `[acc 0.1.0]` <!-- x-release-please-version -->
+That line also ends with the kit's own version — `[acc 0.1.1]` <!-- x-release-please-version -->
 — which appears as `kitVersion` in the JSON report. It is there because an install can silently
 give you an older kit than you asked for; the install notes above explain how, and how far the
 check reaches.
@@ -165,7 +165,7 @@ first CLI](docs/wiki/guides/check-your-first-cli.md) walks through a real one.
 <!-- x-release-please-start-version -->
 
 ```
-CONFORMANT (L0) — 0 core violated, 1 core unverified, 16 core partially covered  ./conforming.ts  [acc 0.1.0]
+CONFORMANT (L0) — 0 core violated, 1 core unverified, 16 core partially covered  ./conforming.ts  [acc 0.1.1]
 
   PASS+ A1  root flag rejected with exit 2, stdout empty, flag named; the same flag carrying a value likewise
   PASS+ A2  root verb rejected with exit 2; nested case not probed at L0; this verdict assumes the first positional selects a subcommand, which nothing at L0 established
