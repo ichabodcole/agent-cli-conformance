@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { ALLOWLIST, explain, scanSource } from "./git-spawn-scan.ts";
 
 /**
@@ -11,6 +11,24 @@ import { ALLOWLIST, explain, scanSource } from "./git-spawn-scan.ts";
  * is exactly what happened. This does not require anyone to remember.
  */
 
+/**
+ * Paths resolved from THIS MODULE, not from the process cwd.
+ *
+ * The first version walked the literal `"src"` and stat'd allowlist entries relative to wherever
+ * `bun test` happened to start, which silently required the repo root. Run from anywhere else it
+ * failed for a reason that had nothing to do with what it checks — a check reporting the wrong
+ * cause, which is the shape of the bug it exists to prevent, at one remove.
+ *
+ * Resolved rather than asserted, deliberately: an assertion tells you the run was wrong, and this
+ * makes it right. A precondition worth stating is one the caller can do something about, and
+ * "start bun from a different directory" is not that.
+ */
+const REPO_ROOT = resolve(import.meta.dir, "..", "..", "..");
+const SRC_ROOT = join(REPO_ROOT, "src");
+
+/** Repo-relative, because ALLOWLIST keys and findings are both repo-relative paths. */
+const rel = (p: string) => p.slice(REPO_ROOT.length + 1);
+
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const p = join(dir, entry);
@@ -20,12 +38,12 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-const SPECIMENS = "src/acc/kit/fixtures/git-spawn-specimens";
+const SPECIMENS = join(SRC_ROOT, "acc/kit/fixtures/git-spawn-specimens");
 const specimen = (name: string) => readFileSync(join(SPECIMENS, `${name}.txt`), "utf8");
 
 describe("no fixture spawns git with an inherited environment", () => {
   test("every spawn site in src/ is guarded, irrelevant, or allowlisted with a reason", () => {
-    const findings = walk("src").flatMap((f) => scanSource(f, readFileSync(f, "utf8")));
+    const findings = walk(SRC_ROOT).flatMap((f) => scanSource(rel(f), readFileSync(f, "utf8")));
     if (findings.length)
       throw new Error(
         `${findings.length} spawn site(s) could brick the repository:\n\n${findings.map(explain).join("\n\n")}`,
@@ -37,7 +55,10 @@ describe("no fixture spawns git with an inherited environment", () => {
     // An allowlist that outlives its file is a silence nobody notices, and an entry without a
     // reason is a name — which is what a deliberate exemption must not be.
     for (const [file, reason] of Object.entries(ALLOWLIST)) {
-      expect({ file, exists: statSync(file).isFile() }).toEqual({ file, exists: true });
+      expect({ file, exists: statSync(join(REPO_ROOT, file)).isFile() }).toEqual({
+        file,
+        exists: true,
+      });
       expect(reason.length).toBeGreaterThan(40);
     }
   });
@@ -47,7 +68,7 @@ describe("no fixture spawns git with an inherited environment", () => {
     // most of this suite imports from node:child_process, so a scan that knew only the shape
     // already met would miss the next one by one import statement.
     const seen = new Set<string>();
-    for (const f of walk("src")) {
+    for (const f of walk(SRC_ROOT)) {
       const src = readFileSync(f, "utf8");
       for (const m of src.matchAll(
         /\b(Bun\.spawnSync|Bun\.spawn|spawnSync|spawn|execFileSync|execSync|execFile)\s*\(/g,
