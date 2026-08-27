@@ -24,6 +24,7 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CREDENTIAL_PATTERNS } from "./kit/checkers/safety/no-secrets-in-help.ts";
 import type { AccConfig } from "./kit/config.ts";
+import { gitFixture } from "./kit/git-fixture-env.ts";
 import { record } from "./kit/record.ts";
 import { CHECKERS } from "./kit/registry.ts";
 import { buildReport, runCheckers } from "./kit/report.ts";
@@ -562,26 +563,22 @@ describe("every published example runs as written", () => {
     // `check`, so it gets the same treatment: a real repository with real tags stands in, and
     // the example RUNS rather than being excused. `git ls-remote` against a filesystem path is
     // a local operation.
+    // EVERY git call here goes through `gitFixture`: the environment is stripped of `GIT_*`, and
+    // a failure throws instead of leaving a fixture that only looks like a repository. Spawning
+    // git directly here — as this block first did — is what set `core.bare = true` on the real
+    // checkout under a pre-commit hook from a linked worktree.
     const tagged = join(compareDir, "release-remote");
     mkdirSync(tagged, { recursive: true });
-    for (const args of [
-      ["git", "init", "-q", "."],
-      ["git", "config", "user.email", "t@t"],
-      ["git", "config", "user.name", "t"],
-    ]) {
-      Bun.spawnSync(args, { cwd: tagged });
-    }
+    gitFixture(["init", "-q", "."], tagged);
+    gitFixture(["config", "user.email", "t@t"], tagged);
+    gitFixture(["config", "user.name", "t"], tagged);
     writeFileSync(join(tagged, "f.txt"), "x\n");
-    for (const args of [
-      ["git", "add", "-A"],
-      ["git", "commit", "-qm", "init"],
-      // Tagged at the INSTALLED version, read from the same constant the command compares
-      // against, so the example demonstrates the genuine up-to-date answer and stays true
-      // across every release without anyone editing this line.
-      ["git", "tag", `v${VERSION}`],
-    ]) {
-      Bun.spawnSync(args, { cwd: tagged });
-    }
+    gitFixture(["add", "-A"], tagged);
+    gitFixture(["commit", "-qm", "init"], tagged);
+    // Tagged at the INSTALLED version, read from the same constant the command compares against,
+    // so the example demonstrates the genuine up-to-date answer and stays true across every
+    // release without anyone editing this line.
+    gitFixture(["tag", `v${VERSION}`], tagged);
     releaseRemote = tagged;
     for (const name of ["exits-2-no-version", "exits-1-with-version"]) {
       const written = join(compareDir, `${name}.json`);

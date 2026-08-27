@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { disposableBase, gitFixture } from "./kit/git-fixture-env.ts";
 import { checkRelease, defaultLsRemote, type LsRemote, parseTags } from "./release.ts";
 
 /**
@@ -12,23 +12,25 @@ import { checkRelease, defaultLsRemote, type LsRemote, parseTags } from "./relea
  *     author imagined. `git ls-remote` on a filesystem path is a local operation.
  */
 
-function sh(args: string[], cwd: string) {
-  const p = Bun.spawnSync(args, { cwd, stdout: "pipe", stderr: "pipe" });
-  if (p.exitCode !== 0) {
-    throw new Error(`${args.join(" ")} failed: ${new TextDecoder().decode(p.stderr)}`);
-  }
-}
-
-/** A real repo with two real tags — the fixture the brief asked for. */
+/**
+ * A real repo with two real tags — the fixture the brief asked for.
+ *
+ * EVERY git call goes through `gitFixture`, and the base comes from `disposableBase()`. An
+ * earlier version of this file spawned git directly with an inherited environment, and under a
+ * pre-commit hook run from a linked worktree that `git init` re-initialised the repository these
+ * tests live in and set `core.bare = true` on it. See git-fixture-env.ts for the mechanism; the
+ * short version is that a hand-run gate cannot show you this, because the variable that causes it
+ * is supplied only by the hook.
+ */
 function makeTaggedRepo(tags: string[]): string {
-  const root = mkdtempSync(join(tmpdir(), "acc-release-"));
-  sh(["git", "init", "-q", "."], root);
-  sh(["git", "config", "user.email", "t@t"], root);
-  sh(["git", "config", "user.name", "t"], root);
-  Bun.write(join(root, "f.txt"), "x\n");
-  sh(["git", "add", "-A"], root);
-  sh(["git", "commit", "-qm", "init"], root);
-  for (const t of tags) sh(["git", "tag", t], root);
+  const root = mkdtempSync(join(disposableBase(), "acc-release-"));
+  gitFixture(["init", "-q", "."], root);
+  gitFixture(["config", "user.email", "t@t"], root);
+  gitFixture(["config", "user.name", "t"], root);
+  writeFileSync(join(root, "f.txt"), "x\n");
+  gitFixture(["add", "-A"], root);
+  gitFixture(["commit", "-qm", "init"], root);
+  for (const t of tags) gitFixture(["tag", t], root);
   return root;
 }
 
@@ -133,7 +135,7 @@ describe("defaultLsRemote (real git, local path — still no network)", () => {
   });
 
   test("a path that is not a repository fails without hanging", () => {
-    const empty = mkdtempSync(join(tmpdir(), "acc-norepo-"));
+    const empty = mkdtempSync(join(disposableBase(), "acc-norepo-"));
     try {
       expect(defaultLsRemote(empty).code).not.toBe(0);
     } finally {
