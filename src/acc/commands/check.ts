@@ -359,10 +359,36 @@ export async function checkCommand(
       // A `+` on a PASS whose checker declares `coverage: "partial"`. Without it the strongest
       // glyph in the report sits beside a rule the kit only sampled, and the reader has to know
       // to cross-reference the gap block below to find out which passes were narrow ones.
-      const lines = r.findings.map(
-        (f) =>
-          `  ${mark(f)}${!f.waived && f.verdict === "pass" && f.coverage === "partial" ? "+" : " "} ${f.ruleId.padEnd(3)} ${f.detail}${f.excused ? " (excused)" : ""}${f.waived ? ` (waived; would ${f.verdict.toUpperCase()})` : ""}`,
-      );
+      // THE ARGV, UNDER THE FINDINGS A READER TRIAGES. Two independent adopters joined evidence
+      // ids against the observations by hand at the same moment — deciding whether a finding was
+      // their own parser or their own dispatch — and one asked for exactly this: "name the
+      // offending argv inline in exit-code findings". A verdict about behaviour is unreadable
+      // without the invocation that produced it, and a reader holding the text report does not
+      // have the JSON open.
+      //
+      // FAIL and applicable UNVERIFIED only, which is the triage set. Every finding would add one
+      // line per citation — 59 lines on a 23-finding report of the kit's own fixture, three
+      // quarters of them under passes nobody is going to investigate — and a legend that scrolls
+      // is one a reader stops reading. `.data.findings[].probes` carries all of them for the
+      // reader who wants the rest, and the EVIDENCE block below names it.
+      const probeLines = (f: (typeof r.findings)[number]) =>
+        (f.verdict === "fail" || (f.verdict === "unverified" && f.applicable)) && !f.waived
+          ? f.probes.map(
+              (p) =>
+                // `(bare)` rather than an empty string: an empty argv IS the probe for D2 and E1,
+                // and a blank after the arrow reads as a rendering fault rather than as the
+                // least dangerous possible invocation.
+                `        ↳ ${p.args.length ? p.args.join(" ") : "(bare)"}${
+                  p.repeat === undefined ? "" : ` [run ${p.repeat}]`
+                }${p.env ? ` [env ${Object.keys(p.env).sort().join(", ")}]` : ""}${
+                  p.unresolved ? "  (unresolved — this run published no such observation)" : ""
+                }`,
+            )
+          : [];
+      const lines = r.findings.flatMap((f) => [
+        `  ${mark(f)}${!f.waived && f.verdict === "pass" && f.coverage === "partial" ? "+" : " "} ${f.ruleId.padEnd(3)} ${f.detail}${f.excused ? " (excused)" : ""}${f.waived ? ` (waived; would ${f.verdict.toUpperCase()})` : ""}`,
+        ...probeLines(f),
+      ]);
       // Every waiver, with the REASON, because the reason is the only thing standing between a
       // considered design decision and "this rule was annoying". A human reading a report is the
       // reviewer that string was written for; a count alone would put the frame off-screen.
@@ -685,7 +711,9 @@ export async function checkCommand(
         // this run's own target rather than described, because the reader is holding the report
         // and not the manual.
         "  EVIDENCE — every finding cites observation ids, which resolve in the JSON report:",
-        `    acc check ${r.target} --json  →  .data.observations[]  (acc show resolves wiki pages, not these ids)`,
+        `    acc check ${r.target} --json  →  .data.findings[].probes  (the argv behind each verdict, already resolved)`,
+        `    acc check ${r.target} --json  →  .data.observations[]     (the full record, including outcome and digests)`,
+        "    acc show resolves wiki pages, not these ids.",
         "",
         "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable to this run",
         "  PASS+ passed, but the checker establishes only part of its rule — see the gaps above",
