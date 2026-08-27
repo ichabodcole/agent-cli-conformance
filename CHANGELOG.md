@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.3](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.2...v0.1.3) (2026-08-27)
+
+
+### Features
+
+* **gate:** fail on unmarked version literals and unguarded git spawns ([f22ebc8](https://github.com/ichabodcole/agent-cli-conformance/commit/f22ebc8566ae51809d7093c3717384a2d89fd4a5))
+* **kit:** a check that fails a fixture spawning git with an inherited environment ([18d908f](https://github.com/ichabodcole/agent-cli-conformance/commit/18d908f4de8e79fdbcb08604d5e0bc6552f071ef))
+* **lint:** a release literal in a live document must be marked, removed, or allowlisted ([988d25f](https://github.com/ichabodcole/agent-cli-conformance/commit/988d25fb04692b92452c33e1d6263d495188b024))
+
+
+### Bug Fixes
+
+* **docs:** the two version literals that rot, one as a marker and one as a record ([2acc3dd](https://github.com/ichabodcole/agent-cli-conformance/commit/2acc3ddbb7dc1ed063244a949f29981ec5790d4c))
+* **skills:** the skill carries no version literal — install, then verify ([b85e041](https://github.com/ichabodcole/agent-cli-conformance/commit/b85e041085fd039947b9f4738234dabe06a0ac8b))
+
 ## [0.1.2](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.1...v0.1.2) (2026-08-27)
 
 
