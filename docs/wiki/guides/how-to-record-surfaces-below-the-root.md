@@ -386,6 +386,17 @@ Three things to check, in this order:
    once without and compare those three. If any of them moved, that is a defect in the kit, not in
    your batch.
 
+   **On the exit code, compare `0` against `9` and nothing finer.** Those two are what this
+   project promises: `0` conformant, `9` not conformant, and `1`–`8` meaning the kit itself
+   failed. **Which code inside `1`–`8` a given input produces is not promised and may change**,
+   so a batch that moves a run from `2` to `5` is not a defect and is not worth reporting.
+
+   This step used to ask you to treat any change in the exit code as our defect, which promised
+   more than the README does and more than we intend to keep. Three adopters told us they branch
+   on nothing finer than zero versus non-zero, and one gave the reason we adopted: **diagnostic
+   detail belongs in the JSON, where `kind` can grow without breaking a gate, rather than in a
+   one-byte channel a CI gate is branching on at the same time.**
+
    **The verdict LINE does change**, and that is correct — it grows a
    `· but see N declaration disagreements (modelled)` clause. Compare the three things named
    above, not the line.
