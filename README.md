@@ -15,8 +15,8 @@ agent-harness authors second. It is a conformance suite for _ordinary CLIs consu
 not for agent applications that happen to have a CLI. If a person types your tool and a script
 also runs it, it is in scope.
 
-> **Status.** The kit runs today, and a release carries a tag of the form `v0.1.1` <!-- x-release-please-version -->
-> — until one is cut, install from a branch or a commit SHA. `L0` is the
+> **Status.** The kit runs today, and releases carry a tag of the form `v0.1.1` <!-- x-release-please-version -->
+> — pin that tag to install. `L0` is the
 > only probe level that exists so far, and it is the shallow one — see
 > [where this is going](#where-this-is-going) for what it does and does not reach yet.
 >
@@ -72,8 +72,8 @@ answers `404` for a private repository whatever token is in the environment
 if and when this one opens up.
 
 Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
-commit or a release tag after the `#`. Where no tag has been cut yet, pin a **commit SHA**; the
-tag form is `…agent-cli-conformance.git#v0.1.1`. <!-- x-release-please-version -->
+commit or a release tag after the `#`. Prefer a **release tag**; the form is
+`…agent-cli-conformance.git#v0.1.1`. <!-- x-release-please-version -->
 
 > **⚠ Re-installing, or moving to a different ref?** Three separate failures can hand you the old
 > kit instead, and **two of them succeed at exit `0`** — so a diff that shows no change may mean
