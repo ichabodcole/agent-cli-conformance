@@ -87,6 +87,11 @@ Reconstructing from `git log main..develop`, the diff and the docs is the point 
 future reader will do. **If it cannot write a good note from the artifacts, that is a finding about
 the artifacts.**
 
+**Say in the brief what the note is: what this release ships, and what changed that a consumer
+has to act on.** It is not marketing and not an install guide — the README, the wiki and the
+skill hold those. A brief that frames the reader as someone deciding whether to adopt gets an
+onboarding document back, and every cold read in §2 will then judge it as one.
+
 Ask it to return, kept separate from the prose:
 
 1. what it could **not** determine from the tree;
@@ -235,14 +240,18 @@ is absent from it**, and it is the one artifact a consumer actually reads.
 
 So after the release PR merges, put the note there:
 
+**Keep the generated changelog.** The changelog is the complete list, the note is what it meant.
+Deleting the list to make room for prose loses the half that is exhaustive — so `--notes-file`
+takes a file holding **both**, because it replaces the whole body:
+
 ```bash
-gh release view v<version>
-gh release edit v<version> --title "<version> — <what a reader got>" --notes-file note.md
+gh release view v<version> --json body -q .body > changelog.md
+{ tail -n +3 note.md; echo; cat changelog.md; } > release-body.md
+gh release edit v<version> --title "<version> — <what a reader got>" --notes-file release-body.md
 ```
 
-**Keep the generated changelog.** Put the note above it rather than replacing it: the changelog is
-the complete list, the note is what it meant. Deleting the list to make room for prose loses the
-half that is exhaustive.
+> **⚠ `--notes-file note.md` on its own deletes the changelog.** It overwrites the body; there is
+> no append.
 
 ## 7 · Back-merge, then verify
 
