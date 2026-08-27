@@ -47,7 +47,8 @@ from the target's own documentation, no source audit needed. The first is decisi
 your tool treats its first argument as free-form input — a prompt, a pattern, a filename — the
 probes are input to it, and you should not run the check.
 
-In a terminal you get a human report. Redirected or piped, you get JSON.
+In a terminal you get a human report. Redirected or piped, you get JSON —
+`docs/wiki/guides/how-to-read-the-check-report-json.md` is its shape, worked against a real run.
 
 ## 2. Read the result
 
