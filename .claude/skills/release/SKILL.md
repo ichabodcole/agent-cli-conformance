@@ -89,8 +89,7 @@ the artifacts.**
 
 **Say in the brief what the note is: what this release ships, and what changed that a consumer
 has to act on.** It is not marketing and not an install guide — the README, the wiki and the
-skill hold those. A brief that frames the reader as someone deciding whether to adopt gets an
-onboarding document back, and every cold read in §2 will then judge it as one.
+skill hold those.
 
 Ask it to return, kept separate from the prose:
 
