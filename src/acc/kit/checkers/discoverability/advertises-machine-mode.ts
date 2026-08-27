@@ -5,7 +5,7 @@ import {
   hungUnverified,
   truncatedUnverified,
 } from "../../finding.ts";
-import { helpStatesMachineDefault } from "../../machine-mode.ts";
+import { helpStatesMachineDefault, mentionsMachineDefaultTokens } from "../../machine-mode.ts";
 import type { Checker, Finding, History, Invocation, Observation } from "../../types.ts";
 import { findByPurpose } from "../../types.ts";
 
@@ -222,6 +222,21 @@ export const advertisesMachineModeChecker: Checker = {
       );
     }
 
+    // A NEAR MISS IS NOT A SILENCE, and the report used to say the same thing for both. An
+    // adopter whose help read "machine-readable by default ... structured JSON on stdout" got the
+    // line below verbatim — identical to what a tool carrying no such sentence gets — and
+    // reasonably concluded prose claims were not implemented at all. They established otherwise
+    // by reading this file inside their `node_modules`.
+    //
+    // This changes NO verdict. The matcher is untouched and the rule stays `fail`: accepting that
+    // sentence is a different decision, argued against directly above. What it changes is that
+    // the fail now distinguishes "I looked and there was nothing" from "I looked, there was
+    // something, and it is not in a shape I can verify" — which is the difference between a
+    // reader rewriting one sentence and a reader abandoning the route.
+    const nearMiss = mentionsMachineDefaultTokens(help)
+      ? "; help DOES carry machine-output and default wording, in an arrangement this rule's prose matcher did not accept — the matcher is narrow by design and only recognises a direct claim about this tool's own stdout, so a rewording may be read where the present one is not"
+      : "";
+
     return finding(
       "fail",
       // NAMES WHAT WAS LOOKED FOR, because "names no machine-mode flag" alone is read as false by
@@ -233,7 +248,7 @@ export const advertisesMachineModeChecker: Checker = {
       // unverified as a result", which stopped being true when B3 became an L1 rule reachable
       // only through a declaration. It is unverified for every undeclared target, whatever this
       // rule finds.
-      `help names no machine-mode flag a caller could flip and no schema command: --json, --format and --output are looked for as bare switches, and one documented with a value slot is a flag that takes a value rather than one that selects a mode${declared}`,
+      `help names no machine-mode flag a caller could flip and no schema command: --json, --format and --output are looked for as bare switches, and one documented with a value slot is a flag that takes a value rather than one that selects a mode${nearMiss}${declared}`,
       evidence,
     );
   },

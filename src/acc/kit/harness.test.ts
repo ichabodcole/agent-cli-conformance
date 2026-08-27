@@ -216,6 +216,107 @@ describe("buildHarness — the emitted script", () => {
   });
 });
 
+/**
+ * WHERE THE BATCH GOES — chosen when the harness RUNS, not only when it is generated.
+ *
+ * `probe-plan` has `--out` for the script; the script had none for the batch, so it always landed
+ * in the working directory. An adopter also asked, reasonably, whether MOVING the file afterwards
+ * counted as editing it — the harness carries a do-not-edit warning and did not say. A
+ * destination flag answers both at once: the file arrives where they asked, so the question does
+ * not arise.
+ *
+ * The flag has to be parsed BEFORE the dirt check, because the dirt check excludes `$OUT` from
+ * `git status`. A flag that moved the file without moving the exclusion would make every run of
+ * the documented workflow report `-dirty` from a clean checkout — the exact inversion the
+ * exclusion exists to prevent.
+ */
+describe("buildHarness — the batch destination is a runtime flag", () => {
+  test("-o writes the batch where asked, and the default is unchanged", () => {
+    const { workdir } = makeRepo(false);
+    writeFileSync(
+      join(workdir, "capture.sh"),
+      buildHarness({
+        launcher: ["sh", join(workdir, "toy.sh")],
+        paths: [["state"]],
+        sentinel: "--acc-not-a-flag",
+        identityArgv: ["--version"],
+        pathSource: "declaration",
+        out: "batch.json",
+      }),
+    );
+    // Default: still batch.json, so nothing that ran this before changes behaviour.
+    expect(shGitFree(["sh", "capture.sh"], workdir).code).toBe(0);
+    expect(existsSync(join(workdir, "batch.json"))).toBe(true);
+
+    mkdirSync(join(workdir, "out"), { recursive: true });
+    expect(shGitFree(["sh", "capture.sh", "-o", "out/elsewhere.json"], workdir).code).toBe(0);
+    const moved = parseRecordedBatch(
+      "test",
+      JSON.parse(readFileSync(join(workdir, "out/elsewhere.json"), "utf8")),
+    );
+    expect(moved.records.map((r) => r.path)).toEqual([["state"]]);
+  }, 60_000);
+
+  test("a redirected batch does not make the run report itself dirty", () => {
+    // THE CASCADE THIS FLAG COULD HAVE BROKEN. `-dirty` on BUILD means "the tree moved while it
+    // was measured"; the harness excludes its own output to keep that true. Redirecting without
+    // following the exclusion would append `-dirty` on every clean run.
+    const { workdir } = makeRepo(false);
+    writeFileSync(
+      join(workdir, "capture.sh"),
+      buildHarness({
+        launcher: ["sh", join(workdir, "toy.sh")],
+        paths: [["state"]],
+        sentinel: "--acc-not-a-flag",
+        identityArgv: ["--version"],
+        pathSource: "declaration",
+        out: "batch.json",
+      }),
+    );
+    expect(shGitFree(["sh", "capture.sh", "-o", "moved.json"], workdir).code).toBe(0);
+    const batch = parseRecordedBatch(
+      "test",
+      JSON.parse(readFileSync(join(workdir, "moved.json"), "utf8")),
+    );
+    // Guard the guard: an empty record list would satisfy `every` vacuously.
+    expect(batch.records.length).toBeGreaterThan(0);
+    expect(batch.records.map((r) => r.recordedBy.includes("-dirty"))).toEqual(
+      batch.records.map(() => false),
+    );
+  }, 60_000);
+
+  test("a bad destination fails before any probe runs, not after all of them", () => {
+    const { workdir } = makeRepo(false);
+    writeFileSync(
+      join(workdir, "capture.sh"),
+      buildHarness({
+        launcher: ["sh", join(workdir, "toy.sh")],
+        paths: [["state"]],
+        sentinel: "--acc-not-a-flag",
+        identityArgv: ["--version"],
+        pathSource: "declaration",
+        out: "batch.json",
+      }),
+    );
+    // A missing parent directory is the caller's typo, and discovering it after every probe has
+    // run costs them the whole capture for a fixable mistake.
+    const r = shGitFree(["sh", "capture.sh", "-o", "no/such/dir/b.json"], workdir);
+    expect(r.code).not.toBe(0);
+    expect(`${r.stderr}${r.stdout}`).toMatch(/directory/i);
+    expect(existsSync(join(workdir, "batch.json"))).toBe(false);
+  }, 60_000);
+
+  test("-o with no value, and an unknown argument, are both refused", () => {
+    const { workdir } = makeRepo(false);
+    writeFileSync(
+      join(workdir, "capture.sh"),
+      buildHarness({ ...BASE, launcher: ["sh", join(workdir, "toy.sh")], paths: [["state"]] }),
+    );
+    expect(shGitFree(["sh", "capture.sh", "-o"], workdir).code).not.toBe(0);
+    expect(shGitFree(["sh", "capture.sh", "--nope"], workdir).code).not.toBe(0);
+  }, 60_000);
+});
+
 describe("buildHarness — running it produces a batch the reader accepts", () => {
   test("captures every path, and the kit's own parser reads the result", () => {
     const { root, workdir } = makeRepo(false);
