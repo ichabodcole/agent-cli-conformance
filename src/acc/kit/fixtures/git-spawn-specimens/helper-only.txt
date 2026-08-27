@@ -1,0 +1,7 @@
+import { gitFixture } from "./kit/git-fixture-env.ts";
+
+function shUnguarded(args: string[], cwd: string) {
+  return Bun.spawnSync(args, { cwd, stdout: "pipe", stderr: "pipe" });
+}
+
+gitFixture(["init", "-q", "."], root);

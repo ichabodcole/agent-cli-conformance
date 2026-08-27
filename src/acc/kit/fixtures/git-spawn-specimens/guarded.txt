@@ -1,0 +1,1 @@
+Bun.spawnSync(["git", "init"], { env: GIT_FREE_ENV });

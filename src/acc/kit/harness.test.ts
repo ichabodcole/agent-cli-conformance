@@ -9,7 +9,8 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { join, relative } from "node:path";
+import { disposableBase, gitFixture, shGitFree } from "./git-fixture-env.ts";
 import { buildHarness, HarnessError, shQuote, validatePaths, validateSentinel } from "./harness.ts";
 import { parseRecordedBatch } from "./recorded.ts";
 
@@ -74,19 +75,6 @@ const BASE = {
  * Stripping all of them is deliberately broader than the measured danger. The exported set is
  * git's to change, and a fixture that runs git has no business inheriting any of it.
  */
-const GIT_FREE_ENV = Object.fromEntries(
-  Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_")),
-) as Record<string, string>;
-
-function sh(args: string[], cwd: string): { code: number; stdout: string; stderr: string } {
-  const p = Bun.spawnSync(args, { cwd, stdout: "pipe", stderr: "pipe", env: GIT_FREE_ENV });
-  return {
-    code: p.exitCode,
-    stdout: new TextDecoder().decode(p.stdout),
-    stderr: new TextDecoder().decode(p.stderr),
-  };
-}
-
 /** A throwaway repo holding a toy target that refuses whatever it is given.
  *
  *  THE TOY TARGET IS COMMITTED. An uncommitted one is a genuinely untracked file, so every run
@@ -103,33 +91,6 @@ function sh(args: string[], cwd: string): { code: number; stdout: string; stderr
  * Asserted rather than corrected on purpose: a suite that quietly relocates its fixtures is a
  * suite whose location nobody can reason about. Loud is the whole requirement.
  */
-function disposableBase(): string {
-  const base = resolve(tmpdir());
-  if (!isAbsolute(base) || base === "/")
-    throw new Error(`TMPDIR does not resolve to a usable absolute path: ${tmpdir()}`);
-  const cwd = resolve(process.cwd());
-  // CHECKED BEFORE ANYTHING IS CREATED, so a bad TMPDIR leaves no fixture directories behind in
-  // the repository. Checking the created path instead still refuses to run git, but only after
-  // scattering the litter it was trying to avoid.
-  if (base === cwd || base.startsWith(`${cwd}/`))
-    throw new Error(
-      `TMPDIR resolves to ${base}, inside the working directory ${cwd}. These tests run git and must never do so against a repository they did not create`,
-    );
-  return base;
-}
-
-/** Run a git command in the fixture and refuse to continue if it failed.
- *
- *  Nothing used to check these. `git init`, `git add` and `git commit` could each fail and the
- *  fixture would carry on as though it held a repository — which turns any fixture defect into a
- *  mystery further down, where the symptom is an assertion about `-dirty` rather than a repo that
- *  was never created. */
-function git(args: string[], cwd: string): void {
-  const r = sh(["git", ...args], cwd);
-  if (r.code !== 0)
-    throw new Error(`fixture setup failed: git ${args.join(" ")} in ${cwd}\n${r.stderr}`);
-}
-
 function makeRepo(nested: boolean): { root: string; workdir: string } {
   // THE PATH CONTAINS A SPACE, DELIBERATELY. The exclusion pathspecs are built as positional
   // arguments rather than joined into a string precisely so a repo path with a space survives —
@@ -145,9 +106,9 @@ function makeRepo(nested: boolean): { root: string; workdir: string } {
     join(workdir, "toy.sh"),
     `#!/bin/sh\nif [ "\${1:-}" = "--version" ]; then echo "toy 1.0.0"; exit 0; fi\necho "unknown option '$2'. valid flags: --alpha --beta" >&2\nexit 2\n`,
   );
-  git(["init", "-q", "."], root);
-  git(["add", "-A"], root);
-  git(["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"], root);
+  gitFixture(["init", "-q", "."], root);
+  gitFixture(["add", "-A"], root);
+  gitFixture(["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"], root);
   return { root, workdir };
 }
 
@@ -232,7 +193,7 @@ describe("buildHarness — the emitted script", () => {
     const dir = mkdtempSync(join(tmpdir(), "acc-shn-"));
     const file = join(dir, "capture.sh");
     writeFileSync(file, buildHarness({ ...BASE, paths: [["a"], ["b", "c"]] }));
-    expect(sh(["sh", "-n", file], dir).code).toBe(0);
+    expect(shGitFree(["sh", "-n", file], dir).code).toBe(0);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -271,7 +232,7 @@ describe("buildHarness — running it produces a batch the reader accepts", () =
         out: "batch.json",
       }),
     );
-    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    expect(shGitFree(["sh", "capture.sh"], workdir).code).toBe(0);
 
     const batch = parseRecordedBatch(
       "test",
@@ -342,14 +303,14 @@ describe("the -dirty flag, across the topologies that can falsify it", () => {
       // Derived from the fixture rather than restated: the two drifted apart the moment the
       // fixture path gained a space, and the divergence assertion below is what caught it.
       cwd = join(linkRoot, relative(root, workdir));
-      const logical = sh(["sh", "-c", `cd '${cwd}' && pwd`], workdir).stdout.trim();
-      const physical = sh(["sh", "-c", `cd '${cwd}' && pwd -P`], workdir).stdout.trim();
+      const logical = shGitFree(["sh", "-c", `cd '${cwd}' && pwd`], workdir).stdout.trim();
+      const physical = shGitFree(["sh", "-c", `cd '${cwd}' && pwd -P`], workdir).stdout.trim();
       expect(logical).not.toBe(physical);
     }
 
     const read = () => {
       // Entered with the shell's own `cd`, so `pwd` stays logical inside the harness.
-      const r = sh(["sh", "-c", `cd '${cwd}' && sh capture.sh`], workdir);
+      const r = shGitFree(["sh", "-c", `cd '${cwd}' && sh capture.sh`], workdir);
       expect(r.code).toBe(0);
       return buildStringOf(readFileSync(join(workdir, "batch.json"), "utf8"));
     };
@@ -400,7 +361,7 @@ describe("the -dirty flag, across the topologies that can falsify it", () => {
     );
     mkdirSync(join(root, "elsewhere"), { recursive: true });
     writeFileSync(join(root, "elsewhere", "batch.json"), "{}\n");
-    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    expect(shGitFree(["sh", "capture.sh"], workdir).code).toBe(0);
     const build = buildStringOf(readFileSync(join(workdir, "batch.json"), "utf8"));
     rmSync(root, { recursive: true, force: true });
     expect(build).toContain("-dirty");
@@ -426,7 +387,7 @@ describe("the identity capture", () => {
         out: "batch.json",
       }),
     );
-    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    expect(shGitFree(["sh", "capture.sh"], workdir).code).toBe(0);
     const batch = parseRecordedBatch(
       "test",
       JSON.parse(readFileSync(join(workdir, "batch.json"), "utf8")),
@@ -461,7 +422,7 @@ describe("the identity capture", () => {
       out: "batch.json",
     }).replace(/^IDENTITY_ARGV=.*$/m, 'IDENTITY_ARGV=""');
     writeFileSync(join(workdir, "capture.sh"), script);
-    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    expect(shGitFree(["sh", "capture.sh"], workdir).code).toBe(0);
     const raw = JSON.parse(readFileSync(join(workdir, "batch.json"), "utf8"));
     rmSync(root, { recursive: true, force: true });
     expect(raw.identity).toBeUndefined();
@@ -490,7 +451,7 @@ describe("files the workflow told the adopter to create", () => {
         sourceFiles: [pathsFile],
       }),
     );
-    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    expect(shGitFree(["sh", "capture.sh"], workdir).code).toBe(0);
     const build = buildStringOf(readFileSync(join(workdir, "batch.json"), "utf8"));
     rmSync(root, { recursive: true, force: true });
     expect(build).not.toContain("-dirty");
@@ -511,7 +472,7 @@ describe("files the workflow told the adopter to create", () => {
         // Deliberately NOT declared, so the exclusion cannot be a blanket one.
       }),
     );
-    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    expect(shGitFree(["sh", "capture.sh"], workdir).code).toBe(0);
     const build = buildStringOf(readFileSync(join(workdir, "batch.json"), "utf8"));
     rmSync(root, { recursive: true, force: true });
     expect(build).toContain("-dirty");
@@ -546,13 +507,13 @@ describe("the byte encoder", () => {
         out: "batch.json",
       }),
     );
-    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    expect(shGitFree(["sh", "capture.sh"], workdir).code).toBe(0);
     const batch = parseRecordedBatch(
       "test",
       JSON.parse(readFileSync(join(workdir, "batch.json"), "utf8")),
     );
     // The live bytes, for comparison against what the harness recorded.
-    const live = sh(["sh", target, "state", "--acc-not-a-flag"], workdir).stderr;
+    const live = shGitFree(["sh", target, "state", "--acc-not-a-flag"], workdir).stderr;
     rmSync(root, { recursive: true, force: true });
     const captured = batch.records[0]?.stderr ?? "";
     expect(captured).toBe(live);
@@ -591,7 +552,7 @@ describe("the harness fails loudly, or not at all", () => {
         out: "batch.json",
       }),
     );
-    expect(sh(["sh", "capture.sh"], workdir).code).toBe(0);
+    expect(shGitFree(["sh", "capture.sh"], workdir).code).toBe(0);
     const batch = parseRecordedBatch(
       "test",
       JSON.parse(readFileSync(join(workdir, "batch.json"), "utf8")),
@@ -617,9 +578,9 @@ describe("the harness fails loudly, or not at all", () => {
         out: "batch.json",
       }),
     );
-    sh(["chmod", "555", workdir], workdir);
-    const r = sh(["sh", "capture.sh"], workdir);
-    sh(["chmod", "755", workdir], workdir);
+    shGitFree(["chmod", "555", workdir], workdir);
+    const r = shGitFree(["sh", "capture.sh"], workdir);
+    shGitFree(["chmod", "755", workdir], workdir);
     const wrote = existsSync(join(workdir, "batch.json"));
     rmSync(root, { recursive: true, force: true });
     expect(r.code).not.toBe(0);

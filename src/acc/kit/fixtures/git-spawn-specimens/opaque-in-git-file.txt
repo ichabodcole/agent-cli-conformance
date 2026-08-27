@@ -1,0 +1,3 @@
+const cmd = maybeGit();
+spawnSync(cmd, args, { cwd });
+const x = "git";
