@@ -9,20 +9,32 @@ description:
 
 # Checking a CLI with `acc`
 
-`acc` runs against a command-line tool and reports how well it behaves for agents and scripts. This
-skill is the order to do things in. Every guide it names is a file in the `acc` repository, at the
-path given.
+`acc` runs against a command-line tool and reports how well it behaves for agents and scripts.
+**The guidance is the goal**: the guides this skill routes to say how to build a CLI that agents
+can genuinely use, and following them without ever running the kit still gets you the better
+CLI. The checks are the smallest part of this — they exist to hold what you adopt in place. Each
+thing you adopt — a declared default, an enumerated rejection — converts more of the report from
+`unverified` to checked and kept that way.
+
+This skill is the order to do things in. Every guide it names is a file in the `acc` repository,
+at the path given.
 
 ## 1. Install it and run it
 
+<!-- x-release-please-start-version -->
+
 ```bash
-bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
+bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#v0.1.1'
 bunx acc check ./path/to/your-cli
 ```
 
-Needs Bun 1.4+ on macOS or Linux, and access to the repository — it is private and not on npm. If
-the install fails, `docs/wiki/guides/how-to-fix-a-broken-install.md` covers the three ways it goes
-wrong, two of them silently.
+<!-- x-release-please-end -->
+
+Needs Bun 1.4+ on macOS or Linux, and access to the repository — it is private and not on npm.
+**Keep the `#v0.1.1` pin**: without a ref, bun resolves from a bare clone it may already hold and
+can deliver an older kit at exit `0` with nothing visible. If the install fails or surprises you,
+`docs/wiki/guides/how-to-fix-a-broken-install.md` covers the three ways it goes wrong, each with
+a form that succeeds while handing you the old kit.
 
 The target is the path to your executable or script, the same thing you would type to run it.
 
@@ -74,9 +86,12 @@ did not enumerate at the root; N rejections read, none named a set
 accept. That listing is what the comparison reads, so you already get some coverage without doing
 anything.
 
-**`did not enumerate`** means your tool refuses without saying what it would have accepted. Then
-recording your subcommands is not an improvement on what you have — it is the only coverage you
-will get, because nothing above it worked.
+**`did not enumerate`** means your tool refuses without saying what it would have accepted. For
+a non-enumerating tool, recording buys **observation, not comparison** — the kit reads what your
+subcommands did, but a declaration is compared only at paths where a rejection named the set it
+refused from. The comparison starts when your rejections name their set: that is the SHOULD in
+`A3` (`acc show A3 --body`) — **naming the set is the guidance**, the thing that makes your tool
+legible to the agents that drive it, **and the census is how it sticks.**
 
 Neither is a failure, and either way the guide is the same one.
 

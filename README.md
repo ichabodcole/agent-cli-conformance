@@ -61,9 +61,13 @@ You need [Bun](https://bun.sh) 1.4 or later, on **macOS or Linux**. `acc` is not
 and this repository is **private** while the first few projects are run through it — so install it
 over SSH, into the project whose CLI you want to check:
 
+<!-- x-release-please-start-version -->
+
 ```bash
-bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
+bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#v0.1.1'
 ```
+
+<!-- x-release-please-end -->
 
 That needs GitHub access to this repository. The shorter
 `bun add -d github:ichabodcole/agent-cli-conformance` goes through GitHub's tarball API, which
@@ -71,14 +75,19 @@ answers `404` for a private repository whatever token is in the environment
 ([oven-sh/bun#19618](https://github.com/oven-sh/bun/issues/19618)); it becomes the install line
 if and when this one opens up.
 
-Either form records the resolved commit in your lockfile. To pin explicitly, name a branch, a
-commit or a release tag after the `#`. Prefer a **release tag**; the form is
-`…agent-cli-conformance.git#v0.1.1`. <!-- x-release-please-version -->
+The `#v0.1.1` pin names the current release tag. <!-- x-release-please-version -->
+**Do not drop it**: with no ref, bun resolves from whatever bare clone it already holds and can
+deliver an older kit at exit `0` with nothing visible — measured on a fresh project's first
+install ([the guide](docs/wiki/guides/how-to-fix-a-broken-install.md)). A branch or commit after
+the `#` also works; a release tag is the form the version check can verify.
 
-> **⚠ Re-installing, or moving to a different ref?** Three separate failures can hand you the old
-> kit instead, and **two of them succeed at exit `0`** — so a diff that shows no change may mean
-> the upgrade never happened. [How to fix a broken install](docs/wiki/guides/how-to-fix-a-broken-install.md)
-> has the diagnosis and the remedy. **A first install meets none of them**; skip it for now.
+> **⚠ Re-installing, moving to a different ref, or surprised by the version you got?** Three
+> separate failures can hand you the old kit instead, and **each has a form that succeeds at exit
+> `0`** — so a diff that shows no change may mean the upgrade never happened.
+> [How to fix a broken install](docs/wiki/guides/how-to-fix-a-broken-install.md) has the
+> diagnosis and the remedy. Bun's caches are machine-global, so **a first install into a new
+> project can still hit the silent ones** if this package was ever installed anywhere on the
+> machine.
 
 Then point it at your CLI:
 
