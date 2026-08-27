@@ -59,8 +59,21 @@ export function disposableBase(): string {
 export function shGitFree(
   args: string[],
   cwd: string,
+  /**
+   * Extra environment for this run, layered OVER the git-free base.
+   *
+   * Merged rather than replacing, so a caller that needs `HOME` or a fixture's own variable
+   * cannot accidentally hand the child back a `GIT_DIR` — the strip is not something a call site
+   * gets to opt out of, which is the whole reason this function exists.
+   */
+  env: Record<string, string> = {},
 ): { code: number; stdout: string; stderr: string } {
-  const p = Bun.spawnSync(args, { cwd, stdout: "pipe", stderr: "pipe", env: GIT_FREE_ENV });
+  const p = Bun.spawnSync(args, {
+    cwd,
+    stdout: "pipe",
+    stderr: "pipe",
+    env: { ...GIT_FREE_ENV, ...env },
+  });
   return {
     code: p.exitCode ?? 1,
     stdout: new TextDecoder().decode(p.stdout),

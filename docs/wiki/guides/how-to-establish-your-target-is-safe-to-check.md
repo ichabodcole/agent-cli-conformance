@@ -92,13 +92,35 @@ When you cannot answer it, narrow what a run can touch instead of guessing: give
 a scratch `HOME` —
 
 ```
-HOME="$(mktemp -d)" XDG_CONFIG_HOME="$HOME/.config" bunx acc check ./your-tool
+scratch=$(mktemp -d)
+HOME="$scratch" XDG_CONFIG_HOME="$scratch/.config" bunx acc check ./your-tool
 ```
+
+Name the directory first. Writing `XDG_CONFIG_HOME="$HOME/.config"` in the same command as the
+`HOME` assignment is unspecified in POSIX and genuinely differs: measured here, `zsh` and `dash`
+read the new `HOME`, while `sh` and `bash` read your real one — so the variable meant to redirect
+config reads points at the directory you were protecting.
+
+**If the target has its own home override, set that too.** A tool that reads `MYTOOL_HOME`,
+`MYTOOL_CONFIG_DIR` or similar re-derives its location from that and ignores `HOME` entirely, so
+moving `HOME` moves nothing: the check runs, the report looks ordinary, and the writes land where
+you believed you had prevented them. This is the reported case, not a hypothetical. To find one,
+look for the tool's own name in its environment reads before you rely on containment:
+
+```
+grep -rEo '[A-Z][A-Z0-9_]*_(HOME|CONFIG|CONFIG_DIR|DIR|PATH)' path/to/target | sort -u
+strings ./your-tool | grep -E '_(HOME|CONFIG_DIR)$' | sort -u   # for a compiled binary
+env | grep -iE '^[A-Z0-9_]*(HOME|CONFIG)' | sort               # what is already set for you
+```
+
+The last line matters most: a variable already in your environment is one you will not think to
+set, and it is the one that will be used.
 
 The probes inherit the environment they are run under, so the target's config reads and
 dot-file writes land in a directory you will delete. This does **not** cover everything, and
-what it leaves uncovered is what you still have to judge: absolute paths, subprocesses,
-credentials elsewhere in the environment, and the network are all still reachable. If what the
+what it leaves uncovered is what you still have to judge: absolute paths, subprocesses, a home
+the target derives from its own variable rather than from `HOME`, credentials elsewhere in the
+environment, and the network are all still reachable. If what the
 scratch `HOME` does not contain is exactly the behaviour you cannot afford — the target is
 known to talk to a live service on startup — then the answer is **no**: do not run the check,
 and record that as a limit of your report rather than running it anyway.
