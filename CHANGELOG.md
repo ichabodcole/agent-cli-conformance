@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.2](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.1...v0.1.2) (2026-08-27)
+
+
+### Features
+
+* **version:** `acc version --check` — is the installed kit the current release? ([5a232a3](https://github.com/ichabodcole/agent-cli-conformance/commit/5a232a371c5f500b9fce7920b385650d1c8adcf7))
+* **version:** `acc version --check`, and an install line that pins the tag ([cf63880](https://github.com/ichabodcole/agent-cli-conformance/commit/cf63880e2b6885390dd7d2728f407f8572341ed5))
+
+
+### Bug Fixes
+
+* **docs:** review items — proven marker form, the purpose clause, the moved-tag condition ([99b3a82](https://github.com/ichabodcole/agent-cli-conformance/commit/99b3a82f6c8629144a59bb392214328a55268e67))
+* **docs:** the claims that drifted from behaviour, caught by the first outside run ([eaf284b](https://github.com/ichabodcole/agent-cli-conformance/commit/eaf284b3cfe885235cefbd931d6f2b38c8e89224))
+* **skills:** the description stays check-shaped ([ba56356](https://github.com/ichabodcole/agent-cli-conformance/commit/ba56356331cef83796f4ffcaa0b5ab40c995dc1f))
+* **skills:** the guidance is the goal, and the checks hold it in place ([d5f3dbe](https://github.com/ichabodcole/agent-cli-conformance/commit/d5f3dbe52ab8718170b2cd638fe2bcdabe3c7bc0))
+* **test:** the release fixtures run git through the guarded helper ([0efa4cb](https://github.com/ichabodcole/agent-cli-conformance/commit/0efa4cb9c917f80ec7d4aac83c9a1d4f6ff9edee))
+* two claims that would have shipped false ([84bc58e](https://github.com/ichabodcole/agent-cli-conformance/commit/84bc58e9a1bc3165ffa628492f37a3af56cc9795))
+
 ## [0.1.1](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.0...v0.1.1) (2026-08-27)
 
 
