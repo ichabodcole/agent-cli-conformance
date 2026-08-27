@@ -23,11 +23,11 @@ also runs it, it is in scope.
 > **This is a pre-1.0 line, and the version number means it.** While the major is `0`, a breaking
 > change bumps the minor and a feature bumps the patch. What is promised and what is not:
 >
-> | stable — a change here is breaking                           | unstable — a change here is not                    |
-> | ------------------------------------------------------------ | -------------------------------------------------- |
-> | rule ids (`A1`, `D2`, …), append-only                        | the report's JSON shape, and every field in it     |
-> | exit codes: `0` conformant, `9` not, `1`–`8` the kit failing | `fullyVerified` and what costs it                  |
-> | `conformant` — what it means and when it is true             | `acc.config.json` keys, CLI flags, the text layout |
+> | stable — a change here is breaking                                                                            | unstable — a change here is not                    |
+> | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+> | rule ids (`A1`, `D2`, …), append-only                                                                         | the report's JSON shape, and every field in it     |
+> | exit codes: `0` conformant, `9` not, `1`–`8` the kit failing, `10` a newer release exists (`version --check`) | `fullyVerified` and what costs it                  |
+> | `conformant` — what it means and when it is true                                                              | `acc.config.json` keys, CLI flags, the text layout |
 >
 > Everything a CI gate binds to is on the left. Everything still being designed is on the right —
 > and pin a commit SHA rather than a tag if you parse the JSON.
@@ -150,8 +150,10 @@ That line also ends with the kit's own version — `[acc 0.1.1]` <!-- x-release-
 give you an older kit than you asked for; the install notes above explain how, and how far the
 check reaches.
 
-`0` means conformant and `9` means it is not. Any other code is `acc` itself failing rather
-than a verdict about your tool — the distinction is
+`0` means conformant and `9` means it is not. One more code is an outcome rather than a failure:
+`10`, from `acc version --check`, means a newer release of the kit exists — the check did its
+job and the answer was negative. Any other code is `acc` itself failing rather than a verdict
+about your tool — the distinction is
 [outcomes are not errors](docs/wiki/concepts/exit-codes.md#outcomes-are-not-errors). That makes
 the whole CI step one line with no flags.
 
