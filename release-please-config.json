@@ -9,10 +9,6 @@
         {
           "type": "generic",
           "path": "README.md"
-        },
-        {
-          "type": "generic",
-          "path": "skills/acc/SKILL.md"
         }
       ],
       "bump-minor-pre-major": true,
