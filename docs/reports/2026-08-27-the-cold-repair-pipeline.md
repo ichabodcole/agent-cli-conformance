@@ -29,9 +29,9 @@ afterwards we should be able to tell whether it worked twice.
 
 Two documents — the guide `how-to-reach-l0-in-your-project.md` and the rule page for B5, machine
 mode holds on parser errors — had accumulated defects reported by people who read carefully and
-were misled anyway: two cold trial adopters (the trials report,
-`2026-08-26-the-claims-from-two-trials.md`) and cold readers run on the same pages earlier the
-same day. The defects were all defects of legibility: a notation met before its legend, ordinals
+were misled anyway: two cold trial adopters
+([the trials report](./2026-08-27-the-claims-from-two-trials.md)) and cold readers run on the
+same pages earlier the same day. The defects were all defects of legibility: a notation met before its legend, ordinals
 into a list that had been reordered, a waiver passage that read as a sanctioned route, a dropped
 fact that turned two true passages into an apparent contradiction. The repairs ran in two
 batches — one direct (`5b7559a`), one through the staged pipeline this page records
