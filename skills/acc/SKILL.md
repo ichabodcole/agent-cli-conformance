@@ -24,7 +24,7 @@ at the path given.
 <!-- x-release-please-start-version -->
 
 ```bash
-bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#v0.1.1'
+bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#v0.1.2'
 bunx acc check ./path/to/your-cli
 ```
 
