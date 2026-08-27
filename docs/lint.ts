@@ -22,6 +22,7 @@ import {
   walkMarkdown,
   yamlList,
 } from "../scripts/docs-lint/index.ts";
+import { versionLiteralProblems } from "../scripts/docs-lint/version-literals.ts";
 
 const DOCS_ROOT = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(DOCS_ROOT, "..");
@@ -221,12 +222,12 @@ export function artifactProblems(): string[] {
 }
 
 if (import.meta.main) {
-  const problems = artifactProblems();
+  const problems = [...artifactProblems(), ...versionLiteralProblems(REPO_ROOT)];
   for (const p of problems) console.log(p);
   console.log(
     problems.length
       ? `\n${problems.length} problem(s).`
-      : "OK — frontmatter, vocabularies and stated methods valid across docs/reports, docs/plans and docs/research.",
+      : "OK — frontmatter, vocabularies, stated methods and version literals valid across docs/reports, docs/plans, docs/research and the live documents.",
   );
   process.exit(problems.length ? 1 : 0);
 }
