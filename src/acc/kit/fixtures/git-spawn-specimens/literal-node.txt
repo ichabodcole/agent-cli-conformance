@@ -1,0 +1,1 @@
+spawnSync("git", ["init"], { cwd });

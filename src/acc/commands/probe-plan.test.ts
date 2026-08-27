@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { GIT_FREE_ENV } from "../kit/git-fixture-env.ts";
 
 /**
  * `acc probe-plan` AT THE COMMAND BOUNDARY — the half `harness.test.ts` does not reach.
@@ -24,10 +25,7 @@ function acc(args: string[], cwd?: string): { code: number; stdout: string; stde
     stderr: "pipe",
     // `GIT_*` stripped for the reason given in `kit/harness.test.ts`: under a pre-commit hook an
     // inherited git environment reaches anything these commands spawn.
-    env: {
-      ...Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_"))),
-      ACC_FORMAT: "json",
-    } as Record<string, string>,
+    env: { ...GIT_FREE_ENV, ACC_FORMAT: "json" },
   });
   return {
     code: p.exitCode,
