@@ -91,7 +91,7 @@ B5 then probes your error path with no selector — the path your callers actual
 cheap-first pile.** Declaring `defaultOutput` is not a fix. It is the act of making a claim
 checkable, and the claim covers your ERROR path as well as your data path. So if every data verb
 emits JSON and your parser still answers `unknown option --nope` in prose on stderr — a very
-common shape, and the one the second adopter of this guide had — then declaring moves B5 from
+common shape, and the one an early adopter of this guide had — then declaring moves B5 from
 `unverified` to **fail**, and your report gets one violation longer for telling the truth.
 
 That is the intended gradient, and here is the sequence it intends:
@@ -101,7 +101,7 @@ That is the intended gradient, and here is the sequence it intends:
    The second is the more useful report even though it is the longer one.
 2. **Hold the failure as debt**, with a reason: `"knownFailures": { "B5": "error path is still
 prose; JSON error envelope is scheduled" }`. A reason is required. The gate goes green, the
-   debt is visible, and the ratchet stops it from growing.
+   debt is visible, and it cannot grow without someone naming another rule and another reason.
 3. **Then build the error envelope**, and delete the entry.
 
 **Do not reach for `"rules": { "B5": { "severity": "off" } }` here.** That is a waiver, it means
@@ -135,11 +135,14 @@ bunx acc check ./your-cli --config-dir .
 
 If your help also names `--json`, **both paths are probed** and both must hold: the defect this
 rule is named for is a format resolved only from the tokens your parser read before it stopped,
-which shows up as a bare error that is fine and the same error under `--json` that is not. B3
-stays `unverified` for a target with no flag — it reads a data command's output, and choosing one
-to run safely is above `L0` — but a target that advertises `--json` is probed by B3 as usual. `--output` is refused deliberately — it
-names an output _file_ at least as often as a format, and a probe whose meaning depends on which
-sense your tool implements is not a probe. The report says so out loud:
+which shows up as a bare error that is fine and the same error under `--json` that is not.
+
+B3 stays `unverified` for a target with no flag — it reads a data command's output, and choosing
+one to run safely is above `L0` — but a target that advertises `--json` is probed by B3 as usual.
+
+B5 refuses `--output` deliberately — it names an output _file_ at least as often as a format, and
+a probe whose meaning depends on which sense your tool implements is not a probe. The report's D3
+line spells out what is and is not counted as a selector:
 
 ```
 FAIL  D3  help names no machine-mode flag a caller could flip and no schema command: --json,
@@ -160,7 +163,8 @@ CLI.
 [D2](../rules/discoverability/bare-invocation-is-a-usage-error.md)).** Usage text on stdout is
 the single most common finding on real tools, and it is usually one stream argument.
 
-Re-run the check before triaging what is left; these three fixes tend to clear findings well beyond the rules they name.
+Re-run the check before triaging what is left; these three fixes tend to clear findings well
+beyond the rules they name.
 
 ### 3. Triage what is left into three buckets
 
@@ -263,7 +267,7 @@ that means "not conformant" (anything else is `acc` itself failing — see
 Every fix above adds a token at the ROOT — `--version` for D1, a machine-mode flag or a sentence
 for D3 — and documents it in help. On a tool whose parser has a single global flag registry with
 no per-path binding, that is a token help now names and the per-path parser does not accept.
-Measured on the second adopter's tool, three hours after they reached L0:
+Measured on an early adopter's tool, three hours after they reached L0:
 
 ```
 mycli --version          -> exit 0   {"name":"mycli","version":"2.2.0"}
