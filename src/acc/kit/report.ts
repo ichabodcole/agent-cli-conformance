@@ -83,6 +83,61 @@ export interface ReportedFinding extends Finding {
    * excluded from `conformant` and from `counts.core`.
    */
   applicable: boolean;
+  /**
+   * THE PROBE BEHIND EACH EVIDENCE ID, RESOLVED — so reading a finding does not require a join.
+   *
+   * `evidence` carries ids and nothing else, and two independent cold adopters each wrote the
+   * same join by hand at the same moment in their run: deciding whether a finding was their
+   * parser or their dispatch, which is a question you cannot answer without knowing what was
+   * RUN. One joined ids into `.data.observations` with jq, the other with python over saved
+   * JSON. The ids stay (a set of ids is what let one of them prove C2's third invocation WAS
+   * D2's bare invocation, by intersection); this is the same evidence at the depth the question
+   * is actually asked at.
+   *
+   * **This is the id's PREIMAGE, and that is the whole stopping rule.** `invocationId` hashes
+   * exactly `{args, env, repeat}`, so these three fields are what the id already means and
+   * nothing here is a second, independently-mutable copy of the truth: a drifted entry is
+   * detectable by re-hashing it, which `report.test.ts` does for every finding in a real run.
+   * Inlining the whole observation was the other candidate and it fails that test twice over —
+   * it carries outcome fields the id does not determine, and it grows the report by roughly its
+   * own size again, because ids are cited far more often than they are recorded (59 citations
+   * over 21 observations on the kit's own conforming fixture).
+   *
+   * **The argv alone would not have been enough**, which is only visible by measuring: 11 of
+   * those 21 observations share their argv with another observation. C3, D4 and F2 repeat one
+   * invocation deliberately and the target sees byte-identical argv every time, and F1's
+   * hostile-environment probe differs from its neighbour by `env` alone. A projection that
+   * dropped `repeat` and `env` would answer the adopters' question with an ambiguous answer for
+   * half the report.
+   *
+   * Ordered to match `evidence`, and every id gets an entry — see `unresolved`, which exists so
+   * a citation the kit cannot produce says so out loud rather than shortening the list.
+   */
+  probes: EvidenceProbe[];
+}
+
+/**
+ * One cited probe, resolved from the id a finding carries.
+ *
+ * Carries its own `id` rather than relying on position, so a reader can match by id and a
+ * consumer never has to trust two arrays to stay the same length.
+ */
+export interface EvidenceProbe {
+  /** The observation id, as it appears in `ReportedFinding.evidence`. */
+  id: string;
+  /** The argv this probe sent, after `target.argv0`. Empty when `unresolved`. */
+  args: string[];
+  /** Environment overrides the probe imposed, when it imposed any. */
+  env?: Record<string, string>;
+  /** Which repetition this was, when the probe asked for several. */
+  repeat?: number;
+  /**
+   * Set only when the id names no observation in this run — a kit bug, and the exact defect
+   * `ReportedObservation` was introduced to end: a report citing proof it cannot produce.
+   * Published rather than dropped, because a silently shorter list would let the report look
+   * complete while being less than its own `evidence` field claims.
+   */
+  unresolved?: true;
 }
 
 /**
@@ -567,6 +622,11 @@ export function buildReport(
     merged.splice(at === -1 ? merged.length : at, 0, f);
   }
 
+  // Built ONCE for the whole report rather than per finding: ids are cited far more often than
+  // they are recorded (59 citations over 21 observations on the kit's own fixture), so a scan per
+  // citation would be quadratic in the size of the thing a reader is waiting for.
+  const byObservationId = new Map(h.observations.map((o) => [o.id, o]));
+
   const reported: ReportedFinding[] = merged.map((f) => {
     const c = byId.get(f.ruleId);
     // A checker not found in `checkers` (shouldn't happen outside tests) defaults to core/L0 —
@@ -590,6 +650,12 @@ export function buildReport(
     return {
       ...f,
       evidence: [...f.evidence],
+      // Resolved here rather than by the checkers, so there is one derivation of this and a
+      // checker cannot hand the report an argv that disagrees with the observation it cites.
+      probes: f.evidence.map((id) => {
+        const o = byObservationId.get(id);
+        return o ? toEvidenceProbe(o) : { id, args: [], unresolved: true as const };
+      }),
       // `off` is not a tier, so a waived rule keeps the one it would have bound at — which is
       // exactly what `fullyVerified` needs to know about it below.
       tier: declaration && declaration.severity !== "off" ? declaration.severity : declaredTier,
@@ -814,6 +880,23 @@ export function buildReport(
  * `Observation` cannot silently publish it. The two that must never appear here are `stdout` and
  * `stderr`: they are the target's own output, unbounded, and already represented by their digests.
  */
+/**
+ * The invocation identity behind one observation — `invocationId`'s preimage, and nothing else.
+ *
+ * Kept beside `toReportedObservation` and built from the same `o.invocation` so the two
+ * projections cannot describe one probe differently. The `env` and `repeat` spreads match that
+ * function's exactly, on purpose: a field present on the observation and absent here would make
+ * a finding's copy of a probe read as a different probe.
+ */
+export function toEvidenceProbe(o: Observation): EvidenceProbe {
+  return {
+    id: o.id,
+    args: [...o.invocation.args],
+    ...(Object.keys(o.invocation.env ?? {}).length > 0 ? { env: { ...o.invocation.env } } : {}),
+    ...(o.invocation.repeat === undefined ? {} : { repeat: o.invocation.repeat }),
+  };
+}
+
 export function toReportedObservation(o: Observation): ReportedObservation {
   return {
     id: o.id,

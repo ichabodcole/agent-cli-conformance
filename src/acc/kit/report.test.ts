@@ -5,7 +5,7 @@ import { VERSION } from "../version.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import { buildReport, primaryProblem, runCheckers, toReportedObservation } from "./report.ts";
-import { digestOfText } from "./runner.ts";
+import { digestOfText, invocationId } from "./runner.ts";
 import type { Checker, Coverage, Finding, History, Observation, ProbeLevel } from "./types.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -1165,6 +1165,56 @@ describe("evidence ids resolve", () => {
     // Dropping `repeat` left 11 of 21 observations in indistinguishable groups, which defeats the
     // point of resolving an id at all for the three rules that compare repetitions.
     expect([...seen.values()].filter((n) => n > 1)).toEqual([]);
+  }, 60_000);
+
+  // THE CONTROL FOR `probes`. The claim these make is not "the field is populated" but "the
+  // field cannot say something the id does not already mean" — which is checkable, because the
+  // id IS a hash of the three fields published here. A projection that dropped `repeat`, took
+  // `env` from the wrong probe, or was built by a checker rather than derived here would fail
+  // this by re-hashing to a different id.
+  test("every inlined probe re-hashes to the id it is published under", async () => {
+    const r = await realRun();
+    const cited = r.findings.flatMap((f) => f.probes);
+    expect(cited.length).toBeGreaterThan(0);
+    const drifted = cited.filter(
+      (p) =>
+        invocationId({
+          args: p.args,
+          env: p.env,
+          repeat: p.repeat,
+          // Neither field participates in the id, so neither can affect this comparison; they
+          // are supplied only because `Invocation` requires them.
+          inertness: "bare",
+          purpose: "re-hash",
+        }) !== p.id,
+    );
+    expect(drifted).toEqual([]);
+  }, 60_000);
+
+  test("a finding's probes stand one-to-one with the ids it cites, in the same order", async () => {
+    const r = await realRun();
+    const mismatched = r.findings
+      .map((f) => ({ ruleId: f.ruleId, ids: f.evidence, resolved: f.probes.map((p) => p.id) }))
+      .filter((row) => JSON.stringify(row.ids) !== JSON.stringify(row.resolved));
+    expect(mismatched).toEqual([]);
+  }, 60_000);
+
+  test("nothing in a real run is unresolved — a citation the kit cannot produce says so", async () => {
+    const r = await realRun();
+    // The inverse of the dangling-id test above, from the finding's side. `unresolved` is a kit
+    // bug made visible rather than a shortened list; if it ever appears here, the report is
+    // citing proof it cannot produce and the id test above would be citing it too.
+    expect(r.findings.flatMap((f) => f.probes).filter((p) => p.unresolved)).toEqual([]);
+  }, 60_000);
+
+  test("the inlined copy stays a projection — it carries no outcome the id does not determine", async () => {
+    const r = await realRun();
+    // The stopping rule, asserted rather than described. `invocationId` hashes exactly
+    // `{args, env, repeat}`, so those plus the id are the only keys allowed to appear. Adding
+    // `exitCode` here would be the first step toward inlining the whole observation, which is
+    // the option this design rejected on size and on second-copy grounds.
+    const keys = new Set(r.findings.flatMap((f) => f.probes).flatMap((p) => Object.keys(p)));
+    expect([...keys].sort()).toEqual(["args", "env", "id", "repeat"]);
   }, 60_000);
 
   // Driven through `toReportedObservation` directly, because the condition these assert cannot be

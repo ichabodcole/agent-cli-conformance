@@ -1,4 +1,4 @@
-import { emit, type OutputMode } from "../envelope.ts";
+import { emit, type NextAction, type OutputMode } from "../envelope.ts";
 import { Outcome } from "../exit-codes.ts";
 import { checkRelease } from "../release.ts";
 import { VERSION } from "../version.ts";
@@ -26,6 +26,55 @@ export function versionCommand(mode: OutputMode): void {
     next: [{ exec: "acc", args: ["schema"], when: "to see the surface this version implements" }],
     renderText: (d) => d.version,
   });
+}
+
+/**
+ * THE UPGRADE, AS A SEQUENCE — because the single command this used to hand over is one our own
+ * documentation says always fails.
+ *
+ * `docs/wiki/guides/how-to-fix-a-broken-install.md` says of bun's stale-bare-clone refusal, in
+ * bold, "An upgrade always meets this one": bun keeps a bare clone per git dependency and never
+ * re-fetches it, so a release tag pushed after your last install is invisible and a pinned add
+ * fails with `no commit matching "..." (but repository exists)`. This hint appears ONLY on an
+ * upgrade, so the remedy it offered failed in the only situation it was offered in. Both adopter
+ * trials followed it and both hit exactly that.
+ *
+ * The order is the fix, not the contents: the cache must be dropped BEFORE the install, or the
+ * install resolves against the same stale clone. Taken from the guide's own canonical block so
+ * there is one sequence in the project rather than two that can disagree.
+ *
+ * `bun remove` leads because a duplicate dependency key is the other failure that survives a
+ * reinstall, and it is harmless when there is nothing to remove. The closing `acc version
+ * --check` is what makes the sequence answerable: only the version after reinstall proves the
+ * cache cleared.
+ */
+export function upgradeSteps(latest: string): NextAction[] {
+  return [
+    {
+      exec: "bun",
+      args: ["remove", "agent-cli-conformance"],
+      when: "first — use the dependency key as it appears in your package.json, which need not be the repository name; a no-op if it is absent",
+    },
+    {
+      exec: "bun",
+      args: ["pm", "cache", "rm"],
+      when: "to drop the stale bare clone that makes the pinned install below fail; this clears bun's WHOLE cache and takes no package argument, so keep it out of CI and any build step",
+    },
+    {
+      exec: "bun",
+      args: [
+        "add",
+        "-d",
+        `git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#${latest}`,
+      ],
+      when: "to install the newest release, pinned",
+    },
+    {
+      exec: "acc",
+      args: ["version", "--check"],
+      when: "to confirm it took — only the version after reinstall proves the cache cleared",
+    },
+  ];
 }
 
 /**
@@ -90,20 +139,7 @@ export function versionVerbCommand(
     command: "version",
     startedAt,
     data: { name: "acc", version: VERSION, ...result },
-    next:
-      result.checked && !result.upToDate
-        ? [
-            {
-              exec: "bun",
-              args: [
-                "add",
-                "-d",
-                `git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#${result.latest}`,
-              ],
-              when: "to install the newest release, pinned",
-            },
-          ]
-        : [],
+    next: result.checked && !result.upToDate ? upgradeSteps(result.latest) : [],
     renderText: (d) =>
       d.checked
         ? d.upToDate
@@ -111,8 +147,15 @@ export function versionVerbCommand(
           : [
               `acc ${d.installed} is BEHIND — the newest release is ${d.latest} (${d.latestSha.slice(0, 7)})`,
               "",
-              "  Reinstall pinned, then re-run this to confirm it took:",
-              `    bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#${d.latest}`,
+              "  Run these in order — the cache step is not optional on an upgrade:",
+              // Rendered FROM `upgradeSteps` rather than retyped, so the text a human copies and
+              // the `next` a program executes cannot drift. They already had: this branch used to
+              // end by telling the reader that "the cache commands do not" prove anything, in a
+              // block that printed no cache command.
+              ...upgradeSteps(d.latest).map((s) => `    ${[s.exec, ...s.args].join(" ")}`),
+              "",
+              "  `bun pm cache rm` clears bun's WHOLE cache and takes no package argument — cheap",
+              "  on a laptop, expensive on a shared CI runner. Do not put it in a build step.",
               "",
               "  Only the version after reinstall proves the cache cleared; the cache commands do not.",
             ].join("\n")

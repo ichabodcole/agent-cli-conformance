@@ -3,7 +3,11 @@ import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { helpStatesMachineDefault, parsesAsDocument } from "./machine-mode.ts";
+import {
+  helpStatesMachineDefault,
+  mentionsMachineDefaultTokens,
+  parsesAsDocument,
+} from "./machine-mode.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import type { TargetInfo } from "./types.ts";
@@ -252,5 +256,88 @@ describe("a declaration is an assertion, and the guard does not apply to it", ()
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  }, 60_000);
+});
+
+/**
+ * A NEAR MISS MUST NOT READ AS NO CLAIM AT ALL.
+ *
+ * halley wrote "Output: machine-readable by default — every command answers with structured JSON
+ * on stdout", got a report line byte-identical to the one a tool with no such sentence gets, and
+ * concluded prose claims did not work at all. They diagnosed it only by reading checker source
+ * inside `node_modules`. Their ask: when help carries the tokens in an arrangement the matcher
+ * does not accept, say so rather than repeating the identical fail line.
+ *
+ * This is deliberately NOT a widening of the matcher. The rule body already admits the heuristic
+ * is narrow and two reviewers broke every looser version; accepting that sentence is a different
+ * decision with different risk. The claim here is only that the report distinguishes "I saw
+ * something close" from "I saw nothing".
+ */
+describe("help that carries the tokens but does not match", () => {
+  const NEAR =
+    "Output: machine-readable by default — every command answers with structured JSON on stdout";
+  const NOTHING = "Usage: mytool [options]";
+  const MATCHES = "Output is JSON by default.";
+
+  test("the matcher itself is unchanged — the near miss still does not pass", () => {
+    // Pinned so a later attempt to fix this by loosening the matcher fails HERE, loudly, rather
+    // than quietly turning a `fail` into an `unverified` for a sentence nobody agreed to accept.
+    expect(helpStatesMachineDefault(NEAR)).toBe(false);
+    expect(helpStatesMachineDefault(NOTHING)).toBe(false);
+    expect(helpStatesMachineDefault(MATCHES)).toBe(true);
+  });
+
+  test("the near miss is recognised as one, and empty help is not", () => {
+    expect(mentionsMachineDefaultTokens(NEAR)).toBe(true);
+    expect(mentionsMachineDefaultTokens(NOTHING)).toBe(false);
+    // Fed the way the checker actually feeds it: a WHOLE help screen, `Options:` block and all.
+    // An earlier version screened the whole text for flag mentions and so answered false for
+    // every real target while passing when given the bare sentence — the unit test and the
+    // caller were not looking at the same string.
+    expect(mentionsMachineDefaultTokens(`${NEAR}\n\nOptions:\n  --help  Show help.\n`)).toBe(true);
+    // Structured word, no default word: not a near miss, and must not be reported as one.
+    expect(mentionsMachineDefaultTokens("Prints JSON when you pass --json.")).toBe(false);
+  });
+
+  /** A target whose help is exactly `help` and which advertises no machine-mode flag, so D3
+   *  reaches its prose branch rather than answering on a token. */
+  const d3DetailFor = async (help: string) => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-nearmiss-"));
+    try {
+      const p = join(dir, "t.sh");
+      writeFileSync(
+        p,
+        [
+          "#!/bin/sh",
+          `HELP='${help.replace(/'/g, "'\\''")}`,
+          "",
+          "Options:",
+          "  --help     Show help.",
+          "'",
+          'case "$1" in',
+          "  --help|-h) printf '%s' \"$HELP\"; exit 0 ;;",
+          "  --version|-V) printf '1.0.0\\n'; exit 0 ;;",
+          "esac",
+          "printf 't: unknown option %s\\n' \"$1\" >&2; exit 2",
+        ].join("\n"),
+      );
+      chmodSync(p, 0o755);
+      const h = await record({ path: p, argv0: [p] }, CHECKERS);
+      const d3 = CHECKERS.find((c) => c.ruleId === "D3");
+      if (!d3) throw new Error("no checker for D3");
+      return d3.check(h);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+
+  test("the three cases produce three different report lines", async () => {
+    const details = await Promise.all(
+      [NEAR, NOTHING, MATCHES].map(async (help) => (await d3DetailFor(help)).detail),
+    );
+    expect(new Set(details).size).toBe(3);
+    // The one that started it: the near miss must name what it saw and where the mismatch is.
+    expect(details[0]).toMatch(/close|near|arrangement|did not match/i);
+    expect(details[1]).not.toMatch(/close|near|arrangement|did not match/i);
   }, 60_000);
 });

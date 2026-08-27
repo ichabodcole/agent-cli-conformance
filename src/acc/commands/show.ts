@@ -49,7 +49,7 @@ export function showCommand(
   } catch (err) {
     if (!EVIDENCE_ID.test(handle)) throw err;
     throw notFoundError(`"${handle}" looks like an evidence id, and acc show resolves wiki pages`, {
-      hint: "Evidence ids index the `observations` array of a check report, and live only in the run that produced them: acc check <target> --json  →  .data.observations[]",
+      hint: "Evidence ids index the `observations` array of a check report, and live only in the run that produced them: acc check <target> --json  →  .data.observations[]. To go the other way — from a verdict to the probe behind it — read .data.findings[].probes, which resolves each cited id to the argv that produced it and needs no lookup.",
       details: { handle, resolvableHere: "rule ids, page slugs, wiki-relative paths" },
     });
   }

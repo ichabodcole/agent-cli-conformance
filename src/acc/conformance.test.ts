@@ -1595,7 +1595,7 @@ describe("the text report puts findings about the reader's config in sections", 
   };
   const CONFORMING = join(dirname(CLI), "kit/fixtures/conforming.ts");
 
-  test("each is a titled section, not a line trailing the legend", async () => {
+  test("each is a titled section, and the legend precedes the table it explains", async () => {
     // A1 passes on this fixture (stale); B3 is not applicable at L0 (inert).
     const dir = configDir({ knownFailures: { A1: "tracked", B3: "tracked in #412" } });
     try {
@@ -1604,12 +1604,16 @@ describe("the text report puts findings about the reader's config in sections", 
       expect(r.stdout).toContain("STALE EXPECTATIONS (1)");
       expect(r.stdout).toContain("NOT BEING EVALUATED (1)");
 
-      // The legend explains abbreviations. A finding about the reader's configuration is not an
-      // abbreviation, so both sections must come BEFORE it — which is the defect that was found.
+      // The legend used to close the report, which put the first `PASS+` twenty lines before
+      // its explanation — an adopter read the `+` as "pass, plus something extra". It now sits
+      // between the headline and the rule table: after the verdict, before the first marker it
+      // explains, and before every configuration section.
       const legend = r.stdout.indexOf("PASS pass · FAIL fail");
       expect(legend).toBeGreaterThan(-1);
-      expect(r.stdout.indexOf("STALE EXPECTATIONS")).toBeLessThan(legend);
-      expect(r.stdout.indexOf("NOT BEING EVALUATED")).toBeLessThan(legend);
+      expect(legend).toBeLessThan(r.stdout.indexOf("PASS+ A1"));
+      expect(legend).toBeGreaterThan(r.stdout.indexOf("CONFORMANT"));
+      expect(r.stdout.indexOf("STALE EXPECTATIONS")).toBeGreaterThan(legend);
+      expect(r.stdout.indexOf("NOT BEING EVALUATED")).toBeGreaterThan(legend);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -1627,5 +1631,103 @@ describe("the text report puts findings about the reader's config in sections", 
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  }, 60_000);
+});
+
+/**
+ * THE EVIDENCE JOIN — a verdict and the invocation that produced it, in one read.
+ *
+ * Two independent cold adopters hit this at the same point in their runs: a finding named
+ * evidence ids, they wanted the probe argv, and each wrote the join by hand (one with jq into
+ * `.data.observations`, one with python over saved JSON). These pin both ends of the fix — the
+ * structured field a script reads, and the line a human reads — because the two adopters wanted
+ * it at different depths and a fix in only one register serves only one of them.
+ */
+describe("a finding carries the probe behind it", () => {
+  const CONFORMING = join(dirname(CLI), "kit/fixtures/conforming.ts");
+  const EXITS_ZERO = join(dirname(CLI), "kit/fixtures/broken/exits-zero-on-unknown-flag.ts");
+
+  test("the JSON finding resolves its own evidence ids to argv", async () => {
+    const r = await run(["check", CONFORMING, "--json"]);
+    const findings = JSON.parse(r.stdout).data.findings as Array<{
+      ruleId: string;
+      evidence: string[];
+      probes: Array<{ id: string; args: string[]; repeat?: number }>;
+    }>;
+    // C3 is the sharpest case in the catalogue: three probes with BYTE-IDENTICAL argv, because
+    // the rule is about repeating one invocation and the target must not be able to tell the
+    // runs apart. Resolving to argv alone would answer the adopters' question with three
+    // identical lines, so this asserts the repetition survives the projection.
+    const c3 = findings.find((f) => f.ruleId === "C3");
+    expect(c3?.probes.map((p) => p.repeat)).toEqual([1, 2, 3]);
+    expect(new Set(c3?.probes.map((p) => p.args.join(" "))).size).toBe(1);
+    expect(c3?.probes.map((p) => p.id)).toEqual(c3?.evidence);
+  }, 60_000);
+
+  test("the text report names the argv under a failure, and says (bare) rather than nothing", async () => {
+    const r = await run(["check", EXITS_ZERO, "--format", "text"]);
+    // halley's own example, reproduced: "C2 saying 'bare invocation exited 0' the way D2 does
+    // would have saved the entire evidence join". C2's detail still says `bare 0`; what was
+    // missing is the line below it naming which probe that was.
+    const lines = r.stdout.split("\n");
+    const at = lines.findIndex((l) => l.includes("C2  a usage error exited 0"));
+    expect(at).toBeGreaterThan(-1);
+    // Every consecutive probe line under C2 and nothing beyond them, so a later finding's argv
+    // cannot satisfy this by accident.
+    const block = lines
+      .slice(at + 1)
+      .slice(
+        0,
+        lines.slice(at + 1).findIndex((l) => !l.includes("\u21b3")),
+      )
+      .join("\n");
+    expect(block).toContain("↳ --acc-probe-xyzzy-flag");
+    expect(block).toContain("↳ acc-probe-xyzzy-verb");
+    expect(block).toContain("↳ (bare)");
+  }, 60_000);
+
+  test("a clean report gains no probe lines — they attach to what a reader triages", async () => {
+    // The cost control. Attaching a line per citation to EVERY finding would add 59 lines to a
+    // 23-finding report of this fixture, three quarters of them under passes. A report that
+    // grows when nothing is wrong is one a reader learns to skim.
+    const r = await run(["check", CONFORMING, "--format", "text"]);
+    expect(r.stdout).not.toContain("↳");
+    expect(r.stdout).toContain("EVIDENCE");
+  }, 60_000);
+
+  test("the evidence block points at the finding's own probes before the observations array", async () => {
+    // The hint used to name `.data.observations[]` alone, which is the join both adopters then
+    // performed. It still names it — that array holds the outcome and the digests — but the
+    // shorter path goes first.
+    const r = await run(["check", CONFORMING, "--format", "text"]);
+    const hint = r.stdout.slice(r.stdout.indexOf("EVIDENCE"));
+    expect(hint.indexOf(".data.findings[].probes")).toBeLessThan(
+      hint.indexOf(".data.observations[]"),
+    );
+  }, 60_000);
+
+  // THE POINTERS, ASSERTED TOGETHER — because this is the shape of defect the project keeps
+  // finding: a rule with no home gets re-decided at every call site. Three user-facing surfaces
+  // tell a reader where evidence lives, and they drifted apart once already — `acc check --help`
+  // has described the ids-into-observations join correctly since two releases before either
+  // adopter trial, and neither adopter reached it. Documenting harder is the arm that has been
+  // tried; keeping the three in step is what stops a reader who DOES reach one from being sent
+  // on the join anyway.
+  test("every surface that says where evidence lives names the resolved probes", async () => {
+    const help = await run(["check", "--help", "--format", "text"]);
+    const report = await run(["check", CONFORMING, "--format", "text"]);
+    const show = await run(["show", "b8d1ef65cae5", "--json"]);
+    expect({
+      help: help.stdout.includes("probes"),
+      report: report.stdout.includes(".data.findings[].probes"),
+      show: JSON.parse(show.stderr).error.hint.includes(".data.findings[].probes"),
+    }).toEqual({ help: true, report: true, show: true });
+  }, 60_000);
+
+  test("acc show, asked to resolve an evidence id, names the field that answers it", async () => {
+    // The command a blind reader actually tried. Its refusal is the highest-traffic pointer at
+    // the evidence mechanism, so it is where the shorter path has to be named.
+    const r = await run(["show", "b8d1ef65cae5", "--json"]);
+    expect(JSON.parse(r.stderr).error.hint).toContain(".data.findings[].probes");
   }, 60_000);
 });

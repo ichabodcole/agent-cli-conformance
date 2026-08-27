@@ -234,6 +234,15 @@ export const COMMANDS: CommandSpec[] = [
     positionals: [],
     args: [],
     errors: [],
+    // The one documented misroute for this command: a reader holding a check report reaches
+    // for `schema` expecting the REPORT's shape, and this command describes acc itself. The
+    // maintainer nearly made that misroute answering an adopter, so the boundary is stated at
+    // the wrong turn rather than only in the guide it should have led to.
+    notes: [
+      "THIS DESCRIBES acc's OWN surface — its commands, flags and errors. It does not describe",
+      "the report `acc check` writes. For that shape, worked against a real run:",
+      "acc show how-to-read-the-check-report-json",
+    ],
     // `.data.commands`, not `.commands`: the schema is enveloped in BOTH modes, so the query
     // path does not change when the command is piped.
     examples: ["acc schema", "acc schema | jq '.data.commands[].name'"],
@@ -333,10 +342,14 @@ export const COMMANDS: CommandSpec[] = [
       "rest of the environment; or any network call. A sentinel token establishes exactly one",
       "thing: it names no declared verb and no declared flag. That buys least against a CLI whose",
       "first positional is free-form text (claude, llm, aider), where the token is a prompt.",
-      "Point this only at a binary you are willing to run.",
-      "EVIDENCE: --json adds an `observations` array under .data — every probe that ran, with its",
-      "argv, exit code and timings. The ids each finding cites in `evidence` index it. `acc show`",
-      "does not resolve them; they exist only in the report the run produced.",
+      "Point this only at a binary you are willing to run. This list says what is NOT prevented;",
+      "the method for establishing what your target actually does with these probes is one page:",
+      "acc show how-to-establish-your-target-is-safe-to-check",
+      "EVIDENCE: each finding carries `probes` — the argv behind every id it cites, already",
+      "resolved, so a verdict and the invocation that produced it are one read apart. --json also",
+      "adds an `observations` array under .data: every probe that ran, with its exit code, timings",
+      "and stream digests. The ids a finding cites in `evidence` index it. `acc show` does not",
+      "resolve them; they exist only in the report the run produced.",
     ],
     examples: ["acc check ./mycli", "acc check $(which gh) --json"],
   },

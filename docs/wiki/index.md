@@ -30,8 +30,10 @@ you are **doing**, which is usually the faster way in.
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | an install that gave you the wrong bytes | [How to fix a broken install](./guides/how-to-fix-a-broken-install.md) — three failures, two of them silent at exit `0`                                                         |
 | meeting the kit for the first time       | [Check your first CLI](./guides/check-your-first-cli.md) — run it against a target, read a real verdict                                                                         |
+| about to point `acc check` at a binary   | [How to establish your target is safe to check](./guides/how-to-establish-your-target-is-safe-to-check.md) — three questions, answerable from the target's own documentation    |
 | making your own CLI pass                 | [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — triage each failure into a fix, a waiver, or named debt                                        |
 | holding a failing rule id                | `acc show <id>`, or find it in [the rules table](#coverage-at-a-glance) below                                                                                                   |
+| parsing the report's JSON                | [How to read the check report JSON](./guides/how-to-read-the-check-report-json.md) — the envelope, the verdict block, and a finding field by field, from a real run             |
 | wondering what a verdict means           | [Conformance](./concepts/conformance.md) for `pass`/`fail`/`unverified`, [probing](./concepts/probing.md) for what produced it                                                  |
 | looking up an exit code                  | [the taxonomy](./concepts/exit-codes.md#the-taxonomy)                                                                                                                           |
 | looking up an error shape                | [the error envelope](./concepts/error-envelope.md#two-shapes-and-confirmation_required-is-one-of-the-errors)                                                                    |
@@ -225,6 +227,14 @@ How to actually do things.
 - [Check your first CLI](./guides/check-your-first-cli.md) — A first run of the conformance kit
   against a tool that passes, one that fails, and one you did not write — learning to read the
   report rather than to fix anything.
+
+- [How to establish your target is safe to check](./guides/how-to-establish-your-target-is-safe-to-check.md)
+  — The decision method for pointing `acc check` at a binary — three questions, each answerable
+  from the target's own documentation, and what to do when one of them cannot be answered.
+
+- [How to read the check report JSON](./guides/how-to-read-the-check-report-json.md) — The shape
+  of what `acc check --json` writes, worked against a real run — the envelope, the verdict block,
+  one finding field by field, and how a probe resolves to what actually happened.
 
 - [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — Take a CLI
   from its first failing check to a green gate — triaging each failure into a fix, a declared
