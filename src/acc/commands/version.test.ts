@@ -7,16 +7,21 @@ import { VERSION } from "../version.ts";
 import { upgradeSteps } from "./version.ts";
 
 /**
- * `acc version --check`'s REMEDY, which used to be one command our own documentation says always
- * fails.
+ * `acc version --check`'s REMEDY, which has twice been wrong in the situation it is offered in.
  *
- * The hint offered a pinned `bun add` and nothing else. `how-to-fix-a-broken-install.md:117` says
- * of the stale-bare-clone refusal, in bold, "An upgrade always meets this one" — and this hint
- * appears only on an upgrade. Both adopter trials followed it and both got bun's `no commit
- * matching "v0.1.3" (but repository exists)`; the second reported it as their top friction item.
+ * FIRST it was a bare pinned `bun add` and nothing else, which left the duplicate key in place;
+ * both adopter trials followed it and the second reported the resulting failure as their top
+ * friction item. THEN it grew a `bun pm cache rm` — correct for the `git+ssh://` transport, but
+ * the sequence prints a `git+https://` line, and for a public github.com repo on bun 1.4.0 that
+ * transport writes no bare clone at all, so the step wiped the caller's entire global cache to
+ * clear an artifact that was never written.
  *
- * So the assertion here is not "a hint exists" but "the hint clears the cache before installing",
- * which is the step whose absence made the old one fail.
+ * The guard both failures need is the same one, and it is NOT "a cache step is present". It is:
+ * every command in the sequence must be the remedy for a failure that reproduces on the transport
+ * the sequence prints, ordered so it works, and provable afterwards. That is what these tests
+ * assert — order (`remove` before `add`, because a second entry under one key resolves to the old
+ * kit at exit 0), pinning, the closing `--check`, and, for any destructive whole-cache step that
+ * anyone reinstates, that its cost travels with it.
  */
 
 const CLI = join(dirname(import.meta.dir), "cli.ts");
@@ -68,28 +73,46 @@ function run(args: string[]): Promise<{ stdout: string; stderr: string; code: nu
 }
 
 describe("the upgrade remedy", () => {
-  test("the steps clear the cache before installing, and confirm afterwards", () => {
+  test("the steps remove before installing, pin, and confirm afterwards", () => {
     const steps = upgradeSteps("v9.9.9");
     const line = (s: { exec: string; args: string[] }) => [s.exec, ...s.args].join(" ");
     const rendered = steps.map(line);
-    const cacheAt = rendered.findIndex((l) => l.includes("pm cache rm"));
-    const addAt = rendered.findIndex((l) => l.includes("add"));
-    // ORDER IS THE WHOLE FIX. Installing before dropping the stale clone is exactly what both
-    // adopters did, on our instructions, and it is what failed.
-    expect(cacheAt).toBeGreaterThanOrEqual(0);
-    expect(addAt).toBeGreaterThan(cacheAt);
+    const removeAt = rendered.findIndex((l) => l.includes("remove"));
+    const addAt = rendered.findIndex((l) => l.includes(" add "));
+    // ORDER IS THE FIX FOR THE FAILURE THAT REPRODUCES EVERYWHERE. Adding over an existing entry
+    // appends a duplicate key and resolves the FIRST one — the old kit, at exit 0, with the
+    // duplicate committed for CI to install from.
+    expect(removeAt).toBeGreaterThanOrEqual(0);
+    expect(addAt).toBeGreaterThan(removeAt);
+    // Pinned, because the check only settles anything against a named tag.
     expect(rendered[addAt]).toContain("#v9.9.9");
     // A caller who runs what we hand them must end up able to see whether it worked.
     expect(rendered[rendered.length - 1]).toContain("version --check");
   });
 
-  test("the cost of clearing the whole cache is stated on the step that does it", () => {
-    // The guide is emphatic that `bun pm cache rm` takes no package argument and must not go in
-    // a build step. `next` is advisory and nothing in the envelope classifies effects, so the
-    // only place that warning can travel is the step's own `when`.
-    const cache = upgradeSteps("v9.9.9").find((s) => s.args.join(" ").includes("pm cache rm"));
-    expect(cache?.when ?? "").toMatch(/whole|entire|all of/i);
-    expect(cache?.when ?? "").toMatch(/CI|build step/i);
+  test("the sequence prints one transport and carries no remedy belonging to another", () => {
+    // `bun pm cache rm` is the `git+ssh://` remedy. On bun 1.4.0 against this public github.com
+    // repository the documented `git+https://` line normalises to `github:owner/repo` and writes
+    // no bare clone, so the step would wipe the caller's WHOLE global cache to clear an artifact
+    // that was never written. Both conditions — that bun version, a public github.com repo — are
+    // load-bearing; if either changes, re-measure before this assertion is relaxed.
+    const steps = upgradeSteps("v9.9.9");
+    const rendered = steps.map((s) => [s.exec, ...s.args].join(" "));
+    expect(rendered.some((c) => c.includes("git+https://"))).toBe(true);
+    expect(rendered.some((c) => c.includes("git+ssh://"))).toBe(false);
+    expect(rendered.some((c) => c.includes("pm cache rm"))).toBe(false);
+  });
+
+  test("any whole-cache step, if one is ever reinstated, states its cost on itself", () => {
+    // The guard the old cache-step tests provided, kept as a conditional invariant rather than
+    // deleted: `next` is advisory and nothing in the envelope classifies effects, so the only
+    // place a destructive step's cost can travel is its own `when`. Vacuous today by design —
+    // it becomes load-bearing the moment someone adds the step back.
+    for (const step of upgradeSteps("v9.9.9")) {
+      if (!step.args.join(" ").includes("pm cache rm")) continue;
+      expect(step.when).toMatch(/whole|entire|all of/i);
+      expect(step.when).toMatch(/CI|build step/i);
+    }
   });
 
   test("json: a stale check hands over the whole sequence, not just the install", async () => {
@@ -99,16 +122,21 @@ describe("the upgrade remedy", () => {
     const cmds = (env.next as Array<{ exec: string; args: string[] }>).map((n) =>
       [n.exec, ...n.args].join(" "),
     );
-    expect(cmds.some((c) => c.includes("pm cache rm"))).toBe(true);
+    expect(cmds.some((c) => c.includes("remove"))).toBe(true);
     expect(cmds.some((c) => c.includes(`#v${NEWER}`))).toBe(true);
+    expect(cmds[cmds.length - 1]).toContain("version --check");
+    expect(cmds.some((c) => c.includes("pm cache rm"))).toBe(false);
   }, 30_000);
 
-  test("text: the remedy shown is the one the json hands over", async () => {
+  test("text: the remedy shown is the one the json hands over, step for step", async () => {
     // These drifted apart once already — the text branch told the reader that "the cache
-    // commands do not" prove anything while never printing a cache command at all.
+    // commands do not" prove anything while never printing a cache command at all. So assert the
+    // whole sequence, not a sample of it: every step the machine gets is a line a human sees.
     const r = await run(["version", "--check", "--format", "text"]);
     expect(r.stdout).toContain("BEHIND");
-    expect(r.stdout).toContain("bun pm cache rm");
     expect(r.stdout).toContain(`#v${NEWER}`);
+    for (const step of upgradeSteps(`v${NEWER}`)) {
+      expect(r.stdout).toContain([step.exec, ...step.args].join(" "));
+    }
   }, 30_000);
 });

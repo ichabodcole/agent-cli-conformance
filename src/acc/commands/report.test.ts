@@ -135,3 +135,44 @@ describe("sweepId — deterministic over evidence, blind to the clock", () => {
     expect(sweepId([obs("a", "d1", 0)])).not.toBe(sweepId([obs("a", "d1", 2)]));
   });
 });
+
+describe("the three refusals branch in the envelope, not only in prose", () => {
+  // A CI wrapper distinguishing "fix the artifact" from "run acc check first" branches on
+  // `.error.details.reason` — `details` is the branching surface by its own contract
+  // ("structured detail for branching, never prose"), and the exit taxonomy stays closed.
+  function refusal(file: string): { code: number; reason: unknown } {
+    const r = run(["report", file, "--json"]);
+    const envelope = JSON.parse(r.stderr) as { error?: { details?: { reason?: unknown } } };
+    return { code: r.code, reason: envelope.error?.details?.reason };
+  }
+
+  test('a file that is not JSON carries reason "not-json"', () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-"));
+    const file = join(dir, "garbage.json");
+    writeFileSync(file, "{ not json");
+    const r = refusal(file);
+    expect(r.code).toBe(2);
+    expect(r.reason).toBe("not-json");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test('JSON that is not a report carries reason "not-a-report"', () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-"));
+    const file = join(dir, "other.json");
+    writeFileSync(file, JSON.stringify({ some: "thing" }));
+    const r = refusal(file);
+    expect(r.code).toBe(2);
+    expect(r.reason).toBe("not-a-report");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test('a verdict-less report carries reason "no-verdict" — the refusal whose next step is a different command', () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-"));
+    const file = join(dir, "half.json");
+    writeFileSync(file, JSON.stringify({ target: "/t", observations: [], kitVersion: "0.1.2" }));
+    const r = refusal(file);
+    expect(r.code).toBe(2);
+    expect(r.reason).toBe("no-verdict");
+    rmSync(dir, { recursive: true, force: true });
+  });
+});

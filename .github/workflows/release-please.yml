@@ -2,8 +2,9 @@
 #
 # `release-type: node` makes package.json the version of record, which is already what
 # src/acc/version.ts reads — so `acc --version` follows a release with no second edit and no way
-# to disagree with the tag. Nothing here publishes to npm; the package is private and installed
-# from git.
+# to disagree with the tag. Nothing here publishes to npm: `package.json` carries
+# `"private": true`, which is the publish guard and is unrelated to the repository's visibility —
+# the repository is public and consumers install from a git ref.
 on:
   push:
     branches:

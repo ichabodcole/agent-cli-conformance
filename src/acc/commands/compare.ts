@@ -67,7 +67,10 @@ export function loadReport(path: string): Report {
     // that is something they can fix. Reported as `internal` it would read as a defect in acc.
     throw usageError(`${abs} is not JSON: ${err instanceof Error ? err.message : String(err)}`, {
       hint: "Pass a file written by `acc check <target> --json`.",
-      details: { path: abs },
+      // `reason` is the branching field — a wrapper distinguishing "the artifact is corrupt"
+      // from the shapes below reads this rather than parsing prose. Values kebab-case on the
+      // `release.ts` precedent.
+      details: { path: abs, reason: "not-json" },
     });
   }
   const envelope = document as { ok?: unknown; data?: unknown };
@@ -79,7 +82,7 @@ export function loadReport(path: string): Report {
   if (!Array.isArray(report.observations) || typeof report.target !== "string") {
     throw usageError(`${abs} is not an acc check report`, {
       hint: "It must carry `.data.target` and `.data.observations[]` — write one with `acc check <target> --json`.",
-      details: { path: abs },
+      details: { path: abs, reason: "not-a-report" },
     });
   }
   return payload as Report;

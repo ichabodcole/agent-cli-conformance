@@ -98,7 +98,7 @@ describe("checkRelease", () => {
     expect(r.checked).toBe(false);
     if (r.checked) throw new Error("unreachable");
     expect(r.reason).toBe("unreachable");
-    expect(r.attempted).toHaveLength(2); // ssh then https
+    expect(r.attempted).toHaveLength(2); // https then ssh
     expect(r.detail).toContain("could not read Username");
   });
 
