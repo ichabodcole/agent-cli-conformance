@@ -3,10 +3,12 @@
  *
  * WHY THIS EXISTS AS A MEASUREMENT AND NOT A NOTE IN A GUIDE. An unpinned
  * `bun add -d git+ssh://…` delivered 0.1.0 to an adopter reading 0.1.1 docs, at exit 0, and cost
- * them a workstream. The documented remedy (`bun remove` + `bun pm cache rm` + pin) works — but
- * it cannot prove it worked: `bun pm cache rm` reported "Cleared 0 cached 'bunx' packages" on a
- * machine that WAS poisoned, and the git-clone cache it actually needed to clear reports nothing
- * at all. Only the version after reinstall settles it, so this has to BE the proof step.
+ * them a workstream. The documented remedy (`bun remove` + a pinned `bun add`, and on
+ * `git+ssh://` a `bun pm cache rm` first) works — but it cannot prove it worked: nothing bun
+ * prints during an upgrade distinguishes a real reinstall from a silent no-op, and
+ * `bun pm cache rm` reported "Cleared 0 cached 'bunx' packages" on a machine that WAS poisoned,
+ * while the git-clone cache it needed to clear reports nothing at all. Only the version after
+ * reinstall settles it, so this has to BE the proof step.
  *
  * WHY `git ls-remote` AND NOT THE GITHUB API. It needs nothing the caller does not already
  * have: the repository is public, so an anonymous `https` read answers with no credential at

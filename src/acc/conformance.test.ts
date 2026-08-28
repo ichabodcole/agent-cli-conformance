@@ -1567,8 +1567,12 @@ describe("acc check — the outcome exit code", () => {
 });
 
 // EXT-1: a stale kit is otherwise invisible. The documented install can put an older commit on
-// disk and still report success — bun prints a SHA it did not install, and the extracted-package
-// cache goes stale independently of the bare clone. The only place that showed was `acc
+// disk and still report success — measured: the success line named v0.1.5 (`#1a76405`) while the
+// lockfile held v0.1.4 (`#0034789`) and the binary reported 0.1.4, so bun printed a SHA it did
+// not install. On `git+ssh://` there is a second path — a bare clone, and an extracted-package
+// cache that goes stale independently of it — but that one is transport-dependent, and the
+// documented `git+https://` line writes no bare clone on bun 1.4.0 against this public
+// repository. The only place either showed was `acc
 // --version`, and the first outside adopter checked it by luck rather than suspicion: they
 // happened to be holding a second version to compare against, having cloned the repo to read the
 // README before installing. In the report, the comparison is free.
