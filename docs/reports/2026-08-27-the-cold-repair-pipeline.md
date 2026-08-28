@@ -151,10 +151,10 @@ Three differences from run 1 are worth carrying rather than averaging away:
 
 That last one is what the next section changes.
 
-## The stage added after run 2 — NOT YET RUN
+## The two stages added after run 2 — NEITHER YET RUN
 
-Everything above is a record of what happened. This section is not: it is a change to the method,
-adopted on 2026-08-28 on the project owner's proposal, which **no run has used**. It is written
+Everything above is a record of what happened. This section is not: it is two changes to the
+method, adopted on 2026-08-28, which **no run has used**. It is written
 here, before its first use, so that run 3 can falsify it rather than confirm whatever anyone
 believes by then. Do not read the stages above as including it.
 
@@ -193,6 +193,59 @@ first pass, and a writer that may report a widened scope back instead of returni
 2 suggests the last of those is a feature — its writer's unprompted out-of-brief findings became
 two thirds of the final scope — but it does mean the coordinator makes more decisions mid-run.
 
+### The second change: two seam instruments at stage 6
+
+Stage 6 gains **two** instruments, named separately so neither absorbs the other. Shipping only
+the first would repair the visible half of a two-home defect, which is the class being
+instrumented for, one level up.
+
+**NEAR SEAM — diff-local.** Diff the merged result, and for each hunk read one unit outward: the
+enclosing paragraph or comment, anything the hunk cites, and anything that cites the hunk. Ask of
+each sentence only _"is this still true now that the edit exists?"_ The diff defines the seam, so
+the check lands on it without depending on vigilance, and "one unit outward" is a stopping rule
+rather than an invitation to re-read the document.
+
+**FAR SEAM — the mechanism noun.** When a measurement changes what a MECHANISM is, grep that
+mechanism's noun across the live surfaces and check each hit for whether it is a **warrant**.
+Grepping the instruction does not surface these, because the instruction did not change.
+
+**Where the far-seam terms come from, which decides whose blindness the instrument inherits.**
+They come from the measurement's own statement of what is no longer true — never from the
+writer's dependency list. A noun absent from that list is ungreppable by construction, so
+sourcing from the list would import the exact blindness this instrument exists to cover.
+Sourcing from the finding keeps it checkable by anyone holding only the finding. The writer's
+list may add terms; it may not be the source.
+
+**The distinction the instruments are built on**, and the sharpest statement of this defect class
+anyone reached: **an edit's scope is the set of sentences that ASSERT the changed claim; its
+blast radius is the set that CITE it as a reason.** Those are different sets, they are worded
+differently, and the second survives every review that greps for the instruction — because the
+instruction did not change. Only its warrant did.
+
+**The evidence, which is stronger than it first looked.** The coordinator recorded two instances
+and a hunch. It is neither two nor a hunch: a scoped edit that falsifies a sentence just outside
+the scope is the same defect class as a rule repaired in one of its two homes, and that week
+produced four more — a git guard, the version literals, the evidence pointers, and a twelve-line
+construction with two copies, each repaired in one home while the other went on asserting the old
+world. **Six instances across three writers in one week.**
+
+**And one specimen survived a purpose-built pass, which is why both instruments exist.** A commit
+titled "close the two seams the transport repair left across file boundaries" left a falsified
+sentence as the LAST TRAILING CONTEXT LINE OF ITS OWN HUNK — on screen, unchanged, directly below
+the edit, during a pass whose entire purpose was finding sentences that edit had falsified. Of
+the four instances then on the table, two crossed a file boundary and two did not, and the one
+missed hardest was adjacent. The reading: _"my scope ends at this file"_ is a vivid boundary, and
+holding it makes the far seam salient and the near one invisible. The commit went looking across
+the boundary it had just declined to cross and walked past the paragraph it was standing next
+to.
+
+**How it relates to the first change.** The writer's dependency list is a **prediction**, made
+before the edit by the person making it. The seam check is a **verification** of the same set,
+made after the merge, against the merged text, by someone who did not make the edit. Neither
+substitutes for the other, and the pairing is the reason the prohibition above holds: flagging and
+predicting are different acts, and a stage that does one cannot absorb a stage that does the
+other.
+
 ### The prediction, pinned before run 3
 
 Recorded now so it cannot be adjusted to fit the result, the way
@@ -203,13 +256,54 @@ failure classes before the adopter starts:
 > and the writer's own dependency list will name at least one consequence that a reader stage
 > would otherwise have caught.**
 
+**The discriminator, one field per finding.** Classify every reader finding as **ON-LIST** — the
+writer named the dependent and mishandled it — or **OFF-LIST** — the writer never named it. The
+two hypotheses then separate cleanly, and this is what makes the prohibition above mechanical
+rather than asserted:
+
+- If the list is **absorbing reader work**, on-list findings fall toward zero AND off-list
+  findings fall too.
+- If the list does what is claimed for it, on-list findings fall toward zero while **off-list
+  findings hold near the old rate** — the list fixes what the writer could see and moves nothing
+  in the dimension the reader exists for.
+
+A far-seam hit is off-list almost by definition, which is a quiet second confirmation that the
+list and the readers measure different dimensions.
+
 **What would falsify it.** A run-3 rate at or above 1.5 on a brief of comparable shape, or a
 dependency list that names only consequences the writer was already going to avoid. Either means
 the stage costs a longer brief and buys nothing, and it should be removed rather than explained.
 
-**The confound, named now.** Run 2's rate is one number from one run on one document, and the
-three runs differ in material, in brief size, and in how much of the scope was discovered
-mid-run rather than briefed. A single run 3 cannot settle this; it can only fail to support it.
+**The confound, named now — and there are two.** First, run 2's rate is one number from one run
+on one document, and the runs differ in material, in brief size, and in how much of the scope was
+discovered mid-run rather than briefed. Second: **three instruments were adopted at once** — the dependency
+list, the near-seam check and the far-seam grep — so a run 3 whose overall rate falls cannot say
+which of them moved it.
+
+**That second confound has a cheap answer, and it is adopted.** Each instrument's catch-condition
+is a property of the DEFECT rather than of the process that found it: near-seam catches a
+sentence sitting inside a hunk's context window; far-seam catches a sentence carrying the
+measurement's dethroned noun outside the touched files; the dependency list catches what the
+writer named. Whether a given defect satisfies each condition is checkable by anyone holding the
+defect, the diff and the finding — **after the fact, regardless of which stage actually surfaced
+it.** So tag every defect with the set of conditions it satisfies and read per-class rates. A
+fall concentrated in diff-context defects credits the near-seam rule; a fall in dethroned-noun
+defects credits the grep; a fall in neither, with the overall rate down anyway, is the honest
+signal that something else moved and none of the three earned it.
+
+**And the baseline can be recovered rather than waited for.** Runs 1 and 2's defects are recorded,
+their diffs are in history, and the measurement that dethroned "bare clone" names its own noun —
+so the per-class baseline exists already, from evidence nobody has to regenerate.
+
+Two limits, kept beside the weakness rather than replacing it. A defect can satisfy more than one
+condition; the tagging makes that ambiguity visible rather than resolving it, and an ambiguous
+defect credits no single instrument. And **the run-shape confound survives for the overall rate**
+— this isolates the instruments from each other, not from the shape of the work. It is the same
+trade as the on-list/off-list field one level up: it does not remove a confound, it makes the
+confound legible per finding. That is a real weakness in this
+design, accepted deliberately because both changes answer measured failures and delaying one to
+isolate the other would ship a known defect for the sake of a cleaner experiment. It does mean
+the honest reading of a good run 3 is "the pair helped", never "the dependency list helped". A single run 3 cannot settle this; it can only fail to support it.
 If run 3's rate falls, the honest claim remains "twice out of three runs the regressions were
 caught inside the pipeline, and the rate fell once after the stage was added" — not "the stage
 works."
