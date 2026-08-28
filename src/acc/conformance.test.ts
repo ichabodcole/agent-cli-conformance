@@ -661,6 +661,11 @@ describe("every published example runs as written", () => {
         const i = args.findIndex((a, n) => n > 0 && !a.startsWith("-"));
         if (i > 0) args[i] = CONFORMING;
       }
+      // `report`'s positional is a stored report; the same generated files stand in.
+      if (spec?.positionals[0]?.name === "file") {
+        const i = args.findIndex((a, n) => n > 0 && !a.startsWith("-"));
+        if (i > 0) args[i] = compareReports[0] as string;
+      }
       // The same substitution for a VARIADIC positional, one step later in the pipeline: every
       // placeholder file name in the example becomes one of the reports generated above, in
       // order. Keyed on the declaration rather than on the example text, so a renamed example
@@ -691,7 +696,8 @@ describe("every published example runs as written", () => {
       const r = await run(args, command === "version" ? { ACC_RELEASE_REMOTE: releaseRemote } : {});
       // `check` answers 9 when the target is not conformant — a successful invocation with a
       // negative answer, not a failure. Every other example is a plain success.
-      const acceptable = command === "check" ? [0, 9] : [0];
+      // `report` mirrors the STORED verdict by design — a rendered verdict is still a verdict.
+      const acceptable = command === "check" || command === "report" ? [0, 9] : [0];
       // Collapsed to a label so a failure prints the offending example AND the real code.
       const code = acceptable.includes(r.code as number) ? "acceptable" : r.code;
       expect({ example, acceptable, code }).toEqual({ example, acceptable, code: "acceptable" });

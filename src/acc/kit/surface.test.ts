@@ -453,3 +453,69 @@ describe("against real fixtures", () => {
     expect(captureSurface(h.observations).status).toBe("not-enumerated");
   }, 120_000);
 });
+
+/**
+ * "NONE NAMED A SET" NEVER SAID WHICH SET, and a target that named a different one read as a
+ * target that named nothing.
+ *
+ * Round 3's target emitted a `choices` array at 49 of 49 paths. The extractor rejected every one
+ * of them — correctly, because their members are verbs rather than flags, and `acc`'s own
+ * envelope carries exactly that shape — and the census then printed the same sentence it prints
+ * for a target that said nothing at all. The adopter's delta had to rest on the recorded bytes
+ * instead of on our line.
+ *
+ * THE EXTRACTOR IS NOT LOOSENED and no status changes. This is the same repair as D3's near-miss
+ * clause: the report distinguishes "I looked and there was nothing" from "I looked, there was
+ * something, and it is not the kind of thing this reads".
+ */
+describe("a list that is not a flag list", () => {
+  /** A rejection whose stderr is the JSON document under test. */
+  const json = (doc: unknown) => rejection(JSON.stringify(doc));
+
+  test("a choices array of verbs is recorded as seen-and-rejected, not as silence", () => {
+    const s = captureSurface([json({ error: { choices: ["rules", "show", "path"] } })]);
+    // Unchanged: verbs are not a flag surface and must never be published as one.
+    expect(s.status).toBe("not-enumerated");
+    expect(s.flags).toBeUndefined();
+    // New: the report can now say WHICH set it saw.
+    expect(s.nonFlagCandidates?.map((c) => c.key)).toEqual(["choices"]);
+    expect(s.nonFlagCandidates?.[0]?.sample).toEqual(["rules", "show", "path"]);
+  });
+
+  test("a target that named nothing still records nothing — the two stay distinguishable", () => {
+    const s = captureSurface([json({ error: { message: "unknown flag" } })]);
+    expect(s.status).toBe("not-enumerated");
+    expect(s.nonFlagCandidates ?? []).toEqual([]);
+  });
+
+  test("a real flag list is not reported as a near miss", () => {
+    const s = captureSurface([json({ error: { choices: ["--json", "--help"] } })]);
+    expect(s.status).toBe("enumerated");
+    expect(s.nonFlagCandidates ?? []).toEqual([]);
+  });
+
+  test("the sample is bounded — a pathological list cannot grow the report without limit", () => {
+    const many = Array.from({ length: 200 }, (_, i) => `verb${i}`);
+    const s = captureSurface([json({ error: { choices: many } })]);
+    const sample = s.nonFlagCandidates?.[0]?.sample ?? [];
+    expect(sample.length).toBeLessThanOrEqual(4);
+    // And it says how many there were, since a truncated sample that hid the count would make a
+    // 200-member list look like a 4-member one.
+    expect(s.nonFlagCandidates?.[0]?.count).toBe(200);
+  });
+
+  test("the census line names the set it saw", () => {
+    const s = captureSurface([json({ error: { choices: ["rules", "show"] } })]);
+    const line = surfaceSummary(s, ["state"]);
+    expect(line).toContain("set of flags");
+    expect(line).toContain("choices");
+    // The bytes that would have told the adopter immediately.
+    expect(line).toContain("rules");
+  });
+
+  test("a silent target's line does not mention a set it never saw", () => {
+    const line = surfaceSummary(captureSurface([json({ error: { message: "no" } })]), []);
+    expect(line).toContain("set of flags");
+    expect(line).not.toContain("choices");
+  });
+});

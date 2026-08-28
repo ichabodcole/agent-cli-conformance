@@ -13,6 +13,7 @@ import { checkCommand } from "./commands/check.ts";
 import { compareCommand } from "./commands/compare.ts";
 import { pathCommand } from "./commands/path.ts";
 import { probePlanCommand } from "./commands/probe-plan.ts";
+import { reportCommand } from "./commands/report.ts";
 import { rulesCommand } from "./commands/rules.ts";
 import { schemaCommand } from "./commands/schema.ts";
 import { showCommand } from "./commands/show.ts";
@@ -344,6 +345,8 @@ for (const spec of COMMANDS) {
           resolved,
           startedAt,
         );
+      case "report":
+        return reportCommand(positionals[0] as string, resolved, startedAt);
       case "compare":
         return compareCommand(positionals[0] as string[], resolved, startedAt);
       default:

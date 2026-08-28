@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { AccConfig, ConfigSource } from "./config.ts";
 import {
   type Declaration,
@@ -204,6 +205,28 @@ export interface ReportedObservation {
   truncated: boolean;
 }
 
+/**
+ * ONE SWEEP, ONE MARK — deterministic over the evidence, never over the clock.
+ *
+ * Evidence ids hash the INVOCATION ({args, env, repeat}), so ids from two different sweeps line
+ * up perfectly whether or not the runs saw the same bytes — measured: same id, different stdout
+ * digests on a nondeterministic target, with nothing in either report marking the boundary. A
+ * reader joining a text report to a JSON from another run crosses that boundary silently.
+ *
+ * This mark closes it from the report's side: a hash over the ordered observation ids AND their
+ * outcomes (exit code, both stream digests). Two renderings of one run carry the same value by
+ * construction; two sweeps share it exactly when their evidence is byte-identical — the one case
+ * where crossing the boundary is harmless by definition. Deliberately time-free: folding a
+ * timestamp in would make every sweep unique and destroy the only property this answers
+ * ("same evidence?"). "When?" is `capturedAt`'s question, a separate field on the Report.
+ */
+export function sweepId(observations: ReportedObservation[]): string {
+  const material = observations
+    .map((o) => `${o.id}:${o.exitCode}:${o.signal ?? ""}:${o.stdoutDigest}:${o.stderrDigest}`)
+    .join("\n");
+  return createHash("sha256").update(material).digest("hex").slice(0, 12);
+}
+
 export interface Report {
   target: string;
   /**
@@ -256,6 +279,15 @@ export interface Report {
    * absence was measured.
    */
   kitVersion: string;
+  /**
+   * WHEN THE SWEEP RAN, ISO 8601. The first time coordinate a report has carried: until this
+   * field, nothing in a stored report said WHEN, so a rendering of a month-old artifact was
+   * indistinguishable from a live run — and the exit code it mirrors survives into scripts.
+   */
+  capturedAt: string;
+  /** See `sweepId` above: same value on every rendering of one run; differs between sweeps
+   *  exactly when their evidence differs. */
+  sweep: string;
   /**
    * WHICH `acc.config.json` WAS LOADED, AND WHERE FROM — including when none was.
    *
@@ -797,6 +829,8 @@ export function buildReport(
     targetIdentity,
     evidenceGaps,
     findings: reported,
+    capturedAt: new Date().toISOString(),
+    sweep: sweepId(h.observations.map(toReportedObservation)),
     observations: h.observations.map(toReportedObservation),
     notApplicable: notApplicable.map((f) => f.ruleId),
     // Captured from the history, because the projection below is about to discard the streams it
@@ -823,6 +857,12 @@ export function buildReport(
             records: recorded.reading.records,
             readings: recorded.reading.surfaces.map((p) => ({
               path: p.path,
+              // CARRIED SO THE TEXT RENDERER CAN GROUP ON IT. The rollup below decides which
+              // lines repeat, and deciding that by matching the prose in `summary` would be a
+              // predicate that breaks silently the next time a sentence is reworded — which is
+              // the one thing this census's sentences have done repeatedly.
+              status: p.surface.status,
+              nonFlagKeys: (p.surface.nonFlagCandidates ?? []).map((c) => c.key),
               summary: recordedPathSummary(p),
             })),
             recordedBy: recorded.reading.recordedBy,

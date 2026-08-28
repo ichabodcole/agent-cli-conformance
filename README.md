@@ -135,6 +135,14 @@ report anywhere:
 bunx acc check ./your-cli --format text
 ```
 
+You do not have to choose. Save the JSON once and render the text from it — one sweep, two
+readings, and the `sweep` mark on both says they describe the same run:
+
+```bash
+bunx acc check ./your-cli --json > report.json
+bunx acc report report.json
+```
+
 The first line is the verdict, and the exit code is the gate:
 
 <!-- x-release-please-start-version -->
@@ -383,6 +391,7 @@ acc show A1                # one rule, with its links in and out
 acc show exit-codes --body # ...and the full text
 acc path A6 delegator      # shortest path of OUTBOUND links; reversed, this is a valid exit 5
 acc tags
+acc report report.json     # render a saved check report back as the text report
 acc schema                 # the machine-readable interface description
 acc schema | jq '.data.commands[].name'
 ```
