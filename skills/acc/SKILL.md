@@ -22,30 +22,64 @@ at the path given.
 ## 1. Install it, verify it, run it
 
 ```bash
-bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
+# prints the newest release tag — put it in the pin below, in place of vX.Y.Z
+GIT_TERMINAL_PROMPT=0 git ls-remote --tags --refs --sort=-v:refname \
+  git@github.com:ichabodcole/agent-cli-conformance.git 'v*' \
+  | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+$' | head -1
+
+bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#vX.Y.Z'
 bunx acc version --check
 bunx acc check ./path/to/your-cli
 ```
 
 Needs Bun 1.4+ on macOS or Linux, and access to the repository — it is private and not on npm.
+**The tag is a placeholder you substitute, deliberately, and not a shell variable**: the lookup
+can print nothing — no ssh access, no network, no matching tag — and an interpolated empty ref
+leaves a bare `#`, which behaves exactly like no ref while looking pinned in the `package.json`
+you commit. Pasted unsubstituted, the `add` refuses instead and changes nothing: `no commit
+matching "vX.Y.Z"`, exit `1`, `package.json` and any existing install untouched — measured, on
+both a fresh project and one already holding this dependency. The `grep` keeps the answer to
+plain `vX.Y.Z` tags, the only shape `version --check` compares against. **Never install with the
+pin off or empty**: bun then resolves from a bare clone it already holds and can hand you an older
+kit at exit `0` — measured, on a fresh project's first install.
 
-**The second line is part of the install.** A git install can silently hand you an older kit than
-the newest release — exit `0`, nothing visible — so `version --check` confirms the first line did
+**Already have `acc`, or did that `add` fail with `no commit matching`? Use these instead** — the
+block above would append rather than replace, and these two lines are destructive enough that
+they are not in a fence you paste on a first install:
+
+```bash
+bun remove agent-cli-conformance   # the key as it appears in your package.json
+bun pm cache rm                    # bun's WHOLE cache — not in CI, not in a build step
+bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#vX.Y.Z'
+bunx acc version --check
+```
+
+`bun add` over an existing entry does not replace it: it appends a second entry under the same
+key, resolves the old one, and writes that `package.json` for your CI to install from — at exit
+`0`. And bun keeps a bare clone it does not re-fetch, so a pinned `add` can fail with `no commit
+matching` on a tag that does exist; an upgrade always meets this, since the release tag was pushed
+after the install you are upgrading from. `bun pm cache rm` is what clears that, and it takes no
+package argument because it clears everything bun has cached.
+`docs/wiki/guides/how-to-fix-a-broken-install.md` has all three failures and their remedies.
+
+**The `version --check` line is part of the install.** A git install can silently hand you an
+older kit than the newest release — exit `0`, nothing visible — so it confirms the `add` did
 what you asked. Its three answers: **up to date** (exit `0`); **a newer release exists** (exit
-`10` — clear the cache, reinstall, check again; `docs/wiki/guides/how-to-fix-a-broken-install.md`
-has the full remedy and the three ways an install goes wrong); **could not check** (exit `0`,
-said plainly — an unreachable remote is not a failure of your invocation). And if `version` is
-not a command your kit recognises, the rejection you get back lists the commands it does have:
-you are on an older kit, and the same guide's remedy applies.
+`10` — the remove, cache and pinned-add sequence above, in that order, and the exit-`10` output
+prints those same commands with the newest release already filled in); **could not check** (exit
+`0`, said plainly, naming which of the two it is — the remote was unreachable, or this build's
+version cannot be compared; neither is a failure of your invocation). And if `version` is not a
+command your kit recognises, the rejection lists the commands it does have: you are on an
+older kit, and `docs/wiki/guides/how-to-fix-a-broken-install.md` again has the remedy.
 
 The target is the path to your executable or script, the same thing you would type to run it.
 
 **`acc check` executes your tool**, with a bounded set of probes — risk-reduced, not a sandbox.
-Before the third line, `docs/wiki/guides/how-to-establish-your-target-is-safe-to-check.md` is one
-page with the three questions that establish a target is safe to point it at — each answerable
-from the target's own documentation, no source audit needed. The first is decisive on its own: if
-your tool treats its first argument as free-form input — a prompt, a pattern, a filename — the
-probes are input to it, and you should not run the check.
+Before you run `acc check`, `docs/wiki/guides/how-to-establish-your-target-is-safe-to-check.md`
+is one page with the three questions that establish a target is safe to point it at — each
+answerable from the target's own documentation, no source audit needed. The first is decisive on
+its own: if your tool treats its first argument as free-form input — a prompt, a pattern, a
+filename — the probes are input to it, and you should not run the check.
 
 In a terminal you get a human report. Redirected or piped, you get JSON —
 `docs/wiki/guides/how-to-read-the-check-report-json.md` is its shape, worked against a real run.
