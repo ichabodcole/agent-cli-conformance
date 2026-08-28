@@ -393,11 +393,15 @@ change, not an additive one.** `recorded.ts` closes the envelope to `formatVersi
 `identity` and refuses every other key, deliberately, so a reader never half-understands a
 document. A batch carrying `pathSource` is therefore **refused outright by every `acc` built
 before the key exists** — exit 2, no report. Absent-means-`unstated` makes old batches safe in new
-readers and does nothing for new batches in old readers. That may still be the right call — the
-project is pre-public with two adopters, and
+readers and does nothing for new batches in old readers. That may still be the right call —
 [the pre-1.0 decision](../wiki/decisions/pre-1-0-while-the-design-moves.md) treats the promised
 surface as a default rather than a wall, with a bar this case arguably clears, since the
-closed-key rule was written before anyone had built a generator. But **"grow a key" reads as
+closed-key rule was written before anyone had built a generator. **But the warrant this paragraph
+originally leaned on has expired, and it moved the wrong way**: it read "the project is pre-public
+with two adopters", and as of 2026-08-28 the repository is public and three adopters have run
+trials. Both halves of that count cut against accepting a breaking change, not for it. The
+conclusion here has not been re-made against the new facts, and should be before anyone acts on
+this section. But **"grow a key" reads as
 additive and this format's design makes it not**, and the plan should say so before anyone prices
 it as cheap.
 
