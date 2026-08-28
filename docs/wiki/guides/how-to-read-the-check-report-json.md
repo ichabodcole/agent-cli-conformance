@@ -21,6 +21,10 @@ from a run you can reproduce — the kit's own broken fixture:
 bun run acc check src/acc/kit/fixtures/broken/exits-zero-on-unknown-flag.ts --json > report.json
 ```
 
+The same artifact renders back into the human report — `acc report report.json` — with the
+verdict's exit code mirrored and no probe re-run; both renderings of one run carry the same
+`sweep` mark, so a pairing is checkable rather than trusted.
+
 By the end you can answer the four questions a report exists to answer — did it pass, what
 failed, what exactly was sent, and what came back — each with one `jq` expression, without
 guessing a single field name.
