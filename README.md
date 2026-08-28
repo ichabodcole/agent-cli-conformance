@@ -80,18 +80,22 @@ hosted elsewhere. Which failures below you can meet depends on that path, and th
 which.
 
 The `#v0.1.5` pin names the current release tag. <!-- x-release-please-version -->
-**Do not drop it**: with no ref, bun resolves from whatever bare clone it already holds and can
-deliver an older kit at exit `0` with nothing visible — measured on a fresh project's first
-install ([the guide](docs/wiki/guides/how-to-fix-a-broken-install.md)). A branch or commit after
-the `#` also works; a release tag is the form the version check can verify.
+**Do not drop it.** An adopter's unpinned install delivered an older kit at exit `0` with nothing
+visible, into a fresh project that had never held the package — though which transport that
+install used was not established, so it is not evidence about the line above. The reasons to pin
+hold without it: the duplicate-key failure reproduces on every transport, `git+ssh://` has a
+failure that answers an unpinned install silently, and a release tag is the only shape
+`acc version --check` can compare against —
+[the guide](docs/wiki/guides/how-to-fix-a-broken-install.md) has each of them. A branch or commit
+after the `#` also works; the tag is the form the version check can verify.
 
 > **⚠ Re-installing, moving to a different ref, or surprised by the version you got?** Three
 > separate failures can hand you the old kit instead, and **each has a form that succeeds at exit
 > `0`** — so a diff that shows no change may mean the upgrade never happened.
 > [How to fix a broken install](docs/wiki/guides/how-to-fix-a-broken-install.md) has the
-> diagnosis and the remedy. Bun's caches are machine-global, so **a first install into a new
-> project can still hit the silent ones** if this package was ever installed anywhere on the
-> machine.
+> diagnosis and the remedy. Bun's caches are machine-global, so on `git+ssh://` **a first install
+> into a project that never held `acc` can still hit the silent one** if the package was ever
+> installed anywhere on the machine.
 
 Then point it at your CLI:
 
