@@ -157,6 +157,10 @@ export function probePlanCommand(
   try {
     harness = buildHarness({
       launcher: target.argv0,
+      // Provenance anchor: the tree the TARGET sits in, resolved here because the generator is
+      // pure. Without it the emitted script read git from its own cwd, and two adopters running
+      // from scratch directories got "build unknown" for targets at a known commit.
+      targetDir: dirname(resolve(target.path)),
       paths,
       sentinel: SENTINEL,
       identityArgv: IDENTITY_ARGV,

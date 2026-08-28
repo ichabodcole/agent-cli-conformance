@@ -46,6 +46,13 @@ export type PathSource = "declaration" | "caller-supplied";
 export interface HarnessInput {
   /** How to launch the target, e.g. `["bun", "/abs/path/cli.ts"]`. Never part of a record. */
   launcher: string[];
+  /**
+   * THE ABSOLUTE DIRECTORY HOLDING THE TARGET. Build provenance is derived from here, never
+   * from wherever the harness happens to be run: two adopters ran the harness from a scratch
+   * directory — as the batch-lands-in-cwd advice steered them to — and got `build unknown` for
+   * targets sitting at a known commit. The generator stays pure, so the caller resolves this.
+   */
+  targetDir: string;
   /** Command paths BELOW THE ROOT. `[]` is refused — see `validatePaths`. */
   paths: string[][];
   /** A flag no tool would plausibly accept. */
@@ -225,6 +232,9 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR 2
 # then breaks on any launcher path containing a space. A function holds a pre-quoted argv and
 # forwards "$@" without re-splitting either.
 run_target() { ${launcher} "$@"; }
+# WHERE THE TARGET LIVES. Provenance below is anchored here — \`git -C\` — so running this script
+# from anywhere (a scratch directory included) reports the build of the tree being measured.
+TARGET_DIR=${shQuote(input.targetDir)}
 SENTINEL=${shQuote(input.sentinel)}
 # What the target is asked to say about itself. Empty skips the identity capture entirely. This is
 # CONFIG and you may change it: a tool with no \`--version\` may name itself some other way, and the
@@ -273,14 +283,21 @@ ACC_PATHS_EOF
 # The build being measured. \`identity\` is what the TOOL says it is and is release-granularity;
 # this is which bytes were measured, and is working-tree granularity. Two builds of one declared
 # version routinely disagree (DT-10), which is why both are emitted rather than either alone.
-BUILD=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+#
+# ANCHORED AT THE TARGET, NOT AT CWD. The build names the tree the TARGET sits in, so it is read
+# with \`git -C "$TARGET_DIR"\` — where this script is run from decides nothing here. When no git
+# work tree holds the target, the string says that instead of a bare "unknown", because the two
+# facts call for different responses: one is a target that genuinely has no repository, the
+# other used to be a harness run from the wrong directory.
+BUILD=$(git -C "$TARGET_DIR" rev-parse --short HEAD 2>/dev/null \\
+  || echo "unknown (no git work tree holds the target)")
 
 # THE HARNESS MUST NOT SEE ITS OWN OUTPUT. This script and the batch it writes are untracked files
 # inside the tree being measured, so an unfiltered \`git status\` reports "-dirty" on a spotlessly
 # clean checkout, every run, forever — which inverts the flag: \`-dirty\` warns that uncommitted
 # changes may be inside the measurement, and one that always fires carries no warning when a
 # genuinely dirty tree needs it to.
-_top=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+_top=$(git -C "$TARGET_DIR" rev-parse --show-toplevel 2>/dev/null || echo "")
 # PHYSICAL paths on both sides of the prefix match. \`--show-toplevel\` is resolved, while \`pwd\`
 # and an absolute $0 may both be LOGICAL — \`/tmp\` is a symlink to \`/private/tmp\` on macOS, and
 # symlinked checkouts and automounts do the same. When the two disagree the match fails, the
@@ -309,9 +326,12 @@ if [ -n "$_top" ]; then
     [ -n "$_r" ] && set -- "$@" ":(exclude,top)$_r"
   done
 fi
-# With no excludes (a harness outside the tree it measures) this degrades to a bare repo-wide
-# \`git status --porcelain\`, which is the correct check rather than a CWD-scoped one.
-if [ -n "$(git status --porcelain -- "$@" 2>/dev/null)" ]; then BUILD="$BUILD-dirty"; fi
+# With no excludes — the normal case when the harness and batch live where the caller ran from,
+# outside the tree being measured — this degrades to a bare repo-wide \`git status --porcelain\`
+# of the TARGET's tree, which is the correct check. When no work tree holds the target the
+# command fails silently, nothing matches, and no \`-dirty\` is appended to the explanatory
+# string above.
+if [ -n "$(git -C "$TARGET_DIR" status --porcelain -- "$@" 2>/dev/null)" ]; then BUILD="$BUILD-dirty"; fi
 RECORDED_BY="$RECORDED_BY, build $BUILD, ${sourceNote}"
 
 TMP=$(mktemp -d) || exit 1

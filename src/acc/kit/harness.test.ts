@@ -32,6 +32,7 @@ import { parseRecordedBatch } from "./recorded.ts";
 
 const BASE = {
   launcher: ["sh", "/bin/echo-nonexistent"],
+  targetDir: "/nonexistent-target-dir",
   sentinel: "--acc-not-a-flag",
   identityArgv: null,
   pathSource: "declaration" as const,
@@ -182,6 +183,7 @@ describe("buildHarness — the emitted script", () => {
     const script = buildHarness({
       ...BASE,
       launcher: ["bun", "/abs/cli.ts"],
+      targetDir: "/abs",
       paths: [["state"]],
     });
     // The launcher appears once, in the function that invokes it — not in the PATHS block.
@@ -237,6 +239,7 @@ describe("buildHarness — the batch destination is a runtime flag", () => {
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", join(workdir, "toy.sh")],
+        targetDir: workdir,
         paths: [["state"]],
         sentinel: "--acc-not-a-flag",
         identityArgv: ["--version"],
@@ -266,6 +269,7 @@ describe("buildHarness — the batch destination is a runtime flag", () => {
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", join(workdir, "toy.sh")],
+        targetDir: workdir,
         paths: [["state"]],
         sentinel: "--acc-not-a-flag",
         identityArgv: ["--version"],
@@ -291,6 +295,7 @@ describe("buildHarness — the batch destination is a runtime flag", () => {
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", join(workdir, "toy.sh")],
+        targetDir: workdir,
         paths: [["state"]],
         sentinel: "--acc-not-a-flag",
         identityArgv: ["--version"],
@@ -324,6 +329,7 @@ describe("buildHarness — running it produces a batch the reader accepts", () =
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", join(workdir, "toy.sh")],
+        targetDir: workdir,
         // A nested path, a token containing a space, and a token containing a quote — the three
         // shapes that a naive word-split or a string-joined argv silently corrupts.
         paths: [["state"], ["send", "note"], ["a b"], ["it's"]],
@@ -370,6 +376,70 @@ describe("buildHarness — running it produces a batch the reader accepts", () =
   });
 });
 
+describe("build provenance is anchored at the target, not at the harness's cwd", () => {
+  // The defect this suite guards: two adopters ran the harness from a scratch directory — as the
+  // batch-lands-in-cwd advice steered them to — and recordedBy said "build unknown" for targets
+  // sitting at a known commit. The build must name the tree the TARGET sits in, wherever the
+  // script runs.
+  test("run from a scratch directory outside the repo, the batch carries the target tree's sha", () => {
+    const { root, workdir } = makeRepo(false);
+    const scratch = mkdtempSync(join(disposableBase(), "acc-scratch-"));
+    writeFileSync(
+      join(scratch, "capture.sh"),
+      buildHarness({
+        launcher: ["sh", join(workdir, "toy.sh")],
+        targetDir: workdir,
+        paths: [["state"]],
+        sentinel: "--acc-not-a-flag",
+        identityArgv: null,
+        pathSource: "declaration",
+        out: "batch.json",
+      }),
+    );
+    expect(shGitFree(["sh", "capture.sh"], scratch).code).toBe(0);
+    const sha = shGitFree(
+      ["git", "-C", workdir, "rev-parse", "--short", "HEAD"],
+      scratch,
+    ).stdout.trim();
+    expect(sha.length).toBeGreaterThan(0);
+    expect(buildStringOf(readFileSync(join(scratch, "batch.json"), "utf8"))).toBe(sha);
+    rmSync(root, { recursive: true, force: true });
+    rmSync(scratch, { recursive: true, force: true });
+  });
+
+  test("a target no git work tree holds says so, instead of a bare unknown", () => {
+    // The two facts call for different responses — a repo-less target versus a harness run from
+    // the wrong directory — so the string states which one this is.
+    const dir = mkdtempSync(join(disposableBase(), "acc-norepo-"));
+    writeFileSync(
+      join(dir, "toy.sh"),
+      `#!/bin/sh\necho "unknown option '$2'. valid flags: --alpha" >&2\nexit 2\n`,
+    );
+    writeFileSync(
+      join(dir, "capture.sh"),
+      buildHarness({
+        launcher: ["sh", join(dir, "toy.sh")],
+        targetDir: dir,
+        paths: [["state"]],
+        sentinel: "--acc-not-a-flag",
+        identityArgv: null,
+        pathSource: "declaration",
+        out: "batch.json",
+      }),
+    );
+    expect(shGitFree(["sh", "capture.sh"], dir).code).toBe(0);
+    const batch = parseRecordedBatch(
+      "test",
+      JSON.parse(readFileSync(join(dir, "batch.json"), "utf8")),
+    );
+    expect(batch.records[0]?.recordedBy ?? "").toContain(
+      "build unknown (no git work tree holds the target)",
+    );
+    expect(batch.records[0]?.recordedBy ?? "").not.toContain("-dirty");
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
 describe("the -dirty flag, across the topologies that can falsify it", () => {
   // `-dirty` warns that uncommitted changes may be inside the measurement. The harness writes two
   // untracked files into the tree it measures, so an unfiltered check fires on every run forever —
@@ -380,6 +450,7 @@ describe("the -dirty flag, across the topologies that can falsify it", () => {
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", join(workdir, "toy.sh")],
+        targetDir: workdir,
         paths: [["state"]],
         sentinel: "--acc-not-a-flag",
         identityArgv: null,
@@ -453,6 +524,7 @@ describe("the -dirty flag, across the topologies that can falsify it", () => {
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", join(workdir, "toy.sh")],
+        targetDir: workdir,
         paths: [["state"]],
         sentinel: "--acc-not-a-flag",
         identityArgv: null,
@@ -481,6 +553,7 @@ describe("the identity capture", () => {
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", join(workdir, "toy.sh")],
+        targetDir: workdir,
         paths: [["state"]],
         sentinel: "--acc-not-a-flag",
         identityArgv: ["--version"],
@@ -516,6 +589,7 @@ describe("the identity capture", () => {
     const { root, workdir } = makeRepo(false);
     const script = buildHarness({
       launcher: ["sh", join(workdir, "toy.sh")],
+      targetDir: workdir,
       paths: [["state"]],
       sentinel: "--acc-not-a-flag",
       identityArgv: ["--version"],
@@ -544,6 +618,7 @@ describe("files the workflow told the adopter to create", () => {
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", join(workdir, "toy.sh")],
+        targetDir: workdir,
         paths: [["state"]],
         sentinel: "--acc-not-a-flag",
         identityArgv: null,
@@ -565,6 +640,7 @@ describe("files the workflow told the adopter to create", () => {
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", join(workdir, "toy.sh")],
+        targetDir: workdir,
         paths: [["state"]],
         sentinel: "--acc-not-a-flag",
         identityArgv: null,
@@ -601,6 +677,7 @@ describe("the byte encoder", () => {
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", target],
+        targetDir: workdir,
         paths: [["state"]],
         sentinel: "--acc-not-a-flag",
         identityArgv: null,
@@ -646,6 +723,7 @@ describe("the harness fails loudly, or not at all", () => {
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", target],
+        targetDir: workdir,
         paths: [["state"]],
         sentinel: "--acc-not-a-flag",
         identityArgv: null,
@@ -672,6 +750,7 @@ describe("the harness fails loudly, or not at all", () => {
       join(workdir, "capture.sh"),
       buildHarness({
         launcher: ["sh", join(workdir, "toy.sh")],
+        targetDir: workdir,
         paths: [["state"]],
         sentinel: "--acc-not-a-flag",
         identityArgv: null,
