@@ -42,9 +42,11 @@ you commit. Pasted unsubstituted, the `add` refuses instead and changes nothing:
 matching "vX.Y.Z"`, exit `1`, `package.json` and any existing install untouched — measured, on
 both a fresh project and one already holding this dependency. The `grep` keeps the answer to
 plain `vX.Y.Z` tags, the only shape `version --check` compares against. **Never install with the
-pin off or empty**: an unpinned install resolves from whatever bun already has cached and can hand
-you an older kit at exit `0` — measured, on a fresh project's first install, though which transport
-that install used was not established. The pin is what makes the result nameable either way.
+pin off or empty**: an adopter's unpinned install delivered an older kit at exit `0` with nothing
+visible, though which transport it used was never established — and the reasons to pin do not rest
+on that one install. `README.md` states them, and
+`docs/wiki/guides/how-to-fix-a-broken-install.md` has the measurements behind them. The pin is
+what makes the result nameable either way.
 
 **Already have `acc`? Use these instead** — the block above would append rather than replace:
 
