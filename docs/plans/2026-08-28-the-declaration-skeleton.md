@@ -35,19 +35,82 @@ from 'one table' to a formatVersion-0 declaration file is unbridged in what I re
 The adjacent ask, N6, from the same session: "there's no tool-side cross-check; I wanted one while
 writing paths.json".
 
-## What the kit already has, so the gap is exact
+## ⚠ The premise this was written on is FALSE. Measured in review.
 
-- `acc probe-plan --paths <file>` accepts a path list — a JSON array of command paths, e.g.
-  `[["state"], ["send", "note"]]` — and emits a capture harness.
-- `Declaration` (`src/acc/kit/declaration.ts`) is much richer: `formatVersion`, `provenance`,
-  `selfDescription`, and per command a `path`, `args[]` (`name`, `type`, `status`, optional
-  `values` / `valueHint`) and `positionals[]`.
-- `acc check --declaration <file>` already runs the census and reports `declared-not-accepted`
-  and `accepted-not-declared`.
+The first draft said: "the census that would have turned the adopter's prose into a machine
+finding **already exists**". It does not, and the review found it by running the kit rather than
+reading it.
 
-So the census that would have turned the adopter's prose into a machine finding **already
-exists**. What is missing is only the step from a list of paths to a document that census can
-read. That is the whole gap, and keeping it that small is the point of this proposal.
+`declaration.ts:679-700` is the whole diff the census performs: `declared.args` against
+`surface.flags`, **per path**. Nothing anywhere compares the declared PATH SET against the verbs
+a tool advertises. So a declaration naming the adopter's three verbs does not turn their finding
+into a violation. Measured, with those verbs added to a skeleton for a real 32-path tool:
+
+    32 of 34 declared command paths compared; 104 disagreements
+    NOT COMPARED: changes, delete-batch — the caller supplied recorded surfaces and
+                  recorded nothing at this path
+
+A reach-limit line, which the report frames as neither violation nor pass. And in the adopter's
+real workflow it is worse: their path list DOES contain the three verbs, so the harness records
+them, so the census compares them like any other path and reports flag-level agreement there. The
+thing that made their discovery interesting — **that the usage line does not advertise them** —
+is never asserted by anything.
+
+**The skeleton as proposed is pointed slightly past the ask.** That is the review's phrase and it
+is right.
+
+## And the wall of noise is worse than this document estimated
+
+Measured on a fixture already in the repo, an empty skeleton against a real recorded batch:
+
+    empty root against an enumerating fixture        ->    5 accepted-not-declared
+    empty args, 32 paths, real recorded batch        ->  104 accepted-not-declared
+
+Every one an artefact of the skeleton being empty. Omitting the root removes the noise only while
+there is no evidence below the root — which is to say, only while the skeleton is useless.
+
+## The refusal mechanism has no home in this format
+
+Both reviewers found this independently, and it is a defect in the first draft rather than in the
+idea. "Attested fields set to values the reader refuses" was imported from the RECORDED-BATCH
+format, which has such a field. `Declaration` has four keys — `formatVersion`, `provenance`,
+`selfDescription`, `commands` — and no `completeness`. Measured:
+
+- a marker key is refused as an **unknown key**, deliberately, so the message misdirects;
+- a bad `provenance` is refused but complains about provenance, not about unfinished work;
+- `selfDescription: null` is **accepted**, and is a positive claim that the tool emits no
+  manifest — made on the adopter's behalf, which is the worst of the three.
+
+A new required field is not a cheap fix either: the document reader refuses unknown keys, so
+adding one breaks every existing reader and invalidates the output of the only in-the-wild
+emitter — the adopter's own.
+
+**The smallest honest mechanism, using only what exists: refuse by omission.** Emit the skeleton
+with `provenance` and `selfDescription` ABSENT. Both are required with no default, and the
+existing refusal message was already written for this decision — _"Which one decides what a
+disagreement means, so there is no default."_ An unedited skeleton then fails loudly, the failure
+names the concept the human owes, and no format change happens.
+
+Its stated limit, carried rather than hidden: omission cannot protect `args`. v0 cannot say
+"paths known, surface unattested", so once the human fills in `provenance`, an unfilled `args` is
+a declaration that lies and census noise is the only detector.
+
+## The smaller thing the review found, which may be the better answer
+
+The advertised verb set is **already recorded**. `acc check <target> --json` carries
+`data.surface.nonFlagCandidates` — for `acc` itself:
+
+    [{"key":"choices","sample":["rules","show","path","tags"],"count":10}]
+
+The kit captures the set, labels it not-flag-shaped, and **nothing consumes it**. Comparing that
+set against a declared path set IS the adopter's finding — a verb the tool has that the root does
+not advertise — and it needs no new verb, no new file and no format change. It would need the
+full set rather than the four-member sample (`surface.ts:189`, `SAMPLE = 4`, sized for a report
+line rather than for a comparison).
+
+This is not costed and may be wrong. It is here because if the goal is the adopter's finding, the
+material is one field away from where it needs to be, and a new verb is not obviously the cheapest
+route. **Both options go to the adopter.**
 
 ## The proposal
 
@@ -129,26 +192,75 @@ it is forgotten.
   bridge, and if the reviewers think the guide alone would have served the adopter, that is a
   finding against this whole proposal and I want to hear it.
 
-## Open questions, for the reviews rather than for us
+## The open questions, as the reviews settled them
 
-1. **Is one verb the right shape, or is this a flag on `probe-plan`** — which already takes
-   `--paths` and already knows this input format?
-2. **Should the skeleton include the paths' `path: []` root?** `DeclaredCommand` says the root is
-   declared like any other command. A path list may or may not name it.
-3. **What exactly does an unedited skeleton's refusal say?** The mechanism is settled (refuse to
-   default); the message is not, and it is the whole user experience of this feature.
-4. **Does the adopter want stdout, or `--out`?** `probe-plan` has `--out`; everything else here
-   writes to stdout.
-5. **Is `formatVersion: "0"` right for a generated document**, given an unknown major refuses the
-   run — does a skeleton pin the version it was generated against, or the version the reader will
-   expect?
+Five were left open. Measurement closed four; one is now blocked on a prior decision.
 
-## How this gets vetted
+1. **Separate verb, not a flag on `probe-plan`.** Grounded in the spec's own effects axes rather
+   than taste: `probe-plan` declares `idempotent`, a skeleton emitter is `read_only`, and a flag
+   that swaps a command's entire output artifact makes one command's declared effects cover two
+   different acts. Reuse `loadPathList` by exporting it — one home — rather than copying it.
+   ⚠ One reviewer would not settle this until the premise question below is settled, because what
+   the thing emits may change.
+2. **Include the root, `path: []`.** Grounded in the consumer's own emitter, which declares root
+   interceptors explicitly and says why: _a generator walking the commands walks past them._ DT-6
+   is the measured 25-paths-no-root manifest. A path list will not name the root and the skeleton
+   should add it — at the cost measured above, which is that the root is where the noise starts.
+3. **The refusal message** is the reader's existing one, under refuse-by-omission. What the
+   EMITTER says about the work still owed is a separate hint, and unwritten.
+4. **`--out`, not stdout — decided on a measurement, not on preference.** Machine-mode detection
+   means `acc declare --paths p > declaration.json` writes an ENVELOPE, and `loadDeclaration`
+   does not unwrap envelopes. Measured: a bare declaration is accepted at exit `0`; the same
+   document enveloped is refused at exit `2` with _"formatVersion is required and must be a
+   string"_ — a misdirection, because the document has one, a level down. Stdout-only would hand
+   the obvious first workflow a wrong error on its second command. **And the rule behind it, which is stronger than the
+   convention:** this kit reads back exactly two artifacts, already split on this axis —
+   `report.json` is written to stdout ENVELOPED and unwrapped by `loadReport`, produced by the
+   kit and consumed by the kit with no human in between; a recorded batch is written to a FILE
+   and is BARE (`formatVersion`, `records`, `identity` — verified in the fixture). A declaration
+   is the third, and every property it has puts it with the batch: bare on disk, produced by
+   third-party emitters the kit never runs, edited by a human, committed to their repo, and piped
+   in bare by the ecosystem's own idiom (`--declaration <(grapevine schema)`), which would break
+   the moment the kit expected an envelope. So: **an artifact the kit reads back and a human
+   edits is written to a file, bare; only kit-to-kit artifacts ride the envelope.** That also
+   disposes of the unwrap alternative — teaching `loadDeclaration` to unwrap would make the kit
+   accept a shape none of its emitters produce, which is a rule with two homes before the first
+   has shipped.
+5. **Emit `DECLARATION_FORMAT_MAJOR`, never the literal `"0"`.** A generated document carrying a
+   version literal is a literal with two homes, and this repo's own lint refuses those in live
+   documents — it caught a reviewer writing one the day before.
 
-1. **Internal review** — is the design sound, and is it no larger than the ask? Explicitly
-   including: is any part of this over-built, and would something smaller have served?
-2. **The adopter** — does it answer what they asked for? They are the only party who can say, and
-   per this project's standing rule the consumer defines the concept.
+## ⚠ An unmet prerequisite, recorded because it was skipped
 
-Neither review is a rubber stamp. A "this is bigger than what I wanted" from the adopter is the
-most useful answer this document can get.
+The owner ruled that grapevine's in-house declaration-v0 emitter is **read before this is
+designed**. This document was designed without it. Partial mitigation exists — the registry guide
+quotes that emitter's load-bearing decisions, and two findings above (the root, the bare-document
+idiom) come from those quotes — but a quote in a guide is not the source. The full read folds
+naturally into the adopter step, since the adopter owns the emitter.
+
+## Where this stands
+
+Both internal reviews are done and they were independent. They converge: **not bigger than the
+ask**, the N3/N6 split is right, and two blocking findings — the refusal mechanism had no home in
+the format, and the premise does not hold.
+
+One reviewer conceded the premise half of their own review once the other measured it: _"I
+answered 'would prose have served' by accepting the proposal's premise… sextant ran it and the
+premise fails."_ What survives is the weakened form both now hold — prose and tool answer
+different halves, and **neither mechanizes the adopter's finding**.
+
+Both say this goes back to the author's desk before the adopter sees it, because as first written
+it promises something it does not do, and the adopter is the one person guaranteed to notice.
+
+## What goes to the adopter, when it does
+
+Two options, not one, and the measurement that distinguishes them:
+
+- **The skeleton**, as amended — which bridges "a path list" to "a declaration the census reads",
+  and does NOT make their verb finding structural.
+- **The verb-set comparison**, which is one field away from existing and would assert exactly
+  their finding.
+
+And the question the trial protocol's discipline requires: not "is this good", but whether either
+answers what they meant. A _"this is bigger than what I wanted"_ remains the most useful answer
+this document can get.
