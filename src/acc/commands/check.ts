@@ -124,6 +124,19 @@ export function isExecutable(abs: string): boolean {
  *    spawn, which `record()` reports as `TargetNotExecutableError` — an honest "chmod +x it"
  *    rather than a verdict about a program nobody asked us to build.
  */
+/**
+ * The word the rollup counts in, per status.
+ *
+ * Kept beside the renderer rather than derived from `surfaceSummary`, because that function
+ * writes a SENTENCE about one path and this needs a NOUN for a group — and slicing a substring
+ * out of the sentence would be the text-matching predicate this rollup deliberately avoids.
+ */
+const VERDICT_WORD: Record<string, string> = {
+  enumerated: "enumerated",
+  "not-enumerated": "did not enumerate",
+  "no-evidence": "recorded nothing readable",
+};
+
 export function toTarget(path: string): TargetInfo {
   const abs = resolve(path);
   const interpreter = shebangInterpreter(abs);
@@ -620,7 +633,63 @@ export async function checkCommand(
               // report that showed it as a count would swallow the caller's evidence entirely.
               // The summary names its own path, so nothing prefixes it — a line reading
               // "state: … at state" teaches a reader that one of the two is decoration.
-              ...r.recordedSurfaces.readings.map((p) => `      ${p.summary}`),
+              // ROLLED UP WHEN THE OUTCOME REPEATS, itemised when it does not.
+              //
+              // A 49-path batch produced 48 sentences differing only in the path, with the one
+              // that differed buried among them — a wall a reader skims, which is the opposite of
+              // what a census is for. Only visible at a scale no earlier trial reached; with three
+              // paths the repetition reads as thoroughness.
+              //
+              // GROUPED ON `status`, not on the text. Deciding which lines repeat by matching the
+              // prose would be a predicate that breaks silently the next time one of these
+              // sentences is reworded, and these sentences have been reworded repeatedly.
+              //
+              // The threshold is not a tidiness rule: a group is folded only when it is big enough
+              // that itemising it hides its own exceptions, and the count and its denominator are
+              // always stated so nothing reads as fewer paths than there were.
+              ...((rs) => {
+                const FOLD_AT = 4;
+                const groups = new Map<string, typeof rs.readings>();
+                for (const p of rs.readings) {
+                  groups.set(p.status, [...(groups.get(p.status) ?? []), p]);
+                }
+                const folded = [...groups.entries()].filter(([, g]) => g.length >= FOLD_AT);
+                if (folded.length === 0) return rs.readings.map((p) => `      ${p.summary}`);
+                const said = new Set(folded.flatMap(([, g]) => g.map((p) => p.path.join(" "))));
+                return [
+                  `      ${rs.readings.length} paths: ${[...groups.entries()]
+                    .map(([status, g]) => `${g.length} ${VERDICT_WORD[status] ?? status}`)
+                    .join(", ")}`,
+                  // THE ROLLUP MUST NOT FOLD AWAY WHAT THE LINE ABOVE IT EXISTS TO SAY. The
+                  // per-path sentence names a non-flag list where one was seen; collapsing 48 of
+                  // those would delete, at scale, exactly the fact the same batch was the reason
+                  // for adding. Round 3 emitted `choices` at 49 of 49 paths — the case that
+                  // motivated the rollup is the case that would have lost it.
+                  ...(() => {
+                    const keys = [
+                      ...new Set(folded.flatMap(([, g]) => g.flatMap((p) => p.nonFlagKeys ?? []))),
+                    ];
+                    if (keys.length === 0) return [];
+                    const n = folded
+                      .flatMap(([, g]) => g)
+                      .filter((p) => (p.nonFlagKeys ?? []).length > 0).length;
+                    return [
+                      `        of those, ${n} named a non-flag list (${keys
+                        .map((k) => `\`${k}\``)
+                        .join(", ")}) — a set of something else, not of flags`,
+                    ];
+                  })(),
+                  // The exceptions in full — they are the finding, and the reason the rollup is
+                  // safe is that nothing which differs is folded away.
+                  ...rs.readings
+                    .filter((p) => !said.has(p.path.join(" ")))
+                    .map((p) => `      ${p.summary}`),
+                  // WHERE THE REST WENT, said out loud. A summary that quietly replaced 48 lines
+                  // would be this project's own silent-truncation defect, printed by the census
+                  // that exists to prevent it.
+                  `      the folded ${[...said].length} are listed individually in .data.recordedSurfaces.readings`,
+                ];
+              })(r.recordedSurfaces),
               // BESIDE THE AFFECTED PATHS FIRST, and this total is a summary of that rather than
               // a substitute for it — an absent identity observation withholds nothing, but it
               // weakens the tie between the recording and the binary the kit ran, and the place a

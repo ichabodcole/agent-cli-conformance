@@ -823,6 +823,12 @@ export function buildReport(
             records: recorded.reading.records,
             readings: recorded.reading.surfaces.map((p) => ({
               path: p.path,
+              // CARRIED SO THE TEXT RENDERER CAN GROUP ON IT. The rollup below decides which
+              // lines repeat, and deciding that by matching the prose in `summary` would be a
+              // predicate that breaks silently the next time a sentence is reworded — which is
+              // the one thing this census's sentences have done repeatedly.
+              status: p.surface.status,
+              nonFlagKeys: (p.surface.nonFlagCandidates ?? []).map((c) => c.key),
               summary: recordedPathSummary(p),
             })),
             recordedBy: recorded.reading.recordedBy,
