@@ -257,7 +257,17 @@ failure classes before the adopter starts:
 > would otherwise have caught.**
 
 **The discriminator, one field per finding.** Classify every reader finding as **ON-LIST** — the
-writer named the dependent and mishandled it — or **OFF-LIST** — the writer never named it. The
+writer named the dependent and mishandled it — or **OFF-LIST** — the writer never named it.
+
+**On-list means named AS A DEPENDENT, and every list entry carries its role.** This is not
+pedantry; run 3 produced the case that breaks the coarse coding. A writer's entry read
+_"skills/acc/SKILL.md:45-47 — the hedged wording I am adopting verbatim. VERIFY before quoting"_ —
+the right file, the right line range, the exact sentence — and the defect found there was still
+**off-list**, because the entry named it as a SOURCE TO QUOTE and not as a dependent. Coding by
+file would have scored it on-list; coding by sentence would too. Only the role separates them.
+So the writer marks each entry's role when writing the list, which is before the edit exists and
+therefore at the moment fudging is impossible, and a source-to-quote entry that turns out to hold
+a dependent scores off-list — the honest score, because the writer never predicted it. The
 two hypotheses then separate cleanly, and this is what makes the prohibition above mechanical
 rather than asserted:
 
@@ -307,6 +317,28 @@ the honest reading of a good run 3 is "the pair helped", never "the dependency l
 If run 3's rate falls, the honest claim remains "twice out of three runs the regressions were
 caught inside the pipeline, and the rate fell once after the stage was added" — not "the stage
 works."
+
+## A second class, kept separate from the seams
+
+Two instances in one day, from different writers, of the same thing — and it is **not** the seam
+class, so it is recorded here rather than added to that count:
+
+- A writer repairing a document full of stale version literals wrote its own working notes into
+  the worktree, and `docs:lint` refused them for an unmarked `#v0.1.5`.
+- The coordinator, three hours earlier, put a `#v0.1.5` into new README prose and was refused by
+  the same rule.
+
+**Both were the author of a repair breaking, inside that repair, the exact rule the repair was
+enforcing.** Neither was caught by a reader, a dependency list or a seam check — both were caught
+by a mechanical guard this project had already built for the defect, which is the argument for
+building such guards rather than for reading harder.
+
+The relationship to the seam class is worth stating precisely, because it is tempting to merge
+them: a seam defect is a sentence OUTSIDE the edit that the edit falsified, and this is a
+violation INSIDE the edit of the rule the edit exists to apply. What they share is the mechanism —
+holding a rule in mind while applying it is what makes your own instance of it invisible — and
+what separates them is that only one of the two has a cheap automated check. Do not fold this
+into the six.
 
 ## Provenance
 
