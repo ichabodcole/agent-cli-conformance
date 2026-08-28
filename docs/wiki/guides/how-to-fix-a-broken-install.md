@@ -2,7 +2,7 @@
 type: guide
 title: How to fix a broken install
 description:
-  Diagnose the three ways installing `acc` from a private git ref delivers the wrong bytes —
+  Diagnose the three ways installing `acc` from a git ref delivers the wrong bytes —
   each of which has a form that succeeds at exit 0 — and apply the remedy that matches the one
   you hit.
 tags: [guide, install, bun, troubleshooting]
@@ -33,7 +33,7 @@ acc version --check
 ```
 
 One network call, and it does the comparison for you: it reads the published tags with
-`git ls-remote` over the same ssh access the install line already required, and tells you whether
+`git ls-remote` over the same anonymous https the install line already uses, and tells you whether
 what you have installed is the newest release. Three answers — up to date (exit `0`), a newer
 release exists (exit `10`), or **could not check** (exit `0`, plainly stated: an unreachable
 remote is not a failure of your invocation).
@@ -73,7 +73,7 @@ cache before installing rather than trusting the number.
 ```sh
 bun remove agent-cli-conformance
 bun pm cache rm
-bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#<ref>'
+bun add -d 'git+https://github.com/ichabodcole/agent-cli-conformance.git#<ref>'
 acc --version    # confirm you got what you asked for
 ```
 

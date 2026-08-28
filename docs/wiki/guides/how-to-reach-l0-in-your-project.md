@@ -48,8 +48,8 @@ the per-rule list of what each check did **not** establish. Its first line also 
 `[acc <version>]` — the place a stale install is hardest to miss, though `acc --version` and the
 JSON report's `kitVersion` say the same thing.
 
-The repository is private today, which is why that is an SSH URL rather than
-`github:ichabodcole/agent-cli-conformance` — see [the README](../../../README.md#getting-started).
+The repository is public, so the install needs no ssh key and no token — see
+[the README](../../../README.md#getting-started) for the line and for why it stays pinned.
 
 Record the verdict line. Everything below is triage of what follows it.
 
