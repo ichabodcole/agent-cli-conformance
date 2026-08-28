@@ -127,11 +127,64 @@ far, by measurement taken for this sweep on develop `e12ac1c`: `grep -n "bare cl
 skills/acc/SKILL.md` hits only lines 63 and 67, both correctly conditioned to the ssh path, while
 line 45 words the mechanism as "whatever bun already has cached" — the literal noun grep cannot
 reach it. And off-list, because the one list that existed named the sentence as a source to
-quote. It was found the only way left: incidentally, by a writer opening the file to quote it. **Paraphrase defeats the noun grep.** The far-seam instrument's terms come
-from the measurement's own words, and a warrant that restates the mechanism in different words is
-invisible to them. That is a real limit of the instrument, present in its baseline's own episode,
-and run 3 should expect it rather than discover it. The repair of T.4 does not remove the limit;
-it removes this one instance of it.
+quote. What actually found it was none of the instruments: a writer opening the file to quote it
+(message 196). A widened grep did reach the line afterwards — the coordinator's post-merge check,
+whose terms included `resolves from whatever` and `already has cached` — but that demonstration
+is **confounded by provenance**: those alternates are the specimen sentence's own words, quoted
+to the coordinator four messages earlier. Widening the term list to a claim's paraphrases is
+sufficient once the wording is in hand and demonstrates nothing about generating it — and
+generating paraphrases is a prediction, a writer guessing at other people's vocabulary,
+author-blind in exactly the dimension the far-seam instrument exists to sit outside of.
+
+**Paraphrase defeats the noun grep**, and the countermeasure that needs no anticipation was
+measured by the instrument's own author over the pre-repair tree (`cd6372a`), all four specimens,
+live surfaces:
+
+| term                          | reaches            | count |
+| ----------------------------- | ------------------ | ----- |
+| `bare clone` (mechanism noun) | T.1, T.2           | 2 / 4 |
+| `older kit` (consequence)     | T.1, T.2, **T.4**  | 3 / 4 |
+| neither                       | T.3 — README:92-94 | 1 / 4 |
+
+The consequence term reaches the paraphrase the noun cannot, and not by luck of wording: **the
+mechanism is the half a writer paraphrases, because it is the half they explain in their own
+words; the consequence is the half they copy, because it is the payload the warrant exists to
+deliver.** Three of four carried "an older kit at exit `0`" nearly verbatim while one had already
+stopped saying "bare clone". And the consequence term needs no specimen in hand — the finding
+names which failure is now impossible, and the broken-install guide states at :171-174 what that
+failure did to the reader — so two people holding only the finding derive the same two terms. The
+far-seam rule as refined: **two terms from the measurement — what it DETHRONED, and what that
+thing DID TO THE READER — both derivable from the finding alone; paraphrases of the first where
+the writer can think of them, marked best-effort and never relied on.**
+
+The price, stated as a price and not a caveat: the consequence grep returned **three** extra hits
+on this tree, each a true sentence a reader confirms and moves on — and one of the three was
+`1838a62`'s verified-and-unchanged entry, which its writer had otherwise found only by hand, so a
+third of the overhead bought something. The count itself carries a lesson: the author first
+reported two, having excluded the mechanism-owning guide by piping through `grep -v <path>` —
+which also deletes every line that CITES that file by path, and hid the third hit in the
+direction that made the instrument look cheaper. **Exclude a file by path argument, never by
+piping through `grep -v <path>`** — in a wiki that routes by path, the pipe deletes most of it. A
+bounded search read as a covered set, for the third time this week, inside the message reporting
+one.
+
+**The headline is the three-finders shape, not either term.** Four specimens: the noun grep
+reached two, the consequence grep reached a third, and T.3 — which names a HAZARD CLASS, neither
+mechanism nor consequence — was reached only by reading the whole document before editing, the
+half of the stage with no instrument in it. Three specimens, three different finders. Any
+write-up of this episode where a single instrument carries the story is wrong about it. In the
+instrument author's own words, carried verbatim:
+
+> The noun grep was proposed on the strength of two specimens it happened to catch. Measured
+> afterwards against the full set of four, it finds two. Its author did not know that until the
+> retroactive sweep measured it, and would not have found out by using it — an instrument that
+> only ever reports what it caught cannot tell you what it walked past. That is the same reason
+> the dependency list has to record the entries that did not move, and the same reason neither
+> belongs in the hands of the person whose work it is checking.
+
+None of this changes the class counts: four specimens from one episode outside the method is
+still one episode, and far-seam's n = 0 inside the pipeline stands uninflated. The repair of T.4
+does not remove the limit; it removes this one instance of it.
 
 One countermeasure to T.4's failure mode already exists on the record, adopted by the writer it
 happened to: the repair lists its quoted file as SOURCE TO QUOTE **and** DEPENDENT, in both roles
