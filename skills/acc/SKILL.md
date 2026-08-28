@@ -17,7 +17,11 @@ thing you adopt — a declared default, an enumerated rejection — converts mor
 `unverified` to checked and kept that way.
 
 This skill is the order to do things in. Every guide it names is a file in the `acc` repository,
-at the path given.
+at the path given. **Once step 1's install has run, read them from
+`node_modules/agent-cli-conformance/` + that path** — that copy is the kit you pinned, so the
+guide and the `acc` you are running are the same version. A clone or the GitHub web view is a
+fallback and only that: either can be a different version than the one installed, which is the
+mismatch the pin exists to prevent.
 
 ## 1. Install it, verify it, run it
 
@@ -96,7 +100,15 @@ renders the same text report from it without re-running a single probe.
 
 ## 2. Read the result
 
-The first line is the verdict. Below it, one line per rule.
+The first line is the verdict, and `acc`'s own exit code carries the same answer to a script.
+**Read it as two bands, and the bands are what tell you whether `acc` failed or your tool did.**
+`1`–`8` mean the **invocation** failed — why `acc` could not do the job at all; a malformed
+invocation is `2`. `9` and up are **outcomes**: `acc` ran and did its job, and the answer was
+negative — `9` is `NOT CONFORMANT`, a finding about your tool, and the report on stdout is good
+data. `0` is conformant. (`10` is `version --check`'s stale answer, above.) The band argument is
+`docs/wiki/concepts/exit-codes.md#outcomes-are-not-errors`.
+
+Below the verdict line, one line per rule.
 
 If your own test suite is green and the report still found something, that is the expected shape
 rather than a contradiction: these are interface-contract properties — what your tool owes a
