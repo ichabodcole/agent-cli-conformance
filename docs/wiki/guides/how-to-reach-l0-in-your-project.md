@@ -34,9 +34,8 @@ ceiling is.
 version your gate runs is pinned in your lockfile like any other dev dependency — which means
 **pinned to a release tag**, using the block in
 [the `acc` skill's step 1](../../../skills/acc/SKILL.md), which derives the current tag and pins
-it for you. An unpinned `bun add` resolves from whatever bare clone bun already holds and can
-deliver an older kit at exit `0` with nothing visible, which is the opposite of the property this
-step is for. Then:
+it for you. An unpinned `bun add` can deliver an older kit at exit `0` with nothing visible, which
+is the opposite of the property this step is for. Then:
 
 ```
 bunx acc check ./your-cli --format text
