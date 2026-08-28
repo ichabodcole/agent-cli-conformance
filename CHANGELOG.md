@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.5](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.4...v0.1.5) (2026-08-28)
+
+
+### Features
+
+* **acc:** stored checks render back as text; the containment recipe was wrong ([a72636b](https://github.com/ichabodcole/agent-cli-conformance/commit/a72636bb8de80101a0a63a8cee9ea7ea944dc8fd))
+* **cli:** acc report — one sweep, two renderings, and the sweep says which ([72bfbb0](https://github.com/ichabodcole/agent-cli-conformance/commit/72bfbb06138592481d945218ea40b5605b5b135e))
+
+
+### Bug Fixes
+
+* **census:** say which set was seen, and stop printing 48 of one sentence ([df260c4](https://github.com/ichabodcole/agent-cli-conformance/commit/df260c47a1c1c4cb34062ee3d8c1f3aca7ef621c))
+* **guide:** the scratch HOME did not contain what it claimed to ([01e724d](https://github.com/ichabodcole/agent-cli-conformance/commit/01e724d0ac07d2914a5d4a80c91bd10940c73592))
+* **guide:** the shell clause named the wrong axis ([a0400d1](https://github.com/ichabodcole/agent-cli-conformance/commit/a0400d10a92743f50e9f27601f5d5e4e4c1d866d))
+* **kit:** the batch's build provenance is anchored at the target, not at cwd ([72cf2f6](https://github.com/ichabodcole/agent-cli-conformance/commit/72cf2f6be8ece4f843243ce1ab96f423367ee142))
+
 ## [0.1.4](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.3...v0.1.4) (2026-08-27)
 
 
