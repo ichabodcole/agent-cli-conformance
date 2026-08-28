@@ -234,3 +234,22 @@ misbehaviour on the target ("none smell like kit artifacts", r3 §4), or any req
 silence. Three adopters in, the maintainer's close stands as the round's summary: "this is the
 first run where every artifact in the path did its job … and the failures that remain are ours
 to fix rather than yours to work around" (r3 §8).
+
+## Disposition, appended 2026-08-27
+
+**The `Status: open` lines above are not revised**, for the reason this project applies to every
+superseded claim: they were true when the report was written, and rewriting them would erase the
+record of what the trial actually found. Read them together with this section.
+
+Closed in the release cut the same day:
+
+| item | what shipped                                                                                                                                                                                                                                                                                                         |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W1   | The emitted harness anchors all three git reads at the target with `git -C`; a repo-less target stamps `build unknown (no git work tree holds the target)`, and the guide no longer steers a reader toward a scratch directory that manufactured the defect.                                                         |
+| N2   | Same-status readings fold to a rollup at a threshold of four, grouped on a `status` field that now travels in the JSON rather than on the prose. Exceptions are itemised in full.                                                                                                                                    |
+| N5   | `acc report <file>` renders the stored JSON back as the text report. The second rendering costs no second execution, and `sweep` + `capturedAt` let a reader check that two documents describe one run. r2's adjacent ask — flagged above as belonging in the same design conversation — is closed by the same verb. |
+| N1   | Already recorded above as fixed alongside this report.                                                                                                                                                                                                                                                               |
+
+Still open, unchanged: **N3** (the declaration skeleton, still first on the decision surface),
+**N4**, **N6**, **N7**, **N8**, **W2** (A6 through a bun launcher), and the two doc-priming
+misreads.

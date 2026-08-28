@@ -164,8 +164,9 @@ export interface Surface {
    * published as a flag surface for the kit's own reference implementation.
    *
    * It exists because the census could not tell a target that named a DIFFERENT set from one that
-   * named nothing. Round 3's target emitted `choices` at 49 of 49 paths and the report printed the
-   * same sentence it prints for silence, so the adopter's comparison had to rest on the recorded
+   * named nothing. Round 3's target emitted `choices` at all 49 of its paths — flag-shaped at
+   * exactly one, a non-flag set at the other 48 — and the report printed the same sentence it
+   * prints for silence, so the adopter's comparison had to rest on the recorded
    * bytes instead of on our line. Same repair as D3's near-miss clause: distinguish "there was
    * nothing" from "there was something and it is not the kind of thing this reads".
    */

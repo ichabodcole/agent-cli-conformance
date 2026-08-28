@@ -49,6 +49,8 @@ probes are input to it, and you should not run the check.
 
 In a terminal you get a human report. Redirected or piped, you get JSON —
 `docs/wiki/guides/how-to-read-the-check-report-json.md` is its shape, worked against a real run.
+You do not have to run the check twice to get both: save the JSON, then `acc report <file>`
+renders the same text report from it without re-running a single probe.
 
 ## 2. Read the result
 
