@@ -72,9 +72,12 @@ bun add -d 'git+https://github.com/ichabodcole/agent-cli-conformance.git#v0.1.5'
 `git+ssh://git@github.com/…` still works and is what a contributor with a key already has. The
 shorter `github:ichabodcole/agent-cli-conformance#<tag>` form also works now — measured, exit
 `0` — where it used to answer `404` because the repository was private
-([oven-sh/bun#19618](https://github.com/oven-sh/bun/issues/19618)). It is not the documented line
-yet: it resolves through GitHub's tarball API rather than a git clone, so whether it shares the
-three failures below is unmeasured, and the guide that diagnoses them assumes a git ref.
+([oven-sh/bun#19618](https://github.com/oven-sh/bun/issues/19618)). It is not the documented line, and not
+because of any difference in what it does: measured on bun 1.4.0, bun normalises the documented
+`git+https://` line to exactly this `github:` form — one code path, one cache key, no bare clone.
+The longer spelling is documented because it is the one that still means something on a fork
+hosted elsewhere. Which failures below you can meet depends on that path, and the guide says
+which.
 
 The `#v0.1.5` pin names the current release tag. <!-- x-release-please-version -->
 **Do not drop it**: with no ref, bun resolves from whatever bare clone it already holds and can

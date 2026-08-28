@@ -33,9 +33,12 @@ export function versionCommand(mode: OutputMode): void {
  * destructive and used to be handed to everyone.
  *
  * WHAT THIS SEQUENCE IS FOR. `bun add` pointed at a new ref does not replace the dependency: it
- * appends a second entry under the same key, prints `warn: Duplicate key` in output nobody reads,
- * and resolves the FIRST one — an older kit, at exit 0, with no error, and the second entry
- * committed to `package.json` for CI to install from. That is failure 1 in
+ * appends a second entry under the same key and resolves the FIRST one — an older kit, at exit 0,
+ * with no error, and the second entry committed to `package.json` for CI to install from. It is
+ * worse than a missing warning: measured on bun 1.4.0 there is NO `warn: Duplicate key` at all,
+ * and the success line names the sha you ASKED for while the other installs — `installed …#1a76405`
+ * over a lockfile holding `#0034789`, binary reporting the older version. The output states the
+ * opposite of what happened. That is failure 1 in
  * `docs/wiki/guides/how-to-fix-a-broken-install.md`, it reproduces on every transport, and
  * `bun remove` before `bun add` is what clears it. It is harmless when there is nothing to remove,
  * so it leads unconditionally.
