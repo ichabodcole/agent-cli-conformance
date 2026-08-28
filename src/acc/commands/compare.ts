@@ -51,7 +51,7 @@ import { type Surface, surfaceSummary } from "../kit/surface.ts";
  * refusing the second would make the obvious preparation step — pulling the payload out — the
  * thing that breaks the next command.
  */
-function loadReport(path: string): Report {
+export function loadReport(path: string): Report {
   const abs = resolve(path);
   if (!existsSync(abs)) {
     throw notFoundError(`no such report: ${path}`, {

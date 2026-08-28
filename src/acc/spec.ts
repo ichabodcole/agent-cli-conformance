@@ -426,6 +426,38 @@ export const COMMANDS: CommandSpec[] = [
     ],
   },
   {
+    name: "report",
+    description: "Render the text report from a JSON a check already wrote.",
+    // Reads one file, executes nothing — the point: the adopter ask this answers was two full
+    // probe sweeps run to get two views of one result, and two sweeps cannot be assumed to
+    // agree (evidence ids hash the invocation, not the outcome, so they align across sweeps
+    // whether or not the bytes did).
+    effects: "read_only",
+    output_kind: "data",
+    cardinality: "single",
+    positionals: [
+      {
+        name: "file",
+        description: "A report written by `acc check <target> --json`.",
+        required: true,
+      },
+    ],
+    args: [],
+    errors: [ErrorKind.NotFound],
+    // The full workflow is `acc check <t> --json > report.json` first; the example here is the
+    // runnable half, because the published-examples suite executes every example as written and
+    // its harness speaks no shell operators.
+    examples: ["acc report report.json"],
+    notes: [
+      "NOTHING IS RE-RUN. The rendering names its source file and the capture time, and the exit",
+      "code mirrors the STORED verdict (0 conformant, 9 not) — a rendered verdict is still a",
+      "verdict about the subject, and it is as old as the file.",
+      "Both renderings of one run carry the same `sweep` mark; a text report and a JSON with one",
+      "sweep id describe one run. An artifact from an older kit renders with each missing field",
+      "named against that kit's version rather than silently omitted.",
+    ],
+  },
+  {
     name: "compare",
     // "Where they disagree", not "whether they conform". Every other command in this list judges
     // one tool against the catalogue; this one holds several tools against EACH OTHER and reports

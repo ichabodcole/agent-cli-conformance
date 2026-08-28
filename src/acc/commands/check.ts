@@ -30,7 +30,13 @@ import {
   readRecordedBatch,
 } from "../kit/recorded.ts";
 import { CHECKERS, UNCHECKED_RULES } from "../kit/registry.ts";
-import { buildReport, primaryProblem, type ReportedFinding, runCheckers } from "../kit/report.ts";
+import {
+  buildReport,
+  primaryProblem,
+  type Report,
+  type ReportedFinding,
+  runCheckers,
+} from "../kit/report.ts";
 import { surfaceSummary } from "../kit/surface.ts";
 import type { History, TargetInfo } from "../kit/types.ts";
 import { VERSION } from "../version.ts";
@@ -351,453 +357,7 @@ export async function checkCommand(
           },
         ]
       : [],
-    renderText: (r) => {
-      const bold = useColor() ? "\x1b[1m" : "";
-      const reset = useColor() ? "\x1b[0m" : "";
-      // `unverified` and "not applicable at this level" are different claims — see
-      // ReportedFinding.applicable — and collapsing them to the same glyph in text mode would
-      // lose a distinction the JSON output (and report.ts's own doc comment) treats as
-      // load-bearing: "out of scope here" vs "tried and could not establish it".
-      //
-      // A WAIVED rule takes its own glyph rather than its verdict's. The verdict is still real —
-      // the checker ran — but it binds nothing, and printing a bare FAIL beside a rule the
-      // project declared inapplicable is the report contradicting the config. The would-be
-      // verdict follows on the same line, in the waiver block below.
-      const mark = (f: ReportedFinding) => {
-        if (f.waived) return "WVD ";
-        if (f.verdict === "pass") return "PASS";
-        if (f.verdict === "fail") return "FAIL";
-        return f.applicable ? "UNVR" : "N/A ";
-      };
-      // A `+` on a PASS whose checker declares `coverage: "partial"`. Without it the strongest
-      // glyph in the report sits beside a rule the kit only sampled, and the reader has to know
-      // to cross-reference the gap block below to find out which passes were narrow ones.
-      // THE ARGV, UNDER THE FINDINGS A READER TRIAGES. Two independent adopters joined evidence
-      // ids against the observations by hand at the same moment — deciding whether a finding was
-      // their own parser or their own dispatch — and one asked for exactly this: "name the
-      // offending argv inline in exit-code findings". A verdict about behaviour is unreadable
-      // without the invocation that produced it, and a reader holding the text report does not
-      // have the JSON open.
-      //
-      // FAIL and applicable UNVERIFIED only, which is the triage set. Every finding would add one
-      // line per citation — 59 lines on a 23-finding report of the kit's own fixture, three
-      // quarters of them under passes nobody is going to investigate — and a legend that scrolls
-      // is one a reader stops reading. `.data.findings[].probes` carries all of them for the
-      // reader who wants the rest, and the EVIDENCE block below names it.
-      const probeLines = (f: (typeof r.findings)[number]) =>
-        (f.verdict === "fail" || (f.verdict === "unverified" && f.applicable)) && !f.waived
-          ? f.probes.map(
-              (p) =>
-                // `(bare)` rather than an empty string: an empty argv IS the probe for D2 and E1,
-                // and a blank after the arrow reads as a rendering fault rather than as the
-                // least dangerous possible invocation.
-                `        ↳ ${p.args.length ? p.args.join(" ") : "(bare)"}${
-                  p.repeat === undefined ? "" : ` [run ${p.repeat}]`
-                }${p.env ? ` [env ${Object.keys(p.env).sort().join(", ")}]` : ""}${
-                  p.unresolved ? "  (unresolved — this run published no such observation)" : ""
-                }`,
-            )
-          : [];
-      const lines = r.findings.flatMap((f) => [
-        `  ${mark(f)}${!f.waived && f.verdict === "pass" && f.coverage === "partial" ? "+" : " "} ${f.ruleId.padEnd(3)} ${f.detail}${f.excused ? " (excused)" : ""}${f.waived ? ` (waived; would ${f.verdict.toUpperCase()})` : ""}`,
-        ...probeLines(f),
-      ]);
-      // Every waiver, with the REASON, because the reason is the only thing standing between a
-      // considered design decision and "this rule was annoying". A human reading a report is the
-      // reviewer that string was written for; a count alone would put the frame off-screen.
-      //
-      // Not a nag, and worded so it cannot be read as one: `would PASS` is offered as information
-      // — a waiver you could now delete — never as a stale entry to go and remove. Debt goes
-      // stale; a declaration does not.
-      //
-      // The COST is named per line, because the two kinds of waiver look identical here and are
-      // not: waiving a `defect` also blocks `fullyVerified` and puts the rule in the gaps above,
-      // while waiving a `design-choice` does neither. A reader who cannot tell them apart cannot
-      // tell a suppressed failure from a declared design — which is the whole distinction the
-      // catalogue's classification exists to draw.
-      const cost = (w: (typeof r.waivers)[number]) =>
-        w.deviation === "design-choice"
-          ? "design choice, costs nothing"
-          : w.tier === "core"
-            ? "defect, also blocks full verification"
-            : "defect";
-      const waivers = r.waivers.map(
-        (w) =>
-          `    ${w.ruleId.padEnd(3)} ${w.reason}  (would ${w.verdict.toUpperCase()}; ${cost(w)}${w.applicable ? "" : "; not applicable at this level"})`,
-      );
-      // Severity moves, in both directions, for the same reason: `conformant` is a claim inside a
-      // frame, and a raise is as much a part of that frame as a lowering.
-      const overrides = r.severityOverrides.map(
-        (o) => `    ${o.ruleId.padEnd(3)} ${o.from} -> ${o.to}  ${o.reason}`,
-      );
-      // Named, not counted. `fullyVerified: false` with nothing beside it is the same
-      // information-free verdict this project criticises a CLI for emitting — the caller learns
-      // that something is missing and nothing about what. Printed in full rather than
-      // summarised because these ARE the report's caveats; the JSON carries the same list under
-      // `evidenceGaps`.
-      const gaps = r.evidenceGaps.map((e) => `    ${e.ruleId.padEnd(3)} ${e.gaps.join("; ")}`);
-      // WHERE THE CONFIG CAME FROM, on every run, in the same shape every time — a line that
-      // changes shape between runs is one a reader has to re-read. It sits directly under the
-      // headline because it is the frame the headline was reached inside: waivers, severity
-      // moves and `defaultOutput` all arrive through it.
-      //
-      // The DISCOVERED case says more than the other two, and deliberately. A `--config-dir` the
-      // caller typed is already on their screen, and "none" is the absence of a frame; a file
-      // picked up from the working directory is the only one that can change the verdict with
-      // nothing visible anywhere to say so — which is exactly how two runs of one command
-      // disagreed for an adopter, absolute target path and all.
-      const configLine = ((c) => {
-        if (c.origin === "none") return `  config: none — no ${CONFIG_FILE} in ${c.dir}`;
-        if (c.origin === "flag") return `  config: ${c.path}  (--config-dir)`;
-        return `  config: ${c.path}  (DISCOVERED in the working directory, not named on the command line — the same command run from elsewhere can reach a different verdict)`;
-      })(r.configSource);
-      // Both claims, on one line, always. The verdict answers "did anything VIOLATE a core
-      // rule"; the counts beside it answer "and was everything actually established". Naming
-      // the level is part of the claim, not decoration — A4 is core and silently excluded as
-      // N/A at L0, so a bare "CONFORMANT" overstates what was checked.
-      //
-      // Both counts here are CORE, and both say so. The summary line below counts `unverified`
-      // across every tier, so the two lines legitimately disagree — a target with one
-      // diagnostic gap and no core one printed "0 unverified" above "unverified 1", with
-      // nothing on either line naming the scope that made them differ.
-      //
-      // The waiver count rides on the HEADLINE, not in a footnote, because it is the one thing
-      // that changes what every other number on that line means. `0 core violated` over a config
-      // that waived the rule which would have violated is true and misleading on its own; beside
-      // `1 waiver` it is a claim a reader can size. Omitted entirely when there are none, so an
-      // unconfigured run reads exactly as it did before.
-      const verdict = r.conformant ? "CONFORMANT" : "NOT CONFORMANT";
-      const waiverNote = r.counts.waived
-        ? ` · ${r.counts.waived} waiver${r.counts.waived === 1 ? "" : "s"}`
-        : "";
-      // A DECLARATION DISAGREEMENT RIDES ON THE HEADLINE TOO, and it is a POINTER, not a number.
-      // The census mints no rule id, feeds no verdict and gates no exit code — `declaration.ts`
-      // argues at length why the kit cannot know which side of a disagreement is wrong — and none
-      // of that changes here: this clause is a string, it touches no count on this line or the
-      // next, and the exit code below still fires on a core VIOLATION only.
-      //
-      // What it stops doing is being silent. Four deliberately broken variants of one tool each
-      // printed a clean headline while the block that caught three of them sat below the fold,
-      // and the headline is the line most readers get to the end of.
-      //
-      // The two provenances read DIFFERENTLY, because the headline is the cheapest place in the
-      // report to draw the distinction the whole `provenance` field exists for. An `emitted`
-      // document is the tool's own words, so a disagreement is one process publishing a flag and
-      // refusing it — a self-contradiction, and the strong reading. A `modelled` one is somebody's
-      // model of the tool, so the same diff says only that a file and a tool disagree. One word
-      // apart, so the shape is the same either way and a reader is not learning two clauses.
-      //
-      // Counted over `findings`, not over `status`: `self-description-not-declared` needs no probe
-      // and is a real disagreement on a target that never enumerated.
-      const declarationNote = ((d) => {
-        if (!d || d.findings.length === 0) return "";
-        const n = d.findings.length;
-        const noun =
-          d.provenance === "emitted"
-            ? `self-contradiction${n === 1 ? "" : "s"}`
-            : `disagreement${n === 1 ? "" : "s"}`;
-        return ` · but see ${n} declaration ${noun} (${d.provenance})`;
-      })(r.declaration);
-      return [
-        // The kit's own version rides on the headline, not in a footer. A stale install reports
-        // success and puts an older commit on disk, and this is the only line every reader
-        // certainly sees — the alternative was `acc --version`, which nobody thinks to check.
-        `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}${declarationNote}  ${r.target}  [acc ${r.kitVersion}]`,
-        configLine,
-        "",
-        // THE LEGEND COMES BEFORE THE TABLE IT EXPLAINS. It sat at the foot until an adopter met
-        // `PASS+` twenty lines before its explanation and read the `+` as "pass, plus something
-        // extra" — close to the opposite of what it means. A legend is needed at the FIRST
-        // marker, not the last.
-        "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable to this run",
-        "  PASS+ passed, but the checker establishes only part of its rule — see the gaps below",
-        // N/A covers two reasons and the legend has to say both, or a rule with no checker
-        // reads as one that was merely deferred to a higher level and will be picked up there.
-        "  N/A   out of scope at this level, or no checker exists for the rule at any level",
-        // The glyph is explained even when nothing carries it, exactly as the four above are: a
-        // legend that changes shape between runs is one a reader has to re-read.
-        "  WVD  waived by config — the probe still ran, and the verdict it reached binds nothing",
-        "",
-        ...lines,
-        "",
-        `  core ${r.counts.corePassed}/${r.counts.core} · violations ${r.counts.coreFailures} · unverified ${r.counts.unverified} (all tiers; ${r.counts.coreUnverified} core) · partial coverage ${r.counts.corePartial} core · diagnostics ${r.counts.diagnosticFailures}`,
-        // Two claims, and the weaker one now has to say what it is short of. "Conformant but not
-        // fully verified" is the honest resting state of an L0 run against almost any target,
-        // including acc itself, and a report that did not spell out the difference would leave a
-        // reader assuming the headline covered both.
-        `  ${
-          r.fullyVerified
-            ? "every applicable core rule was verified in full"
-            : "conformance means no core rule was VIOLATED; it does not mean every core rule was established"
-        }`,
-        ...(gaps.length
-          ? ["", `  NOT FULLY VERIFIED (${r.level}) — what the evidence does not cover:`, ...gaps]
-          : []),
-        ...(waivers.length
-          ? [
-              "",
-              `  WAIVED (${waivers.length}) — declared not applicable to this tool, by config:`,
-              ...waivers,
-            ]
-          : []),
-        ...(overrides.length
-          ? [
-              "",
-              `  SEVERITY MOVED (${overrides.length}) — this project binds differently:`,
-              ...overrides,
-            ]
-          : []),
-        ...(r.staleExpectations.length
-          ? [
-              "",
-              `  STALE EXPECTATIONS (${r.staleExpectations.length}) — these rules now pass; remove them from knownFailures:`,
-              `    ${r.staleExpectations.join(", ")}`,
-            ]
-          : []),
-        // Its own SECTION, not a line in the legend, and not merged with the stale one. This is a
-        // finding about the reader's config, and the legend is where abbreviations are explained —
-        // an outside adopter reported it rendering "indented like a glossary entry, the last thing
-        // on the page". "Now passing, remove them" and "not being evaluated" also call for opposite
-        // actions, so sharing either a line or a heading would teach a reader to delete on both.
-        ...(r.inertExpectations.length
-          ? [
-              "",
-              `  NOT BEING EVALUATED (${r.inertExpectations.length}) — these knownFailures entries suppress nothing:`,
-              `    ${r.inertExpectations.map((e) => e.ruleId).join(", ")}`,
-              "    NOT evidence the defect is fixed — the kit stopped looking. Check it is still",
-              "    tracked before removing them.",
-            ]
-          : []),
-        "",
-        // WHAT THE TARGET SAID ABOUT ITSELF, printed on every report including the ones where it
-        // said nothing — because "this tool has no --version" and "the probe never ran" are two
-        // different facts and a section that appeared only on the talkative targets would leave a
-        // reader unable to tell them apart. It sits immediately above the flag surface because the
-        // two are the same kind of thing: the target's own words, captured and not judged.
-        //
-        // It answers a question the report could not answer before. `target` is a path,
-        // `targetArgv0` is how the kit launched it, `kitVersion` is OURS — so two reports produced
-        // by one kit against two builds of one tool were distinguishable only by a path, which is
-        // how this project's `1 of 25` figure came to be build-dependent with nothing in a stored
-        // report saying which build. See docs/reports/2026-08-24-first-drift-trial-anthill-
-        // manifest.md, DT-10.
-        "  TARGET IDENTITY — what the target said about itself under --version, which D1 already",
-        "  runs. Evidence, not a rule: nothing in this report passes or fails on it, and the quote",
-        "  is bytes rather than a parsed version.",
-        ...identitySummaryLines(r.targetIdentity).map((l) => `    ${l}`),
-        "",
-        // THE TARGET'S OWN ACCOUNT OF ITS SURFACE, printed on every report including the ones
-        // where it is empty — because "this tool does not enumerate" is the finding for most
-        // tools, and a section that appears only on the tools that do would leave the reader
-        // unable to tell a silent target from a capture that never ran. Nothing here is a
-        // verdict, and the heading says so before the reader reaches the data.
-        "  SELF-DECLARED FLAGS — read back from the target's own rejection of an unknown flag at",
-        "  the root, which is the only path the kit probes.",
-        "  Evidence, not a rule: nothing in this report passes or fails on it.",
-        `    ${surfaceSummary(r.surface)}`,
-        // Where each list came from, so a reader can re-run the probe and see the same bytes
-        // rather than take the capture's word for it.
-        //
-        // FOLDED the way `acc compare` folds its repetition families, and for the same reason:
-        // three rules record the same unknown-flag argv several times to ask about determinism, so
-        // an unfolded list shows six identical rows and a reader counts six declarations where the
-        // target made one. The JSON keeps every row, because a repetition that answered
-        // DIFFERENTLY is a real thing to see — and it shows up here as a second, unfolded line.
-        ...[
-          ...new Map(
-            r.surface.evidence.map((e) => [
-              JSON.stringify([e.args, e.stream, e.shape, e.matched, e.flags]),
-              e,
-            ]),
-          ),
-        ].map(([key, e]) => {
-          const runs = r.surface.evidence.filter(
-            (o) => JSON.stringify([o.args, o.stream, o.shape, o.matched, o.flags]) === key,
-          ).length;
-          return `    from ${e.args.join(" ")}${runs > 1 ? ` (${runs} identical rejections)` : ""} · ${e.shape} ${JSON.stringify(e.matched)} on ${e.stream} · ${e.flags.join(" ")}`;
-        }),
-        "",
-        // SURFACES THE CALLER RECORDED, printed only when they supplied a batch. It sits between
-        // the kit's own root capture above and the declared side below, because that is the order
-        // a reader needs them in: what the kit saw, what somebody else says they saw, and only
-        // then the diff over both.
-        ...(r.recordedSurfaces
-          ? [
-              "  RECORDED SURFACES — captured by the caller on their own machine, read here with the",
-              "  kit's own extraction. The kit executed nothing below the root.",
-              "  Evidence, not a rule: nothing in this report passes or fails on it.",
-              `    ${r.recordedSurfaces.records} record${r.recordedSurfaces.records === 1 ? "" : "s"} at ${r.recordedSurfaces.readings.length} path${r.recordedSurfaces.readings.length === 1 ? "" : "s"}, from ${r.recordedSurfaces.source}`,
-              `    recorded by ${r.recordedSurfaces.recordedBy.join(", ")}`,
-              // WHAT WAS READ AT EACH PATH, and what was not — printed here rather than only in
-              // the declaration block, because a batch can arrive without a declaration and a
-              // report that showed it as a count would swallow the caller's evidence entirely.
-              // The summary names its own path, so nothing prefixes it — a line reading
-              // "state: … at state" teaches a reader that one of the two is decoration.
-              // ROLLED UP WHEN THE OUTCOME REPEATS, itemised when it does not.
-              //
-              // A 49-path batch produced 48 sentences differing only in the path, with the one
-              // that differed buried among them — a wall a reader skims, which is the opposite of
-              // what a census is for. Only visible at a scale no earlier trial reached; with three
-              // paths the repetition reads as thoroughness.
-              //
-              // GROUPED ON `status`, not on the text. Deciding which lines repeat by matching the
-              // prose would be a predicate that breaks silently the next time one of these
-              // sentences is reworded, and these sentences have been reworded repeatedly.
-              //
-              // The threshold is not a tidiness rule: a group is folded only when it is big enough
-              // that itemising it hides its own exceptions, and the count and its denominator are
-              // always stated so nothing reads as fewer paths than there were.
-              ...((rs) => {
-                const FOLD_AT = 4;
-                const groups = new Map<string, typeof rs.readings>();
-                for (const p of rs.readings) {
-                  groups.set(p.status, [...(groups.get(p.status) ?? []), p]);
-                }
-                const folded = [...groups.entries()].filter(([, g]) => g.length >= FOLD_AT);
-                if (folded.length === 0) return rs.readings.map((p) => `      ${p.summary}`);
-                const said = new Set(folded.flatMap(([, g]) => g.map((p) => p.path.join(" "))));
-                return [
-                  `      ${rs.readings.length} paths: ${[...groups.entries()]
-                    .map(([status, g]) => `${g.length} ${VERDICT_WORD[status] ?? status}`)
-                    .join(", ")}`,
-                  // THE ROLLUP MUST NOT FOLD AWAY WHAT THE LINE ABOVE IT EXISTS TO SAY. The
-                  // per-path sentence names a non-flag list where one was seen; collapsing 48 of
-                  // those would delete, at scale, exactly the fact the same batch was the reason
-                  // for adding. Round 3 emitted `choices` at 49 of 49 paths — the case that
-                  // motivated the rollup is the case that would have lost it.
-                  ...(() => {
-                    const keys = [
-                      ...new Set(folded.flatMap(([, g]) => g.flatMap((p) => p.nonFlagKeys ?? []))),
-                    ];
-                    if (keys.length === 0) return [];
-                    const n = folded
-                      .flatMap(([, g]) => g)
-                      .filter((p) => (p.nonFlagKeys ?? []).length > 0).length;
-                    return [
-                      `        of those, ${n} named a non-flag list (${keys
-                        .map((k) => `\`${k}\``)
-                        .join(", ")}) — a set of something else, not of flags`,
-                    ];
-                  })(),
-                  // The exceptions in full — they are the finding, and the reason the rollup is
-                  // safe is that nothing which differs is folded away.
-                  ...rs.readings
-                    .filter((p) => !said.has(p.path.join(" ")))
-                    .map((p) => `      ${p.summary}`),
-                  // WHERE THE REST WENT, said out loud. A summary that quietly replaced 48 lines
-                  // would be this project's own silent-truncation defect, printed by the census
-                  // that exists to prevent it.
-                  `      the folded ${[...said].length} are listed individually in .data.recordedSurfaces.readings`,
-                ];
-              })(r.recordedSurfaces),
-              // BESIDE THE AFFECTED PATHS FIRST, and this total is a summary of that rather than
-              // a substitute for it — an absent identity observation withholds nothing, but it
-              // weakens the tie between the recording and the binary the kit ran, and the place a
-              // reader decides what to make of that is the census line.
-              ...(() => {
-                // Counted over the lines that actually rest on the batch: the census lines when a
-                // declaration was supplied, and the per-path readings above when none was.
-                const resting =
-                  r.declaration === undefined
-                    ? (r.recordedSurfaces?.readings.length ?? 0)
-                    : r.declaration.paths.filter(
-                        (p) => p.surfaceProvenance === "recorded-by-caller",
-                      ).length;
-                return r.recordedSurfaces?.identity
-                  ? identityLines(r.recordedSurfaces.identity).map((l) => `    ${l}`)
-                  : [
-                      `    ${resting} census line${resting === 1 ? "" : "s"} rest${resting === 1 ? "s" : ""} on recorded surfaces; ${resting === 1 ? "that one" : `${resting} of them`} on a batch that states no identity.`,
-                    ];
-              })(),
-              "",
-            ]
-          : []),
-        // THE DECLARED SIDE, printed only when a caller supplied one — a section that appeared
-        // empty on every other run would be a permanent advertisement rather than a report.
-        //
-        // The HEADING says what the block is before the reader reaches a number, and the second
-        // line says what it is not. `STANDARD.md` requires both readings of a disagreement to be
-        // named, because the kit does not know which side is wrong, so each finding prints two
-        // sentences and neither is a verdict.
-        ...(r.declaration
-          ? [
-              "  DECLARED vs ACCEPTED — a declaration the caller supplied, against the target's own",
-              "  enumeration above. Evidence, not a rule: nothing in this report passes or fails on it.",
-              `    ${declarationSummary(r.declaration)}`,
-              // Every path that could NOT be compared, with the reason, because a diff over one of
-              // twenty-five paths reported as a bare finding count is a claim about twenty-five.
-              // Folded to one line per distinct reason: the reason is the same sentence for every
-              // path the kit cannot reach below the root, and twenty-four copies of it teach a
-              // reader to skip the block.
-              // WHO OBSERVED EACH PATH rides on the line, not only in a summary. Folded on the
-              // reason AND the observer together: two paths that could not be compared for the
-              // same reason but were looked at by different parties are two different facts, and
-              // one folded line would report them as one.
-              ...(() => {
-                const identityStated = Boolean(r.recordedSurfaces?.identity);
-                const unchecked = (r.declaration?.paths ?? []).filter(
-                  (p) => !p.checked && p.reason !== undefined,
-                );
-                const keys = [
-                  ...new Set(
-                    unchecked.map((p) => JSON.stringify([p.reason, p.surfaceProvenance ?? null])),
-                  ),
-                ];
-                return keys.map((key) => {
-                  const group = unchecked.filter(
-                    (p) => JSON.stringify([p.reason, p.surfaceProvenance ?? null]) === key,
-                  );
-                  const [reason, provenance] = JSON.parse(key) as [
-                    string,
-                    "probed-by-kit" | "recorded-by-caller" | null,
-                  ];
-                  const paths = group.map((p) =>
-                    p.path.length === 0 ? "(root)" : p.path.join(" "),
-                  );
-                  const shown = paths.slice(0, 4).join(", ");
-                  const more = paths.length > 4 ? `, +${paths.length - 4} more` : "";
-                  // A path with NO surface has no observer to name, and the reason already says
-                  // so in words — inventing a label for it would be the census claiming somebody
-                  // looked.
-                  const who =
-                    provenance === null ? "" : ` [${provenanceLabel(provenance, identityStated)}]`;
-                  return `    NOT COMPARED: ${shown}${more} — ${reason}${who}`;
-                });
-              })(),
-              ...r.declaration.findings.flatMap((f) => [
-                // THE OBSERVER OF THE PATH THE FINDING RESTS ON, except for the one finding kind
-                // that rests on no observation at all: `self-description-not-declared` reads the
-                // document and never the target, so labelling it `probed-by-kit` would attribute a
-                // reading to a probe that had nothing to do with it.
-                `    ${f.kind}  ${f.subject}${f.path.length ? ` at ${f.path.join(" ")}` : " at (root)"}${((
-                  p,
-                ) =>
-                  f.kind !== "self-description-not-declared" && p?.surfaceProvenance
-                    ? ` [${provenanceLabel(p.surfaceProvenance, Boolean(r.recordedSurfaces?.identity))}]`
-                    : "")(
-                  r.declaration?.paths.find(
-                    (p) => p.path.join(" ") === f.path.join(" ") && p.path.length === f.path.length,
-                  ),
-                )}`,
-                `      either ${f.readings[0]}`,
-                `      or     ${f.readings[1]}`,
-              ]),
-              "",
-            ]
-          : []),
-        // WHERE THE EVIDENCE IS, said once, on every report. The ids each finding cites have
-        // resolved since 0.1.0 and a blind reader never found out: they tried `acc show <id>` —
-        // the obvious guess — got a hint naming rule ids and page slugs, and reconstructed the
-        // probes by hand instead, producing a wrong reproduction that nearly became a wrong bug
-        // report. A mechanism nobody can reach is not shipped. The command is written out with
-        // this run's own target rather than described, because the reader is holding the report
-        // and not the manual.
-        "  EVIDENCE — every finding cites observation ids, which resolve in the JSON report:",
-        `    acc check ${r.target} --json  →  .data.findings[].probes  (the argv behind each verdict, already resolved)`,
-        `    acc check ${r.target} --json  →  .data.observations[]     (the full record, including outcome and digests)`,
-        "    acc show resolves wiki pages, not these ids.",
-      ].join("\n");
-    },
+    renderText: (r) => renderCheckReportText(r),
   });
 
   // Non-zero-ness is the ONE signal a harness that never parses stdout still sees. The report
@@ -813,4 +373,477 @@ export async function checkCommand(
   // write can truncate it when stdout is a pipe. Setting the code lets the runtime flush and
   // exit on its own, which removes that failure class rather than making it unlikely.
   if (!report.conformant) process.exitCode = Outcome.NonConformant;
+}
+
+/**
+ * THE ONE HOME OF THE TEXT REPORT. `acc check` renders through this, and `acc report` renders
+ * a STORED artifact through the same function — extracted rather than copied, because a rule
+ * with two homes repaired in one is the failure this tree has now measured four times (the git
+ * guard, the version literals, the evidence pointers, `surfaceFrom`). `prelude` is the only
+ * seam: lines printed above the headline, used by `report` to say a rendering is one.
+ */
+export function renderCheckReportText(r: Report, prelude: string[] = []): string {
+  const preludeLines = prelude.length ? [...prelude, ""] : [];
+  const bold = useColor() ? "\x1b[1m" : "";
+  const reset = useColor() ? "\x1b[0m" : "";
+  // `unverified` and "not applicable at this level" are different claims — see
+  // ReportedFinding.applicable — and collapsing them to the same glyph in text mode would
+  // lose a distinction the JSON output (and report.ts's own doc comment) treats as
+  // load-bearing: "out of scope here" vs "tried and could not establish it".
+  //
+  // A WAIVED rule takes its own glyph rather than its verdict's. The verdict is still real —
+  // the checker ran — but it binds nothing, and printing a bare FAIL beside a rule the
+  // project declared inapplicable is the report contradicting the config. The would-be
+  // verdict follows on the same line, in the waiver block below.
+  const mark = (f: ReportedFinding) => {
+    if (f.waived) return "WVD ";
+    if (f.verdict === "pass") return "PASS";
+    if (f.verdict === "fail") return "FAIL";
+    return f.applicable ? "UNVR" : "N/A ";
+  };
+  // A `+` on a PASS whose checker declares `coverage: "partial"`. Without it the strongest
+  // glyph in the report sits beside a rule the kit only sampled, and the reader has to know
+  // to cross-reference the gap block below to find out which passes were narrow ones.
+  // THE ARGV, UNDER THE FINDINGS A READER TRIAGES. Two independent adopters joined evidence
+  // ids against the observations by hand at the same moment — deciding whether a finding was
+  // their own parser or their own dispatch — and one asked for exactly this: "name the
+  // offending argv inline in exit-code findings". A verdict about behaviour is unreadable
+  // without the invocation that produced it, and a reader holding the text report does not
+  // have the JSON open.
+  //
+  // FAIL and applicable UNVERIFIED only, which is the triage set. Every finding would add one
+  // line per citation — 59 lines on a 23-finding report of the kit's own fixture, three
+  // quarters of them under passes nobody is going to investigate — and a legend that scrolls
+  // is one a reader stops reading. `.data.findings[].probes` carries all of them for the
+  // reader who wants the rest, and the EVIDENCE block below names it.
+  const probeLines = (f: (typeof r.findings)[number]) =>
+    (f.verdict === "fail" || (f.verdict === "unverified" && f.applicable)) && !f.waived
+      ? // An artifact from before findings carried probes must say so, not render nothing —
+        // a missing thing rendering as an absent thing is the census defect over again.
+        (f.probes ?? []).map(
+          (p) =>
+            // `(bare)` rather than an empty string: an empty argv IS the probe for D2 and E1,
+            // and a blank after the arrow reads as a rendering fault rather than as the
+            // least dangerous possible invocation.
+            `        ↳ ${p.args.length ? p.args.join(" ") : "(bare)"}${
+              p.repeat === undefined ? "" : ` [run ${p.repeat}]`
+            }${p.env ? ` [env ${Object.keys(p.env).sort().join(", ")}]` : ""}${
+              p.unresolved ? "  (unresolved — this run published no such observation)" : ""
+            }`,
+        )
+      : [];
+  const lines = r.findings.flatMap((f) => [
+    `  ${mark(f)}${!f.waived && f.verdict === "pass" && f.coverage === "partial" ? "+" : " "} ${f.ruleId.padEnd(3)} ${f.detail}${f.excused ? " (excused)" : ""}${f.waived ? ` (waived; would ${f.verdict.toUpperCase()})` : ""}`,
+    ...probeLines(f),
+  ]);
+  // Every waiver, with the REASON, because the reason is the only thing standing between a
+  // considered design decision and "this rule was annoying". A human reading a report is the
+  // reviewer that string was written for; a count alone would put the frame off-screen.
+  //
+  // Not a nag, and worded so it cannot be read as one: `would PASS` is offered as information
+  // — a waiver you could now delete — never as a stale entry to go and remove. Debt goes
+  // stale; a declaration does not.
+  //
+  // The COST is named per line, because the two kinds of waiver look identical here and are
+  // not: waiving a `defect` also blocks `fullyVerified` and puts the rule in the gaps above,
+  // while waiving a `design-choice` does neither. A reader who cannot tell them apart cannot
+  // tell a suppressed failure from a declared design — which is the whole distinction the
+  // catalogue's classification exists to draw.
+  const cost = (w: (typeof r.waivers)[number]) =>
+    w.deviation === "design-choice"
+      ? "design choice, costs nothing"
+      : w.tier === "core"
+        ? "defect, also blocks full verification"
+        : "defect";
+  const waivers = r.waivers.map(
+    (w) =>
+      `    ${w.ruleId.padEnd(3)} ${w.reason}  (would ${w.verdict.toUpperCase()}; ${cost(w)}${w.applicable ? "" : "; not applicable at this level"})`,
+  );
+  // Severity moves, in both directions, for the same reason: `conformant` is a claim inside a
+  // frame, and a raise is as much a part of that frame as a lowering.
+  const overrides = r.severityOverrides.map(
+    (o) => `    ${o.ruleId.padEnd(3)} ${o.from} -> ${o.to}  ${o.reason}`,
+  );
+  // Named, not counted. `fullyVerified: false` with nothing beside it is the same
+  // information-free verdict this project criticises a CLI for emitting — the caller learns
+  // that something is missing and nothing about what. Printed in full rather than
+  // summarised because these ARE the report's caveats; the JSON carries the same list under
+  // `evidenceGaps`.
+  const gaps = r.evidenceGaps.map((e) => `    ${e.ruleId.padEnd(3)} ${e.gaps.join("; ")}`);
+  // WHERE THE CONFIG CAME FROM, on every run, in the same shape every time — a line that
+  // changes shape between runs is one a reader has to re-read. It sits directly under the
+  // headline because it is the frame the headline was reached inside: waivers, severity
+  // moves and `defaultOutput` all arrive through it.
+  //
+  // The DISCOVERED case says more than the other two, and deliberately. A `--config-dir` the
+  // caller typed is already on their screen, and "none" is the absence of a frame; a file
+  // picked up from the working directory is the only one that can change the verdict with
+  // nothing visible anywhere to say so — which is exactly how two runs of one command
+  // disagreed for an adopter, absolute target path and all.
+  const configLine = ((c) => {
+    if (c.origin === "none") return `  config: none — no ${CONFIG_FILE} in ${c.dir}`;
+    if (c.origin === "flag") return `  config: ${c.path}  (--config-dir)`;
+    return `  config: ${c.path}  (DISCOVERED in the working directory, not named on the command line — the same command run from elsewhere can reach a different verdict)`;
+  })(r.configSource);
+  // Both claims, on one line, always. The verdict answers "did anything VIOLATE a core
+  // rule"; the counts beside it answer "and was everything actually established". Naming
+  // the level is part of the claim, not decoration — A4 is core and silently excluded as
+  // N/A at L0, so a bare "CONFORMANT" overstates what was checked.
+  //
+  // Both counts here are CORE, and both say so. The summary line below counts `unverified`
+  // across every tier, so the two lines legitimately disagree — a target with one
+  // diagnostic gap and no core one printed "0 unverified" above "unverified 1", with
+  // nothing on either line naming the scope that made them differ.
+  //
+  // The waiver count rides on the HEADLINE, not in a footnote, because it is the one thing
+  // that changes what every other number on that line means. `0 core violated` over a config
+  // that waived the rule which would have violated is true and misleading on its own; beside
+  // `1 waiver` it is a claim a reader can size. Omitted entirely when there are none, so an
+  // unconfigured run reads exactly as it did before.
+  const verdict = r.conformant ? "CONFORMANT" : "NOT CONFORMANT";
+  const waiverNote = r.counts.waived
+    ? ` · ${r.counts.waived} waiver${r.counts.waived === 1 ? "" : "s"}`
+    : "";
+  // A DECLARATION DISAGREEMENT RIDES ON THE HEADLINE TOO, and it is a POINTER, not a number.
+  // The census mints no rule id, feeds no verdict and gates no exit code — `declaration.ts`
+  // argues at length why the kit cannot know which side of a disagreement is wrong — and none
+  // of that changes here: this clause is a string, it touches no count on this line or the
+  // next, and the exit code below still fires on a core VIOLATION only.
+  //
+  // What it stops doing is being silent. Four deliberately broken variants of one tool each
+  // printed a clean headline while the block that caught three of them sat below the fold,
+  // and the headline is the line most readers get to the end of.
+  //
+  // The two provenances read DIFFERENTLY, because the headline is the cheapest place in the
+  // report to draw the distinction the whole `provenance` field exists for. An `emitted`
+  // document is the tool's own words, so a disagreement is one process publishing a flag and
+  // refusing it — a self-contradiction, and the strong reading. A `modelled` one is somebody's
+  // model of the tool, so the same diff says only that a file and a tool disagree. One word
+  // apart, so the shape is the same either way and a reader is not learning two clauses.
+  //
+  // Counted over `findings`, not over `status`: `self-description-not-declared` needs no probe
+  // and is a real disagreement on a target that never enumerated.
+  const declarationNote = ((d) => {
+    if (!d || d.findings.length === 0) return "";
+    const n = d.findings.length;
+    const noun =
+      d.provenance === "emitted"
+        ? `self-contradiction${n === 1 ? "" : "s"}`
+        : `disagreement${n === 1 ? "" : "s"}`;
+    return ` · but see ${n} declaration ${noun} (${d.provenance})`;
+  })(r.declaration);
+  return [
+    ...preludeLines,
+    // The kit's own version rides on the headline, not in a footer. A stale install reports
+    // success and puts an older commit on disk, and this is the only line every reader
+    // certainly sees — the alternative was `acc --version`, which nobody thinks to check.
+    `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}${declarationNote}  ${r.target}  [acc ${r.kitVersion}]`,
+    configLine,
+    "",
+    // THE LEGEND COMES BEFORE THE TABLE IT EXPLAINS. It sat at the foot until an adopter met
+    // `PASS+` twenty lines before its explanation and read the `+` as "pass, plus something
+    // extra" — close to the opposite of what it means. A legend is needed at the FIRST
+    // marker, not the last.
+    "  PASS pass · FAIL fail · UNVR unverified (probed, inconclusive) · N/A  not applicable to this run",
+    "  PASS+ passed, but the checker establishes only part of its rule — see the gaps below",
+    // N/A covers two reasons and the legend has to say both, or a rule with no checker
+    // reads as one that was merely deferred to a higher level and will be picked up there.
+    "  N/A   out of scope at this level, or no checker exists for the rule at any level",
+    // The glyph is explained even when nothing carries it, exactly as the four above are: a
+    // legend that changes shape between runs is one a reader has to re-read.
+    "  WVD  waived by config — the probe still ran, and the verdict it reached binds nothing",
+    "",
+    ...lines,
+    "",
+    `  core ${r.counts.corePassed}/${r.counts.core} · violations ${r.counts.coreFailures} · unverified ${r.counts.unverified} (all tiers; ${r.counts.coreUnverified} core) · partial coverage ${r.counts.corePartial} core · diagnostics ${r.counts.diagnosticFailures}`,
+    // Two claims, and the weaker one now has to say what it is short of. "Conformant but not
+    // fully verified" is the honest resting state of an L0 run against almost any target,
+    // including acc itself, and a report that did not spell out the difference would leave a
+    // reader assuming the headline covered both.
+    `  ${
+      r.fullyVerified
+        ? "every applicable core rule was verified in full"
+        : "conformance means no core rule was VIOLATED; it does not mean every core rule was established"
+    }`,
+    ...(gaps.length
+      ? ["", `  NOT FULLY VERIFIED (${r.level}) — what the evidence does not cover:`, ...gaps]
+      : []),
+    ...(waivers.length
+      ? [
+          "",
+          `  WAIVED (${waivers.length}) — declared not applicable to this tool, by config:`,
+          ...waivers,
+        ]
+      : []),
+    ...(overrides.length
+      ? [
+          "",
+          `  SEVERITY MOVED (${overrides.length}) — this project binds differently:`,
+          ...overrides,
+        ]
+      : []),
+    ...(r.staleExpectations.length
+      ? [
+          "",
+          `  STALE EXPECTATIONS (${r.staleExpectations.length}) — these rules now pass; remove them from knownFailures:`,
+          `    ${r.staleExpectations.join(", ")}`,
+        ]
+      : []),
+    // Its own SECTION, not a line in the legend, and not merged with the stale one. This is a
+    // finding about the reader's config, and the legend is where abbreviations are explained —
+    // an outside adopter reported it rendering "indented like a glossary entry, the last thing
+    // on the page". "Now passing, remove them" and "not being evaluated" also call for opposite
+    // actions, so sharing either a line or a heading would teach a reader to delete on both.
+    ...(r.inertExpectations.length
+      ? [
+          "",
+          `  NOT BEING EVALUATED (${r.inertExpectations.length}) — these knownFailures entries suppress nothing:`,
+          `    ${r.inertExpectations.map((e) => e.ruleId).join(", ")}`,
+          "    NOT evidence the defect is fixed — the kit stopped looking. Check it is still",
+          "    tracked before removing them.",
+        ]
+      : []),
+    "",
+    // WHAT THE TARGET SAID ABOUT ITSELF, printed on every report including the ones where it
+    // said nothing — because "this tool has no --version" and "the probe never ran" are two
+    // different facts and a section that appeared only on the talkative targets would leave a
+    // reader unable to tell them apart. It sits immediately above the flag surface because the
+    // two are the same kind of thing: the target's own words, captured and not judged.
+    //
+    // It answers a question the report could not answer before. `target` is a path,
+    // `targetArgv0` is how the kit launched it, `kitVersion` is OURS — so two reports produced
+    // by one kit against two builds of one tool were distinguishable only by a path, which is
+    // how this project's `1 of 25` figure came to be build-dependent with nothing in a stored
+    // report saying which build. See docs/reports/2026-08-24-first-drift-trial-anthill-
+    // manifest.md, DT-10.
+    "  TARGET IDENTITY — what the target said about itself under --version, which D1 already",
+    "  runs. Evidence, not a rule: nothing in this report passes or fails on it, and the quote",
+    "  is bytes rather than a parsed version.",
+    ...(r.targetIdentity
+      ? identitySummaryLines(r.targetIdentity)
+      : ["this artifact carries no identity capture"]
+    ).map((l) => `    ${l}`),
+    "",
+    // THE TARGET'S OWN ACCOUNT OF ITS SURFACE, printed on every report including the ones
+    // where it is empty — because "this tool does not enumerate" is the finding for most
+    // tools, and a section that appears only on the tools that do would leave the reader
+    // unable to tell a silent target from a capture that never ran. Nothing here is a
+    // verdict, and the heading says so before the reader reaches the data.
+    "  SELF-DECLARED FLAGS — read back from the target's own rejection of an unknown flag at",
+    "  the root, which is the only path the kit probes.",
+    "  Evidence, not a rule: nothing in this report passes or fails on it.",
+    // An artifact from before the census existed says so — a missing capture rendering as
+    // "did not enumerate" would be a missing thing rendered as an absent thing.
+    `    ${r.surface ? surfaceSummary(r.surface) : `this artifact predates the surface census (written by acc ${r.kitVersion})`}`,
+    // Where each list came from, so a reader can re-run the probe and see the same bytes
+    // rather than take the capture's word for it.
+    //
+    // FOLDED the way `acc compare` folds its repetition families, and for the same reason:
+    // three rules record the same unknown-flag argv several times to ask about determinism, so
+    // an unfolded list shows six identical rows and a reader counts six declarations where the
+    // target made one. The JSON keeps every row, because a repetition that answered
+    // DIFFERENTLY is a real thing to see — and it shows up here as a second, unfolded line.
+    ...[
+      ...new Map(
+        (r.surface?.evidence ?? []).map((e) => [
+          JSON.stringify([e.args, e.stream, e.shape, e.matched, e.flags]),
+          e,
+        ]),
+      ),
+    ].map(([key, e]) => {
+      const runs = (r.surface?.evidence ?? []).filter(
+        (o) => JSON.stringify([o.args, o.stream, o.shape, o.matched, o.flags]) === key,
+      ).length;
+      return `    from ${e.args.join(" ")}${runs > 1 ? ` (${runs} identical rejections)` : ""} · ${e.shape} ${JSON.stringify(e.matched)} on ${e.stream} · ${e.flags.join(" ")}`;
+    }),
+    "",
+    // SURFACES THE CALLER RECORDED, printed only when they supplied a batch. It sits between
+    // the kit's own root capture above and the declared side below, because that is the order
+    // a reader needs them in: what the kit saw, what somebody else says they saw, and only
+    // then the diff over both.
+    ...(r.recordedSurfaces
+      ? [
+          "  RECORDED SURFACES — captured by the caller on their own machine, read here with the",
+          "  kit's own extraction. The kit executed nothing below the root.",
+          "  Evidence, not a rule: nothing in this report passes or fails on it.",
+          `    ${r.recordedSurfaces.records} record${r.recordedSurfaces.records === 1 ? "" : "s"} at ${r.recordedSurfaces.readings.length} path${r.recordedSurfaces.readings.length === 1 ? "" : "s"}, from ${r.recordedSurfaces.source}`,
+          `    recorded by ${r.recordedSurfaces.recordedBy.join(", ")}`,
+          // WHAT WAS READ AT EACH PATH, and what was not — printed here rather than only in
+          // the declaration block, because a batch can arrive without a declaration and a
+          // report that showed it as a count would swallow the caller's evidence entirely.
+          // The summary names its own path, so nothing prefixes it — a line reading
+          // "state: … at state" teaches a reader that one of the two is decoration.
+          // ROLLED UP WHEN THE OUTCOME REPEATS, itemised when it does not.
+          //
+          // A 49-path batch produced 48 sentences differing only in the path, with the one
+          // that differed buried among them — a wall a reader skims, which is the opposite of
+          // what a census is for. Only visible at a scale no earlier trial reached; with three
+          // paths the repetition reads as thoroughness.
+          //
+          // GROUPED ON `status`, not on the text. Deciding which lines repeat by matching the
+          // prose would be a predicate that breaks silently the next time one of these
+          // sentences is reworded, and these sentences have been reworded repeatedly.
+          //
+          // The threshold is not a tidiness rule: a group is folded only when it is big enough
+          // that itemising it hides its own exceptions, and the count and its denominator are
+          // always stated so nothing reads as fewer paths than there were.
+          ...((rs) => {
+            const FOLD_AT = 4;
+            const groups = new Map<string, typeof rs.readings>();
+            for (const p of rs.readings) {
+              groups.set(p.status, [...(groups.get(p.status) ?? []), p]);
+            }
+            const folded = [...groups.entries()].filter(([, g]) => g.length >= FOLD_AT);
+            if (folded.length === 0) return rs.readings.map((p) => `      ${p.summary}`);
+            const said = new Set(folded.flatMap(([, g]) => g.map((p) => p.path.join(" "))));
+            return [
+              `      ${rs.readings.length} paths: ${[...groups.entries()]
+                .map(([status, g]) => `${g.length} ${VERDICT_WORD[status] ?? status}`)
+                .join(", ")}`,
+              // THE ROLLUP MUST NOT FOLD AWAY WHAT THE LINE ABOVE IT EXISTS TO SAY. The
+              // per-path sentence names a non-flag list where one was seen; collapsing 48 of
+              // those would delete, at scale, exactly the fact the same batch was the reason
+              // for adding. Round 3 emitted `choices` at 49 of 49 paths — the case that
+              // motivated the rollup is the case that would have lost it.
+              ...(() => {
+                const keys = [
+                  ...new Set(folded.flatMap(([, g]) => g.flatMap((p) => p.nonFlagKeys ?? []))),
+                ];
+                if (keys.length === 0) return [];
+                const n = folded
+                  .flatMap(([, g]) => g)
+                  .filter((p) => (p.nonFlagKeys ?? []).length > 0).length;
+                return [
+                  `        of those, ${n} named a non-flag list (${keys
+                    .map((k) => `\`${k}\``)
+                    .join(", ")}) — a set of something else, not of flags`,
+                ];
+              })(),
+              // The exceptions in full — they are the finding, and the reason the rollup is
+              // safe is that nothing which differs is folded away.
+              ...rs.readings
+                .filter((p) => !said.has(p.path.join(" ")))
+                .map((p) => `      ${p.summary}`),
+              // WHERE THE REST WENT, said out loud. A summary that quietly replaced 48 lines
+              // would be this project's own silent-truncation defect, printed by the census
+              // that exists to prevent it.
+              `      the folded ${[...said].length} are listed individually in .data.recordedSurfaces.readings`,
+            ];
+          })(r.recordedSurfaces),
+          // BESIDE THE AFFECTED PATHS FIRST, and this total is a summary of that rather than
+          // a substitute for it — an absent identity observation withholds nothing, but it
+          // weakens the tie between the recording and the binary the kit ran, and the place a
+          // reader decides what to make of that is the census line.
+          ...(() => {
+            // Counted over the lines that actually rest on the batch: the census lines when a
+            // declaration was supplied, and the per-path readings above when none was.
+            const resting =
+              r.declaration === undefined
+                ? (r.recordedSurfaces?.readings.length ?? 0)
+                : r.declaration.paths.filter((p) => p.surfaceProvenance === "recorded-by-caller")
+                    .length;
+            return r.recordedSurfaces?.identity
+              ? identityLines(r.recordedSurfaces.identity).map((l) => `    ${l}`)
+              : [
+                  `    ${resting} census line${resting === 1 ? "" : "s"} rest${resting === 1 ? "s" : ""} on recorded surfaces; ${resting === 1 ? "that one" : `${resting} of them`} on a batch that states no identity.`,
+                ];
+          })(),
+          "",
+        ]
+      : []),
+    // THE DECLARED SIDE, printed only when a caller supplied one — a section that appeared
+    // empty on every other run would be a permanent advertisement rather than a report.
+    //
+    // The HEADING says what the block is before the reader reaches a number, and the second
+    // line says what it is not. `STANDARD.md` requires both readings of a disagreement to be
+    // named, because the kit does not know which side is wrong, so each finding prints two
+    // sentences and neither is a verdict.
+    ...(r.declaration
+      ? [
+          "  DECLARED vs ACCEPTED — a declaration the caller supplied, against the target's own",
+          "  enumeration above. Evidence, not a rule: nothing in this report passes or fails on it.",
+          `    ${declarationSummary(r.declaration)}`,
+          // Every path that could NOT be compared, with the reason, because a diff over one of
+          // twenty-five paths reported as a bare finding count is a claim about twenty-five.
+          // Folded to one line per distinct reason: the reason is the same sentence for every
+          // path the kit cannot reach below the root, and twenty-four copies of it teach a
+          // reader to skip the block.
+          // WHO OBSERVED EACH PATH rides on the line, not only in a summary. Folded on the
+          // reason AND the observer together: two paths that could not be compared for the
+          // same reason but were looked at by different parties are two different facts, and
+          // one folded line would report them as one.
+          ...(() => {
+            const identityStated = Boolean(r.recordedSurfaces?.identity);
+            const unchecked = (r.declaration?.paths ?? []).filter(
+              (p) => !p.checked && p.reason !== undefined,
+            );
+            const keys = [
+              ...new Set(
+                unchecked.map((p) => JSON.stringify([p.reason, p.surfaceProvenance ?? null])),
+              ),
+            ];
+            return keys.map((key) => {
+              const group = unchecked.filter(
+                (p) => JSON.stringify([p.reason, p.surfaceProvenance ?? null]) === key,
+              );
+              const [reason, provenance] = JSON.parse(key) as [
+                string,
+                "probed-by-kit" | "recorded-by-caller" | null,
+              ];
+              const paths = group.map((p) => (p.path.length === 0 ? "(root)" : p.path.join(" ")));
+              const shown = paths.slice(0, 4).join(", ");
+              const more = paths.length > 4 ? `, +${paths.length - 4} more` : "";
+              // A path with NO surface has no observer to name, and the reason already says
+              // so in words — inventing a label for it would be the census claiming somebody
+              // looked.
+              const who =
+                provenance === null ? "" : ` [${provenanceLabel(provenance, identityStated)}]`;
+              return `    NOT COMPARED: ${shown}${more} — ${reason}${who}`;
+            });
+          })(),
+          ...r.declaration.findings.flatMap((f) => [
+            // THE OBSERVER OF THE PATH THE FINDING RESTS ON, except for the one finding kind
+            // that rests on no observation at all: `self-description-not-declared` reads the
+            // document and never the target, so labelling it `probed-by-kit` would attribute a
+            // reading to a probe that had nothing to do with it.
+            `    ${f.kind}  ${f.subject}${f.path.length ? ` at ${f.path.join(" ")}` : " at (root)"}${((
+              p,
+            ) =>
+              f.kind !== "self-description-not-declared" && p?.surfaceProvenance
+                ? ` [${provenanceLabel(p.surfaceProvenance, Boolean(r.recordedSurfaces?.identity))}]`
+                : "")(
+              r.declaration?.paths.find(
+                (p) => p.path.join(" ") === f.path.join(" ") && p.path.length === f.path.length,
+              ),
+            )}`,
+            `      either ${f.readings[0]}`,
+            `      or     ${f.readings[1]}`,
+          ]),
+          "",
+        ]
+      : []),
+    // WHERE THE EVIDENCE IS, said once, on every report. The ids each finding cites have
+    // resolved since 0.1.0 and a blind reader never found out: they tried `acc show <id>` —
+    // the obvious guess — got a hint naming rule ids and page slugs, and reconstructed the
+    // probes by hand instead, producing a wrong reproduction that nearly became a wrong bug
+    // report. A mechanism nobody can reach is not shipped. The command is written out with
+    // this run's own target rather than described, because the reader is holding the report
+    // and not the manual.
+    "  EVIDENCE — every finding cites observation ids, which resolve in the JSON report:",
+    `    acc check ${r.target} --json  →  .data.findings[].probes  (the argv behind each verdict, already resolved)`,
+    `    acc check ${r.target} --json  →  .data.observations[]     (the full record, including outcome and digests)`,
+    "    acc show resolves wiki pages, not these ids.",
+    // ONE SWEEP, ONE MARK, IN BOTH RENDERINGS. Evidence ids hash the invocation, so ids from
+    // two different sweeps align whether or not the runs saw the same bytes — measured: same
+    // id, different stdout digests on a nondeterministic target. The sweep id is a hash over
+    // the outcomes (see sweepId in report.ts), so a text report and a JSON that carry one
+    // value describe one run; `capturedAt` answers the separate question of WHEN, and folding
+    // it into the id would destroy the deterministic-agreement property that makes the id
+    // worth having. An artifact from before these fields says so instead of rendering blanks.
+    ...(r.sweep
+      ? [
+          `  sweep ${r.sweep} · captured ${r.capturedAt ?? "(time not recorded)"} — two renderings carrying one sweep id describe one run`,
+        ]
+      : [`  this artifact predates sweep and capture marks (written by acc ${r.kitVersion})`]),
+  ].join("\n");
 }
