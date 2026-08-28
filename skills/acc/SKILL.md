@@ -42,33 +42,37 @@ you commit. Pasted unsubstituted, the `add` refuses instead and changes nothing:
 matching "vX.Y.Z"`, exit `1`, `package.json` and any existing install untouched — measured, on
 both a fresh project and one already holding this dependency. The `grep` keeps the answer to
 plain `vX.Y.Z` tags, the only shape `version --check` compares against. **Never install with the
-pin off or empty**: bun then resolves from a bare clone it already holds and can hand you an older
-kit at exit `0` — measured, on a fresh project's first install.
+pin off or empty**: an unpinned install resolves from whatever bun already has cached and can hand
+you an older kit at exit `0` — measured, on a fresh project's first install, though which transport
+that install used was not established. The pin is what makes the result nameable either way.
 
-**Already have `acc`, or did that `add` fail with `no commit matching`? Use these instead** — the
-block above would append rather than replace, and these two lines are destructive enough that
-they are not in a fence you paste on a first install:
+**Already have `acc`? Use these instead** — the block above would append rather than replace:
 
 ```bash
 bun remove agent-cli-conformance   # the key as it appears in your package.json
-bun pm cache rm                    # bun's WHOLE cache — not in CI, not in a build step
 bun add -d 'git+https://github.com/ichabodcole/agent-cli-conformance.git#vX.Y.Z'
 bunx acc version --check
 ```
 
-`bun add` over an existing entry does not replace it: it appends a second entry under the same
-key, resolves the old one, and writes that `package.json` for your CI to install from — at exit
-`0`. And bun keeps a bare clone it does not re-fetch, so a pinned `add` can fail with `no commit
-matching` on a tag that does exist; an upgrade always meets this, since the release tag was pushed
-after the install you are upgrading from. `bun pm cache rm` is what clears that, and it takes no
-package argument because it clears everything bun has cached.
-`docs/wiki/guides/how-to-fix-a-broken-install.md` has all three failures and their remedies.
+`bun remove` goes first because `bun add` over an existing entry does not replace it: it appends a
+second entry under the same key, resolves the old one, and writes that `package.json` for your CI
+to install from — at exit `0`, and on bun 1.4.0 with no warning printed. It is a no-op when there
+is nothing to remove. This is the same sequence `acc version --check` prints on exit `10`.
+
+**Installing over `git+ssh://` instead?** Add `bun pm cache rm` before the `add`. That transport
+keeps a bare clone bun does not re-fetch, so a pinned `add` there can fail with `no commit
+matching` on a tag that does exist. The command takes no package argument — it clears bun's
+**whole** cache, so keep it out of CI and any build step. On the `git+https://` line above,
+measured on bun 1.4.0 against this public repository, bun resolves through `github:owner/repo` and
+writes no bare clone, so that command would wipe the cache to clear nothing.
+`docs/wiki/guides/how-to-fix-a-broken-install.md` has all three failures, which transport each one
+reaches, and their remedies.
 
 **The `version --check` line is part of the install.** A git install can silently hand you an
 older kit than the newest release — exit `0`, nothing visible — so it confirms the `add` did
 what you asked. Its three answers: **up to date** (exit `0`); **a newer release exists** (exit
-`10` — the remove, cache and pinned-add sequence above, in that order, and the exit-`10` output
-prints those same commands with the newest release already filled in); **could not check** (exit
+`10` — the remove-then-pinned-add sequence above, in that order, and the exit-`10` output prints
+those same commands with the newest release already filled in); **could not check** (exit
 `0`, said plainly, naming which of the two it is — the remote was unreachable, or this build's
 version cannot be compared; neither is a failure of your invocation). And if `version` is not a
 command your kit recognises, the rejection lists the commands it does have: you are on an
