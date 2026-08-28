@@ -155,7 +155,37 @@ export interface Surface {
    * denominator.
    */
   probesRead: number;
+  /**
+   * SETS THE TARGET NAMED THAT ARE NOT FLAG SETS — seen, rejected, and said out loud.
+   *
+   * Present only when a candidate key held a non-empty list whose members are not all
+   * flag-shaped. It changes NO verdict and never contributes to `flags`: the every-member test
+   * above it is what stops `acc`'s own `choices: ["rules","show",…]` — its COMMANDS — from being
+   * published as a flag surface for the kit's own reference implementation.
+   *
+   * It exists because the census could not tell a target that named a DIFFERENT set from one that
+   * named nothing. Round 3's target emitted `choices` at 49 of 49 paths and the report printed the
+   * same sentence it prints for silence, so the adopter's comparison had to rest on the recorded
+   * bytes instead of on our line. Same repair as D3's near-miss clause: distinguish "there was
+   * nothing" from "there was something and it is not the kind of thing this reads".
+   */
+  nonFlagCandidates?: Array<{
+    key: string;
+    /** At most `SAMPLE` members, verbatim. */
+    sample: string[];
+    /** How many members there were, so a truncated sample cannot pass for the whole list. */
+    count: number;
+  }>;
 }
+
+/**
+ * How many members of a rejected list are quoted back.
+ *
+ * Bounded because the members are the TARGET's bytes and the list has no length limit of its own —
+ * the same consideration `ReportedObservation.args` records. Four is enough to show a reader what
+ * kind of thing it is, which is all this field claims to do.
+ */
+const SAMPLE = 4;
 
 /** One long flag, whole. */
 const LONG = /^--[A-Za-z][A-Za-z0-9-]*$/;
@@ -306,8 +336,17 @@ function flagsAfter(text: string): string[] {
   return out;
 }
 
-/** Every `[key, members]` pair anywhere in a parsed document whose key names an accepted set. */
-function keyedSets(document: unknown): Array<{ key: string; values: string[] }> {
+/**
+ * Every `[key, members]` pair anywhere in a parsed document whose key names an accepted set.
+ *
+ * `rejected` collects the pairs that matched a key and FAILED the flag-shape test, so a caller can
+ * report having seen them. It is deliberately a separate output rather than a looser `out`: nothing
+ * downstream may confuse the two, and the shape test stays exactly as strict as it was.
+ */
+function keyedSets(
+  document: unknown,
+  rejected?: Array<{ key: string; values: string[] }>,
+): Array<{ key: string; values: string[] }> {
   const out: Array<{ key: string; values: string[] }> = [];
   const visit = (node: unknown): void => {
     if (Array.isArray(node)) {
@@ -327,6 +366,15 @@ function keyedSets(document: unknown): Array<{ key: string; values: string[] }> 
         value.every((v) => typeof v === "string" && isFlag(v))
       ) {
         out.push({ key, values: value as string[] });
+      } else if (
+        rejected &&
+        KEYS.has(normaliseKey(key)) &&
+        Array.isArray(value) &&
+        value.length > 0 &&
+        value.every((v) => typeof v === "string")
+      ) {
+        // Matched a key this reads, held strings, and was not a flag list. That is the near miss.
+        rejected.push({ key, values: value as string[] });
       }
       visit(value);
     }
@@ -350,6 +398,26 @@ function keyedSets(document: unknown): Array<{ key: string; values: string[] }> 
  * or sentence that echoes the caller's own input back, and it needs no inference about the target
  * at all.
  */
+/**
+ * Lists the target named under a key this reads, whose members are NOT flag-shaped.
+ *
+ * A SEPARATE PASS rather than an extra return channel on `readStream`, deliberately: that function
+ * answers "is there a flag surface here", every caller reads it that way, and widening its result
+ * to carry a not-a-flag-surface would put the two one field apart in a type a reader trusts to
+ * keep them apart. Nothing here can reach `flags` or move `status`.
+ *
+ * Only JSON documents are read. A prose near-miss would need the same enumerating-phrase heuristic
+ * the prose path uses, and guessing which prose list is "a set of something else" is exactly the
+ * inference this capture refuses to make.
+ */
+export function nonFlagSetsIn(text: string): Array<{ key: string; values: string[] }> {
+  const trimmed = text.trim();
+  if (trimmed === "" || !parsesWhole(trimmed)) return [];
+  const rejected: Array<{ key: string; values: string[] }> = [];
+  keyedSets(JSON.parse(trimmed) as unknown, rejected);
+  return rejected;
+}
+
 export function readStream(
   text: string,
   rejected: string[],
@@ -445,20 +513,57 @@ export function captureSurface(observations: readonly Observation[]): Surface {
     }
   }
 
-  if (evidence.length === 0) {
+  return surfaceFrom(
+    evidence,
+    rejections.length,
+    rejections.flatMap((o) => [o.stderr, o.stdout]),
+  );
+}
+
+/**
+ * ONE PLACE THAT TURNS EVIDENCE INTO A `Surface`, for the kit's own probes and for a caller's
+ * recorded batch alike.
+ *
+ * These were two copies of the same twelve lines — `captureSurface` here and the reader in
+ * `recorded.ts` — which is how the near-miss field came to exist on one and not the other: the
+ * repair landed on the kit's own capture while the batch that PROMPTED it, 49 recorded paths of
+ * `choices`, still produced the old sentence. A rule with no home gets re-decided at every call
+ * site, and this one had two.
+ *
+ * `streams` is the raw text of every rejection read, scanned only when nothing enumerated — that
+ * is the branch where "which set did you see" is a question anyone asks.
+ */
+export function surfaceFrom(
+  evidence: SurfaceEvidence[],
+  probesRead: number,
+  streams: readonly string[],
+): Surface {
+  if (evidence.length > 0) {
+    const sets = evidence.map((e) => e.flags.join("\0"));
     return {
-      status: rejections.length > 0 ? "not-enumerated" : "no-evidence",
-      evidence: [],
-      probesRead: rejections.length,
+      status: "enumerated",
+      flags: [...new Set(evidence.flatMap((e) => e.flags))].sort(),
+      consistent: new Set(sets).size === 1,
+      evidence,
+      probesRead,
     };
   }
-  const sets = evidence.map((e) => e.flags.join("\0"));
+  // Deduped by key so a target repeating one `choices` list across four probes produces one entry
+  // rather than four identical ones; the first sighting wins, and `count` keeps the sample honest
+  // about how long the list was.
+  const byKey = new Map<string, { key: string; sample: string[]; count: number }>();
+  for (const text of streams) {
+    for (const { key, values } of nonFlagSetsIn(text)) {
+      if (!byKey.has(key)) {
+        byKey.set(key, { key, sample: values.slice(0, SAMPLE), count: values.length });
+      }
+    }
+  }
   return {
-    status: "enumerated",
-    flags: [...new Set(evidence.flatMap((e) => e.flags))].sort(),
-    consistent: new Set(sets).size === 1,
-    evidence,
-    probesRead: rejections.length,
+    status: probesRead > 0 ? "not-enumerated" : "no-evidence",
+    evidence: [],
+    probesRead,
+    ...(byKey.size > 0 ? { nonFlagCandidates: [...byKey.values()] } : {}),
   };
 }
 
@@ -495,9 +600,26 @@ export function surfaceSummary(s: Surface | undefined, path: readonly string[] =
     }`;
   }
   if (s.status === "not-enumerated") {
+    // "A SET" NEVER SAID WHICH SET. A target naming a list of VERBS landed here reading exactly
+    // like a target that named nothing, so the clause now says `set of flags` and, when a
+    // non-flag list was actually seen, names it and quotes enough of it to recognise.
+    const near = s.nonFlagCandidates ?? [];
+    const seen =
+      near.length === 0
+        ? ""
+        : `; ${near
+            .map(
+              (c) =>
+                `a \`${c.key}\` list of ${c.count} was present and its members are not flag-shaped (${c.sample
+                  .map((v) => JSON.stringify(v))
+                  .join(
+                    ", ",
+                  )}${c.count > c.sample.length ? ", …" : ""}) — a set of something else, not of flags`,
+            )
+            .join("; ")}`;
     return `did not enumerate at ${where}; ${s.probesRead} rejection${
       s.probesRead === 1 ? "" : "s"
-    } read, none named a set (NOT a tool with no flags)`;
+    } read, none named a set of flags (NOT a tool with no flags)${seen}`;
   }
   return `nothing readable was recorded at ${where}, so nothing was read (not a statement about the tool)`;
 }

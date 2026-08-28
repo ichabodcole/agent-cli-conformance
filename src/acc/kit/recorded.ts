@@ -6,6 +6,8 @@ import {
   readStream,
   type Surface,
   type SurfaceEvidence,
+  type SurfaceStatus,
+  surfaceFrom,
   surfaceSummary,
 } from "./surface.ts";
 
@@ -396,7 +398,13 @@ export interface RecordedSurfacesReport {
    * declaration, and a report that showed it only as a count would swallow the caller's evidence
    * in the one case where nothing else prints it.
    */
-  readings: Array<{ path: string[]; summary: string }>;
+  readings: Array<{
+    path: string[];
+    status: SurfaceStatus;
+    /** Keys of any non-flag list seen at this path — see `Surface.nonFlagCandidates`. */
+    nonFlagKeys: string[];
+    summary: string;
+  }>;
   recordedBy: string[];
   identity: RecordedIdentity | null;
 }
@@ -446,6 +454,8 @@ export function readRecordedBatch(batch: RecordedBatch): RecordedReading {
     const path = (records[0] as RecordedRecord).path;
     const evidence: SurfaceEvidence[] = [];
     const notes: string[] = [];
+    /** Every stream text read at this path, for the non-flag-list scan in `surfaceFrom`. */
+    const streamTexts: string[] = [];
     let read = 0;
     for (const record of records) {
       const exclusion = exclusionFor(record);
@@ -466,6 +476,7 @@ export function readRecordedBatch(batch: RecordedBatch): RecordedReading {
               ["stderr", record.stderr ?? ""],
               ["stdout", record.stdout ?? ""],
             ];
+      for (const [, text] of streams) streamTexts.push(text);
       for (const [stream, text] of streams) {
         const found = readStream(text, rejected);
         if (found) {
@@ -480,21 +491,10 @@ export function readRecordedBatch(batch: RecordedBatch): RecordedReading {
       }
     }
 
-    const sets = evidence.map((e) => e.flags.join("\0"));
-    const surface: Surface =
-      evidence.length === 0
-        ? {
-            status: read > 0 ? "not-enumerated" : "no-evidence",
-            evidence: [],
-            probesRead: read,
-          }
-        : {
-            status: "enumerated",
-            flags: [...new Set(evidence.flatMap((e) => e.flags))].sort(),
-            consistent: new Set(sets).size === 1,
-            evidence,
-            probesRead: read,
-          };
+    // BUILT BY THE SAME FUNCTION THE KIT'S OWN CAPTURE USES. This was a second copy of that
+    // construction, and the copy is why the non-flag-list field first landed on the kit's probes
+    // and not on recorded batches — which is to say, not on the 49-path batch that prompted it.
+    const surface: Surface = surfaceFrom(evidence, read, streamTexts);
     surfaces.push({
       path,
       surface,

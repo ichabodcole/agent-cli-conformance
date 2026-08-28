@@ -654,3 +654,108 @@ describe("acc check --recorded-surfaces", () => {
     expect(r.stdout).toMatch(/census line(s)? rests? on recorded surfaces/);
   });
 });
+
+/**
+ * FORTY-EIGHT NEAR-IDENTICAL LINES ARE NOT A CENSUS, THEY ARE A WALL.
+ *
+ * Round 3 recorded 49 paths. Forty-eight of them produced the same sentence differing only in the
+ * path, and the one that differed was the finding — buried in the middle of them. Only visible at
+ * a scale no earlier trial reached: with three paths the repetition reads as thoroughness.
+ *
+ * The rollup states the count and itemises the EXCEPTIONS. Nothing is lost — every path keeps its
+ * own entry in `.data.recordedSurfaces.readings`, which is where a consumer reads them anyway.
+ */
+describe("the census rolls up what repeats and itemises what does not", () => {
+  const acc = join(HERE, "..", "cli.ts");
+  const target = join(HERE, "fixtures", "enumerates-flags-in-prose.ts");
+  const tmp = mkdtempSync(join(tmpdir(), "acc-rollup-"));
+  const write = (name: string, body: unknown): string => {
+    const path = join(tmp, name);
+    writeFileSync(path, `${JSON.stringify(body, null, 2)}\n`);
+    return path;
+  };
+  // Format is passed per case here rather than fixed, because one case reads the JSON to show
+  // that rolling up the TEXT loses nothing a consumer depends on.
+  const run = (args: string[], format = "text") =>
+    spawnSync("bun", [acc, "check", target, "--format", format, ...args], { encoding: "utf8" });
+
+  const at = (path: string[], stderr: string) =>
+    record({ path, argv: [...path, "--acc-not-a-flag"], stderr });
+  const SILENT = "Error: unknown option\n";
+  const NAMES = "Unknown option. Valid flags: --json --limit\n";
+
+  test("many identical outcomes collapse to a count, and the odd one out is printed", () => {
+    const many = Array.from({ length: 12 }, (_, i) => at([`verb${i}`], SILENT));
+    const path = write("wall.json", batch({ records: [...many, at(["special"], NAMES)] }));
+    const r = run(["--recorded-surfaces", path]);
+
+    // The count is stated, with its denominator.
+    expect(r.stdout).toMatch(/13 paths/);
+    expect(r.stdout).toMatch(/12 did not enumerate/);
+    // The exception is itemised in full — it is the finding.
+    expect(r.stdout).toContain("special");
+    expect(r.stdout).toContain("--json");
+    // The twelve repeats are not each printed.
+    expect(r.stdout).not.toContain("verb7");
+    // And the reader is told where the full list lives rather than left to assume it is gone.
+    expect(r.stdout).toMatch(/readings/);
+  });
+
+  test("a small census is still itemised in full — the rollup is for scale, not for tidiness", () => {
+    const path = write(
+      "small.json",
+      batch({ records: [at(["one"], SILENT), at(["two"], SILENT)] }),
+    );
+    const r = run(["--recorded-surfaces", path]);
+    expect(r.stdout).toContain("one");
+    expect(r.stdout).toContain("two");
+  });
+
+  test("when every path differs, nothing is rolled up", () => {
+    const path = write(
+      "varied.json",
+      batch({ records: [at(["a"], NAMES), at(["b"], SILENT), at(["c"], NAMES)] }),
+    );
+    const r = run(["--recorded-surfaces", path]);
+    for (const p of ["a", "b", "c"]) expect(r.stdout).toContain(p);
+  });
+
+  test("folding does not delete the non-flag-list fact the same batch exists to surface", () => {
+    // THE INTERACTION, AND WHY THESE WERE ONE BRANCH. The per-path sentence names a `choices`
+    // list where one was seen; rolling up 48 of those would have deleted, at scale, exactly the
+    // fact the same 49-path batch was the reason for adding. Round 3 is both the case that
+    // motivated the rollup and the case that would have lost the clause to it.
+    const verbs = JSON.stringify({ error: { choices: ["add", "list", "remove"] } });
+    const many = Array.from({ length: 12 }, (_, i) => at([`verb${i}`], verbs));
+    const path = write("folded-choices.json", batch({ records: many }));
+    const r = run(["--recorded-surfaces", path]);
+    expect(r.stdout).toMatch(/12 did not enumerate/);
+    expect(r.stdout).toMatch(/12 named a non-flag list/);
+    expect(r.stdout).toContain("choices");
+  });
+
+  test("a recorded batch gets the same reading as the kit's own capture", () => {
+    // These were two copies of one construction, which is why the near-miss field first existed
+    // on the kit's probes and not on recorded batches — that is, not on the batch that prompted
+    // it. One function builds both now; this asserts the batch side actually reaches it.
+    const verbs = JSON.stringify({ error: { choices: ["add", "list"] } });
+    const path = write("one-choice.json", batch({ records: [at(["solo"], verbs)] }));
+    const readings = JSON.parse(run(["--recorded-surfaces", path], "json").stdout).data
+      .recordedSurfaces.readings;
+    expect(readings[0].nonFlagKeys).toEqual(["choices"]);
+    expect(readings[0].summary).toContain("not flag-shaped");
+  });
+
+  test("the JSON keeps every path whatever the text does", () => {
+    const many = Array.from({ length: 12 }, (_, i) => at([`verb${i}`], SILENT));
+    const path = write("wall2.json", batch({ records: many }));
+    const r = run(["--recorded-surfaces", path], "json");
+    const readings = JSON.parse(r.stdout).data.recordedSurfaces.readings;
+    expect(readings.length).toBe(12);
+    // `status` travels with each reading so the rollup groups on the field rather than by
+    // matching the prose it is about to replace.
+    expect(new Set(readings.map((x: { status: string }) => x.status))).toEqual(
+      new Set(["not-enumerated"]),
+    );
+  });
+});
