@@ -200,6 +200,9 @@ been measured on bun 1.4.0. So this stays on the page as a shape to recognise ra
 failure demonstrated on the documented line.
 
 **Remedy, if you suspect it:** `bun pm cache rm`, then reinstall, then `acc version --check`.
+This is the one remedy on this page that is not transport-conditional — the extracted-package
+cache exists on both paths — but it carries the same cost as everywhere else on this page: it
+clears bun's WHOLE cache, takes no package argument, and does not belong in CI or a build step.
 
 ## Verification
 

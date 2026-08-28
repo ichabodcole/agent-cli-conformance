@@ -91,11 +91,14 @@ after the `#` also works; the tag is the form the version check can verify.
 
 > **⚠ Re-installing, moving to a different ref, or surprised by the version you got?** Three
 > separate failures can hand you the old kit instead, and **each has a form that succeeds at exit
-> `0`** — so a diff that shows no change may mean the upgrade never happened.
-> [How to fix a broken install](docs/wiki/guides/how-to-fix-a-broken-install.md) has the
-> diagnosis and the remedy. Bun's caches are machine-global, so on `git+ssh://` **a first install
-> into a project that never held `acc` can still hit the silent one** if the package was ever
-> installed anywhere on the machine.
+> `0`** — so a diff that shows no change may mean the upgrade never happened. Which of them you
+> can meet depends on your install line: on the `git+https://` line above only the first is
+> reachable, and it needs an entry already in your `package.json`. **The other two need the bare
+> clone that only `git+ssh://` writes** — and there, because bun's caches are machine-global, a
+> first install into a project that never held `acc` can still hit the silent one if the package
+> was ever installed anywhere on the machine.
+> [How to fix a broken install](docs/wiki/guides/how-to-fix-a-broken-install.md) has the table,
+> the diagnosis and the remedy for each.
 
 Then point it at your CLI:
 
