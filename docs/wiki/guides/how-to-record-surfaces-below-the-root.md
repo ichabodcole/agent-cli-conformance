@@ -182,9 +182,11 @@ writes no batch, and reports success. `--out` refuses to overwrite an existing f
   own file rather than piping, so nothing downstream can cut one, and it writes `complete` only
   where the process terminated under its own control;
 - **`recordedAt`** — stamped per record at capture time, never at generation time;
-- **`recordedBy`** — the person, plus the build it measured (`git rev-parse`, marked `-dirty` where
-  the tree carried uncommitted changes) and which source the paths came from. Set `ACC_RECORDED_BY`
-  to name yourself; the build and the source are appended either way;
+- **`recordedBy`** — the person, plus the build it measured and which source the paths came
+  from. The build is read from the **target's own tree** (`git -C`, marked `-dirty` where that
+  tree carried uncommitted changes), so where you run the harness does not decide it; a target no
+  git work tree holds says so in place of a bare "unknown". Set `ACC_RECORDED_BY` to name
+  yourself; the build and the source are appended either way;
 - **`identity`** — captured from `--version` by default. `IDENTITY_ARGV` at the top of the script is
   config: change it if your tool names itself some other way, empty it to skip the capture.
 
@@ -349,8 +351,9 @@ acc check ./mycli --format text --recorded-surfaces ./batch.json --declaration .
 ```
 
 A file path, not stdin. `--declaration` is optional: without it you get the batch's own block and
-no comparison. The harness writes `batch.json` into the directory you ran it from, so run it where
-you want the file.
+no comparison. The harness writes `batch.json` into the directory you ran it from by default, and
+`-o PATH` sends it anywhere else — either way, where you run the harness decides only where the
+file lands, never what the batch records: the build provenance comes from the target's tree.
 
 ## Verification
 
