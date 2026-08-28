@@ -31,10 +31,14 @@ ceiling is.
 ### 1. Install it and get a baseline
 
 `acc` is not on npm. Install it from the repository into the project you are checking, so the
-version your gate runs is pinned in your lockfile like any other dev dependency:
+version your gate runs is pinned in your lockfile like any other dev dependency — which means
+**pinned to a release tag**, using the block in
+[the `acc` skill's step 1](../../../skills/acc/SKILL.md), which derives the current tag and pins
+it for you. An unpinned `bun add` resolves from whatever bare clone bun already holds and can
+deliver an older kit at exit `0` with nothing visible, which is the opposite of the property this
+step is for. Then:
 
 ```
-bun add -d git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git
 bunx acc check ./your-cli --format text
 ```
 
