@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.6](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.5...v0.1.6) (2026-08-28)
+
+
+### Bug Fixes
+
+* **cli:** the three exit-2 refusals branch in the envelope, not only in prose ([4511470](https://github.com/ichabodcole/agent-cli-conformance/commit/4511470246ed21f206b8a633a5d8a39e13d0a9cf))
+* **install:** the upgrade remedy stops wiping your whole bun cache ([a55afd6](https://github.com/ichabodcole/agent-cli-conformance/commit/a55afd62734dc4afdbec3fea51c58657e7d8e81e))
+* **version:** the cache wipe belongs to one transport, and not the documented one ([2a2c72c](https://github.com/ichabodcole/agent-cli-conformance/commit/2a2c72cc77dd2311d5e26bf08706ddbba9aebd20))
+
 ## [0.1.5](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.4...v0.1.5) (2026-08-28)
 
 
