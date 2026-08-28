@@ -8,9 +8,10 @@
  * machine that WAS poisoned, and the git-clone cache it actually needed to clear reports nothing
  * at all. Only the version after reinstall settles it, so this has to BE the proof step.
  *
- * WHY `git ls-remote` AND NOT THE GITHUB API. Anyone who installed the kit already has the ssh
- * access it needs — the documented install line IS `git+ssh://`. No token, no `gh`, no API
- * client. Measured against the private repo at ~1.4s.
+ * WHY `git ls-remote` AND NOT THE GITHUB API. It needs nothing the caller does not already
+ * have: the repository is public, so an anonymous `https` read answers with no credential at
+ * all, and the documented install line is the same transport. No token, no `gh`, no API client.
+ * Measured at ~1.4s.
  *
  * AND WHY IT IS AN INDEPENDENT MEASUREMENT: `ls-remote` talks to the remote directly. It does
  * not read bun's bare-clone cache, which is the thing that lied in the incident. A check that
@@ -44,15 +45,19 @@ export type LsRemote = (remote: string) => { code: number; stdout: string; stder
 /**
  * The two spellings of the same repository.
  *
- * `package.json` declares `git+https://` while the documented install line is `git+ssh://`, and
- * the two do not fail the same way. Measured on a machine with a credential helper: BOTH work,
- * https marginally faster. Measured with the helper disabled: https exits 128 with
- * "could not read Username … terminal prompts disabled". So neither can be assumed, and ssh is
- * tried FIRST because it is the transport the install line already required of the caller.
+ * https is tried FIRST because it is the transport the documented install line uses and the one
+ * that needs nothing: the repository is public, so an anonymous read succeeds with no ssh key,
+ * no credential helper and no token — measured, including with the global git config disabled.
+ * That is the case a CI runner and a sandboxed agent are in.
+ *
+ * ssh stays as the fallback rather than being deleted. It is what a contributor with a key
+ * already uses, it is unaffected by an https proxy that blocks or rewrites github.com, and this
+ * repository was private until recently — a reader on an older kit, or a fork that is still
+ * private, is served by the second entry.
  */
 const PUBLISHED_REMOTES = [
-  "git@github.com:ichabodcole/agent-cli-conformance.git",
   "https://github.com/ichabodcole/agent-cli-conformance.git",
+  "git@github.com:ichabodcole/agent-cli-conformance.git",
 ] as const;
 
 /**
@@ -77,9 +82,12 @@ export function remotes(): readonly string[] {
  * The default runner.
  *
  * `GIT_TERMINAL_PROMPT=0` is the ANTI-HANG mechanism and the reason trying two remotes is safe:
- * without it, an https attempt on a machine with no credential helper blocks on a username
- * prompt forever, inside a command someone ran to answer a question. With it, that same attempt
- * exits 128 in milliseconds and the fallback proceeds. Measured both ways.
+ * without it, a git transport that wants a credential blocks on a username prompt forever,
+ * inside a command someone ran to answer a question. With it, that attempt exits 128 in
+ * milliseconds and the fallback proceeds. Measured both ways, against this repository while it
+ * was private. It is kept now that an anonymous read succeeds, because the guard is about what
+ * happens when a read does NOT succeed — a fork, a proxy, a revoked key — and that is exactly
+ * when nobody is watching the terminal.
  */
 export function defaultLsRemote(remote: string): { code: number; stdout: string; stderr: string } {
   const p = Bun.spawnSync(["git", "ls-remote", "--tags", "--refs", remote], {

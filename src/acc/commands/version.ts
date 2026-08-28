@@ -62,11 +62,7 @@ export function upgradeSteps(latest: string): NextAction[] {
     },
     {
       exec: "bun",
-      args: [
-        "add",
-        "-d",
-        `git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#${latest}`,
-      ],
+      args: ["add", "-d", `git+https://github.com/ichabodcole/agent-cli-conformance.git#${latest}`],
       when: "to install the newest release, pinned",
     },
     {

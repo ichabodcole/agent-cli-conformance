@@ -24,17 +24,19 @@ at the path given.
 ```bash
 # prints the newest release tag — put it in the pin below, in place of vX.Y.Z
 GIT_TERMINAL_PROMPT=0 git ls-remote --tags --refs --sort=-v:refname \
-  git@github.com:ichabodcole/agent-cli-conformance.git 'v*' \
+  https://github.com/ichabodcole/agent-cli-conformance.git 'v*' \
   | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+$' | head -1
 
-bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#vX.Y.Z'
+bun add -d 'git+https://github.com/ichabodcole/agent-cli-conformance.git#vX.Y.Z'
 bunx acc version --check
 bunx acc check ./path/to/your-cli
 ```
 
-Needs Bun 1.4+ on macOS or Linux, and access to the repository — it is private and not on npm.
+Needs Bun 1.4+ on macOS or Linux, and network access. The repository is public and the
+lookup and install are anonymous — no ssh key, no token — but it is not on npm, which is why
+the install is a git ref.
 **The tag is a placeholder you substitute, deliberately, and not a shell variable**: the lookup
-can print nothing — no ssh access, no network, no matching tag — and an interpolated empty ref
+can print nothing — no network, a proxy in the way, no matching tag — and an interpolated empty ref
 leaves a bare `#`, which behaves exactly like no ref while looking pinned in the `package.json`
 you commit. Pasted unsubstituted, the `add` refuses instead and changes nothing: `no commit
 matching "vX.Y.Z"`, exit `1`, `package.json` and any existing install untouched — measured, on
@@ -50,7 +52,7 @@ they are not in a fence you paste on a first install:
 ```bash
 bun remove agent-cli-conformance   # the key as it appears in your package.json
 bun pm cache rm                    # bun's WHOLE cache — not in CI, not in a build step
-bun add -d 'git+ssh://git@github.com/ichabodcole/agent-cli-conformance.git#vX.Y.Z'
+bun add -d 'git+https://github.com/ichabodcole/agent-cli-conformance.git#vX.Y.Z'
 bunx acc version --check
 ```
 
