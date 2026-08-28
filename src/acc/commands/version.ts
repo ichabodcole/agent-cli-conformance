@@ -29,36 +29,40 @@ export function versionCommand(mode: OutputMode): void {
 }
 
 /**
- * THE UPGRADE, AS A SEQUENCE — because the single command this used to hand over is one our own
- * documentation says always fails.
+ * THE UPGRADE, AS A SEQUENCE — every step of which has to earn its place, because one of them is
+ * destructive and used to be handed to everyone.
  *
- * `docs/wiki/guides/how-to-fix-a-broken-install.md` says of bun's stale-bare-clone refusal, in
- * bold, "An upgrade always meets this one": bun keeps a bare clone per git dependency and never
- * re-fetches it, so a release tag pushed after your last install is invisible and a pinned add
- * fails with `no commit matching "..." (but repository exists)`. This hint appears ONLY on an
- * upgrade, so the remedy it offered failed in the only situation it was offered in. Both adopter
- * trials followed it and both hit exactly that.
+ * WHAT THIS SEQUENCE IS FOR. `bun add` pointed at a new ref does not replace the dependency: it
+ * appends a second entry under the same key, prints `warn: Duplicate key` in output nobody reads,
+ * and resolves the FIRST one — an older kit, at exit 0, with no error, and the second entry
+ * committed to `package.json` for CI to install from. That is failure 1 in
+ * `docs/wiki/guides/how-to-fix-a-broken-install.md`, it reproduces on every transport, and
+ * `bun remove` before `bun add` is what clears it. It is harmless when there is nothing to remove,
+ * so it leads unconditionally.
  *
- * The order is the fix, not the contents: the cache must be dropped BEFORE the install, or the
- * install resolves against the same stale clone. Taken from the guide's own canonical block so
- * there is one sequence in the project rather than two that can disagree.
+ * WHY THERE IS NO `bun pm cache rm` HERE, though there used to be. Measured on bun 1.4.0 against
+ * this PUBLIC github.com repository — both conditions load-bearing, and a bun release, a private
+ * fork or a non-GitHub host could change either. For a public github.com repo bun normalises
+ * `git+https://github.com/…` to `github:owner/repo`: one code path, one `@GH@<owner>-<repo>-<sha>`
+ * cache key, and NO bare clone on disk. The stale-bare-clone refusal (`no commit matching "…"`)
+ * that this sequence was built around is a `git+ssh://` phenomenon — that transport does write a
+ * bare clone plus a `@G@<sha>` key. Measured both halves on the documented transport: a pinned
+ * `#v0.1.4` → `#v0.1.5` upgrade in one warm cache exits 0 with no refusal, and an unpinned install
+ * against a cache seeded at 0.1.4 delivered 0.1.5. So on the transport this sequence prints,
+ * `bun pm cache rm` wiped the caller's ENTIRE global bun cache to clear an artifact that was never
+ * written. It stays correct for `git+ssh://`, and the guide keeps it as that path's named remedy;
+ * it does not belong in the sequence handed to a reader whose install line is `git+https://`.
  *
- * `bun remove` leads because a duplicate dependency key is the other failure that survives a
- * reinstall, and it is harmless when there is nothing to remove. The closing `acc version
- * --check` is what makes the sequence answerable: only the version after reinstall proves the
- * cache cleared.
+ * THE CLOSING `acc version --check` is what makes the sequence answerable: nothing bun prints
+ * during an upgrade distinguishes a real reinstall from a silent no-op, so only the version
+ * afterwards settles it.
  */
 export function upgradeSteps(latest: string): NextAction[] {
   return [
     {
       exec: "bun",
       args: ["remove", "agent-cli-conformance"],
-      when: "first — use the dependency key as it appears in your package.json, which need not be the repository name; a no-op if it is absent",
-    },
-    {
-      exec: "bun",
-      args: ["pm", "cache", "rm"],
-      when: "to drop the stale bare clone that makes the pinned install below fail; this clears bun's WHOLE cache and takes no package argument, so keep it out of CI and any build step",
+      when: "first — a second entry under the same key resolves to the OLD kit at exit 0; use the dependency key as it appears in your package.json, which need not be the repository name, and this is a no-op if it is absent",
     },
     {
       exec: "bun",
@@ -68,7 +72,7 @@ export function upgradeSteps(latest: string): NextAction[] {
     {
       exec: "acc",
       args: ["version", "--check"],
-      when: "to confirm it took — only the version after reinstall proves the cache cleared",
+      when: "to confirm it took — nothing bun prints distinguishes a reinstall from a silent no-op, so only the version afterwards settles it",
     },
   ];
 }
@@ -143,17 +147,24 @@ export function versionVerbCommand(
           : [
               `acc ${d.installed} is BEHIND — the newest release is ${d.latest} (${d.latestSha.slice(0, 7)})`,
               "",
-              "  Run these in order — the cache step is not optional on an upgrade:",
+              "  Run these in order — `bun remove` first, or the add appends a duplicate key:",
               // Rendered FROM `upgradeSteps` rather than retyped, so the text a human copies and
               // the `next` a program executes cannot drift. They already had: this branch used to
               // end by telling the reader that "the cache commands do not" prove anything, in a
               // block that printed no cache command.
               ...upgradeSteps(d.latest).map((s) => `    ${[s.exec, ...s.args].join(" ")}`),
               "",
-              "  `bun pm cache rm` clears bun's WHOLE cache and takes no package argument — cheap",
-              "  on a laptop, expensive on a shared CI runner. Do not put it in a build step.",
+              // The condition travels WITH the claim. Someone whose package.json pins the ssh
+              // remote is on the transport that does keep a bare clone, and telling them nothing
+              // sends them back to the `no commit matching` refusal with no name for it.
+              "  Installing over `git+ssh://` instead? That transport keeps a bare clone bun does",
+              '  not re-fetch, so a pinned add can fail with `no commit matching "…"`. Add',
+              "  `bun pm cache rm` before the add — it clears bun's WHOLE cache and takes no",
+              "  package argument, so keep it out of CI and any build step. On the `git+https://`",
+              "  line above, measured on bun 1.4.0 against this public repo, there is no such",
+              "  clone and that command would wipe the cache to clear nothing.",
               "",
-              "  Only the version after reinstall proves the cache cleared; the cache commands do not.",
+              "  Only the version after reinstall proves the upgrade took; the install output does not.",
             ].join("\n")
         : [
             `acc ${VERSION} installed — COULD NOT CHECK for a newer release.`,

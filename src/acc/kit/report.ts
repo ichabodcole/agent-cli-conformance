@@ -267,8 +267,12 @@ export interface Report {
    * The version of the kit that produced this report.
    *
    * Here because a stale kit is otherwise invisible. The documented install can put an older
-   * commit on disk and report success — bun prints a SHA it did not install, and the extracted
-   * package cache goes stale independently of the bare clone — and the only place that showed was
+   * commit on disk and report success — measured first-hand: the success line read `installed
+   * …#1a76405` (v0.1.5) while the lockfile held `#0034789` (v0.1.4) and the binary reported
+   * 0.1.4, so bun printed a SHA it did not install. (A second, transport-dependent path exists on
+   * `git+ssh://`, where bun keeps a bare clone and the extracted-package cache can go stale
+   * independently of it; the documented `git+https://` line writes no bare clone on bun 1.4.0
+   * against this public repository.) Either way the only place it showed was
    * `acc --version`, which nobody thinks to check. The first outside adopter did not detect it;
    * they happened to be holding a second version to compare against because they had cloned the
    * repo to read the README before installing. Putting it in every report makes the comparison
