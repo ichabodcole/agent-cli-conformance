@@ -4,26 +4,31 @@ generated: { by: claude-fable-5, at: 2026-08-27 }
 status: stable
 lifecycle: live
 description:
-  A record of the cold-repair pipeline — six stages of cold writers and cold readers — run once,
-  on 2026-08-27, to repair two documents that careful readers had misread. The stages as run,
-  what each caught that the previous one could not, and the false positives, written so a second
-  run is possible and comparable.
+  A record of the cold-repair pipeline — cold writers and cold readers — run twice, on 2026-08-27
+  and 2026-08-28. The stages as run, what each caught that the previous one could not, the false
+  positives, both runs' counts side by side, and the one stage added afterwards with a prediction
+  pinned before it is first used.
 tags: [method, docs, review, testing]
-subject: the cold-repair pipeline as run once, recorded so a second run can be compared to it
+subject:
+  the cold-repair pipeline as run twice, with the counts that make a third run comparable and a
+  pre-registered prediction for the stage added after run 2
 examined:
-  the repair of docs/wiki/guides/how-to-reach-l0-in-your-project.md and
+  run 1 — the repair of docs/wiki/guides/how-to-reach-l0-in-your-project.md and
   docs/wiki/rules/streams/machine-mode-holds-on-parser-errors.md across acc-internal messages
-  153-160, landed on develop as commits 5b7559a (first batch) and d5174eb (second batch)
+  153-160, landed on develop as commits 5b7559a and d5174eb; run 2 — the repair of
+  skills/acc/SKILL.md section 1, landed as 7ff689d with a cascade fix to
+  docs/wiki/guides/how-to-reach-l0-in-your-project.md
 ---
 
 # The cold-repair pipeline
 
-This is a record of a method, not an endorsement of one. It was run once, on one day, over two
-documents, and every count below has that sample size. "It caught three repair-introduced
-regressions in one run" is a fact this page can state; "it reduces regressions" is a claim it
-cannot, and does not. The reason to write it anyway comes from the project owner: if the same
-work comes up again, someone should be able to run the same stages without having been here, and
-afterwards we should be able to tell whether it worked twice.
+This is a record of a method, not an endorsement of one. It has now been run twice, on
+consecutive days, over three documents. "It caught repair-introduced regressions in both runs,
+nine in total, none of which reached the tree" is a fact this page can state; "it reduces
+regressions" is a claim it cannot, and does not — nothing here measures what would have happened
+without it. The reason to write it comes from the project owner: if the same work comes up again,
+someone should be able to run the same stages without having been here, and afterwards we should
+be able to tell whether it worked again.
 
 ## The occasion
 
@@ -38,7 +43,7 @@ batches — one direct (`5b7559a`), one through the staged pipeline this page re
 (`d5174eb`) — coordinated on the `acc-internal` channel, messages 153–160, which are the primary
 record.
 
-## The stages, as run
+## The stages, as run in both runs
 
 1. **The coordinator verified each reported defect against the tree before briefing anyone.** Of
    five reported for the second batch, one was at first dismissed as not reproducing — and the
@@ -104,29 +109,124 @@ unreliable at _"and here is what"_ — which is why stage 1 verifies before brie
 settles claims against the source: those stages exist to correct the readers' diagnoses, not to
 repeat them.
 
-## What a second run should count
+## The counts, both runs
 
-For the next run to be comparable, record the same numbers this one produced:
+Run 2 (2026-08-28) followed the six stages above unchanged, on one document:
+`skills/acc/SKILL.md` section 1, repairing an adopter's report that step 1 was written for a
+fresh install and walked an existing installation into a duplicate dependency key.
 
-| Count, this run                                        | n   |
-| ------------------------------------------------------ | --- |
-| defects briefed in                                     | 5   |
-| repairs carried to the tree                            | 5   |
-| regressions introduced by repairs, caught before merge | 3   |
-| reader claims that did not survive source-checking     | ≥ 2 |
-| coordinator dismissals that were themselves wrong      | 1   |
-| facts found degraded elsewhere by the cascade-check    | 0   |
+| Count                                                  | run 1 | run 2 |
+| ------------------------------------------------------ | ----- | ----- |
+| defects briefed in                                     | 5     | 4     |
+| repairs carried to the tree                            | 5     | 5     |
+| regressions introduced by repairs, caught before merge | 3     | 6     |
+| reader claims that did not survive source-checking     | ≥ 2   | 0     |
+| coordinator dismissals that were themselves wrong      | 1     | 0     |
+| facts found degraded elsewhere by the cascade-check    | 0     | 1     |
+| writer refusals — "I cannot state this" — used         | —     | 5     |
 
-If a second run's numbers look like these — repairs landing, repair-regressions caught inside
-the pipeline rather than by the next adopter, false positives settled by source — that is what
-"it worked twice" would mean, and the owner's question about turning this into a skill becomes
-answerable. One run cannot answer it.
+Run 2's brief was smaller, so the raw regression count understates the change. Per defect
+briefed in, repair-introduced regressions went from **0.6 to 1.5**.
+
+**It worked twice, on the only question this page can answer.** Both runs landed their repairs
+and both caught every repair-introduced regression inside the pipeline rather than in front of
+the next adopter. What neither run establishes is the counterfactual: nothing here measures what
+would have shipped without the stages, and two runs on three documents cannot.
+
+Three differences from run 1 are worth carrying rather than averaging away:
+
+- **Readers were reliable this time.** Run 1's summary was that readers were strong at
+  _"something is wrong here"_ and unreliable at _"and here is what"_. In run 2 every reader claim
+  reproduced when the coordinator re-ran it — including the two that overturned a repair. One run
+  each way; the run-1 sentence stands as that run's finding, not as a property of cold readers.
+- **The repairs were the whole problem.** Six of run 2's defects were introduced by its own
+  repairs, and two were severe: the first repair reintroduced the exact defect it was commissioned
+  to remove, and the second made a copy-pasteable block destructive on an existing install. Both
+  were invisible to the writer and to the first reader, and both were found by a reader given the
+  original problem and told nothing about what had changed.
+- **A verified claim was falsified by a later edit, twice.** A sentence reading
+  "`package.json` untouched, measured" stayed in the text across a structural edit that made it
+  false. The measurement had been real when taken. Nothing in the six stages asks whether an
+  edit invalidates a measurement already in the document.
+
+That last one is what the next section changes.
+
+## The stage added after run 2 — NOT YET RUN
+
+Everything above is a record of what happened. This section is not: it is a change to the method,
+adopted on 2026-08-28 on the project owner's proposal, which **no run has used**. It is written
+here, before its first use, so that run 3 can falsify it rather than confirm whatever anyone
+believes by then. Do not read the stages above as including it.
+
+**The change.** Stage 2's brief gains two requirements, in order, before the writer edits
+anything:
+
+1. **Read the passage and the document it sits in**, not only the passage. A writer given a
+   paragraph edits a paragraph.
+2. **Name what depends on what you are about to change** — which sentences in this document rest
+   on the thing being edited, which measurements in it were taken under the current wording, and
+   what else would have to move. Write that list down BEFORE writing the repair. Afterwards, check
+   each entry and report which ones moved.
+
+Requirement 2 is the one with teeth, and it is a premise note in the sense
+[the two-lens review skill](../../.claude/skills/two-lens-review/SKILL.md) already uses for code:
+the premise, its consumers, and what it decides. Nothing in this project applied that to prose
+before now.
+
+**Why this and not "read more carefully".** The evidence is run 2's six regressions. Its writer
+DID read the file and DID flag three problems outside its brief unprompted — so "read the
+context" was already happening, and it did not prevent a single one of the six. What the writer
+never did was predict the consequences of its own edit: that carving out a reader who skips the
+install makes "the second line is part of the install" false; that a block growing from three
+lines to six detaches "before the third line" from the command it was guarding; that moving
+`bun remove` above the add falsifies a measured sentence sitting four lines below it. Each is a
+dependency the writer could have listed before editing and checked afterwards.
+
+**What it is NOT allowed to do.** It does not shrink the reader stages. A writer predicting its
+own blast radius is still the author, and author blindness is a different failure from the one
+this addresses — the writer that missed all six had already read the document. Stages 3 and 5
+stay exactly as they are, and if a future run cites this stage as a reason to drop one, that is
+the misreading this paragraph exists to prevent.
+
+**The cost, stated in advance so it is not discovered as a surprise:** a longer brief, a slower
+first pass, and a writer that may report a widened scope back instead of returning a repair. Run
+2 suggests the last of those is a feature — its writer's unprompted out-of-brief findings became
+two thirds of the final scope — but it does mean the coordinator makes more decisions mid-run.
+
+### The prediction, pinned before run 3
+
+Recorded now so it cannot be adjusted to fit the result, the way
+[the trial protocol](../plans/2026-08-26-the-trial-protocol-pinned-before-it-runs.md) pins its
+failure classes before the adopter starts:
+
+> **Run 3 will show repair-introduced regressions per defect briefed in FALL BELOW run 2's 1.5,
+> and the writer's own dependency list will name at least one consequence that a reader stage
+> would otherwise have caught.**
+
+**What would falsify it.** A run-3 rate at or above 1.5 on a brief of comparable shape, or a
+dependency list that names only consequences the writer was already going to avoid. Either means
+the stage costs a longer brief and buys nothing, and it should be removed rather than explained.
+
+**The confound, named now.** Run 2's rate is one number from one run on one document, and the
+three runs differ in material, in brief size, and in how much of the scope was discovered
+mid-run rather than briefed. A single run 3 cannot settle this; it can only fail to support it.
+If run 3's rate falls, the honest claim remains "twice out of three runs the regressions were
+caught inside the pipeline, and the rate fell once after the stage was added" — not "the stage
+works."
 
 ## Provenance
 
-Stages 2–5 are the coordinator's record (messages 157 and 160); the before/after copies lived in
-a session-scoped scratch directory and will not survive, which is why their load-bearing content
-is quoted above rather than pointed at. Stage 1's verification and stage 6's landing work are
-first-hand in messages 153–159 and in the two commits named in the frontmatter. Where this page
+Run 1: stages 2–5 are the coordinator's record (messages 157 and 160); the before/after copies
+lived in a session-scoped scratch directory and will not survive, which is why their
+load-bearing content is quoted above rather than pointed at. Stage 1's verification and stage
+6's landing work are first-hand in messages 153–159 and in commits 5b7559a and d5174eb.
+
+Run 2: the coordinator ran every stage in one session and re-ran every reader claim before
+acting on it, so its counts are first-hand rather than reported. The repair landed as 7ff689d
+with the cascade fix in the same commit. Its before/after copies were likewise scratch-scoped
+and are gone; the two severe regressions are quoted in the commit message, which was written
+while they were still reproducible. The measurements that settled them — a bare `#` ref
+delivering an older kit at exit 0, and a paste leaving an existing install deleted — were run by
+the coordinator, not accepted from a reader. Where this page
 says what a stage "could not see", that is the run's observed outcome stated once — not a claim
 about what such a stage can never see.
