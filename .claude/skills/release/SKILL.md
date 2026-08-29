@@ -86,18 +86,15 @@ twice or two changes nobody bothered to name apart.
 git log main..develop --format='%s' | sort | uniq -d      # empty is what you want
 ```
 
-Measured, on the release that added this section: the range carried seven `fix` commits that were
-four changes. Each came from a review fix round whose implementer was told to commit "with the same
-trailers as before" and was never told to write a new subject — so it reused the task's, and the
-published changelog listed four of the seven twice.
+The usual source is a review fix round: told to keep the trailers and not told to write a new
+subject, an implementer reuses the one it is repairing. **A commit that repairs review findings is
+a different change from the one it repairs, and its subject should say what it repaired** — so the
+fix belongs wherever fix rounds are dispatched, not here.
 
-**The cause is upstream of this skill and so is the fix**: a commit that repairs review findings is
-a different change from the one it repairs, and its subject should say what it repaired. Whoever
-dispatches fix rounds owns that. By the time you are here the commits exist, so this step is a
-detector, not a remedy — and the honest options are narrow. Rewording means rewriting pushed
-history, which is worse than a doubled changelog line. Deciding to ship the duplicates is
-legitimate; **shipping them without noticing is what this check exists to prevent.** Say which one
-you did.
+By the time you run this the commits are pushed, which makes this a detector rather than a remedy.
+Rewording means rewriting shared history, and that is worse than a doubled changelog line. Shipping
+the duplicates is a legitimate choice; **shipping them without noticing is what this check
+prevents.** Say which one you did.
 
 ## 1 · The release note — a FRESH agent, reading the tree
 
