@@ -12,7 +12,12 @@ import {
   type RecordedSurfacesReport,
   recordedPathSummary,
 } from "./recorded.ts";
-import { captureSurface, type Surface } from "./surface.ts";
+import {
+  type AdvertisedVerbsComparison,
+  captureSurface,
+  compareAdvertisedVerbs,
+  type Surface,
+} from "./surface.ts";
 import type {
   Checker,
   Coverage,
@@ -437,6 +442,25 @@ export interface Report {
    */
   surface: Surface;
   /**
+   * THE ADVERTISED VERB SET AGAINST THE RECORDED ONE — stated in both directions, and neither of
+   * them a verdict.
+   *
+   * EVIDENCE, exactly as `surface` and `declaration` are, and here the reason is sharper than for
+   * either: the recorded side is CALLER-ATTESTED, so nothing that can fail a gate may rest on it.
+   * There is no rule id, no finding kind and no count. An adopter who wants a gate greps this field
+   * in CI — they opt into the gate, the kit stays evidence.
+   *
+   * PRESENT ON EVERY RUN, including the ones with no batch and the ones where nothing could be
+   * asserted. A field that appeared only when there was something to compare would make a missing
+   * thing render as an absent thing, and this project has a defect class named after that. Read
+   * `status` before anything else: `not-asserted` means the comparison DID NOT RUN, which is not
+   * the same claim as a tool that advertises no verbs.
+   *
+   * OPTIONAL ONLY BECAUSE STORED REPORTS OUTLIVE THE FIELD, on the same terms as `targetIdentity`:
+   * `buildReport` always fills it, and its absence means the FILE predates the comparison.
+   */
+  advertisedVerbs?: AdvertisedVerbsComparison;
+  /**
    * WHERE THE TARGET'S DECLARATION AND THE TARGET DISAGREE — present only when the caller
    * supplied one, absent otherwise.
    *
@@ -840,6 +864,19 @@ export function buildReport(
     // Captured from the history, because the projection below is about to discard the streams it
     // is read from. Nothing about it feeds `conformant`, `fullyVerified` or any count.
     surface,
+    // THE JOIN, and it happens exactly once, here, where both sides are already in scope: the live
+    // root capture above and — when a batch was supplied — the paths the caller recorded. The
+    // recorded side contributes the FIRST token of each path, because a verb set read at the root
+    // is a set of root verbs and `state show` is a record about the root verb `state`.
+    //
+    // `null` rather than `[]` when no batch arrived: with no batch there is nothing to compare
+    // against, which is a fact about the RUN, and an empty list would be a fact about the batch.
+    advertisedVerbs: compareAdvertisedVerbs(
+      surface,
+      recorded
+        ? recorded.reading.surfaces.flatMap((p) => (p.path[0] === undefined ? [] : [p.path[0]]))
+        : null,
+    ),
     // THE ROOT IS ALWAYS THE KIT'S, and it is the only path the kit probes — `captureSurface`
     // reads root-level rejections only. Everything below it comes from a batch the caller
     // recorded, if they supplied one, and each entry carries who observed it. A declared path

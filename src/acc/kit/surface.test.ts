@@ -15,7 +15,12 @@ import { type Declaration, diffDeclaration } from "./declaration.ts";
 import { record } from "./record.ts";
 import { CHECKERS } from "./registry.ts";
 import { digestOfText } from "./runner.ts";
-import { captureSurface, surfaceSummary } from "./surface.ts";
+import {
+  advertisedVerbsSummary,
+  captureSurface,
+  compareAdvertisedVerbs,
+  surfaceSummary,
+} from "./surface.ts";
 import type { Invocation, Observation } from "./types.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -517,5 +522,234 @@ describe("a list that is not a flag list", () => {
     const line = surfaceSummary(captureSurface([json({ error: { message: "no" } })]), []);
     expect(line).toContain("set of flags");
     expect(line).not.toContain("choices");
+  });
+});
+
+// THE ADVERTISED VERB SET — what the target says its commands are, and the difference against a
+// caller's recorded paths, stated in both directions.
+//
+// The honesty case comes first here for the same reason it was built first: a parser that reads an
+// empty advertised set turns every recorded path into a `recorded but never advertised` finding, so
+// a false negative in the reader becomes a wall of false positives about somebody else's tool.
+describe("the advertised verb set", () => {
+  /** A bare invocation — one of the two root captures the blob may be read from. */
+  const bare = (stderr: string, over: Partial<Observation> = {}): Observation =>
+    rejection(stderr, { ...over, args: [], inertness: "bare" });
+
+  /** The target's rejection of an unknown verb — the other root capture, and the precedence one. */
+  const verbRejection = (stderr: string, over: Partial<Observation> = {}): Observation =>
+    rejection(stderr, { ...over, args: ["acc-probe-xyzzy-verb"], inertness: "sentinel" });
+
+  const compare = (observations: Observation[], recorded: string[] | null) =>
+    compareAdvertisedVerbs(captureSurface(observations), recorded);
+
+  describe("the honesty case — not-readable is NOT empty", () => {
+    test("a help screen with no usage blob asserts nothing, and the comparison did not run", () => {
+      // Measured shape: half a real fleet answers an unknown verb with a verb table at exit 0 and
+      // no `usage:`-anchored bracket group anywhere. This is the MAIN render for them.
+      const c = compare(
+        [verbRejection("Commands:\n  open   open a file\n  state  print state\n")],
+        ["open", "state", "tail"],
+      );
+      expect(c.status).toBe("not-asserted");
+      expect(c.recordedNotAdvertised).toBeUndefined();
+      const line = advertisedVerbsSummary(c).join("\n");
+      expect(line).toContain("THE COMPARISON DID NOT RUN");
+      expect(line).toContain("NOT a tool that advertises no verbs");
+      expect(line).toContain("nothing was compared");
+      // The three recorded paths must not appear as findings about the tool.
+      expect(line).not.toContain("recorded but never advertised");
+    });
+
+    test("no root capture at all says so, and says it is not a statement about the tool", () => {
+      const c = compare([rejection("valid flags: --a --b")], ["open"]);
+      expect(c.status).toBe("not-asserted");
+      expect(c.capturesRead).toBe(0);
+      expect(advertisedVerbsSummary(c).join("\n")).toContain("not a statement about the tool");
+    });
+
+    test("a truncated root capture is not read — a blob cut mid-list is short by an unknown number", () => {
+      const c = compare([verbRejection("usage: cli <open|state|tail>", { truncated: true })], null);
+      expect(c.status).toBe("not-asserted");
+      expect(c.capturesRead).toBe(0);
+    });
+
+    test("a hedged two-member blob renders as a hedge, never as silence", () => {
+      const c = compare([verbRejection("usage: cli <name|id>")], ["open", "state"]);
+      expect(c.status).toBe("not-asserted");
+      const line = advertisedVerbsSummary(c).join("\n");
+      expect(line).toContain("seen and not asserted");
+      expect(line).toContain("<name|id>");
+    });
+  });
+
+  describe("provenance — root captures only", () => {
+    test("a --help body is never read, however well shaped its usage line is", () => {
+      const help = rejection("usage: cli <open|state|tail>", {
+        args: ["--help"],
+        inertness: "help-path",
+      });
+      expect(compare([help], null).status).toBe("not-asserted");
+    });
+
+    test("an unknown-FLAG rejection is not one of the two either", () => {
+      // Its `choices` array is a set the FLAG reader owns; reading it here would be one field
+      // answering two different claims.
+      const c = compare([rejection(`{"error":{"choices":["open","state","tail"]}}`)], null);
+      expect(c.status).toBe("not-asserted");
+    });
+
+    test("the bare invocation is read, and so is the unknown-verb rejection", () => {
+      expect(compare([bare("usage: cli <open|state|tail>")], null).status).toBe("no-batch");
+      expect(compare([verbRejection("usage: cli <open|state|tail>")], null).status).toBe(
+        "no-batch",
+      );
+    });
+  });
+
+  describe("the narrowing stack", () => {
+    const verbs = (text: string) => compare([verbRejection(text)], null).quoted?.verbs;
+
+    test("only a line anchored at `usage`", () => {
+      expect(verbs("error: pick one of <open|state|tail>")).toBeUndefined();
+      expect(verbs("usage: cli <open|state|tail>")).toEqual(["open", "state", "tail"]);
+    });
+
+    test("only the FIRST bracket group after the program token", () => {
+      // `file` is the verb's ARGUMENT, and a reader that swallowed it would publish a verb the
+      // target never named.
+      expect(verbs("usage: cli <open|state|tail> <file>")).toEqual(["open", "state", "tail"]);
+    });
+
+    test("a program token in its own group is skipped rather than read as a verb", () => {
+      expect(verbs("usage: <cli> <open|state|tail>")).toEqual(["open", "state", "tail"]);
+    });
+
+    test("at least one pipe — this is what kills <file>, <command> and <path>", () => {
+      expect(verbs("usage: cli <file>")).toBeUndefined();
+      expect(verbs("usage: cli <command>")).toBeUndefined();
+      expect(verbs("usage: cli <path>")).toBeUndefined();
+    });
+
+    test("every member token-shaped, and one that is not refuses the WHOLE blob", () => {
+      expect(verbs("usage: cli <FILE|DIR>")).toBeUndefined();
+      expect(verbs("usage: cli <key=value|open>")).toBeUndefined();
+    });
+
+    test("<name|id> is refused on shape and needs recorded evidence to assert", () => {
+      // Two members, and no lexical rule separates a type union from a two-verb tool.
+      expect(compare([verbRejection("usage: cli <name|id>")], null).status).toBe("not-asserted");
+      // A majority matching recorded paths is the last discriminator, and it CONFIRMS the blob
+      // rather than constructing it: the members still come from the target's own bytes.
+      const confirmed = compare([verbRejection("usage: cli <name|id>")], ["name", "id"]);
+      expect(confirmed.status).toBe("compared");
+      expect(confirmed.union).toEqual(["id", "name"]);
+    });
+
+    test("three or more members assert on shape alone, with no batch in hand", () => {
+      // Nothing about a larger verb set may depend on how fresh the caller's batch is.
+      expect(compare([verbRejection("usage: cli <open|state|tail>")], null).status).toBe(
+        "no-batch",
+      );
+    });
+
+    test("the ellipsis is an OPEN-SET MARKER, not a fifth verb", () => {
+      const c = compare([verbRejection("usage: cli.ts <open|state|tail|…>")], ["open", "grow"]);
+      expect(c.union).toEqual(["open", "state", "tail"]);
+      expect(c.open).toBe(true);
+      const line = advertisedVerbsSummary(c).join("\n");
+      // The finding hedges rather than flatly accusing: the verb may live in the elided tail.
+      expect(line).toContain("marks its list open");
+      expect(line).toContain("elided tail");
+      expect(line).not.toContain("…|");
+    });
+
+    test("the ascii spelling of the ellipsis is the same marker", () => {
+      const c = compare([verbRejection("usage: cli <open|state|tail|...>")], null);
+      expect(c.union).toEqual(["open", "state", "tail"]);
+      expect(c.open).toBe(true);
+    });
+
+    test("the retrofitted shape — a choices array on the rejection", () => {
+      const c = compare([verbRejection(`{"error":{"choices":["open","state","tail"]}}`)], null);
+      expect(c.quoted?.shape).toBe("envelope-choices");
+      expect(c.union).toEqual(["open", "state", "tail"]);
+    });
+  });
+
+  describe("both directions, and neither is the same kind of statement", () => {
+    test("recorded but never advertised — the defect direction", () => {
+      const c = compare(
+        [verbRejection("usage: cli <open|state|tail>")],
+        ["open", "state", "tail", "grow"],
+      );
+      expect(c.recordedNotAdvertised).toEqual(["grow"]);
+      expect(c.notCoveredByBatch).toEqual([]);
+      expect(advertisedVerbsSummary(c).join("\n")).toContain("recorded but never advertised: grow");
+    });
+
+    test("advertised but never recorded is COVERAGE, and never reads as an accusation", () => {
+      const c = compare([verbRejection("usage: cli <open|state|tail>")], ["open"]);
+      expect(c.notCoveredByBatch).toEqual(["state", "tail"]);
+      expect(c.recordedNotAdvertised).toEqual([]);
+      const line = advertisedVerbsSummary(c).join("\n");
+      expect(line).toContain("not covered by this batch: state tail");
+      expect(line).not.toContain("missing");
+    });
+  });
+
+  describe("the state model", () => {
+    test("the defect direction tests the UNION, not the precedence winner alone", () => {
+      // Help-shaped drift in miniature: the bare capture names four verbs, the rejection three.
+      // Testing against the rejection's three alone manufactures a `recorded but never advertised`
+      // finding for the fourth, out of our own choice of source.
+      const c = compare(
+        [
+          verbRejection(`{"error":{"choices":["open","state","tail"]}}`),
+          bare("usage: cli <open|state|tail|grow>"),
+        ],
+        ["open", "state", "tail", "grow"],
+      );
+      expect(c.union).toEqual(["grow", "open", "state", "tail"]);
+      expect(c.recordedNotAdvertised).toEqual([]);
+      // Precedence still decides whose words are QUOTED: the parser speaking, not the usage string.
+      expect(c.quoted?.from).toBe("unknown-verb-rejection");
+      expect(c.disagreement).toEqual(["grow"]);
+      expect(advertisedVerbsSummary(c).join("\n")).toContain("disagree on: grow");
+    });
+
+    test("a hedged rejection beside an asserted bare capture quotes the bare capture", () => {
+      const c = compare(
+        [verbRejection("usage: cli <name|id>"), bare("usage: cli <open|state|tail>")],
+        null,
+      );
+      expect(c.quoted?.from).toBe("bare-invocation");
+      expect(c.union).toEqual(["open", "state", "tail"]);
+      // And the hedge is still on the record rather than deleted.
+      expect(c.hedged.map((s) => s.verbs)).toEqual([["name", "id"]]);
+    });
+  });
+
+  test("the no-batch state is RENDERED, not omitted", () => {
+    // Omitting the field when there is no batch makes a missing thing render as an absent thing.
+    const c = compare([verbRejection("usage: cli <open|state|tail>")], null);
+    expect(c.status).toBe("no-batch");
+    const line = advertisedVerbsSummary(c).join("\n");
+    expect(line).toContain("advertised set captured (3 verbs, usage-line shape");
+    expect(line).toContain("no recorded surfaces in this run, so no comparison was made");
+  });
+
+  test("the bound — the full list is in the JSON, only the text line samples", () => {
+    const many = Array.from({ length: 200 }, (_, i) => `verb${i}`);
+    const c = compare([verbRejection(JSON.stringify({ error: { choices: many } }))], null);
+    // The FULL list, because the action on a verb-set disagreement is "go add THESE", and a sample
+    // plus a count means re-running the diff by hand.
+    expect(c.union?.length).toBe(200);
+    const line = advertisedVerbsSummary(c).join("\n");
+    // The line is bounded, and it says how many there were, so a cut cannot pass for the whole.
+    expect(line).toContain("(200 in all; the full list is in the JSON)");
+    expect(line.split("\n")[0]?.length).toBeLessThan(600);
+    // And the diagnostic field's own bound is untouched — this did not repurpose `SAMPLE`.
+    expect(c.union?.length).toBeGreaterThan(4);
   });
 });
