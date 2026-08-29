@@ -651,3 +651,50 @@ speaking, the stale usage string is the drift.
 The adopter's plan, in their words: the retrofitted tools as the assert-at-strength cases,
 the help-screen tools as the honesty-case calibration, and the next retrofit-in-progress as the
 live test of the disagreement line.
+
+## Appendix B5: the validation run
+
+Run by the adopter on a `develop` install, against three cases of their own choosing. **Verdict:
+ship it.**
+
+### It found something real, on its first run against a real tool
+
+`recorded but never advertised: message` — and it is genuine. `message` is a **dispatched alias**
+that works, advertised only in help prose (`read <id> (alias: message)`) and absent from the
+rejection's `choices` array. B reads only root captures and never help bodies, exactly as
+specified, so the finding is honest at the surface B reads.
+
+What it exposed is larger than the alias: **the `choices` list understates the ACCEPTED set by
+exactly the aliases.** The adopter is fixing it tool-side — one declared row per alias, which is
+the house precedent this comparison has now enforced — so the finding will vanish for the right
+reason rather than by being suppressed.
+
+### The honesty case rendered as sized
+
+On the two help-screen tools: `THE COMPARISON DID NOT RUN`, the
+_not-a-tool-that-advertises-no-verbs_ parenthetical, and the closing line _"This is not agreement:
+nothing was compared"_. Two root captures read on each, none asserted — correct, since their bare
+invocation is a help screen and their rejections enumerate nothing. **Nothing read as an
+accusation**, which was the risk this wording existed to carry.
+
+### Not exercised, and named rather than assumed passed
+
+**The disagreement line.** No partial retrofit was in flight, so it has never run against a real
+divergence. It gets its live test when the next tool is hardened, deliberately, mid-retrofit.
+
+### One rendering note, deliberately NOT acted on
+
+> on an alias-bearing tool "recorded but never advertised" can read a notch stronger than reality
+> (advertised in help, absent from choices); if a second adopter trips on that, a clause in the
+> block's header text is cheaper than a model change.
+
+Offered explicitly as a thought rather than a request, with its own trigger condition. **Recorded
+and not built**, on this project's own rule: one consumer's shape may be their shape, and the
+second signal is what makes a change generalise. The trigger is written down so a second instance
+is recognised rather than re-derived.
+
+### Two earlier items confirmed closed from outside
+
+Unprompted, in the same run: build provenance now reads the target's tree (`build 079fa43-dirty` —
+and the `-dirty` was true), and the recorded-surfaces census rolls up rather than printing one line
+per path. Both were trial friction items; both verified by the adopter rather than by us.
