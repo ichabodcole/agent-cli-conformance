@@ -19,6 +19,9 @@ const CONFORMING: TargetInfo = {
   argv0: ["bun", join(HERE, "fixtures/conforming.ts")],
 };
 
+const ECHO = join(HERE, "fixtures/echoes-argv.ts");
+const ECHO_TARGET: TargetInfo = { path: ECHO, argv0: ["bun", ECHO] };
+
 const inv = (args: string[], inertness: Invocation["inertness"]): Invocation => ({
   args,
   inertness,
@@ -26,6 +29,32 @@ const inv = (args: string[], inertness: Invocation["inertness"]): Invocation => 
 });
 
 describe("runProbe", () => {
+  // The A6 probe's shape, delivered through a bun launcher. Before the launch compensation the
+  // child received ["--x"] — bun ate the terminator — which is why A6 reported `unverified` for
+  // every bun target rather than measuring A1 while wearing A6's name.
+  test("a leading `--` survives the bun launcher", async () => {
+    const o = await runProbe(ECHO_TARGET, inv(["--", `--${SENTINEL}-value`], "sentinel"));
+
+    const seen = JSON.parse(o.stderr) as { argv: string[] };
+    expect(seen.argv).toEqual(["--", `--${SENTINEL}-value`]);
+  });
+
+  test("the compensation is recorded, and recorded args stay uncompensated", async () => {
+    const o = await runProbe(ECHO_TARGET, inv(["--", `--${SENTINEL}-value`], "sentinel"));
+
+    // The evidence id and `compare`'s alignment both key on the RECORDED args, which must not move.
+    expect(o.invocation.args).toEqual(["--", `--${SENTINEL}-value`]);
+    expect(o.launchAdjustment).toContain("--");
+  });
+
+  test("a probe that does not lead with `--` is not compensated", async () => {
+    const o = await runProbe(ECHO_TARGET, inv([`--${SENTINEL}-value`], "sentinel"));
+
+    const seen = JSON.parse(o.stderr) as { argv: string[] };
+    expect(seen.argv).toEqual([`--${SENTINEL}-value`]);
+    expect(o.launchAdjustment).toBeUndefined();
+  });
+
   test("captures stdout, exit code and timing for a help path", async () => {
     const o = await runProbe(CONFORMING, inv(["--help"], "help-path"));
     expect(o.exitCode).toBe(0);
