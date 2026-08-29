@@ -703,3 +703,39 @@ is recognised rather than re-derived.
 Unprompted, in the same run: build provenance now reads the target's tree (`build 079fa43-dirty` —
 and the `-dirty` was true), and the recorded-surfaces census rolls up rather than printing one line
 per path. Both were trial friction items; both verified by the adopter rather than by us.
+
+## Appendix B6: open follow-ups, not blocking
+
+Found by the release note's cold writer reading the tree. Neither blocks the release; both are
+recorded so they are recognised rather than re-derived.
+
+### The comparison reads only the FIRST token of a recorded path
+
+`state show` contributes `state`. **Paths deeper than one token are invisible to this comparison**,
+and the JSON field gives no hint of that — a reader with nested commands could take a clean result
+as coverage it is not.
+
+This is the same axis the worked example already marks as unanswered for a flat command table, so
+it is one question arriving in a second place rather than a new one. What it wants is a decision
+about whether the census compares first tokens (and says so), or compares whole paths against an
+advertisement that has no way to express depth. **The second is probably not expressible in the
+shapes we read** — a `usage:` line's bracket group names one token — which argues for saying so
+plainly rather than deepening the comparison.
+
+Trigger for taking it up: an adopter with nested commands running this and reading the result as
+whole-path coverage. The one who asked for the feature has nested commands and did not trip on it,
+which is evidence about the ordering rather than about the risk.
+
+### The registry guide names one tool in seven places
+
+The worked example's mention was removed on the argument that a reader has no reason to know that
+tool and the excerpts carry themselves. **Seven older mentions remain** — in "Why, in two numbers
+from two real tools", in the steps, and at the line saying the guide is "derived from" that tool's
+shape.
+
+Those are a different use: there the tool carries **measured evidence** (289 flag/path pairs; 33 of 33) rather than authority, and stripping the name would leave a number with no subject. But the
+guide is now inconsistent about whether the reader is assumed to know the tool, and that
+inconsistency is real whichever way it resolves.
+
+Both are the owner's call and neither has a consumer signal behind it yet, which is why they are
+recorded here rather than acted on.
