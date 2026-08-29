@@ -37,7 +37,7 @@ import {
   type ReportedFinding,
   runCheckers,
 } from "../kit/report.ts";
-import { surfaceSummary } from "../kit/surface.ts";
+import { advertisedVerbsSummary, surfaceSummary } from "../kit/surface.ts";
 import type { History, TargetInfo } from "../kit/types.ts";
 import { VERSION } from "../version.ts";
 
@@ -656,6 +656,23 @@ export function renderCheckReportText(r: Report, prelude: string[] = []): string
       ).length;
       return `    from ${e.args.join(" ")}${runs > 1 ? ` (${runs} identical rejections)` : ""} · ${e.shape} ${JSON.stringify(e.matched)} on ${e.stream} · ${e.flags.join(" ")}`;
     }),
+    "",
+    // THE ADVERTISED VERB SET, printed on every report — including the ones where nothing could be
+    // asserted, which is the majority case on a fleet where half the tools answer an unknown verb
+    // with a help screen and no `usage:`-anchored bracket group. A section that appeared only when
+    // there was something to compare would make a missing thing render as an absent thing.
+    //
+    // It sits under the flag surface because it is the same kind of fact — the target's own words,
+    // captured and not judged — and above the recorded block because that is the order a reader
+    // needs: what the tool advertises, then what somebody else recorded, then the diff over both.
+    "  ADVERTISED VERBS vs RECORDED PATHS — the verb set the target names at its own root, against",
+    "  the paths in a recorded batch. Evidence, not a rule: there is no rule id here, nothing in",
+    "  this report passes or fails on it, and the recorded side is the caller's attestation.",
+    ...(r.advertisedVerbs
+      ? advertisedVerbsSummary(r.advertisedVerbs).map((l) => `    ${l}`)
+      : [
+          `    this artifact predates the advertised-verb comparison (written by acc ${r.kitVersion})`,
+        ]),
     "",
     // SURFACES THE CALLER RECORDED, printed only when they supplied a batch. It sits between
     // the kit's own root capture above and the declared side below, because that is the order

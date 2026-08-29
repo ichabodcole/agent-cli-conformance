@@ -177,6 +177,92 @@ export interface Surface {
     /** How many members there were, so a truncated sample cannot pass for the whole list. */
     count: number;
   }>;
+  /**
+   * THE ADVERTISED VERB SET — what the target says its commands are, read from its root captures.
+   *
+   * A FIELD OF ITS OWN, and not a widening of `nonFlagCandidates` above, because the two carry
+   * opposite contracts. That one is DIAGNOSTIC: a set the flag reader saw and REJECTED, sampled to
+   * `SAMPLE` because all it claims to do is show a reader what kind of thing was there. This one is
+   * an ASSERTION — *this IS the set of verbs the target advertises* — so it carries the full list,
+   * the shape it was read in, which capture it came from, and whether the list said of itself that
+   * it was incomplete. Overloading one field with both is how sample-versus-full and
+   * diagnostic-versus-assertion end up disagreeing inside one structure.
+   *
+   * PRESENT ONLY ON THE KIT'S OWN ROOT CAPTURE. `surfaceFrom` does not build it, so a
+   * caller-recorded batch never carries one: the batch is the RECORDED side of the comparison, and
+   * a recorded surface asserting an advertised set as well would be the kit reading the same claim
+   * out of two places. `captureSurface` derives it once and every consumer reads it — see
+   * `advertisedVerbsFrom`.
+   */
+  advertisedVerbs?: AdvertisedVerbs;
+}
+
+/** How a root capture named its verb set. Published so a reader can audit the match. */
+export type AdvertisedShape =
+  /** A `choices` array in a JSON error envelope — the retrofitted shape, and the reliable one. */
+  | "envelope-choices"
+  /** A pipe-delimited bracket group on a `usage:` line — the legacy shape, where the drift lives. */
+  | "usage-line";
+
+/** Which ROOT capture a verb set was read from. There are two, and never a `--help` body. */
+export type AdvertisedFrom = "bare-invocation" | "unknown-verb-rejection";
+
+/**
+ * ONE ROOT CAPTURE'S ACCOUNT OF THE VERBS IT ACCEPTS.
+ *
+ * `verbs` IS THE WHOLE LIST AND IS NOT SAMPLED, which is a deliberate exception to the discipline
+ * `nonFlagCandidates` follows, taken for the reason the action on this field is different: the
+ * thing a reader does with a verb-set disagreement is go and add THESE verbs to their help, so a
+ * sample plus a count is the tool saying what it did while withholding what it found.
+ *
+ * IT IS STILL BOUNDED, by an existing mechanism rather than by an assumption. `runner.ts` caps
+ * every captured stream at `MAX_STREAM_BYTES`, so a pathological target produces a pathological
+ * list bounded by that and nothing further. This is the SECOND user of a documented reliance and
+ * not a new exception: `ReportedObservation.args` in `report.ts` leans on exactly the same cap, in
+ * the same words — *"bounded only by `MAX_STREAM_BYTES` in `runner.ts` … it is written down
+ * because 'argv is small' is an assumption a reader would otherwise make."* "Verb sets are small"
+ * is that same assumption, and it is written down here rather than relied on. The TEXT line
+ * samples at `VERB_LINE_CAP`; the JSON always carries every member.
+ */
+export interface AdvertisedVerbSet {
+  /** Every member, in the order the target listed them. Never sampled — see above. */
+  verbs: string[];
+  shape: AdvertisedShape;
+  /**
+   * The list said of ITSELF that it is incomplete — it carried `…` or `...` as a member.
+   *
+   * The marker is dropped from `verbs` rather than kept as one, because `...` is not a verb any
+   * caller can type. It is carried here because a `recorded but never advertised` finding cannot
+   * be ASSERTED from a list that says it is incomplete: the verb may live in the elided tail.
+   */
+  open: boolean;
+  /**
+   * TRUE WHEN SHAPE ALONE CANNOT ASSERT THIS BLOB — two members or fewer.
+   *
+   * `<name|id>` is a type union and `<get|set>` is a two-verb tool, and no lexical rule separates
+   * them. Three members or more assert on shape alone, deliberately: nothing about a larger verb
+   * set may depend on how fresh the caller's batch is. At two or fewer the last discriminator is
+   * EVIDENCE rather than shape — a majority of the members matching recorded paths — and the
+   * boundary to hold is that recorded paths CONFIRM the blob and never CONSTRUCT it. The members
+   * come from the target's own bytes either way, so the freshness property survives.
+   */
+  confirmationRequired: boolean;
+  from: AdvertisedFrom;
+  /** The observation this was read from — resolvable in `Report.observations[]`. */
+  observationId: string;
+  /** The argv that produced the capture. */
+  args: string[];
+  stream: "stdout" | "stderr";
+}
+
+export interface AdvertisedVerbs {
+  /**
+   * How many ROOT captures were readable, which is what makes an empty `sets` a measurement rather
+   * than an assumption — the same denominator `probesRead` gives the flag capture.
+   */
+  capturesRead: number;
+  /** One entry per root capture that named a set. Empty is NOT "the target advertises no verbs". */
+  sets: AdvertisedVerbSet[];
 }
 
 /**
@@ -407,9 +493,20 @@ function keyedSets(
  * to carry a not-a-flag-surface would put the two one field apart in a type a reader trusts to
  * keep them apart. Nothing here can reach `flags` or move `status`.
  *
- * Only JSON documents are read. A prose near-miss would need the same enumerating-phrase heuristic
- * the prose path uses, and guessing which prose list is "a set of something else" is exactly the
- * inference this capture refuses to make.
+ * ONLY JSON DOCUMENTS ARE READ HERE, and the refusal that used to be written in this comment still
+ * holds FOR THIS FIELD. It used to end: *guessing which prose list is "a set of something else" is
+ * exactly the inference this capture refuses to make.* That is still true of `nonFlagCandidates`,
+ * whose whole claim is the negative one — "there was a set here and it is not flags" — and a prose
+ * near-miss reader would have to decide which arbitrary bracketed list counted as a set at all.
+ *
+ * WHAT CHANGED, AND WHY IT IS NOT THIS REFUSAL BEING QUIETLY REVERSED. `advertisedVerbsIn` below
+ * does read a bracket group out of prose, and it is a different reader answering a different
+ * question under conditions this one has none of: it is restricted BY PROVENANCE to two root
+ * captures (a bare invocation and an unknown-verb rejection, never a `--help` body), it is anchored
+ * to a `usage:` line, it takes only the first bracket group, it requires a pipe, and it requires
+ * every member to be token-shaped. The general inference — read any prose list as a set — is still
+ * refused, here and there. A reader arriving at these two functions six months from now should
+ * find one decision, narrowed, rather than a comment and a contradiction.
  */
 export function nonFlagSetsIn(text: string): Array<{ key: string; values: string[] }> {
   const trimmed = text.trim();
@@ -514,11 +611,16 @@ export function captureSurface(observations: readonly Observation[]): Surface {
     }
   }
 
-  return surfaceFrom(
+  const surface = surfaceFrom(
     evidence,
     rejections.length,
     rejections.flatMap((o) => [o.stderr, o.stdout]),
   );
+  // THE ONE DERIVATION. Attached here rather than inside `surfaceFrom` because that function is
+  // shared with the caller-recorded reader, and a recorded batch is the RECORDED side of this
+  // comparison — deriving an advertised set there too would give one claim two homes, which is
+  // exactly the defect `surfaceFrom` exists to have ended.
+  return { ...surface, advertisedVerbs: advertisedVerbsFrom(observations) };
 }
 
 /**
@@ -623,4 +725,435 @@ export function surfaceSummary(s: Surface | undefined, path: readonly string[] =
     } read, none named a set of flags (NOT a tool with no flags)${seen}`;
   }
   return `nothing readable was recorded at ${where}, so nothing was read (not a statement about the tool)`;
+}
+
+/**
+ * THE SHAPE EVERY MEMBER OF AN ADVERTISED VERB SET MUST HAVE.
+ *
+ * Lowercase, starting with a letter — the shape of a token a caller types. It kills `<FILE>` and
+ * `<key=value>`, which are metavariables wearing a bracket group's clothes. It is a shape test and
+ * not a meaning test: nothing here works out what one of the target's words MEANS, which is the
+ * limit `docs/wiki/concepts/probing.md` puts on every reader in this file.
+ */
+const VERB_TOKEN = /^[a-z][a-z0-9-]*$/;
+
+/**
+ * The two spellings of an OPEN-SET MARKER, which are dropped from the set rather than counted in it.
+ *
+ * Found inside the adopter's own quoted usage string — `usage: cli.ts <open|state|tail|…>` — where
+ * a fixture built from that line dropped the ellipsis without anyone noticing, and the parse would
+ * have shipped reading `…` as a fifth verb. An ellipsis is the usage line declaring its own list
+ * INCOMPLETE, so it is a marker: it leaves `verbs`, and it sets `open`.
+ */
+const OPEN_MARKERS = new Set(["…", "..."]);
+
+/**
+ * HOW MANY VERBS THE TEXT LINE PRINTS before it samples.
+ *
+ * The JSON field is never sampled (see `AdvertisedVerbSet.verbs`); this bounds the one-line render
+ * only, because a report line is read by a person and a thousand names on it is not a line. 32
+ * covers every tool in the fleet this was measured against, and past it the line prints a sample
+ * and the true count so a cut can never pass for the whole list.
+ *
+ * DELIBERATELY NOT `SAMPLE`. That constant bounds `nonFlagCandidates`, whose contract is diagnostic
+ * and whose bound is tested by name; repurposing it would make one number answer to two contracts.
+ */
+const VERB_LINE_CAP = 32;
+
+/** What a parse of one stream yields, before it is attributed to a capture. */
+export type VerbBlob = { verbs: string[]; shape: AdvertisedShape; open: boolean } | null;
+
+/**
+ * Turn the raw members of a blob into a set, or refuse the blob outright.
+ *
+ * Shared by both shapes so the ellipsis and the member-shape test cannot come to differ between a
+ * JSON `choices` array and a usage line — the two shapes are two ways of reading one claim, and a
+ * rule that held for one and not the other would be a second place to be wrong.
+ */
+function membersOf(raw: readonly string[]): { verbs: string[]; open: boolean } | null {
+  let open = false;
+  const verbs: string[] = [];
+  for (const member of raw) {
+    const token = member.trim();
+    if (token === "") continue;
+    if (OPEN_MARKERS.has(token.toLowerCase())) {
+      open = true;
+      continue;
+    }
+    // EVERY member must be token-shaped, and one that is not refuses the WHOLE blob rather than
+    // being skipped. A blob half of whose members are metavariables is not a verb list with some
+    // noise in it; it is a usage line describing arguments, and reading the half that happens to
+    // look like verbs out of it would publish a set the target never named.
+    if (!VERB_TOKEN.test(token)) return null;
+    verbs.push(token);
+  }
+  return verbs.length === 0 ? null : { verbs, open };
+}
+
+/**
+ * The `choices` array of a JSON error envelope — the retrofitted shape.
+ *
+ * Only `choices`, and not the qualified flag keys `KEYS` also holds: those are declarations ABOUT
+ * FLAGS by construction (`validFlags` cannot mean anything else), and reading one as a verb set
+ * would be the reader deciding what the target's own field name means.
+ */
+function choicesIn(text: string): VerbBlob {
+  const trimmed = text.trim();
+  if (trimmed === "" || !parsesWhole(trimmed)) return null;
+  let found: string[] | null = null;
+  const visit = (node: unknown): void => {
+    if (found) return;
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    if (node === null || typeof node !== "object") return;
+    for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+      if (
+        normaliseKey(key) === "choices" &&
+        Array.isArray(value) &&
+        value.every((v) => typeof v === "string")
+      ) {
+        found = value as string[];
+        return;
+      }
+      visit(value);
+    }
+  };
+  visit(JSON.parse(trimmed) as unknown);
+  if (found === null) return null;
+  const members = membersOf(found);
+  return members ? { ...members, shape: "envelope-choices" } : null;
+}
+
+/**
+ * THE NARROWING STACK, CHEAPEST REFUSAL FIRST — a pipe-delimited bracket group on a usage line.
+ *
+ * The legacy shape, and the one the whole comparison exists for: a tool that answers an unknown
+ * verb with `usage: cli.ts <open|state|tail>` and nothing else is exactly where the drift this was
+ * reported for lives, and a reader that only understood the JSON envelope would have reported an
+ * EMPTY advertised set on precisely those tools — which, by the asymmetry below, would have turned
+ * every recorded path into a false `recorded but never advertised`.
+ *
+ * 1. ONLY A LINE MATCHING `^usage[:\s]`. The cheapest refusal, and the one that keeps this out of
+ *    arbitrary error prose.
+ * 2. ONLY THE FIRST BRACKET GROUP AFTER THE PROGRAM TOKEN, so `usage: cli <open|state> <file>`
+ *    never contributes `file`. The later groups are the ARGUMENTS of the verb, not more verbs.
+ * 3. AT LEAST ONE PIPE. This is the clause that kills `<file>`, `<command>` and `<path>` — the
+ *    singleton metavariable, which is the overwhelmingly common shape of a first bracket group and
+ *    which would otherwise be published as a one-verb tool advertising a verb called `file`.
+ *    ⚠ IT IS NOT THE CHEAP ONE TO LOOSEN. It looks like a formatting quirk and it is the entire
+ *    discriminator between "this group enumerates alternatives" and "this group names one slot";
+ *    dropping it does not widen the reader, it converts every usage line on earth into a verb set.
+ * 4. EVERY MEMBER TOKEN-SHAPED, and `…` an open-set marker rather than a member — `membersOf`.
+ */
+function usageLineIn(text: string): VerbBlob {
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    // 1. the usage anchor.
+    const anchor = /^usage[:\s]/i.exec(trimmed);
+    if (!anchor) continue;
+    const rest = trimmed.slice(anchor[0].length).trim();
+    // 2. the FIRST bracket group after the program token. The program token is whatever follows
+    // the anchor up to the first space, and it is skipped whether or not it is itself bracketed —
+    // `usage: <cli> <open|state>` names its own program in a group, and reading that group would
+    // publish the program's name as its only verb.
+    const afterProgram = rest.slice(rest.search(/\s/) + 1);
+    if (rest.search(/\s/) === -1) continue;
+    const group = /<([^<>]*)>/.exec(afterProgram);
+    if (!group) continue;
+    const inner = group[1] ?? "";
+    // 3. at least one pipe. See the ⚠ above before touching this.
+    if (!inner.includes("|")) continue;
+    const members = membersOf(inner.split("|"));
+    if (members) return { ...members, shape: "usage-line" };
+  }
+  return null;
+}
+
+/**
+ * Read one stream for an advertised verb set. The JSON envelope is tried first, for the reason
+ * `readStream` tries it first: a field is a structure the target chose and a usage line is a shape
+ * we are recognising.
+ */
+export function advertisedVerbsIn(text: string): VerbBlob {
+  return choicesIn(text) ?? usageLineIn(text);
+}
+
+/**
+ * WHICH ROOT CAPTURE THIS OBSERVATION IS, or `null` for one that is neither.
+ *
+ * PROVENANCE IS THE DISCRIMINATION, not shape. There are exactly two places a tool enumerates what
+ * it would have accepted at the root — the bare invocation, and its rejection of an unknown verb —
+ * and reading a bracket group from anywhere else means reading a `--help` body for an advertised
+ * set, which is the hand-maintained artifact this whole capture exists to get away from.
+ *
+ * An unknown-FLAG rejection is deliberately not one of the two either, even though it is where the
+ * flag reader lives: the set a parser names when refusing a FLAG is a set of flags, and taking a
+ * `choices` array out of it as verbs would be reading one field as two different claims.
+ *
+ * THE EXCLUSIONS ARE `isReadableRejection`'S, applied to whichever capture is read: timed out,
+ * crashed, failed to spawn, TRUNCATED. Truncation matters more here than anywhere: a usage line cut
+ * mid-blob yields a verb set short by an unknowable number and looks complete, and short-by-unknown
+ * is the input that manufactures `recorded but never advertised` findings out of our own read.
+ */
+function rootCapture(o: Observation): AdvertisedFrom | null {
+  if (o.timedOut || o.crashed || o.spawnFailed || o.truncated) return null;
+  const { args, inertness } = o.invocation;
+  if (inertness === "bare" && args.length === 0) return "bare-invocation";
+  // One token, not flag-shaped: an unknown verb offered at the root. `sentinel` is the inertness
+  // class the kit gives a probe built from a token no real tool implements.
+  if (inertness === "sentinel" && args.length === 1 && !(args[0] as string).startsWith("-"))
+    return "unknown-verb-rejection";
+  return null;
+}
+
+/**
+ * DERIVE THE ADVERTISED VERB SET ONCE, from the observations the run already holds.
+ *
+ * One pass, in one file, and the census reads what it produces. The alternative — deriving it here
+ * and again wherever it is rendered or compared — is the `surfaceFrom` defect this project has
+ * already shipped once: one construction with two homes, six green unit tests, and unchanged
+ * end-to-end output. If a stream is being parsed for verbs anywhere outside this function, that is
+ * the bug arriving.
+ */
+export function advertisedVerbsFrom(observations: readonly Observation[]): AdvertisedVerbs {
+  const sets: AdvertisedVerbSet[] = [];
+  const seen = new Set<string>();
+  let capturesRead = 0;
+  // The rejection first, so `sets` reads in precedence order: the `choices` array is the parser
+  // speaking, and a hand-maintained usage string is where the drift is.
+  const ordered: AdvertisedFrom[] = ["unknown-verb-rejection", "bare-invocation"];
+  for (const want of ordered) {
+    for (const o of observations) {
+      if (rootCapture(o) !== want) continue;
+      capturesRead += 1;
+      // stderr first: a rejection belongs there (B1), exactly as the flag reader does it.
+      for (const stream of ["stderr", "stdout"] as const) {
+        const blob = advertisedVerbsIn(stream === "stderr" ? o.stderr : o.stdout);
+        if (!blob) continue;
+        // Deduped on what was READ rather than on the observation: three checkers can record the
+        // same bare invocation, and one advertisement repeated is one advertisement.
+        const key = JSON.stringify([want, blob.shape, blob.verbs, blob.open]);
+        if (!seen.has(key)) {
+          seen.add(key);
+          sets.push({
+            verbs: blob.verbs,
+            shape: blob.shape,
+            open: blob.open,
+            confirmationRequired: blob.verbs.length <= 2,
+            from: want,
+            observationId: o.id,
+            args: [...o.invocation.args],
+            stream,
+          });
+        }
+        break;
+      }
+    }
+  }
+  return { capturesRead, sets };
+}
+
+/**
+ * THE COMPARISON, AND WHAT IT SAYS WHEN IT DID NOT HAPPEN.
+ *
+ * `recordedRootVerbs` is `null` when the run was given no batch, and a (possibly empty) list of the
+ * FIRST token of every recorded path when it was. The distinction is the whole reason it is
+ * nullable: with no batch there is nothing to compare against, which is a fact about the RUN, and
+ * an empty batch-derived list is a fact about the batch.
+ */
+export interface AdvertisedVerbsComparison {
+  /**
+   * `not-asserted` — no root capture produced a set this reader will stand behind, so the
+   * comparison DID NOT RUN. Measured on a real fleet, half of whose tools answer an unknown verb
+   * with a help screen and no `usage:`-anchored bracket group anywhere: this is the MAIN render,
+   * not a safety net, and its wording is a primary surface.
+   * `no-batch` — a set was asserted and there is nothing recorded to compare it against.
+   * `compared` — both sides were present and the difference is stated in both directions.
+   */
+  status: "not-asserted" | "no-batch" | "compared";
+  /** How many root captures were readable at all — the denominator behind `not-asserted`. */
+  capturesRead: number;
+  /** Sets that were read and NOT asserted. Present so a hedge renders as a hedge, never as silence. */
+  hedged: AdvertisedVerbSet[];
+  /**
+   * ANY ASSERTED SET MARKED ITSELF INCOMPLETE with an ellipsis.
+   *
+   * Carried on the comparison rather than left to be read off `quoted`, because the defect
+   * direction is computed over the UNION: a bare capture whose list is open contributes its
+   * openness to the union whether or not it is the set being quoted, and a `recorded but never
+   * advertised` line that ignored it would flatly accuse a tool whose own advertisement said the
+   * list was partial.
+   */
+  open: boolean;
+  /**
+   * WHOSE STATEMENT IS BEING REPEATED — the rejection's when both were asserted, otherwise the one
+   * that was. That falls out of "asserted" and needs no clause of its own: a hedged or unreadable
+   * rejection beside an asserted bare capture leaves the bare capture as the only thing to quote.
+   */
+  quoted?: AdvertisedVerbSet;
+  /**
+   * THE UNION OF THE ASSERTED SETS, sorted, and the set both directions are computed over.
+   *
+   * NOT the precedence winner alone, and the difference is a false finding: with a bare capture
+   * naming four verbs and a rejection naming three, testing recorded paths against the rejection's
+   * three turns the fourth into a `recorded but never advertised` accusation manufactured by our
+   * own choice of source. Precedence answers whose words to QUOTE; the union is what to COMPARE.
+   */
+  union?: string[];
+  /** THE DEFECT DIRECTION — a path the caller records that no asserted set advertises. */
+  recordedNotAdvertised?: string[];
+  /**
+   * COVERAGE, NOT A DEFECT — advertised verbs this batch holds no record for.
+   *
+   * For a deliberately partial batch this is the EXPECTED state, so it is rendered "not covered by
+   * this batch" and never "missing". It is kept because it is the only line that can flag a usage
+   * string still naming a verb that no longer exists: nobody records a path they do not believe in.
+   */
+  notCoveredByBatch?: string[];
+  /**
+   * WHERE TWO ASSERTED SETS DISAGREE — the spellings one names and the other does not.
+   *
+   * Where both surfaces come from one string constant behind one fallthrough they agree trivially.
+   * The case this catches is a PARTIAL RETROFIT: a tool grows a `choices` array on its rejection
+   * while its hand-maintained usage string goes stale, so the two advertisements come from
+   * different sources for the first time — which is exactly when they can diverge.
+   */
+  disagreement?: string[];
+}
+
+/** True when a majority of a blob's members match something the caller recorded. */
+function confirmedBy(set: AdvertisedVerbSet, recorded: readonly string[]): boolean {
+  const hits = set.verbs.filter((v) => recorded.includes(v)).length;
+  return hits * 2 > set.verbs.length;
+}
+
+export function compareAdvertisedVerbs(
+  surface: Surface,
+  recordedRootVerbs: readonly string[] | null,
+): AdvertisedVerbsComparison {
+  const advertised = surface.advertisedVerbs ?? { capturesRead: 0, sets: [] };
+  const capturesRead = advertised.capturesRead;
+  // ONE ADJECTIVE, THREE CONSUMERS. "Readable" was the word this design used in three places and
+  // meant "asserted" in all of them — and a hedged blob is readable, so the looser word would let
+  // a hedge suppress a real finding. Everything below reads `asserted`.
+  const asserted = advertised.sets.filter(
+    (s) =>
+      !s.confirmationRequired || (recordedRootVerbs !== null && confirmedBy(s, recordedRootVerbs)),
+  );
+  const hedged = advertised.sets.filter((s) => !asserted.includes(s));
+  if (asserted.length === 0) return { status: "not-asserted", capturesRead, hedged, open: false };
+
+  const quoted =
+    asserted.find((s) => s.from === "unknown-verb-rejection") ?? (asserted[0] as AdvertisedVerbSet);
+  const union = [...new Set(asserted.flatMap((s) => s.verbs))].sort();
+  const open = asserted.some((s) => s.open);
+  const disagreement =
+    asserted.length > 1 ? union.filter((v) => !asserted.every((s) => s.verbs.includes(v))) : [];
+
+  if (recordedRootVerbs === null)
+    return {
+      status: "no-batch",
+      capturesRead,
+      hedged,
+      open,
+      quoted,
+      union,
+      ...(disagreement.length > 0 ? { disagreement } : {}),
+    };
+
+  const recorded = [...new Set(recordedRootVerbs)].sort();
+  return {
+    status: "compared",
+    capturesRead,
+    hedged,
+    open,
+    quoted,
+    union,
+    recordedNotAdvertised: recorded.filter((v) => !union.includes(v)),
+    notCoveredByBatch: union.filter((v) => !recorded.includes(v)),
+    ...(disagreement.length > 0 ? { disagreement } : {}),
+  };
+}
+
+/** The verb list as a line prints it — capped, and never silently. See `VERB_LINE_CAP`. */
+function verbLine(verbs: readonly string[]): string {
+  return verbs.length <= VERB_LINE_CAP
+    ? verbs.join(" ")
+    : `${verbs.slice(0, VERB_LINE_CAP).join(" ")} … (${verbs.length} in all; the full list is in the JSON)`;
+}
+
+const SHAPE_WORD: Record<AdvertisedShape, string> = {
+  "envelope-choices": "envelope-choices shape",
+  "usage-line": "usage-line shape",
+};
+
+const FROM_WORD: Record<AdvertisedFrom, string> = {
+  "bare-invocation": "the bare invocation",
+  "unknown-verb-rejection": "the unknown-verb rejection",
+};
+
+/**
+ * WHAT THE CENSUS PRINTS — evidence, in words that cannot be read as a verdict.
+ *
+ * Nothing here mints a rule id, moves a count or touches an exit code, and that is not caution: the
+ * recorded side is CALLER-ATTESTED, and nothing gate-failing may rest on bytes the kit did not
+ * observe itself. An adopter who wants a gate greps the JSON field in CI, which is them opting into
+ * a gate rather than the kit shipping one.
+ */
+export function advertisedVerbsSummary(c: AdvertisedVerbsComparison): string[] {
+  if (c.status === "not-asserted") {
+    // THE HONESTY CASE, and it is the main render rather than the fallback: on a fleet measured for
+    // this, half the tools answer an unknown verb with a help screen carrying no `usage:`-anchored
+    // bracket group at all, so this is the first thing they see. It matches the sentence
+    // `declaration.ts` already renders for a target that did not enumerate — nothing was compared,
+    // and that is not agreement — rather than inventing a second way of saying it.
+    return [
+      "THE COMPARISON DID NOT RUN — no advertised verb set could be asserted at the root, so the" +
+        " recorded paths were compared against nothing.",
+      c.capturesRead === 0
+        ? "  no root capture was readable, so nothing was read (not a statement about the tool)"
+        : `  ${c.capturesRead} root capture${c.capturesRead === 1 ? "" : "s"} read, none asserted a verb set (NOT a tool that advertises no verbs)`,
+      ...c.hedged.map(
+        (s) =>
+          `  seen and not asserted: <${s.verbs.join("|")}> from ${FROM_WORD[s.from]} — two members or fewer, which no shape rule separates from a type union, and nothing recorded confirms it`,
+      ),
+      "  This is not agreement: nothing was compared, and nothing here is a finding about the tool.",
+    ];
+  }
+  const q = c.quoted as AdvertisedVerbSet;
+  const union = c.union ?? [];
+  const open = c.open;
+  const head = `advertised set captured (${union.length} verb${union.length === 1 ? "" : "s"}, ${SHAPE_WORD[q.shape]}, quoted from ${FROM_WORD[q.from]}${open ? ", and the line marks its list open with …" : ""}): ${verbLine(union)}`;
+  if (c.status === "no-batch") {
+    // NAMED RATHER THAN OMITTED. Leaving the field out when there is no batch would make a missing
+    // thing render as an absent thing, which is the defect class this project is named after.
+    return [
+      `${head}; no recorded surfaces in this run, so no comparison was made.`,
+      ...(c.disagreement?.length
+        ? [`  the two root captures disagree on: ${c.disagreement.join(" ")}`]
+        : []),
+    ];
+  }
+  const missing = c.recordedNotAdvertised ?? [];
+  const uncovered = c.notCoveredByBatch ?? [];
+  return [
+    head,
+    missing.length === 0
+      ? "  every recorded path is among the advertised verbs"
+      : open
+        ? `  recorded but never advertised: ${missing.join(" ")} — not among the ${union.length} verbs the advertised list names, and that list marks itself open with … , so the verb may live in the elided tail`
+        : `  recorded but never advertised: ${missing.join(" ")}`,
+    // NEVER "MISSING", and never anything that reads as an accusation: for a deliberately partial
+    // batch this is the expected state and the caller has done nothing wrong.
+    uncovered.length === 0
+      ? "  every advertised verb has a recorded surface in this batch"
+      : `  not covered by this batch: ${verbLine(uncovered)}`,
+    ...(c.disagreement?.length
+      ? [
+          `  the two root captures disagree on: ${c.disagreement.join(" ")} — one advertisement has gone stale beside the other`,
+        ]
+      : []),
+  ];
 }
