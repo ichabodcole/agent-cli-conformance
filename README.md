@@ -15,7 +15,7 @@ agent-harness authors second. It is a conformance suite for _ordinary CLIs consu
 not for agent applications that happen to have a CLI. If a person types your tool and a script
 also runs it, it is in scope.
 
-> **Status.** The kit runs today, and releases carry a tag of the form `v0.1.7` <!-- x-release-please-version -->
+> **Status.** The kit runs today, and releases carry a tag of the form `v0.1.8` <!-- x-release-please-version -->
 > — pin that tag to install. `L0` is the
 > only probe level that exists so far, and it is the shallow one — see
 > [where this is going](#where-this-is-going) for what it does and does not reach yet.
@@ -64,7 +64,7 @@ ssh key, no token and no credential helper — into the project whose CLI you wa
 <!-- x-release-please-start-version -->
 
 ```bash
-bun add -d 'git+https://github.com/ichabodcole/agent-cli-conformance.git#v0.1.7'
+bun add -d 'git+https://github.com/ichabodcole/agent-cli-conformance.git#v0.1.8'
 ```
 
 <!-- x-release-please-end -->
@@ -79,7 +79,7 @@ The longer spelling is documented because it is the one that still means somethi
 hosted elsewhere. Which failures below you can meet depends on that path, and the guide says
 which.
 
-The `#v0.1.7` pin names the current release tag. <!-- x-release-please-version -->
+The `#v0.1.8` pin names the current release tag. <!-- x-release-please-version -->
 **Do not drop it.** An adopter's unpinned install delivered an older kit at exit `0` with nothing
 visible, into a fresh project that had never held the package — though which transport that
 install used was not established, so it is not evidence about the line above. The reasons to pin
@@ -160,12 +160,12 @@ The first line is the verdict, and the exit code is the gate:
 <!-- x-release-please-start-version -->
 
 ```
-NOT CONFORMANT (L0) — 2 core violated, 2 core unverified, 13 core partially covered  /opt/homebrew/bin/git  [acc 0.1.7]
+NOT CONFORMANT (L0) — 2 core violated, 2 core unverified, 13 core partially covered  /opt/homebrew/bin/git  [acc 0.1.8]
 ```
 
 <!-- x-release-please-end -->
 
-That line also ends with the kit's own version — `[acc 0.1.7]` <!-- x-release-please-version -->
+That line also ends with the kit's own version — `[acc 0.1.8]` <!-- x-release-please-version -->
 — which appears as `kitVersion` in the JSON report. It is there because an install can silently
 give you an older kit than you asked for; the install notes above explain how, and how far the
 check reaches.
@@ -196,7 +196,7 @@ first CLI](docs/wiki/guides/check-your-first-cli.md) walks through a real one.
 <!-- x-release-please-start-version -->
 
 ```
-CONFORMANT (L0) — 0 core violated, 1 core unverified, 16 core partially covered  ./conforming.ts  [acc 0.1.7]
+CONFORMANT (L0) — 0 core violated, 1 core unverified, 16 core partially covered  ./conforming.ts  [acc 0.1.8]
 
   PASS+ A1  root flag rejected with exit 2, stdout empty, flag named; the same flag carrying a value likewise
   PASS+ A2  root verb rejected with exit 2; nested case not probed at L0; this verdict assumes the first positional selects a subcommand, which nothing at L0 established
