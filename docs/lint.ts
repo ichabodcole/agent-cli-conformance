@@ -16,7 +16,10 @@
 import { readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { documentedReportFieldProblems } from "../scripts/docs-lint/documented-report-fields.ts";
+import {
+  documentedReportFieldProblems,
+  reportFieldCountsLine,
+} from "../scripts/docs-lint/documented-report-fields.ts";
 import {
   checkLinks,
   parseFrontmatter,
@@ -229,6 +232,10 @@ if (import.meta.main) {
     ...documentedReportFieldProblems(REPO_ROOT),
   ];
   for (const p of problems) console.log(p);
+  // Printed whether or not anything is wrong: the declared-undocumented set is a state, and a
+  // state only shown on failure is a state nobody watches. See limit 5 in
+  // scripts/docs-lint/documented-report-fields.ts for why one number would not do.
+  console.log(reportFieldCountsLine());
   console.log(
     problems.length
       ? `\n${problems.length} problem(s).`

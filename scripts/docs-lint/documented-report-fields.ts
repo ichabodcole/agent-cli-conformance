@@ -9,6 +9,10 @@
 // the four published interfaces by a mapped type, so a field added to an interface fails `tsc`
 // until it is added to the spec. This rule closes the loop from the spec to the page.
 //
+// TWO GROUNDS, NOT ONE. A listed field passes on a definition-shaped line in the guide OR on
+// membership in `UNDOCUMENTED_REPORT_FIELDS`, declared beside the spec. A field in neither fails.
+// See THE VALVE, below, for what that does and does not buy.
+//
 // WHAT COUNTS AS DOCUMENTED: the backticked name in the TERM of a bullet item, a table row, or a
 // heading — never merely somewhere in the file. That is the guide's own convention, measured off
 // the page rather than imposed on it: every field it documents sits in a `- **`name`** — …` bullet,
@@ -23,8 +27,8 @@
 // without the strip got eight false "missing" that way.
 //
 // THREE LIMITS, named here and in the failure message, because a green check is a claim and a gate
-// whose limits are unnamed claims more than it checks — plus a fourth, below them, that is a
-// property of the gate rather than a gap in it:
+// whose limits are unnamed claims more than it checks — plus a fourth and a fifth, below them,
+// which are properties of the gate rather than gaps in it:
 //
 //  1. TOP-LEVEL KEYS ONLY. `DOCUMENTED_REPORT_FIELDS` is flat over four types; a key whose value is
 //     an object (`surface`, `counts`, `configSource`, …) is a leaf, and the fields INSIDE it are
@@ -101,7 +105,8 @@
 //    - FALSE CONTENT. `exitCode`/`signal` said exactly one is set; `counts` said the tallies were
 //      over one set; `applicable` said `detail` distinguishes its two causes; `timeToFirstByteMs`
 //      said a null means a hang; `counts` again, on the repair, said two counts cover precisely
-//      what the others leave out; `spawnFailed` offered a check that can never fire; `sweep`
+//      what the others leave out; `spawnFailed` offered a check that can never fire (see the row
+//      below — it belongs on the INTRODUCED side, not the found side); `sweep`
 //      claimed equal marks prove identical evidence, when the hash omits the kill flags and both
 //      timings; `excused` omitted that it goes false once the rule passes; `launchAdjustment`
 //      described the field by what the target RECEIVED when it reports what the WIRE carried,
@@ -132,6 +137,24 @@
 //      repaired. That is a real bound and better than the speculation it replaces, but it is ONE
 //      pass by the only instrument that can see this class — a reader — and the class stays
 //      invisible to every other instrument here by construction.
+//    - THE `spawnFailed` ROW, CORRECTED. It was read as the gate FINDING a dead branch. It was
+//      not, and the pre-gate text settles it: at `906dd2b:155` the name is already on the page, in
+//      prose — "ended (`exitCode`, `signal`, `crashed`, `timedOut`, `spawnFailed`), where the bytes
+//      went" — a bare mention asserting nothing about the field. So this was a CONVERSION, not an
+//      absence, and the row belongs on the INTRODUCED-BY-SATISFYING-THE-GATE side of the ledger:
+//      the false predicate did not exist until the gate demanded a definition-shaped line and
+//      someone invented one.
+//
+//      THE DISCOVERY READING SURVIVES THE CORRECTION, and is the reason the row is worth keeping
+//      rather than deleting. Forcing a CLAIM into existence where a bare mention had been
+//      unfalsifiable is exactly what let a reader falsify it — and falsifying it found a branch in
+//      the code that cannot fire, which three review rounds had read straight past. A sentence that
+//      asserts nothing cannot be wrong, and cannot be checked either.
+//
+//      BUT THE LOOP CLOSED BECAUSE AN AUDIT WAS RUNNING. The gate manufactured the falsifiable
+//      claim; a reader aimed at the population falsified it. The second half is the half shown NOT
+//      to recur — see THE ATTENTION DEPENDENCY below. Do not read this row as the gate paying for
+//      itself; read it as the gate supplying a target that only an audit ever shoots at.
 //    - COMPLETENESS KILLS ABSENCE, the reader-side counterpart. Before the gate, a field with no
 //      entry sent a reader to the source, and that silence was a WORKING SIGNAL. After it, every
 //      field carries a confident-looking line, so the reader stops at the guide — and the
@@ -156,10 +179,52 @@
 //    for that exact shape, in the commit repairing the fourth. The failure is not carelessness. It
 //    is that "fill this bullet" and "state something general and clean" pull in the same direction,
 //    and generality is what makes a sentence read as finished.
+//
+// 5. THE VALVE, and what it is and is not worth. `UNDOCUMENTED_REPORT_FIELDS` is the second way to
+//    satisfy this rule: a field either gets a definition-shaped line in the guide or gets declared,
+//    by name, as undocumented. A field in neither still fails. It exists because of everything in
+//    limit 4 — the forced choice was "write a bullet or leave the gate red", and thirteen false
+//    sentences and two near-voids came out of the first option.
+//
+//    THE VALVE CERTIFIES THAT NO FIELD IS **SILENTLY** ABSENT. IT DOES NOT CERTIFY THAT A
+//    DOCUMENTED FIELD IS DOCUMENTED: a void bullet — one that names the field and asserts nothing —
+//    still passes, and no lint can tell a real description from an empty one. It helps the author
+//    who wants to be honest, and does nothing about the author who wants to look done.
+//
+//    WHY IT IS STILL WORTH HAVING, stated as the choice an author actually faces. A new field
+//    offers three paths:
+//
+//    - write a real bullet — costly, and needs knowledge the author may not have at that moment;
+//    - write a void bullet — cheap, passes, and LOOKS LIKE WORK;
+//    - declare it undocumented — cheap, passes, and visibly admits a gap.
+//
+//    The valve adds the third BESIDE the second. It does not remove the second, and the second
+//    dominates the third on appearance, so nothing here should be read as closing that path. What
+//    the valve converts is FORCED invention into VOLUNTARY invention. That is a real gain and a
+//    strictly smaller one than "nobody is ever blocked into inventing a sentence" would claim.
+//
+//    THE VOID PATH WAS ALREADY OPEN. It existed before the valve, it was invisible to every gate
+//    here before the valve, and it remains assigned to a blind reader rather than to any lint. The
+//    valve neither widens nor narrows that hole; it is orthogonal to it.
+//
+//    TWO COUNTERS, PRINTED ON EVERY RUN — `report fields: N listed, M undeclared`, quiet runs
+//    included, because a run with no problems is still reporting a state. One number would not do,
+//    for the reason already recorded under THREE COUNTS above: the undeclared size falls for three
+//    different reasons — a field got documented, a field left the type, or the literal was edited —
+//    and a single counter cannot tell them apart. The listed total is the denominator that can.
+//
+// THE DATED CHECKPOINT, recorded 2026-08-29 so the reopening is a decision someone already made
+// rather than one a later reader has to justify from scratch. IF fresh-bullet defects go on
+// accumulating at anything like the rate measured above, AND the key-list relocation — moving the
+// per-type key list to sit beside the interface fields it mirrors, so listing a field and writing
+// it happen with the same code open — is still unbuilt by the next retro's horizon, THEN gate 2 is
+// being paid for without its reducer, and dropping it legitimately reopens. The cost of dropping it
+// then is this lint module and nothing else: gate 1 is independent of it, and the guide keeps every
+// entry already written.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { DOCUMENTED_REPORT_FIELDS } from "../../src/acc/kit/report.ts";
+import { DOCUMENTED_REPORT_FIELDS, UNDOCUMENTED_REPORT_FIELDS } from "../../src/acc/kit/report.ts";
 
 /** Repo-relative, forward slashes — the page the report's own consumers are pointed at. */
 export const GUIDE_PATH = "docs/wiki/guides/how-to-read-the-check-report-json.md";
@@ -267,6 +332,7 @@ export function stripFences(text: string): string {
 export function scanGuide(
   text: string,
   spec: Readonly<Record<string, Record<string, Marker>>>,
+  declaredUndocumented: ReadonlySet<string> = UNDOCUMENTED_REPORT_FIELDS,
 ): string[] {
   const problems: string[] = [];
   const defined = definedNames(text);
@@ -280,9 +346,11 @@ export function scanGuide(
         problems.push(
           `UNSPECIFIED TYPE  src/acc/kit/report.ts: ${typeName}.${key} names "${marker.type}", which is not in DOCUMENTED_REPORT_FIELDS  (add a documented<${marker.type}>() entry)`,
         );
-      if (defined.has(key)) continue;
+      // THE VALVE. Two grounds, either sufficient: documented on the page, or declared undocumented
+      // by name. Neither is a failure. See limit 5 for what this does and does not buy.
+      if (defined.has(key) || declaredUndocumented.has(key)) continue;
       problems.push(
-        `UNDOCUMENTED FIELD  ${GUIDE_PATH}: ${typeName}.${key}  (define \`${key}\` in the term of a bullet, a table row or a heading, outside any code fence. LIMITS: top-level keys only, so fields of nested types are unchecked; definition SHAPE, not explanation; and forward-only, so a field REMOVED from a type but left in the guide is not caught here)`,
+        `UNDOCUMENTED FIELD  ${GUIDE_PATH}: ${typeName}.${key}  (either define \`${key}\` in the term of a bullet, a table row or a heading, outside any code fence — or, if you cannot say something true about it right now, add \`${key}\` to UNDOCUMENTED_REPORT_FIELDS in src/acc/kit/report.ts, which declares the gap instead of inventing a sentence. LIMITS: top-level keys only, so fields of nested types are unchecked; definition SHAPE, not explanation; and forward-only, so a field REMOVED from a type but left in the guide is not caught here)`,
       );
     }
   }
@@ -291,4 +359,31 @@ export function scanGuide(
 
 export function documentedReportFieldProblems(repoRoot: string): string[] {
   return scanGuide(readFileSync(join(repoRoot, GUIDE_PATH), "utf8"), DOCUMENTED_REPORT_FIELDS);
+}
+
+/**
+ * The two counters, PURE over its inputs like `scanGuide` and for the same reason.
+ *
+ * Both numbers, never one. The declared-undocumented size falls for three unlike reasons — a field
+ * was documented, a field left its type, or the literal was edited — and a lone count moving from 3
+ * to 2 says which of those happened only by accident. The listed total is the denominator that
+ * separates the second from the other two. Same two-counter principle as `staleExpectations` and
+ * `inertExpectations`; see limit 5.
+ */
+export function reportFieldCounts(
+  spec: Readonly<Record<string, Record<string, Marker>>> = DOCUMENTED_REPORT_FIELDS,
+  declaredUndocumented: ReadonlySet<string> = UNDOCUMENTED_REPORT_FIELDS,
+): { listed: number; undocumented: number } {
+  let listed = 0;
+  for (const keys of Object.values(spec)) listed += Object.keys(keys).length;
+  return { listed, undocumented: declaredUndocumented.size };
+}
+
+/**
+ * The counter line, printed on EVERY run — a quiet run is still reporting a state, and a state
+ * nobody prints when it is fine is a state nobody notices drifting.
+ */
+export function reportFieldCountsLine(...args: Parameters<typeof reportFieldCounts>): string {
+  const { listed, undocumented } = reportFieldCounts(...args);
+  return `report fields: ${listed} listed, ${undocumented} declared undocumented`;
 }

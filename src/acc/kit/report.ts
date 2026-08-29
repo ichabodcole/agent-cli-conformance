@@ -605,7 +605,11 @@ type FieldSpec<T> = { readonly [K in keyof T & string]-?: Marker };
  */
 const documented =
   <T extends object>() =>
-  (spec: FieldSpec<T>): Readonly<Record<string, Marker>> =>
+  // The literal type is RETURNED rather than widened to `Readonly<Record<string, Marker>>`.
+  // Widening threw the key names away, and `UNDOCUMENTED_REPORT_FIELDS` derives its member type
+  // from them: with `string` keys, `"conformnat"` was a legal member and a permanent silent
+  // exemption. Measured, not reasoned about — the typo compiled before this line changed.
+  <S extends FieldSpec<T>>(spec: S): S =>
     spec;
 
 /**
@@ -621,6 +625,22 @@ const documented =
  * the interfaces above; `scripts/docs-lint/documented-report-fields.ts` fails if the guide does not
  * define every entry. Adding a field is therefore a three-file edit whose two other files announce
  * themselves.
+ *
+ * **IF `tsc` SENT YOU HERE — READ THIS BEFORE YOU ADD THE LINE.** A missing property named by the
+ * mapped type is the whole message the compiler can give you; it cannot carry a sentence, so the
+ * sentence is here, immediately above the list you are about to type in. Adding the key satisfies
+ * `tsc` and NOT the docs lint. The field also needs ONE of:
+ *
+ * - a definition-shaped entry in `docs/wiki/guides/how-to-read-the-check-report-json.md` — the
+ *   backticked name in the TERM of a bullet, the first cell of a table row, or a heading; or
+ * - membership in `UNDOCUMENTED_REPORT_FIELDS`, below, which declares the gap out loud.
+ *
+ * This is said HERE, at the type-level failure, rather than only in the lint's message, because
+ * this is the author's moment of attention: same commit, the code open, before the docs gate is
+ * ever reached — and while writing nothing at all is still one of the options. If you do not know
+ * what the field does well enough to state something falsifiable about it, take the second path.
+ * A declared gap is worth more than an invented sentence; see the limits section of
+ * `scripts/docs-lint/documented-report-fields.ts` for the measurements that say so.
  *
  * `ReportedFinding extends Finding`, so its spec carries the inherited keys too. That is intended:
  * the guide's reader sees one flat object and cannot tell which half of the declaration a key came
@@ -709,6 +729,45 @@ export const DOCUMENTED_REPORT_FIELDS = {
     unresolved: FIELD,
   }),
 } as const satisfies Readonly<Record<string, Readonly<Record<string, Marker>>>>;
+
+/**
+ * Every name listed anywhere in `DOCUMENTED_REPORT_FIELDS` — derived from the spec above rather
+ * than restated, so there is exactly one place a field name is written down as belonging to a
+ * published type.
+ */
+type ListedFieldName = {
+  [T in keyof typeof DOCUMENTED_REPORT_FIELDS]: keyof (typeof DOCUMENTED_REPORT_FIELDS)[T] & string;
+}[keyof typeof DOCUMENTED_REPORT_FIELDS];
+
+/**
+ * FIELDS WHOSE ABSENCE FROM THE GUIDE IS DECLARED RATHER THAN SILENT.
+ *
+ * The docs lint accepts a listed field on either of two grounds: a definition-shaped line in the
+ * guide, or membership here. A field in NEITHER still fails, exactly as before — so the property
+ * the gate certifies is unchanged in strength and changed in kind. It was "every field has a
+ * sentence"; it is now "no field is absent without someone saying so".
+ *
+ * WHY: the gate as first shipped left an author who adds a field one way out — write a definition
+ * bullet about it. Measured on the change that introduced the gate, that produced thirteen false
+ * sentences and two near-voids, written about code the author was not reading at that moment. The
+ * cost is not a conversion artefact; it recurs with every new field. This is the second exit, and
+ * it is the honest one: it says "undocumented" where the alternative says something untrue.
+ *
+ * IT STARTS EMPTY, and that is a fact rather than an aspiration — every listed field is documented
+ * at this revision and the gate is green, so zero is the honest baseline. Nothing currently
+ * documented was moved in here to make room. Both numbers are printed on every lint run (see
+ * `reportFieldCounts` in `scripts/docs-lint/documented-report-fields.ts`), because a size alone
+ * cannot say whether the set shrank because a field got documented, because a field left the type,
+ * or because someone edited this literal.
+ *
+ * TYPED, so a typo cannot become a permanent exemption. A member must be a name the spec above
+ * actually lists; `"conformnat"` is a compile error, not a silent pass for a field that then goes
+ * unchecked forever. It reuses the spec as its own source of truth rather than standing up a
+ * parallel list of legal names.
+ */
+export const UNDOCUMENTED_REPORT_FIELDS: ReadonlySet<ListedFieldName> = new Set<ListedFieldName>(
+  [],
+);
 
 /**
  * The one rule to point a caller at when a report is not fully verified.

@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DOCUMENTED_REPORT_FIELDS } from "../../src/acc/kit/report.ts";
+import { DOCUMENTED_REPORT_FIELDS, UNDOCUMENTED_REPORT_FIELDS } from "../../src/acc/kit/report.ts";
 import {
   definedNames,
   documentedReportFieldProblems,
   GUIDE_PATH,
+  reportFieldCounts,
+  reportFieldCountsLine,
   scanGuide,
   stripFences,
 } from "./documented-report-fields.ts";
@@ -132,6 +134,74 @@ describe("scanGuide", () => {
       ReportedFinding: { ruleId: "field" },
     });
     expect(problems).toEqual([]);
+  });
+});
+
+// THE VALVE: two grounds, either sufficient — documented on the page, or declared undocumented by
+// name. Either one passes; having NEITHER still fails. See limit 5 in the module.
+describe("scanGuide, the undocumented declaration", () => {
+  test("a field declared undocumented passes without a guide entry", () => {
+    expect(scanGuide("- **`conformant`** — a\n", SPEC, new Set(["sweep"]))).toEqual([]);
+  });
+
+  test("a field in neither the guide nor the declaration still fails", () => {
+    const problems = scanGuide("- **`conformant`** — a\n", SPEC, new Set());
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("Report.sweep");
+  });
+
+  // The message is where the author meets the second path; if it only ever names the first, the
+  // valve exists and nobody hitting the gate is told about it.
+  test("the failure names both ways out, not just the bullet", () => {
+    const problems = scanGuide("- **`conformant`** — a\n", SPEC, new Set());
+    expect(problems[0]).toContain("UNDOCUMENTED_REPORT_FIELDS");
+    expect(problems[0]).toContain("the term of a bullet");
+  });
+
+  // The declaration is a valve on the guide requirement and nothing else: it must not smuggle a
+  // key past the LIST OF TYPES check, which is about the shape of the spec rather than the page.
+  test("declaring a field undocumented does not silence the UNSPECIFIED TYPE check", () => {
+    const problems = scanGuide(
+      "",
+      { Report: { findings: { type: "ReportedFinding" } } },
+      new Set(["findings"]),
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("UNSPECIFIED TYPE");
+  });
+
+  test("the real declaration set is empty — every listed field is documented at this revision", () => {
+    expect([...UNDOCUMENTED_REPORT_FIELDS]).toEqual([]);
+  });
+});
+
+describe("reportFieldCounts", () => {
+  test("listed is the total over every type, and undocumented is the declaration's size", () => {
+    expect(
+      reportFieldCounts(
+        { Report: { conformant: "field", sweep: "field" }, EvidenceProbe: { id: "field" } },
+        new Set(["sweep"]),
+      ),
+    ).toEqual({ listed: 3, undocumented: 1 });
+  });
+
+  // Both numbers, never one: the declared size falls for three unlike reasons and only the
+  // denominator separates "a field left the type" from the other two.
+  test("the line carries both counters", () => {
+    expect(
+      reportFieldCountsLine({ Report: { conformant: "field" } }, new Set(["conformant"])),
+    ).toBe("report fields: 1 listed, 1 declared undocumented");
+  });
+
+  test("the real counts are the live spec's, and are reported even when nothing is wrong", () => {
+    const { listed, undocumented } = reportFieldCounts();
+    expect(listed).toBe(
+      Object.values(DOCUMENTED_REPORT_FIELDS).reduce((n, k) => n + Object.keys(k).length, 0),
+    );
+    expect(undocumented).toBe(UNDOCUMENTED_REPORT_FIELDS.size);
+    expect(reportFieldCountsLine()).toBe(
+      `report fields: ${listed} listed, ${undocumented} declared undocumented`,
+    );
   });
 });
 
