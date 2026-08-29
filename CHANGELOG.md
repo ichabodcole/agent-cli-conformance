@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.8](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.7...v0.1.8) (2026-08-29)
+
+
+### Bug Fixes
+
+* **kit:** A6 measures bun-launched targets instead of refusing them ([dbfee51](https://github.com/ichabodcole/agent-cli-conformance/commit/dbfee51fbba2a0fd8a3719a512655f2f907a6a57))
+* **kit:** A6 measures bun-launched targets instead of refusing them ([a12ddea](https://github.com/ichabodcole/agent-cli-conformance/commit/a12ddea159d6f0e0a1119393277463d98d7acebd))
+* **kit:** A6 reaches the bun population ([7949ae9](https://github.com/ichabodcole/agent-cli-conformance/commit/7949ae9e6535b93ce97fefbd3c858a84deb1a616))
+* **kit:** the A6 terminator survives a bun launcher ([4d17a4f](https://github.com/ichabodcole/agent-cli-conformance/commit/4d17a4f4bcf5619850a79c1faca643ded6e3d0db))
+* **kit:** the A6 terminator survives a bun launcher ([8e0f233](https://github.com/ichabodcole/agent-cli-conformance/commit/8e0f2331b6435818333e6b9fcf420d45581340b3))
+* **kit:** the record says which argv it means ([37eabae](https://github.com/ichabodcole/agent-cli-conformance/commit/37eabae2b8fc6ae303ebdc845ded4891ea4a2259))
+* **kit:** the record says which argv it means ([06f81f0](https://github.com/ichabodcole/agent-cli-conformance/commit/06f81f041e75b27df6c8eab0ef4b46eec1b0e319))
+
 ## [0.1.7](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.6...v0.1.7) (2026-08-29)
 
 
