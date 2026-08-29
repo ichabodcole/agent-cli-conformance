@@ -131,7 +131,10 @@ export interface ReportedFinding extends Finding {
 export interface EvidenceProbe {
   /** The observation id, as it appears in `ReportedFinding.evidence`. */
   id: string;
-  /** The argv this probe sent, after `target.argv0`. Empty when `unresolved`. */
+  /**
+   * The argv this probe ASKED to send, after `target.argv0`. Empty when `unresolved`. See
+   * `ReportedObservation.args` — the wire argv can differ, and `launchAdjustment` names it.
+   */
   args: string[];
   /** Environment overrides the probe imposed, when it imposed any. */
   env?: Record<string, string>;
@@ -177,8 +180,17 @@ export interface EvidenceProbe {
 export interface ReportedObservation {
   /** Matches the ids in `ReportedFinding.evidence`. */
   id: string;
-  /** The argv this probe sent, after `target.argv0`. The answer to "what did you actually run?" */
+  /**
+   * The argv this probe ASKED to send, after `target.argv0`. Identical across targets for the
+   * same probe, which is what `invocationId` hashes and what `compare` aligns on.
+   *
+   * NOT always the wire argv: see `launchAdjustment`, which names the difference when there was
+   * one. Replaying these args by hand against a bun target reproduces the original defect rather
+   * than the kit's run.
+   */
   args: string[];
+  /** Present when the wire argv differed from `args`; see `Observation.launchAdjustment`. */
+  launchAdjustment?: string;
   /** Environment overrides the probe imposed, when it imposed any. */
   env?: Record<string, string>;
   inertness: Invocation["inertness"];
@@ -982,6 +994,7 @@ export function toReportedObservation(o: Observation): ReportedObservation {
   return {
     id: o.id,
     args: [...o.invocation.args],
+    ...(o.launchAdjustment === undefined ? {} : { launchAdjustment: o.launchAdjustment }),
     ...(Object.keys(o.invocation.env ?? {}).length > 0 ? { env: { ...o.invocation.env } } : {}),
     inertness: o.invocation.inertness,
     ...(o.invocation.repeat === undefined ? {} : { repeat: o.invocation.repeat }),

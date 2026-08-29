@@ -120,10 +120,10 @@ export function isExecutable(abs: string): boolean {
  * Bun is named in `argv0` in exactly two cases, and neither overrides a declared interpreter:
  *
  * 1. **The shebang says bun.** Then bun is what runs it either way, and naming it matters for
- *    A6: that checker reports `unverified` whenever `argv0[0] === "bun"`, because Bun eats the
- *    bare `--` its probe leads with — including when the kernel launched the script — so what
- *    would get measured is A1 wearing A6's name. A Bun CLI installed without a `.ts` extension
- *    used to miss the guard entirely and collect a FAIL derived from an argv it never received.
+ *    A6: the runner compensates for bun's terminator stripping at the spawn (see `runner.ts`),
+ *    and it can only do that when `argv0` NAMES bun. A Bun CLI installed without a `.ts`
+ *    extension used to miss the guard entirely and collect a FAIL derived from an argv it never
+ *    received.
  * 2. **A non-executable `.ts` file with no conflicting shebang.** That is a SOURCE file rather
  *    than a program, and Bun is the documented fallback for running one. A non-executable file
  *    that declares some other interpreter gets neither: it is launched as itself and fails to
