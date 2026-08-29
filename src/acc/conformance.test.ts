@@ -1461,16 +1461,28 @@ describe("acc check — the outcome exit code", () => {
     }, 60_000);
 
     // Raising a severity is the other direction, and it has to bite or the field is decoration.
-    // A6 is diagnostic in the catalogue; raising it to core is what pulls its verdict into the
-    // `coreUnverified` count alongside whatever this fixture already leaves unverified (A4, B3,
-    // B4, B5).
-    test("raising a rule to core pulls it into the evidence claim", async () => {
-      const conforming = join(dirname(CLI), "kit/fixtures/conforming.ts");
+    // A6 is diagnostic in the catalogue, and `broken/ignores-double-dash.ts` FAILS it (the
+    // fixture never honours `--`) while passing every core rule — so without the override the
+    // run is `conformant`, because a diagnostic failure does not gate that claim. Raising A6 to
+    // core moves the SAME fail into `coreFailures`, which is what `conformant` is defined over
+    // (see `report.ts`: `conformant = coreFailures.length === 0`). If the override were a no-op
+    // this assertion would still see `conformant: true` — the earlier version of this test used
+    // `conforming.ts`, where A6 already passes, so `coreUnverified > 0` held with or without the
+    // override (B5 alone supplies it) and never actually exercised the severity change.
+    test("raising a rule to core pulls its failure into the evidence claim", async () => {
+      const brokenDoubleDash = join(dirname(CLI), "kit/fixtures/broken/ignores-double-dash.ts");
+
+      const baseline = await run(["check", brokenDoubleDash, "--json"]);
+      const base = JSON.parse(baseline.stdout).data;
+      expect(base.findings.find((f: { ruleId: string }) => f.ruleId === "A6").verdict).toBe("fail");
+      expect(base.conformant).toBe(true);
+      expect(base.counts.coreFailures).toBe(0);
+
       const dir = configDir({
         rules: { A6: { severity: "core", reason: "we delegate; -- is load-bearing" } },
       });
       try {
-        const r = await run(["check", conforming, "--config-dir", dir, "--json"]);
+        const r = await run(["check", brokenDoubleDash, "--config-dir", dir, "--json"]);
         const { data } = JSON.parse(r.stdout);
         expect(data.severityOverrides).toEqual([
           {
@@ -1482,7 +1494,11 @@ describe("acc check — the outcome exit code", () => {
         ]);
         const a6 = data.findings.find((f: { ruleId: string }) => f.ruleId === "A6");
         expect(a6.tier).toBe("core");
-        expect(data.counts.coreUnverified).toBeGreaterThan(0);
+        expect(a6.verdict).toBe("fail");
+        // The bite: the SAME failure that was merely diagnostic a moment ago now blocks the
+        // conformance claim. This is false if the override is removed or ignored.
+        expect(data.counts.coreFailures).toBe(base.counts.coreFailures + 1);
+        expect(data.conformant).toBe(false);
       } finally {
         rmSync(dir, { recursive: true, force: true });
       }

@@ -43,6 +43,14 @@ export const doubleDashTerminatorChecker: Checker = {
   // rejected the value exactly as loudly and is scored as a pass. The fourth is the single
   // POSITION probed — one terminator at the root with one token behind it, so a `--` after a
   // verb, or several values after it, is a shape this rule never sees.
+  //
+  // The fifth is the LAUNCHER, and it is what survives the bun fix above: the runner's
+  // compensation keys on `argv0[0] === "bun"`, which is what `toTarget` names when bun IS the
+  // launcher. A wrapper script that itself invokes bun internally — `argv0 = [abs-path-to-
+  // wrapper]` — hides that fact from the runner entirely, so the terminator is still eaten one
+  // layer down and this check reports a verdict against an argv the wrapped target never
+  // received. Not something this checker can close by itself: it has no visibility into what a
+  // script it was handed does inside its own body.
   coverage: "partial",
   coverageGaps: [
     "the value after the terminator is only shown not to be rejected as a flag and never shown to arrive as a positional",

@@ -50,14 +50,21 @@ describe("A6 — the `--` terminator", () => {
   // house whose every CLI is a bun script. The launch compensation (runner.ts) makes it
   // measurable: the runner now prepends the `--` bun eats, so this checker needs no launcher
   // knowledge at all and can return a real verdict.
-  test("a bun-launched target gets a real A6 verdict", async () => {
-    const target = bunFixture("conforming.ts");
+  //
+  // Both fixtures below are `.ts`, launched through `bun`, and disagree about `--` —
+  // conforming.ts honours it, broken/ignores-double-dash.ts does not — which is what proves the
+  // rule can still discriminate through a bun launcher rather than only ever landing on `pass`.
+  test.each<["conforming.ts" | "broken/ignores-double-dash.ts", "pass" | "fail"]>([
+    ["conforming.ts", "pass"],
+    ["broken/ignores-double-dash.ts", "fail"],
+  ])("a bun-launched target gets a real A6 verdict: %s -> %s", async (rel, verdict) => {
+    const target = bunFixture(rel);
     expect(target.argv0[0]).toBe("bun"); // the case that used to short-circuit
 
     const h = await record(target, [doubleDashTerminatorChecker]);
     const f = doubleDashTerminatorChecker.check(h);
 
-    expect(f.verdict).not.toBe("unverified");
+    expect(f.verdict).toBe(verdict);
     expect(f.evidence.length).toBeGreaterThan(0);
   });
 
