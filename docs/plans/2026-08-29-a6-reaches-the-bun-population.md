@@ -2,7 +2,7 @@
 type: plan
 generated: { by: claude-opus-5, at: 2026-08-29 }
 status: draft
-lifecycle: live
+lifecycle: discharged
 description:
   The implementation plan for W2 — delivering the A6 probe to bun-launched targets by
   compensating for bun's terminator stripping at the spawn, which replaces a permanent

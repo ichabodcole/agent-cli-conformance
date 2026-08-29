@@ -254,10 +254,10 @@ kit cannot launch directly: an npm script, `python -m`, a tool behind its own la
 
 Two rules are known to move, and they move differently:
 
-| rule                                             | what the layer does                                                                        | how it shows up                                                                                |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| [A6](../rules/parsing/double-dash-terminator.md) | Bun consumes a bare `--` after the script path, so the terminator never reaches the target | **loud, and wrong** — `FAIL` blaming the target for something it never received                |
-| [F2](../rules/safety/first-byte-is-prompt.md)    | the wrapper is a real process, so it adds its own startup to the measurement               | **quiet** — a consistent 2–3 ms, measured; noise at 15 ms, not noise near the 100 ms threshold |
+| rule                                             | what the layer does                                                                                                 | how it shows up                                                                                |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| [A6](../rules/parsing/double-dash-terminator.md) | behind a wrapper, Bun strips one bare `--` per layer between launcher and script, and `argv0` no longer names `bun` | **loud, and wrong** — `FAIL` blaming the target for something it never received                |
+| [F2](../rules/safety/first-byte-is-prompt.md)    | the wrapper is a real process, so it adds its own startup to the measurement                                        | **quiet** — a consistent 2–3 ms, measured; noise at 15 ms, not noise near the 100 ms threshold |
 
 The asymmetry is the part worth holding on to. **A6 corrects itself when the kit can see the
 launcher**: `argv0` names `bun`, the runner sends one extra `--` at the spawn, Bun eats it, and
