@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.7](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.6...v0.1.7) (2026-08-29)
+
+
+### Features
+
+* **kit:** `acc check` compares advertised verbs to recorded paths ([18ca6df](https://github.com/ichabodcole/agent-cli-conformance/commit/18ca6df8fb5ee1b0375e763a4b1a682fcc7fee06))
+* **kit:** compare the advertised verb set against the recorded paths ([09123c2](https://github.com/ichabodcole/agent-cli-conformance/commit/09123c2eb1815f356d5d955e2e2fb5b48074f96b))
+
 ## [0.1.6](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.5...v0.1.6) (2026-08-28)
 
 
