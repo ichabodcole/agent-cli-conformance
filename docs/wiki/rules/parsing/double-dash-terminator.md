@@ -46,9 +46,10 @@ and **MUST** pass everything after `--` to the child unmodified.
 > at `L0` and is named in this rule's own coverage gaps. If your CLI wraps another program, the
 > clause that admits no alternative is the one nothing here has tested.
 
-> **If you checked this rule through a wrapper, distrust the verdict.** Bun consumes a bare `--`
-> immediately after the script path, so the terminator never reaches the target. The kit
-> compensates for that when it can see the launcher — but a wrapper script hides a bun layer
+> **If you checked this rule through a wrapper, distrust the verdict.** Bun strips a bare `--`
+> immediately after the script path, one per bun layer between the launcher and the script
+> (measured on bun 1.4.0), so the terminator never reaches the target unless the kit compensates.
+> The kit does that when it can see the launcher — but a wrapper script hides a bun layer
 > inside it, the compensation misses, and this rule reports a verdict against an argv your tool
 > never received. See
 > [what an interposed layer can distort](../../concepts/probing.md#what-an-interposed-layer-can-distort).
@@ -93,12 +94,16 @@ that a particular rejection does not. The command may still exit non-zero for an
 the exit code.
 
 **Compensates for a `bun` launcher at the spawn.** `bun <script> -- --x` hands the script
-`["--x"]`: bun consumes exactly one bare `--` after the script path, which is exactly this
-probe's shape, so without help the target would never receive the terminator and what got
-measured would be [A1](./unknown-flag-exits-nonzero.md) wearing A6's name. The runner sends one
-extra `--` when it knows bun is the launcher — including a target whose shebang names `bun` — so
-the target receives the same argv a native target receives and this rule reports a real verdict.
-A bun layer hidden inside a wrapper script is outside what the runner can see and is still
+`["--x"]`: bun strips one bare `--` per bun layer between the launcher and the script (measured
+on bun 1.4.0), which is exactly this probe's shape, so
+without help the target would never receive the terminator and what got measured would be
+[A1](./unknown-flag-exits-nonzero.md) wearing A6's name. The kit sends exactly one extra `--`
+because `toTarget` never names more than a single bun layer — `["bun", abs]` or `[abs]` — so one
+compensating `--` is always the right amount for what the runner can see; the real guarantor is
+that single-layer `argv0` shape, not a property of bun itself. The runner sends its extra `--`
+when it knows bun is the launcher — including a target whose shebang names `bun` — so the target
+receives the same argv a native target receives and this rule reports a real verdict. A bun layer
+hidden inside a wrapper script is outside what the runner can see and is still
 undercompensated; see the coverage gaps below.
 
 After a terminator the sentinel is **guaranteed** to arrive as a positional — that is what the
@@ -120,8 +125,10 @@ the rest of this page, unexamined.
 - a hyphen-leading value after a bare terminator at the root draws no English unknown-option
   rejection naming it on stderr
 
-Through a `bun` launcher the runner compensates at the spawn — bun swallows the leading `--`, so
-the runner sends an extra one — and the verdict is a real measurement of the target's own argv.
+Through a `bun` launcher the runner compensates at the spawn — bun strips one bare `--` per bun
+layer (measured on bun 1.4.0), and `toTarget` never names more than a single layer, so the
+runner sends exactly one extra `--` — and the verdict is a real measurement of the target's own
+argv.
 
 **Gaps**
 
