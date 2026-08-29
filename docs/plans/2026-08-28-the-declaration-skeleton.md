@@ -13,6 +13,11 @@ tags: [adoption, declaration, tooling, proposal]
 
 # The declaration skeleton — a design proposal
 
+> **⚠ OUTCOME, added after the fact.** The skeleton this document proposes was **not built and is
+> not recommended** — two reviews blocked it and the reasoning is below. What DID ship is **option B**, the advertised-verbs comparison — specified in appendices B–B4 and validated by
+> the adopter in B5. Read the appendices for what exists; the body is the record of how the first
+> answer was wrong.
+
 **This is a proposal, not a plan of record.** Nothing here is decided. It exists to be argued
 with on two separate questions, in this order: is the design sound and no bigger than the ask
 (internal), and does it answer what was actually asked (the adopter). Either review can send it
@@ -157,7 +162,7 @@ sharpens. If they commit, the comparison still catches usage-side drift and batc
 forever, and what remains is dispatch-side blindness — which only regeneration or an emitter was
 ever going to close.
 
-## The three options, standing separately
+## The four options, standing separately
 
 Sorted by a criterion from the review rather than by preference: **a tool survives trellis's
 never if its output is an ASSERTION; it fails if its output is an ARTEFACT THE ADOPTER COMMITS.**
