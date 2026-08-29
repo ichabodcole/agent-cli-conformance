@@ -55,6 +55,17 @@ const TABLE_ROW = /^\s{0,3}\|/;
 const HEADING = /^\s{0,3}#{1,6}\s/;
 /** The guide's convention is `- **`name`** — explanation`; the dash is where the term ends. */
 const TERM_END = "—";
+/**
+ * The fallback term when a bullet carries no em dash: its leading bold run.
+ *
+ * Without it, a bullet written `- **`field`**: explanation` would have its WHOLE body treated as
+ * the term, and every name in the explanation would silently count as defined. That failure mode
+ * is the dangerous direction — the gate quietly widens toward "anywhere in the bullet" instead of
+ * going red — and a gate that weakens without saying so is the thing this file exists to prevent.
+ * Latent rather than live when written: zero backtick-bearing bullets in the guide lack an em
+ * dash today, which is exactly why it is worth pinning before one does.
+ */
+const BOLD_TERM = /\*\*(.+?)\*\*/s;
 
 /**
  * Every name this page DEFINES, as opposed to merely mentions.
@@ -64,9 +75,10 @@ const TERM_END = "—";
  * continuation lines prettier wraps it onto, since a term as long as
  * ``waivers`, `knownFailures`, `severityOverrides`, `staleExpectations`, `inertExpectations``
  * does not fit on one line and the last name in it is no less defined for that. Within the item
- * only the TERM counts, the text before the first em dash: that is what makes this stronger than
- * "appears in backticks somewhere", because a field named in another field's explanation is being
- * used, not defined.
+ * only the TERM counts — the text before the first em dash, or the leading bold run when the item
+ * carries no em dash (see `BOLD_TERM`). That is what makes this stronger than "appears in
+ * backticks somewhere", because a field named in another field's explanation is being used, not
+ * defined.
  */
 export function definedNames(text: string): Set<string> {
   const names = new Set<string>();
@@ -75,7 +87,9 @@ export function definedNames(text: string): Set<string> {
   };
   const term = (s: string) => {
     const at = s.indexOf(TERM_END);
-    return at === -1 ? s : s.slice(0, at);
+    if (at !== -1) return s.slice(0, at);
+    // No em dash: fall back to the leading bold run rather than to the whole item.
+    return BOLD_TERM.exec(s)?.[1] ?? "";
   };
 
   const lines = stripFences(text).split("\n");
@@ -145,7 +159,7 @@ export function scanGuide(
         );
       if (defined.has(key)) continue;
       problems.push(
-        `UNDOCUMENTED FIELD  ${GUIDE_PATH}: ${typeName}.${key}  (define \`${key}\` in the term of a bullet, a table row or a heading, outside any code fence; this gate covers top-level keys only, does not reach fields of nested types, and certifies definition SHAPE, not explanation)`,
+        `UNDOCUMENTED FIELD  ${GUIDE_PATH}: ${typeName}.${key}  (define \`${key}\` in the term of a bullet, a table row or a heading, outside any code fence. LIMITS: top-level keys only, so fields of nested types are unchecked; definition SHAPE, not explanation; and forward-only, so a field REMOVED from a type but left in the guide is not caught here)`,
       );
     }
   }

@@ -89,12 +89,13 @@ jq '.data | {conformant, fullyVerified, level, counts}' report.json
 - **`level`** — the probe depth this sweep reached. Both booleans above are claims made inside
   it, so read them together: fully verified at `L0` speaks for the rules `L0` can reach, not for
   the whole catalogue.
-- **`counts`** — the tallies shown above, over applicable, unwaived findings. `unverified` and
-  `notApplicable` are different facts and the difference is the point: unverified means a probe
-  ran and established neither answer, not-applicable means the rule was never attempted at this
-  level. The text report — what a terminal run prints — draws them as `UNVR` and `N/A`, and
-  conflating them misreads the report; per finding, `applicable` is what marks the
-  never-attempted case.
+- **`counts`** — the tallies shown above. Each one states its own scope, and they are not all
+  over the same set: `notApplicable` and `waived` count precisely the findings the others leave
+  out. `unverified` and `notApplicable` are different facts and the difference is the point:
+  unverified means a probe ran and established neither answer, not-applicable means the rule was
+  never attempted at this level. The text report — what a terminal run prints — draws them as
+  `UNVR` and `N/A`, and conflating them misreads the report; per finding,
+  `"applicable": false` is what marks the never-attempted case.
 
 ### 3. Read one finding, field by field
 
@@ -162,8 +163,9 @@ whole:
   and the named remainder. A `pass` with gaps is the text report's `PASS+`.
 - **`probeLevel` / `applicable`** — the depth the rule needs, and whether this run reached it.
   `applicable` is the per-finding form of the `notApplicable` count above, and it is false for two
-  different reasons — the rule's `probeLevel` is deeper than the run's `level`, or no checker
-  answers to the rule at any level. The `detail` says which.
+  different reasons. Only one of them announces itself: a rule no checker answers to at any level
+  says so in its `detail` and again in its `coverageGaps`, while a rule merely deeper than this
+  run is visible by comparing its `probeLevel` against the report's `level`.
 - **`excused` / `waived`** — what your own `acc.config.json` said about this rule, and they are
   opposite claims: `excused` is a `knownFailures` entry, a defect you have acknowledged and intend
   to fix; `waived` is `severity: "off"`, a declaration that the rule does not apply to your tool.
@@ -195,18 +197,27 @@ An observation repeats what was sent and adds what came back. What was sent:
 
 And what came back:
 
-- **`exitCode` / `signal` / `crashed` / `timedOut` / `spawnFailed`** — how it ended. `exitCode`
-  and `signal` are both nullable and exactly one of them is set on a process that started;
-  `spawnFailed` is the case where none of the others mean anything, because nothing ran.
-- **`stdoutBytes` / `stderrBytes` / `stdoutDigest` / `stderrDigest`** — how much came back on
-  each stream, and a digest of it. The bytes themselves are deliberately absent: a digest answers
-  the equality question a report is actually asked, without the retention and redaction problems
-  an unbounded copy of the target's output would bring with it.
+- **`exitCode` / `signal` / `crashed` / `timedOut` / `spawnFailed`** — how it ended, and **at
+  most** one of the first two is ever set. Do not read `exitCode: null` as "then `signal` says
+  how it died": the kit nulls `exitCode` whenever it killed the target itself (`timedOut` or
+  `truncated`), because a process we killed never chose a status, and on the path where the
+  target's `close` never arrived it records **both as null** rather than name a signal it did not
+  observe. `crashed` is the field that carries the distinction `signal` alone cannot — a signal
+  the kit did **not** send — so check `crashed`, `timedOut` and `truncated` before attributing a
+  death. `spawnFailed` is the case where none of the others mean anything, because nothing ran.
+- **`stdoutBytes` / `stderrBytes` / `stdoutDigest` / `stderrDigest`** — how much was RETAINED on
+  each stream, and a digest of exactly those retained bytes. Retained, not written: when
+  `truncated` is true the target was killed at the ceiling and what it would have written next is
+  unknowable, so read these two together with that field — they are a floor, never a total. The
+  bytes themselves are deliberately absent: a digest answers the equality question a report is
+  actually asked, without the retention and redaction problems an unbounded copy of the target's
+  output would bring with it.
 - **`stdoutLossy` / `stderrLossy` / `truncated`** — the three ways the record is narrower than
   the run. The `Lossy` pair say the decode threw information away, so the digest is the only
   faithful record of that stream; `truncated` says the runner's stream ceiling was reached.
-- **`durationMs` / `timeToFirstByteMs`** — wall-clock timing. The second is null when nothing
-  was ever written, which is what a hang looks like from here.
+- **`durationMs` / `timeToFirstByteMs`** — wall-clock timing. The second is null when the target
+  wrote nothing at all, on either stream — which a silent success and a silent hang both do, so
+  it is `timedOut` rather than this field that tells those two apart.
 
 ### 5. The rest of `.data`, briefly
 

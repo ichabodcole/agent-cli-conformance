@@ -34,6 +34,19 @@ describe("definedNames", () => {
     expect(names.has("env")).toBe(false);
   });
 
+  // THE SILENT-WIDENING GUARD. A colon-form bullet has no em dash to cut the term at; without the
+  // bold-run fallback the whole body counts as term and every name in the explanation is silently
+  // accepted, which weakens the gate instead of reddening it.
+  test("a colon-form bullet defines only its bold run, not the names in its explanation", () => {
+    const names = definedNames("- **`probes`**: one entry each; `env` appears where it differs.\n");
+    expect(names.has("probes")).toBe(true);
+    expect(names.has("env")).toBe(false);
+  });
+
+  test("a bullet with neither an em dash nor a bold run defines nothing", () => {
+    expect([...definedNames("- see `env` and `repeat` for the rest\n")]).toEqual([]);
+  });
+
   test("a nested bullet is its own definition, not its parent's explanation", () => {
     const names = definedNames("- **`probes`** — five fields:\n  - **`id`** — the id.\n");
     expect(names.has("id")).toBe(true);
@@ -65,6 +78,15 @@ describe("stripFences", () => {
 
   test("an unterminated fence swallows the rest of the file rather than inventing definitions", () => {
     expect(stripFences("```\n- **`sweep`** — x\n").includes("sweep")).toBe(false);
+  });
+
+  // KNOWN AND PINNED: the toggle is marker-agnostic, so `~~~` closes a ``` block. Harmless here —
+  // it can only ever end a fence early, and the guide mixes no markers — but left unpinned a
+  // future change to the toggle could flip this into swallowing live prose.
+  test("the fence toggle is marker-agnostic: `~~~` closes a ``` block", () => {
+    const names = definedNames("```\n- **`sweep`** — in fence\n~~~\n- **`conformant`** — out\n");
+    expect(names.has("sweep")).toBe(false);
+    expect(names.has("conformant")).toBe(true);
   });
 });
 
