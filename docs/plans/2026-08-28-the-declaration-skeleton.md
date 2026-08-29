@@ -298,3 +298,87 @@ Two options, not one, and the measurement that distinguishes them:
 And the question the trial protocol's discipline requires: not "is this good", but whether either
 answers what they meant. A _"this is bigger than what I wanted"_ remains the most useful answer
 this document can get.
+
+---
+
+# Appendix: costing option B
+
+The adopter's answer was _"B first and alone is enough for us"_, so this prices it. Measured
+against the tree, not estimated.
+
+## Where it runs, and it already has a home
+
+`buildReport` joins the two sides in one scope: the live root `surface`, and — when a batch was
+supplied — `recorded.reading.surfaces`, each carrying a `path`. That is the join point, and it is
+the same place the census and the recorded-surface rollup are already assembled. **No new command,
+no new file, no new input.**
+
+It runs only when a batch is supplied. With no batch there is no recorded path set and the
+comparison has nothing to be a comparison of.
+
+## The one real obstacle, and it is a guard doing its job
+
+The advertised set reaches that scope **already truncated**. `captureSurface` holds the full list
+locally and stores `sample: values.slice(0, SAMPLE)` with `SAMPLE = 4`, plus a true `count`. The
+bound is deliberate and tested:
+
+    surface.test.ts:497  "the sample is bounded — a pathological list cannot grow the
+                          report without limit"
+
+and its reason is stated in the field's own doc: _the members are the TARGET's bytes and the list
+has no length limit of its own._ So B needs precisely what a tested guard exists to prevent.
+
+**The resolution is that B does not need the full set in the PAYLOAD — it needs it in MEMORY.**
+The comparison consumes the list where it is captured-and-joined and emits only the outcome. The
+serialized `sample`/`count` shape can stay exactly as it is, and the existing guard keeps holding.
+
+Cost: carry the full list on the in-memory surface without serializing it, or thread it to the
+join point. Small, and the test that pins the payload bound is the thing that tells you if you got
+it wrong.
+
+## The finding needs its own bound, for the same reason
+
+`recorded but never advertised` is bounded by the batch, which the caller controls. **`advertised
+but never recorded` is target bytes and is not bounded by anything.** A target emitting a
+thousand-member list produces a thousand-member finding unless the finding samples too.
+
+So the finding carries a sample and a true count, exactly as the field it derives from does. That
+is not an inconvenience — it is the same argument applied one layer out, and skipping it would
+reintroduce the defect the guard was written for.
+
+## The part no code costs: when may a list be read as verbs?
+
+`nonFlagCandidates` records _a set of something else, not of flags_. Reading it as **verbs**
+requires a rule this project does not have. The strong case is narrow and worth stating as the
+whole of it:
+
+- the list appears **at the root**, and
+- it appears in the target's **rejection of an unknown verb** — the place a tool enumerates what it
+  would have accepted.
+
+Outside that, a `choices` list may be a set of formats, levels, or anything else. **The kit
+currently records the key** (`choices`, and whatever else a target uses) **and nothing more**, so
+the rule cannot be inferred from the data; it has to be decided and stated, and the finding must
+carry both readings the way the census already hedges provenance.
+
+This is the item to resolve before anyone writes code. It is a judgement, not a measurement, and
+it is where B can quietly become wrong.
+
+## What it costs in total
+
+| piece                                                | size                                     |
+| ---------------------------------------------------- | ---------------------------------------- |
+| thread the full list to the join point               | small; existing bound test guards it     |
+| the diff, both directions, at `buildReport`          | small; both inputs already in scope      |
+| bound and sample the finding                         | small; mirrors the existing field        |
+| a text line and a JSON field                         | small                                    |
+| **the rule for reading a list as verbs**             | **the actual work, and it is judgement** |
+| tests: both directions, the bound, the no-batch case | ordinary                                 |
+
+## What it still cannot do, carried from the body of this document
+
+The recorded side descends from the caller's path list. B covers the **advertised** side freshly,
+because that side is captured live from the root probe on every run. **Only regeneration or an
+emitter covers the dispatch side.** The adopter regenerates, so for them both halves are covered —
+that is a property of their workflow, not of B, and the guidance in the registry guide is what
+carries it to anyone else.
