@@ -752,4 +752,25 @@ describe("the advertised verb set", () => {
     // And the diagnostic field's own bound is untouched — this did not repurpose `SAMPLE`.
     expect(c.union?.length).toBeGreaterThan(4);
   });
+
+  test("the fixture that advertises its verbs reaches the ASSERTED path end to end", async () => {
+    // THE ONLY FIXTURE IN THIS REPO THAT DOES. Every other one renders THE COMPARISON DID NOT RUN,
+    // which is correct for them and is the majority render on real targets — so without this the
+    // feature's positive path would ship with unit coverage and no end-to-end evidence, which is
+    // the defect class this project files against other people.
+    const p = Bun.spawnSync(
+      ["bun", "src/acc/cli.ts", "check", "src/acc/kit/fixtures/advertises-its-verbs.ts", "--json"],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    const report = JSON.parse(new TextDecoder().decode(p.stdout)) as {
+      data: { advertisedVerbs?: { status: string; quoted?: { verbs: string[]; shape: string } } };
+    };
+    const a = report.data.advertisedVerbs;
+    expect(a?.status).toBe("no-batch");
+    expect(a?.quoted?.verbs).toEqual(["open", "state", "tail"]);
+    expect(a?.quoted?.shape).toBe("usage-line");
+    // `<file>` is a SECOND bracket group on that usage line. Only the first contributes, and this is
+    // the assertion that would fail if that rule were ever loosened.
+    expect(a?.quoted?.verbs).not.toContain("file");
+  });
 });
