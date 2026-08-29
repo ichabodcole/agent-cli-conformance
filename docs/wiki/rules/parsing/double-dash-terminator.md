@@ -95,7 +95,8 @@ the exit code.
 
 **Compensates for a `bun` launcher at the spawn.** `bun <script> -- --x` hands the script
 `["--x"]`: bun strips one bare `--` per bun layer between the launcher and the script (measured
-on bun 1.4.0), which is exactly this probe's shape, so
+on bun 1.4.0; see [the research measurements](../../../research/2026-08-29-bun-terminator-stripping.md)),
+which is exactly this probe's shape, so
 without help the target would never receive the terminator and what got measured would be
 [A1](./unknown-flag-exits-nonzero.md) wearing A6's name. The kit sends exactly one extra `--`
 because `toTarget` never names more than a single bun layer — `["bun", abs]` or `[abs]` — so one

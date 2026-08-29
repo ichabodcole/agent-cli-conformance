@@ -84,8 +84,9 @@ export const doubleDashTerminatorChecker: Checker = {
     // conclusion kept asserting it.
     //
     // A compiled bun binary (`bun build --compile`) receives the terminator INTACT — measured,
-    // bun 1.4.0 — and is excluded from the compensation by construction, since its argv0 is the
-    // binary itself with no launcher token and no shebang to read.
+    // bun 1.4.0, see docs/research/2026-08-29-bun-terminator-stripping.md — and is excluded from
+    // the compensation by construction, since its argv0 is the binary itself with no launcher
+    // token and no shebang to read.
 
     const o = findByArgs(h, ARGS);
     if (!o) return finding("unverified", "probe was not recorded", []);

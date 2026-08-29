@@ -259,12 +259,13 @@ Two rules are known to move, and they move differently:
 | [A6](../rules/parsing/double-dash-terminator.md) | Bun consumes a bare `--` after the script path, so the terminator never reaches the target | **loud, and wrong** — `FAIL` blaming the target for something it never received                |
 | [F2](../rules/safety/first-byte-is-prompt.md)    | the wrapper is a real process, so it adds its own startup to the measurement               | **quiet** — a consistent 2–3 ms, measured; noise at 15 ms, not noise near the 100 ms threshold |
 
-The asymmetry is the part worth holding on to. **A6 announces itself when the kit can see the
-launcher**: `argv0` names `bun`, the checker declines to judge, and the verdict is `unverified`
-with the reason attached. Behind a wrapper the kit sees a shell script, the guard misses, and a
-`fail` is reported against an argv the target never received. **F2 never announces anything** — it
-reports a slower tool than the one under test, and nothing in the output says a layer was
-measured alongside the target.
+The asymmetry is the part worth holding on to. **A6 corrects itself when the kit can see the
+launcher**: `argv0` names `bun`, the runner sends one extra `--` at the spawn, Bun eats it, and
+the target receives the same argv a native target receives — so the verdict is a real
+`pass`/`fail` rather than a guess. Behind a wrapper the kit sees a shell script, the compensation
+misses, and a `fail` is reported against an argv the target never received. **F2 never announces
+anything** — it reports a slower tool than the one under test, and nothing in the output says a
+layer was measured alongside the target.
 
 **So the guidance is: pass the target directly wherever you can.** A `.ts` file with a `bun`
 shebang, or with no shebang at all, is launched by the kit under Bun and needs no wrapper — see

@@ -1529,9 +1529,10 @@ describe("acc check — the outcome exit code", () => {
   }, 30_000);
 
   // The other side of the same resolution path: a target that is NOT a bun script must still be
-  // launched directly, so A6 is actually exercised. The `sh` fixtures are the only ones that can
-  // receive the terminator, and this is the only test that reaches them the way a user does —
-  // via `acc check`, which needs their exec bit to be committed.
+  // launched directly. Bun scripts get their own real A6 verdict too now, via the runner's
+  // launch compensation — this fixture just isn't one, and it is the only test that reaches the
+  // `sh` fixtures the way a user does, via `acc check`, which needs their exec bit to be
+  // committed.
   test("a shell CLI is launched directly, so A6 is exercised rather than skipped", async () => {
     const fixture = join(dirname(CLI), "kit/fixtures/sh/honours-double-dash.sh");
     const r = await run(["check", fixture, "--json"]);

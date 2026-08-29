@@ -140,7 +140,7 @@ export async function runProbe(
   // hidden behind a wrapper script — `argv0 = [abs]`, so `cmd !== "bun"` — is invisible here and
   // stays uncompensated; that is a pre-existing limit of what `toTarget` can see, not something
   // this change introduces. Measured on bun 1.4.0 — see
-  // docs/plans/2026-08-29-a6-reaches-the-bun-population.md Appendix B.
+  // docs/research/2026-08-29-bun-terminator-stripping.md.
   //
   // If a future bun stops stripping, the survivor is ITSELF a terminator: an honouring target
   // reads it as a positional after an honoured `--` and still passes, a non-honouring one still

@@ -1,11 +1,11 @@
 #!/bin/sh
 # POSITIVE CONTROL for A6, in POSIX sh rather than TypeScript.
 #
-# A6's probe leads with a bare `--`, and Bun consumes exactly one such token immediately after
-# the script path — so no `.ts` fixture can ever receive the terminator the checker sends, and
-# the checker now reports `unverified` for any target launched through `bun`. `sh` passes its
-# script's arguments through untouched, which makes it the one interpreter available here that
-# can actually exercise the rule.
+# A6's probe leads with a bare `--`, and Bun strips one such token immediately after the script
+# path per Bun layer between the launcher and the script — so a `.ts` fixture only ever receives
+# the terminator when the runner compensates for a known bun launcher shape (see runner.ts).
+# `sh` is not that shape at all, so it needs no compensation and passes its script's arguments
+# through untouched, which makes it a control for the rule independent of the bun compensation.
 #
 # Mirrors conforming.ts's argument handling: split once at the first `--`, treat everything
 # after it as positional data, reject unknown options before it.

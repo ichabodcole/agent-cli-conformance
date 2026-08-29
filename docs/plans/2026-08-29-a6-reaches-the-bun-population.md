@@ -592,44 +592,8 @@ miss a sentence that names neither.
 
 ## Appendix B: the measurements
 
-All on `bun 1.4.0`, macOS (`darwin 25.6.0`), fixture printing `process.argv.slice(2)`.
-
-### Terminator delivery by launcher form
-
-| form                                                      | delivered                 |
-| --------------------------------------------------------- | ------------------------- |
-| `bun argv.ts -- --x sentinel`                             | `["--x","sentinel"]`      |
-| `bun run argv.ts -- --x sentinel`                         | `["--x","sentinel"]`      |
-| `#!/usr/bin/env bun` shebang, `./argv.ts -- --x sentinel` | `["--x","sentinel"]`      |
-| wrapper `exec bun argv.ts "$@"`                           | `["--x","sentinel"]`      |
-| wrapper `exec bun argv.ts -- "$@"`                        | `["--","--x","sentinel"]` |
-
-No launcher form forwards the terminator; a wrapper that INSERTS one does, and is transparent
-when the caller passes none (`./wrap --x sentinel` → `["--x","sentinel"]`, nothing manufactured).
-
-### Stripping is per bun layer
-
-| layers                   | sent                    | delivered                 | eaten |
-| ------------------------ | ----------------------- | ------------------------- | ----- |
-| one — `bun argv.ts`      | `-- -- --x sentinel`    | `["--","--x","sentinel"]` | 1     |
-| two — `bun run <script>` | `-- -- --x sentinel`    | `["--x","sentinel"]`      | 2     |
-| two — `bun run <script>` | `-- -- -- --x sentinel` | `["--","--x","sentinel"]` | 2     |
-
-### Compiled binaries do not strip
-
-| form                                 | delivered                      |
-| ------------------------------------ | ------------------------------ |
-| `./argv-compiled -- --x sentinel`    | `["--","--x","sentinel"]`      |
-| `./argv-compiled --x sentinel`       | `["--x","sentinel"]`           |
-| `./argv-compiled -- -- --x sentinel` | `["--","--","--x","sentinel"]` |
-
-Two consequences: compiled bun binaries are **not** receiving inverted A6 verdicts today, and the
-compensation must never reach them — which it cannot, since their `argv0` carries no launcher
-token and no shebang. The third row is also a working stand-in for a future bun that stops
-stripping, which is how the degradation walk in Appendix A item 3 was checked rather than assumed.
-
-### Not measured
-
-- Any bun other than 1.4.0.
-- Windows path semantics.
-- A `bun build --compile` binary produced by a different bun than the one that ran it.
+Moved to
+[`docs/research/2026-08-29-bun-terminator-stripping.md`](../research/2026-08-29-bun-terminator-stripping.md),
+which carries the launcher-forms, per-layer, and compiled-binary tables plus provenance and what
+was not measured. A research report is dated and frozen, which is the right home for a
+one-time measurement; this plan cites it rather than duplicating it.

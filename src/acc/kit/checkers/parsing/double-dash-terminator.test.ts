@@ -8,11 +8,12 @@ import { doubleDashTerminatorChecker } from "./double-dash-terminator.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /**
- * A6's probe leads with a bare `--`, and Bun consumes exactly one such token immediately after
- * the script path before the script sees `process.argv` — confirmed by direct experiment, and
- * true of `bun <script>`, `bun run <script>`, `bun --bun <script>` and `bun -- <script>`
- * alike. That used to leave the checker with nothing honest to report against a `.ts` fixture:
- * either measure A1 dressed as A6 (the pre-regression bug) or refuse with `unverified`.
+ * A6's probe leads with a bare `--`, and Bun strips one such token immediately after the script
+ * path before the script sees `process.argv` — confirmed by direct experiment, but only per Bun
+ * layer: `bun <script>` strips one, `bun run <script>` interposes a second layer and strips two
+ * (see docs/research/2026-08-29-bun-terminator-stripping.md). That used to leave the checker
+ * with nothing honest to report against a `.ts` fixture: either measure A1 dressed as A6 (the
+ * pre-regression bug) or refuse with `unverified`.
  *
  * The runner (`runner.ts`) now compensates at the spawn by prepending the `--` Bun eats, so the
  * target receives the same argv a native target receives and this checker needs no launcher

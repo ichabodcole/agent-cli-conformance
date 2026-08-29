@@ -126,12 +126,20 @@ blocking forever _is_ the violation.
 ### 4. Know what actually launches the target
 
 A checker measures the program the launcher hands it, which is not always the program the target
-is. `bun <script> -- --x` gives the script `["--x"]`: bun consumes exactly one bare `--` after the
-script path, so a probe of that shape never reaches the target and
-[A6](../rules/parsing/double-dash-terminator.md) would otherwise measure
-[A1](../rules/parsing/unknown-flag-exits-nonzero.md) wearing A6's name. No launcher form avoids
-it — `bun run`, `bun --bun` and `bun -- <script>` all strip the same token — so A6 reports
-`unverified` rather than guessing at an argv the target never saw.
+is. `bun <script> -- --x` gives the script `["--x"]`: Bun strips one bare `--` immediately after
+the script path **per Bun layer** between the launcher and the script, so a probe of that shape
+never reaches the target unless something puts it back. `bun run <script>` interposes a second
+layer and strips two, not one — "exactly one" is not a property of Bun, it is a property of the
+single-layer `argv0` (`["bun", abs]` or `[abs]`) that `toTarget`
+(`src/acc/commands/check.ts`) is the sole producer of, and `check.test.ts` asserts that shape.
+Left uncompensated, [A6](../rules/parsing/double-dash-terminator.md) would measure
+[A1](../rules/parsing/unknown-flag-exits-nonzero.md) wearing A6's name — which is why the
+runner now sends one extra `--` at the spawn whenever `argv0` names `bun`, Bun eats it, and A6
+reports a real verdict on the argv the target actually receives (see
+[the research measurements](../../research/2026-08-29-bun-terminator-stripping.md) for the
+per-layer numbers, and the "What an interposed layer can distort" section of
+[probing](../concepts/probing.md#what-an-interposed-layer-can-distort) for where this still goes
+wrong — a wrapper script hiding a Bun layer).
 
 The guard keys on the launcher, which left a hole worth knowing about: a Bun CLI installed with
 **no `.ts` extension** named `bun` nowhere in the invocation, so the swallow happened anyway and

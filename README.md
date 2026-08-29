@@ -117,8 +117,9 @@ the three ordinary cases:
 
 **If you write TypeScript, pass the entry `.ts` file.** You do not need a wrapper, a shim, or a
 build step, and passing the source directly is the case `acc` handles best — it recognises Bun as
-the launcher and reports [A6](docs/wiki/rules/parsing/double-dash-terminator.md) as `unverified`
-rather than guessing, because Bun consumes a bare `--` before your tool can see it.
+the launcher and compensates for the bare `--` Bun strips before your tool can see it, so
+[A6](docs/wiki/rules/parsing/double-dash-terminator.md) reports a real `pass`/`fail` instead of
+guessing at an argv your tool never received.
 
 **Only if none of those fit** — an npm script, `python -m`, a CLI behind a launcher — write a
 one-line wrapper and point `acc` at that:
@@ -129,7 +130,7 @@ exec bun /abs/path/to/cli.ts "$@"
 ```
 
 ⚠ **A wrapper hides the launcher from `acc`, and one verdict depends on seeing it.** Measured: the
-same CLI passed directly reports `UNVR A6`, and behind a shell wrapper reports `FAIL A6 — a value
+same CLI passed directly reports `PASS A6`, and behind a shell wrapper reports `FAIL A6 — a value
 after \`--\` was still parsed as an option`, which the tool did not do. A6 is `diagnostic` and
 never affects your exit code. **Prefer the direct path wherever you have one.**
 

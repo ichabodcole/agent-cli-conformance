@@ -81,7 +81,8 @@ test("a bun CLI installed without a .ts extension is recognised by its shebang",
 });
 
 // A near-miss basename must not match: `bunx` is not bun, and a node under a `bun`-ish directory
-// is not bun either. Both would make A6 report `unverified` on a target that never touches Bun.
+// is not bun either. Either match would make the runner prepend a `--` this target never needed,
+// corrupting the argv A6 (and everything else) sees for a target that never touches Bun.
 test.each(["#!/usr/bin/env bunx", "#!/home/bunny/bin/node"])(
   "%s does not count as bun",
   (shebang) => {
@@ -123,7 +124,7 @@ test("the path is always resolved to an absolute one", () => {
 // THE GUARANTOR OF THE A6 LAUNCH COMPENSATION (see runner.ts).
 //
 // Bun strips one bare `--` PER BUN LAYER: `bun script.ts` strips one, `bun run <script>` strips
-// two (measured, bun 1.4.0 — docs/plans/2026-08-29-a6-reaches-the-bun-population.md Appendix B).
+// two (measured, bun 1.4.0 — docs/research/2026-08-29-bun-terminator-stripping.md).
 // The runner compensates by exactly one, which is correct only while `argv0` names at most one
 // layer. Widen `toTarget` to emit a launcher flag, a package script, or an adopter-supplied
 // argv0, and the compensation is consumed whole and A6 silently returns to measuring A1 — with

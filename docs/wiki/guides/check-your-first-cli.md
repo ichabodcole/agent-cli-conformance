@@ -108,7 +108,7 @@ means "broken":
 ```
 PASS+ A2  root verb rejected with exit 2; nested case not probed at L0; this verdict assumes ...
 N/A   A4  arity cannot be probed at L0 — testing it requires running a real subcommand ...
-UNVR  A6  cannot be probed through a `bun` launcher: bun swallows the leading `--` ...
+UNVR  B5  no machine mode was DECLARED, and a flag matched from help by spelling is a guess ...
 FAIL  A3  flag rejection did not name the flag; verb rejection did not name the verb (this ...)
 ```
 
@@ -118,22 +118,26 @@ FAIL  A3  flag rejection did not name the flag; verb rejection did not name the 
 - **UNVR** — the probe ran and established neither answer. Not a violation, not a pass.
 - **N/A** — the rule needs a deeper probe level than this run used, so it was never attempted.
 
-Note what A6 says: the kit could not deliver its probe, because `bun` ate the `--` before the
-fixture saw it. That is the instrument reporting its own limit rather than blaming the target,
+Note what B5 says: no machine mode was **declared**, so the kit refuses to guess at one from
+help text alone. That is the instrument reporting its own limit rather than blaming the target,
 and it is the distinction the whole report is built around — see
 [conformance](../concepts/conformance.md) when you want the full treatment.
 
-> **This detection has a hole, and it is why you should pass a `.ts` path directly.** The kit
-> recognises a Bun launcher from the target's own path and shebang. Point it at a **wrapper
-> script** that `exec`s bun instead and the wrapper's shebang is a shell, so the detection misses
-> and A6 reports a `FAIL` your tool did not earn — measured: the same CLI reports `UNVR` passed
-> directly and `FAIL` behind a wrapper. A6 is `diagnostic` and never affects the exit code.
+> **A6 is worth a closer look, because it is launched through Bun here.** The fixture is a `.ts`
+> file with no shebang, so `bun run acc check` launches it under Bun — and Bun strips a bare `--`
+> immediately after the script path before the fixture ever sees it. The kit knows this and
+> compensates at the spawn (see [the rule page](../rules/parsing/double-dash-terminator.md)), so
+> `A6` above reads `PASS+`, not a refusal. **This detection has a hole, and it is why you should
+> pass a `.ts` path directly.** The kit recognises a Bun launcher from the target's own path and
+> shebang. Point it at a **wrapper script** that `exec`s bun instead and the wrapper's shebang is
+> a shell, so the compensation misses and A6 reports a `FAIL` your tool did not earn — measured:
+> the same CLI reports `PASS` passed directly and `FAIL` behind a wrapper. A6 is `diagnostic` and
+> never affects the exit code.
 
 Now the sentence from Step 1 should land. Our conforming fixture violated nothing — and still
 not one rule came back a plain `PASS`. Every rule it established is a `PASS+`; one core rule
-(`B5`) is `UNVR` for want of a declared machine mode, `A6` is `UNVR` too as a diagnostic, and
-two more (`A4`, `B3`) are `N/A` at this level. It passed the gate; it did not establish the
-whole catalogue.
+(`B5`) is `UNVR` for want of a declared machine mode, and two more (`A4`, `B3`) are `N/A` at
+this level. It passed the gate; it did not establish the whole catalogue.
 
 ## Step 4 — look up a rule you failed
 
