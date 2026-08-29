@@ -99,7 +99,7 @@ jq '.data | {conformant, fullyVerified, level, counts}' report.json
   `UNVR` and `N/A`, and conflating them misreads the report; per finding,
   `"applicable": false` is what marks the never-attempted case.
 
-### 3. Read one finding, field by field
+### 3. Read one finding from `findings`, field by field
 
 ```
 jq '.data.findings[0]' report.json
@@ -149,10 +149,8 @@ whole:
   the clause order.
 - **`evidence` / `probes`** — the observation ids this verdict rests on, and those same ids
   resolved in place: one probe entry per cited id, in `evidence`'s order. A probe entry carries
-  exactly what its id identifies and nothing more — what the target _did_ is the next step. Its
-  five fields:
-  - **`id`** — the observation id, repeated on the entry so you can match by id rather than by
-    position.
+  exactly what its id identifies and nothing more — what the target _did_ is the next step. It
+  carries its own `id` so you can match by id rather than by position, and four fields besides:
   - **`args`** — the argv after the target, which is the part that varies between probes.
   - **`env`** — environment overrides the probe imposed, present only where it imposed any:
     `--version` under a hostile `HOME` is the case that needs it.
@@ -174,7 +172,7 @@ whole:
   Both are false throughout an unconfigured run, and each is echoed with its reason in a block of
   its own further down.
 
-### 4. Resolve a probe to what happened
+### 4. Resolve a probe to its `observations` entry
 
 `probes` says what was sent. The outcome lives in `observations` — `.data.observations[]`, one
 entry per probe that ran, joined by `id`:
@@ -228,9 +226,6 @@ And what came back:
   this array by itself but whether a per-observation `launchAdjustment` compensated for it (see
   above): `targetArgv0` says how the target was launched, `launchAdjustment` says whether the
   argv it received matched the recorded `args`.
-- **`findings` / `observations`** — the two arrays steps 3 and 4 work through: one finding per
-  rule in the catalogue, one observation per probe that ran. Every other field on this list is
-  read alongside them rather than instead of them.
 - **`notApplicable`** — the rules this run did not judge, **by name**, so a rule mislabelled with
   too deep a `probeLevel` — or one no checker has ever answered to — is visible instead of merely
   absent. The same set `counts.notApplicable` gives the size of.

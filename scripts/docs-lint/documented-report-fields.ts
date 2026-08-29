@@ -40,19 +40,30 @@
 //     legitimate non-report identifiers (`jq`, envelope keys, rule ids), and field removal is rare
 //     before 1.0. Written down so that the day it bites, the record says this was chosen.
 //
-// 4. THIS GATE RAISES MECHANICAL COVERAGE AND OPENS THE DOOR TO FALSE CONTENT IN THE SAME MOTION,
-//    and the mechanism is worth stating because it is not a caution, it is how the rule works.
-//    Every field this gate forces into the guide is a SENTENCE SOMEONE HAS TO INVENT, and the
-//    gate can check only that the sentence exists in a definition position — never that it is
-//    true. Measured on the change that introduced this file: turning two prose sections into the
-//    34 definition bullets the rule demanded produced five false claims about the report's own
-//    behaviour (`exitCode`/`signal` said exactly one is set; `counts` said the tallies were over
-//    one set; `applicable` said `detail` distinguishes its two causes; `timeToFirstByteMs` said a
-//    null means a hang; `counts` again, on the repair, said two counts cover precisely what the
-//    others leave out). Each was a plausible generalisation with no code behind it, and each was
-//    introduced by the round that fixed the one before. So: when this gate makes you write a
-//    bullet, the bullet is NOT verified by the gate going green — check it against the code it
-//    describes, and prefer the unambitious sentence to the tidy one.
+// 4. THE GATE CERTIFIES THAT A SENTENCE EXISTS; ONLY A READER CAN CERTIFY THAT IT SAYS ANYTHING.
+//    Stated as mechanism rather than caution, because it is how the rule works and not a risk it
+//    happens to carry: every field this gate forces into the guide is a SENTENCE SOMEONE HAS TO
+//    INVENT, and the only property the gate can test is that the sentence occupies a definition
+//    position. Two failure modes follow from that one fact, and they were both measured on the
+//    change that introduced this file, which turned two prose sections into the 34 definition
+//    bullets the rule demanded:
+//
+//    - FALSE CONTENT. Five claims about the report's own behaviour that no code supports
+//      (`exitCode`/`signal` said exactly one is set; `counts` said the tallies were over one set;
+//      `applicable` said `detail` distinguishes its two causes; `timeToFirstByteMs` said a null
+//      means a hang; `counts` again, on the repair, said two counts cover precisely what the
+//      others leave out). Each was a plausible generalisation invented to fill a bullet, and each
+//      was introduced by the round that fixed the one before.
+//    - THE VOID BULLET, which is the sharper hazard because it is the CHEAPEST way to turn this
+//      gate green. A bullet that asserts nothing — "`id` — the observation id" — is unfalsifiable,
+//      passes every instrument here, and is WORSE than absence: absence at least signals
+//      undocumented, while a void bullet reads as documentation and stops anyone looking. Two were
+//      found in this guide by a blind reader who was not told the class existed.
+//
+//    So a bullet this gate makes you write is NOT verified by the gate going green. Check it
+//    against the code it describes, prefer the unambitious sentence to the tidy one, and if a
+//    bullet would only restate its own field name, the field needs a definition somewhere a reader
+//    already is — a heading or an existing entry — rather than a line of its own.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
