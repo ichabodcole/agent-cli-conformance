@@ -124,6 +124,34 @@ export async function runProbe(
   const [cmd, ...base] = target.argv0;
   if (!cmd) throw new Error("target has an empty argv0");
 
+  // THE LAUNCH COMPENSATION. Bun strips one bare `--` per BUN LAYER between the launcher and the
+  // script, so a probe whose argv leads with the terminator never delivers it and A6 measured A1
+  // wearing A6's name. We send one extra; bun eats it; the target receives `inv.args` exactly as
+  // a non-bun target does.
+  //
+  // Here rather than in the checker's `probes()` because `invocationId` hashes `{args, env,
+  // repeat}` and `compare` keys `byProbe` on that id: compensating in `args` would fork the bun
+  // population's A6 evidence id and file the rule as NOT ALIGNED on exactly the mixed fleet the
+  // comparison exists to serve.
+  //
+  // THE GUARANTOR IS `toTarget`, NOT BUN. Stripping is one per layer, and this compensates by
+  // one; that is correct only while `argv0` names at most one NAMED bun layer, which `toTarget`
+  // (src/acc/commands/check.ts) is the sole producer of and check.test.ts asserts. A bun layer
+  // hidden behind a wrapper script — `argv0 = [abs]`, so `cmd !== "bun"` — is invisible here and
+  // stays uncompensated; that is a pre-existing limit of what `toTarget` can see, not something
+  // this change introduces. Measured on bun 1.4.0 — see
+  // docs/research/2026-08-29-bun-terminator-stripping.md.
+  //
+  // If a future bun stops stripping, the survivor is ITSELF a terminator: an honouring target
+  // reads it as a positional after an honoured `--` and still passes, a non-honouring one still
+  // meets the sentinel and still fails by name. The probe's shape degrades, not its verdict.
+  //
+  // The predicate matches the literal token `"bun"` — the only form `toTarget` ever emits — so
+  // an absolute-path launcher (e.g. `/usr/bin/bun`) is not compensated. That is consistent with
+  // the rest of the kit rather than an oversight: nothing else here recognises bun by realpath.
+  const compensated = cmd === "bun" && inv.args[0] === "--";
+  const wireArgs = compensated ? ["--", ...inv.args] : inv.args;
+
   // Created before the promise so a failure to make the sandbox is a thrown error, not a
   // probe that quietly runs in the caller's project directory instead.
   const sandbox = mkdtempSync(join(tmpdir(), "acc-probe-"));
@@ -169,6 +197,11 @@ export async function runProbe(
         id: invocationId(inv),
         invocation: inv,
         purposes: [inv.purpose],
+        ...(compensated
+          ? {
+              launchAdjustment: `one \`--\` was prepended for the bun launcher and consumed before delivery; the wire argv was ${JSON.stringify([cmd, ...base, ...wireArgs])}`,
+            }
+          : {}),
         stdout: out.text,
         stderr: err.text,
         stdoutBytes,
@@ -223,7 +256,7 @@ export async function runProbe(
     // non-nullable and this keeps reading them without a `?.` that would hide a wiring mistake.
     let child: ChildProcessByStdio<Writable, Readable, Readable>;
     try {
-      child = spawn(cmd, [...base, ...inv.args], {
+      child = spawn(cmd, [...base, ...wireArgs], {
         stdio: ["pipe", "pipe", "pipe"],
         cwd: sandbox,
         env: { ...process.env, ...inv.env },

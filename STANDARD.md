@@ -1115,12 +1115,13 @@ Likewise, this page asserts **no flag spelling**. `sqlite3`, `openssl`, `ip`, GR
 and GDAL use single-dash long options; `dig +short`, `ps aux`, `tar cfv` and `dd if=/of=` are not
 even the same grammar. None of that falsifies anything above, and none of it is a defect.
 
-**[C]** `A1`–`A3` and `A5`–`A7`, at the root only — with `A6` and `A7` carrying a caveat the
-[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) measured: both returned `unverified` on
-all eight targets, `A6` because a `bun` launcher swallows the leading `--` before the target sees
-it, `A7` because its prose extractor found no closed value set to falsify. Neither is a target fact
-and both checkers can resolve on other shapes, but on the population `acc` handles best they have
-yet to. **[—]** `A4` — the silently swallowed positional,
+**[C]** `A1`–`A3` and `A5`–`A7`, at the root only. The
+[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) measured both `A6` and `A7` as
+`unverified` on all eight targets — `A6` because a `bun` launcher swallowed the leading `--` before
+the target saw it, `A7` because its prose extractor found no closed value set to falsify. `A6`'s
+swallow is now compensated at the spawn, so it returns a real verdict on bun-launched targets; `A7`
+still carries its caveat, because its checker still finds no closed value set and has yet to resolve
+on that population. **[—]** `A4` — the silently swallowed positional,
 which is the second item in the shape above — at any depth: its checker declares no probe and
 returns `unverified` unconditionally
 ([`unexpected-positionals.ts`](src/acc/kit/checkers/parsing/unexpected-positionals.ts)), because

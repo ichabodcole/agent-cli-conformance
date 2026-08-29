@@ -157,14 +157,20 @@ ended (`exitCode`, `signal`, `crashed`, `timedOut`, `spawnFailed`), where the by
 timing (`durationMs`, `timeToFirstByteMs`), the probe's `inertness` class (the four classes are
 listed in
 [how to establish your target is safe to check](./how-to-establish-your-target-is-safe-to-check.md)),
-and `purposes` — every rule that read this one invocation, which is how one bare (argument-less)
-invocation can decide C2 and D2 at once.
+`purposes` — every rule that read this one invocation, which is how one bare (argument-less)
+invocation can decide C2 and D2 at once — and `launchAdjustment`, present only when the wire
+argv actually delivered to the target differed from the recorded `args` (today, the only source
+is the runner prepending a `--` for a `bun` launcher so A6's terminator survives Bun's own
+stripping). It names the wire form in prose: replay `args` alone against this target and you get
+a different delivered argv than the one this record's verdict was decided from.
 
 ### 5. The rest of `.data`, briefly
 
 - **`target` / `targetArgv0`** — the path you gave, and the argv the kit actually spawned —
-  a `bun` launcher is resolved here, and what lands in this array is what decides a launcher
-  limit like A6's `--` swallow.
+  a `bun` launcher is resolved here. What decides a launcher limit like A6's `--` swallow is not
+  this array by itself but whether a per-observation `launchAdjustment` compensated for it (see
+  above): `targetArgv0` says how the target was launched, `launchAdjustment` says whether the
+  argv it received matched the recorded `args`.
 - **`configSource`** — which `acc.config.json` was read: `{origin, path, dir}`, with
   `"origin": "none"` when none was.
 - **`targetIdentity`** — the target's own `--version` bytes, quoted, with the observation id

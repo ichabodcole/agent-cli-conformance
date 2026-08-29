@@ -96,7 +96,7 @@ a decision rather than hiding a failure — and it decides what a waiver costs: 
 | [A3](./rules/parsing/errors-name-the-offending-token.md)          | core       | defect        | L0    | implemented | partial  | 5    |
 | [A4](./rules/parsing/unexpected-positionals-rejected.md)          | core       | defect        | L1    | implemented | partial  | 1    |
 | [A5](./rules/parsing/no-fuzzy-auto-correction.md)                 | core       | defect        | L0    | implemented | partial  | 5    |
-| [A6](./rules/parsing/double-dash-terminator.md)                   | diagnostic | design-choice | L0    | implemented | partial  | 4    |
+| [A6](./rules/parsing/double-dash-terminator.md)                   | diagnostic | design-choice | L0    | implemented | partial  | 5    |
 | [A7](./rules/parsing/advertised-value-set-is-enforced.md)         | core       | defect        | L0    | implemented | partial  | 6    |
 | [B1](./rules/streams/stdout-carries-only-data.md)                 | core       | defect        | L0    | implemented | partial  | 3    |
 | [B2](./rules/streams/no-ansi-when-piped.md)                       | core       | defect        | L0    | implemented | partial  | 4    |
@@ -115,7 +115,7 @@ a decision rather than hiding a failure — and it decides what a waiver costs: 
 | [F2](./rules/safety/first-byte-is-prompt.md)                      | diagnostic | design-choice | L0    | implemented | partial  | 4    |
 | [G1](./rules/lifecycle/inert-invocations-do-not-crash.md)         | core       | defect        | L0    | implemented | partial  | 4    |
 
-23 rules · 0 `complete` · 23 `partial` · 95 named gaps.
+23 rules · 0 `complete` · 23 `partial` · 96 named gaps.
 
 ### Parsing
 

@@ -56,6 +56,17 @@ export interface Observation {
    */
   purposes: string[];
   /**
+   * Present only when the WIRE argv differed from `invocation.args` — today, exclusively the
+   * `--` prepended for a bun launcher and consumed before delivery.
+   *
+   * Written for whoever REPLAYS this record. Recorded `args` deliberately stay uncompensated so
+   * the evidence id and `compare`'s alignment do not fork between bun and non-bun targets; the
+   * cost is that re-running the recorded args by hand reproduces the ORIGINAL defect rather than
+   * the kit's run. This field is what stops that reader concluding the kit is wrong, so it names
+   * the wire form rather than merely announcing that an adjustment happened.
+   */
+  launchAdjustment?: string;
+  /**
    * The captured bytes, decoded as UTF-8 once over the whole capture. A RENDERING of the stream,
    * for a human to read and for a checker to search — not the stream itself.
    *
