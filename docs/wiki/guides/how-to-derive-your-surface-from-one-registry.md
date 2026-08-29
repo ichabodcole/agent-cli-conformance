@@ -152,10 +152,10 @@ has, and it is true here because nothing was transcribed.
 
 ## A worked example, from a tool that does this
 
-The steps above argue for the pattern. This section shows one, from `grapevine`, whose census is
-the only 33-of-33 measured so far. Every excerpt is quoted from its real source and the emitter was
-run to produce the numbers here. **It is a FLAT command table** — one token per path — and the
-section closes with what that leaves unanswered for a nested tool.
+The steps above argue for the pattern. This section shows one, working. Every excerpt is quoted
+from a real emitter and the emitter was run to produce the numbers here — a declaration of 33
+command rows, accepted by this kit's own reader. **It is a FLAT command table**, one token per
+path, and the section closes with what that leaves unanswered for a tool whose commands nest.
 
 ### 1. It is a refactor of dispatch, not a new artifact
 
