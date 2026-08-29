@@ -122,8 +122,8 @@ export function isExecutable(abs: string): boolean {
  * 1. **The shebang says bun.** Then bun is what runs it either way, and naming it matters for
  *    A6: the runner compensates for bun's terminator stripping at the spawn (see `runner.ts`),
  *    and it can only do that when `argv0` NAMES bun. A Bun CLI installed without a `.ts`
- *    extension used to miss the guard entirely and collect a FAIL derived from an argv it never
- *    received.
+ *    extension used to miss this argv0-naming case entirely, so the runner never compensated,
+ *    and the CLI collected a FAIL derived from an argv it never received.
  * 2. **A non-executable `.ts` file with no conflicting shebang.** That is a SOURCE file rather
  *    than a program, and Bun is the documented fallback for running one. A non-executable file
  *    that declares some other interpreter gets neither: it is launched as itself and fails to

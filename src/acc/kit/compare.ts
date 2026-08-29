@@ -79,7 +79,10 @@ export interface AxisSplit {
 }
 
 export interface ProbeComparison {
-  /** `invocationId` — equal ids mean byte-identical RECORDED args, env and repetition. */
+  /**
+   * `invocationId` — equal ids mean byte-identical RECORDED args, env and repetition (which the
+   * target also receives — see `ReportedObservation.launchAdjustment`).
+   */
   id: string;
   /**
    * The argv ASKED for after the target's own `argv0`. Empty array is the bare invocation. The

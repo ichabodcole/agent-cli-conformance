@@ -1251,6 +1251,18 @@ describe("evidence ids resolve", () => {
     expect(Object.hasOwn(toReportedObservation(o), "env")).toBe(false);
   });
 
+  test("launchAdjustment survives the projection when the observation carries one", () => {
+    const o = observationOf({ launchAdjustment: "one `--` was prepended for the bun launcher" });
+    expect(toReportedObservation(o).launchAdjustment).toBe(
+      "one `--` was prepended for the bun launcher",
+    );
+  });
+
+  test("launchAdjustment is absent from the projection when the observation has none", () => {
+    const o = observationOf();
+    expect(Object.hasOwn(toReportedObservation(o), "launchAdjustment")).toBe(false);
+  });
+
   test("a non-empty env is published, and copied rather than aliased", () => {
     const env = { HOME: "/nonexistent" };
     const o = observationOf({

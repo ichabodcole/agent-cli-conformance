@@ -162,8 +162,8 @@ export interface EvidenceProbe {
  * byte-level record here, for the reason the durable-artifact work already settled: retaining the
  * bytes as well doubles the artifact for an equality question a 32-byte hash already answers, and
  * hands an unbounded binary field the redaction and retention problems that come with it. What a
- * reader needs to reconstruct a verdict is the ARGV, and that carries nothing the target did not
- * already receive from us.
+ * reader needs to reconstruct a verdict is the ARGV plus `launchAdjustment` when it is present,
+ * and together those carry nothing the target did not already receive from us.
  *
  * **`purposes` is the exception, and it is deliberate.** A7 builds its purpose string from the
  * value set it read out of the target's own `--help`, so this field can contain target-derived
