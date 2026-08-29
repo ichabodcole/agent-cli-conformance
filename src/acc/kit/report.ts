@@ -232,8 +232,14 @@ export interface ReportedObservation {
  *
  * This mark closes it from the report's side: a hash over the ordered observation ids AND their
  * outcomes (exit code, both stream digests). Two renderings of one run carry the same value by
- * construction; two sweeps share it exactly when their evidence is byte-identical — the one case
- * where crossing the boundary is harmless by definition. Deliberately time-free: folding a
+ * construction; two sweeps sharing it agree on everything the hash covers — the ordered ids, exit
+ * codes, signals and both stream digests. READ IT IN ONE DIRECTION ONLY: a differing mark proves
+ * the evidence differs, while an equal mark does NOT prove it identical, because `timedOut`,
+ * `crashed`, `truncated` and both timings are not in the material above. A hang and an outside
+ * kill that both died silently collide here, and so do two runs differing only in timing — which
+ * is exactly what F2 judges. Widening the material is a live option; it was not done here because
+ * the mark's job is to catch a reader joining two sweeps by accident, and for that the one
+ * direction is the load-bearing one. Deliberately time-free: folding a
  * timestamp in would make every sweep unique and destroy the only property this answers
  * ("same evidence?"). "When?" is `capturedAt`'s question, a separate field on the Report.
  */

@@ -44,26 +44,66 @@
 //    Stated as mechanism rather than caution, because it is how the rule works and not a risk it
 //    happens to carry: every field this gate forces into the guide is a SENTENCE SOMEONE HAS TO
 //    INVENT, and the only property the gate can test is that the sentence occupies a definition
-//    position. Two failure modes follow from that one fact, and they were both measured on the
-//    change that introduced this file, which turned two prose sections into the 34 definition
-//    bullets the rule demanded:
+//    position. What follows was observed on the change that introduced this file, not reasoned
+//    about.
 //
-//    - FALSE CONTENT. Five claims about the report's own behaviour that no code supports
-//      (`exitCode`/`signal` said exactly one is set; `counts` said the tallies were over one set;
-//      `applicable` said `detail` distinguishes its two causes; `timeToFirstByteMs` said a null
-//      means a hang; `counts` again, on the repair, said two counts cover precisely what the
-//      others leave out). Each was a plausible generalisation invented to fill a bullet, and each
-//      was introduced by the round that fixed the one before.
-//    - THE VOID BULLET, which is the sharper hazard because it is the CHEAPEST way to turn this
-//      gate green. A bullet that asserts nothing — "`id` — the observation id" — is unfalsifiable,
-//      passes every instrument here, and is WORSE than absence: absence at least signals
-//      undocumented, while a void bullet reads as documentation and stops anyone looking. Two were
-//      found in this guide by a blind reader who was not told the class existed.
+//    EIGHT FALSE SENTENCES were found in the 37 bullets, across three rounds of review and one
+//    audit aimed at this specific class. The aimed audit found THREE THAT THE THREE ROUNDS MISSED
+//    — including the worst of the eight, a `spawnFailed` bullet describing a branch that can never
+//    fire in any report this kit writes.
+//
+//    WHERE THEY CAME FROM, and the honest version is not the tidy one. Making this gate green
+//    turned two prose sections into 32 converted bullets, and MOST of the defects fell there:
+//    pinned to the revisions, seven of the eight sit in a bullet converted from existing prose,
+//    where a sentence that already read well was rewritten into a definition and gained a claim on
+//    the way. That population is one-time, identified, and now audited. But the eighth
+//    (`excused`/`waived`) was NOT a conversion, so the risk is not retired by the migration ending
+//    — writing a bullet for a newly shipped field runs the same hazard, just at lower volume.
+//
+//    THE RATE IS A FLOOR: AT LEAST 7 OF 32 CONVERTED BULLETS, roughly one in four and a half. It
+//    can only ever be a floor, and the reason is the same defect this note is about. The passes
+//    that produced the number were each hunting ONE shape — an over-strong generalisation — so
+//    they could raise the count and could never confirm it: a bullet wrong in some other way was
+//    not being looked for. Reading it as "one in four and a half" rather than "or worse" would be
+//    a number asserting more than its method could observe. Two further passes are queued against
+//    this same population and either may raise it again, as the last one did.
+//
+//    - FALSE CONTENT. `exitCode`/`signal` said exactly one is set; `counts` said the tallies were
+//      over one set; `applicable` said `detail` distinguishes its two causes; `timeToFirstByteMs`
+//      said a null means a hang; `counts` again, on the repair, said two counts cover precisely
+//      what the others leave out; `spawnFailed` offered a broken-install alarm that can never
+//      fire; `sweep` claimed equal marks prove identical evidence, when the hash omits the kill
+//      flags and both timings; `excused` omitted that it goes false once the rule passes. Each was
+//      a plausible generalisation invented to fill a bullet.
+//    - THE VOID BULLET, the writer-side hazard, and the sharper one because it is the CHEAPEST way
+//      to turn a red gate green. A bullet that asserts nothing — "`capturedAt` — when it was
+//      captured" — passes every instrument here and can never be falsified, because it contains no
+//      claim to falsify. It is WORSE than absence: absence signals undocumented and sends a reader
+//      to the source, while a void bullet reads as documentation and stops them. Not hypothetical
+//      — a blind reader found two in this guide without being told the class existed.
+//    - COMPLETENESS KILLS ABSENCE, the reader-side counterpart. Before the gate, a field with no
+//      entry sent a reader to the source, and that silence was a WORKING SIGNAL. After it, every
+//      field carries a confident-looking line, so the reader stops at the guide — and the
+//      certification raises trust in exactly the sentences whose truth it cannot check. It is this
+//      repo's own `bounded-search-is-not-absence` inverted: the search now always returns
+//      something, so an empty result no longer exists to be read.
+//    - THE ATTENTION DEPENDENCY, and the eight above are its evidence rather than an illustration
+//      of it. Every one was caught by review this gate does not bring with it, and the three the
+//      aimed audit added are the measurement of what ordinary review misses. The steady state is
+//      one field, one red gate, one bullet, and nobody with the code open ever reading it. A
+//      property that holds only under audit-level attention is not a property of the gate, and
+//      nothing here should let a later reader assume those catches were structural.
 //
 //    So a bullet this gate makes you write is NOT verified by the gate going green. Check it
-//    against the code it describes, prefer the unambitious sentence to the tidy one, and if a
-//    bullet would only restate its own field name, the field needs a definition somewhere a reader
-//    already is — a heading or an existing entry — rather than a line of its own.
+//    against the code it describes; PREFER THE UNAMBITIOUS SENTENCE TO THE TIDY ONE, which is the
+//    only rule anyone found that resists the pull; and if a bullet would only restate its own field
+//    name, the field needs its definition somewhere the reader already is — a heading, or an
+//    existing entry — rather than a line of its own.
+//
+//    On why that rule is needed at all: the fifth false claim was written while explicitly on guard
+//    for that exact shape, in the commit repairing the fourth. The failure is not carelessness. It
+//    is that "fill this bullet" and "state something general and clean" pull in the same direction,
+//    and generality is what makes a sentence read as finished.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

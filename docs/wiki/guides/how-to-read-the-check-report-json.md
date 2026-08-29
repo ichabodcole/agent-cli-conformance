@@ -167,8 +167,10 @@ whole:
   says so in its `detail` and again in its `coverageGaps`, while a rule merely deeper than this
   run is visible by comparing its `probeLevel` against the report's `level`.
 - **`excused` / `waived`** — what your own `acc.config.json` said about this rule, and they are
-  opposite claims: `excused` is a `knownFailures` entry, a defect you have acknowledged and intend
-  to fix; `waived` is `severity: "off"`, a declaration that the rule does not apply to your tool.
+  opposite claims: `excused` is a `knownFailures` entry **that is still doing work** — a defect
+  you have acknowledged and intend to fix, and it goes false the moment the rule passes, when the
+  entry surfaces in `staleExpectations` instead; `waived` is `severity: "off"`, a declaration that
+  the rule does not apply to your tool.
   Both are false throughout an unconfigured run, and each is echoed with its reason in a block of
   its own further down.
 
@@ -204,7 +206,11 @@ And what came back:
   target's `close` never arrived it records **both as null** rather than name a signal it did not
   observe. `crashed` is the field that carries the distinction `signal` alone cannot — a signal
   the kit did **not** send — so check `crashed`, `timedOut` and `truncated` before attributing a
-  death. `spawnFailed` is the case where none of the others mean anything, because nothing ran.
+  death. `spawnFailed` is published for completeness and is **always `false` in a report**: the
+  first probe that cannot spawn aborts the whole run with a `not_found` error envelope instead of
+  producing a report at all. Do not make it your broken-install alarm — that branch can never
+  fire, and the signal you want is the error envelope on stderr, not a field in a document that
+  only exists when the target ran.
 - **`stdoutBytes` / `stderrBytes` / `stdoutDigest` / `stderrDigest`** — how much was RETAINED on
   each stream, and a digest of exactly those retained bytes. Retained, not written: when
   `truncated` is true the target was killed at the ceiling and what it would have written next is
@@ -233,8 +239,12 @@ And what came back:
   `"origin": "none"` when none was.
 - **`capturedAt` / `sweep`** — when the sweep ran (ISO 8601), and the mark every rendering of that
   one run shares. `capturedAt` is what tells a month-old artifact apart from a live one; `sweep` is
-  deliberately time-free, so two sweeps carry the same mark exactly when their evidence is
-  identical. Pair reports on `sweep`, date them with `capturedAt`.
+  deliberately time-free. Read it in ONE direction: two different marks mean the evidence
+  differs, but equal marks do NOT prove it identical — the hash covers observation ids, exit
+  codes, signals and the two stream digests, and nothing else, so a hang and an outside kill that
+  both died silently collide, as do two runs that differ only in timing. Pair reports on `sweep`,
+  date them with `capturedAt`, and compare the fields themselves before claiming two runs saw the
+  same thing.
 - **`targetIdentity`** — the target's own `--version` bytes, quoted, with the observation id
   they came from, and not verified to be a version.
 - **`surface`** — whether the root enumerated its flags (`status`, plus the rejection evidence
