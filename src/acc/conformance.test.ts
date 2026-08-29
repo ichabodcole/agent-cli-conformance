@@ -944,8 +944,7 @@ describe("acc checks itself, through the kit", () => {
   // exists as a separate boolean: `conformant` alone would now be satisfied by a run in which
   // every core rule came back `unverified`. acc must clear the stronger bar — every applicable
   // core rule VERIFIED, not merely unfalsified. (A4 is core but above L0, so it is reported
-  // not-applicable and excluded from both claims; A6 is diagnostic and unverifiable through a
-  // bun launcher, so it gates neither.)
+  // not-applicable and excluded from both claims; A6 is diagnostic, so it gates neither.)
   test("every applicable core rule is verified, not merely unfailed", async () => {
     const h = await record(ACC, CHECKERS, true);
     const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, ACC_DECLARES, "L0", VERSION);
@@ -1462,15 +1461,28 @@ describe("acc check — the outcome exit code", () => {
     }, 60_000);
 
     // Raising a severity is the other direction, and it has to bite or the field is decoration.
-    // A6 is diagnostic in the catalogue and this fixture is launched through bun, so its verdict
-    // is `unverified` — which gates `fullyVerified` once the rule is core, and nothing before.
-    test("raising a rule to core pulls it into the evidence claim", async () => {
-      const conforming = join(dirname(CLI), "kit/fixtures/conforming.ts");
+    // A6 is diagnostic in the catalogue, and `broken/ignores-double-dash.ts` FAILS it (the
+    // fixture never honours `--`) while passing every core rule — so without the override the
+    // run is `conformant`, because a diagnostic failure does not gate that claim. Raising A6 to
+    // core moves the SAME fail into `coreFailures`, which is what `conformant` is defined over
+    // (see `report.ts`: `conformant = coreFailures.length === 0`). If the override were a no-op
+    // this assertion would still see `conformant: true` — the earlier version of this test used
+    // `conforming.ts`, where A6 already passes, so `coreUnverified > 0` held with or without the
+    // override (B5 alone supplies it) and never actually exercised the severity change.
+    test("raising a rule to core pulls its failure into the evidence claim", async () => {
+      const brokenDoubleDash = join(dirname(CLI), "kit/fixtures/broken/ignores-double-dash.ts");
+
+      const baseline = await run(["check", brokenDoubleDash, "--json"]);
+      const base = JSON.parse(baseline.stdout).data;
+      expect(base.findings.find((f: { ruleId: string }) => f.ruleId === "A6").verdict).toBe("fail");
+      expect(base.conformant).toBe(true);
+      expect(base.counts.coreFailures).toBe(0);
+
       const dir = configDir({
         rules: { A6: { severity: "core", reason: "we delegate; -- is load-bearing" } },
       });
       try {
-        const r = await run(["check", conforming, "--config-dir", dir, "--json"]);
+        const r = await run(["check", brokenDoubleDash, "--config-dir", dir, "--json"]);
         const { data } = JSON.parse(r.stdout);
         expect(data.severityOverrides).toEqual([
           {
@@ -1482,7 +1494,11 @@ describe("acc check — the outcome exit code", () => {
         ]);
         const a6 = data.findings.find((f: { ruleId: string }) => f.ruleId === "A6");
         expect(a6.tier).toBe("core");
-        expect(data.counts.coreUnverified).toBeGreaterThan(0);
+        expect(a6.verdict).toBe("fail");
+        // The bite: the SAME failure that was merely diagnostic a moment ago now blocks the
+        // conformance claim. This is false if the override is removed or ignored.
+        expect(data.counts.coreFailures).toBe(base.counts.coreFailures + 1);
+        expect(data.conformant).toBe(false);
       } finally {
         rmSync(dir, { recursive: true, force: true });
       }
@@ -1494,8 +1510,9 @@ describe("acc check — the outcome exit code", () => {
   // A Bun CLI installed without a `.ts` extension used to be launched directly, so `argv0` never
   // said "bun", A6's swallow guard never fired, and the checker reported `FAIL` against an argv
   // the target never received — on a fixture that provably honours `--`. `toTarget` now reads
-  // the shebang. The honest verdict for any bun-launched target is `unverified`.
-  test("a bun CLI with no .ts extension is launched through bun, so A6 does not invent a FAIL", async () => {
+  // the shebang, and the runner compensates for the launcher at the spawn (see `runner.ts`), so
+  // the honest verdict for a bun-launched target that honours `--` is `pass`.
+  test("a bun CLI with no .ts extension is launched through bun, so A6 measures it correctly", async () => {
     const noExtension = join(tmpdir(), `acc-conforming-noext-${process.pid}`);
     copyFileSync(join(dirname(CLI), "kit/fixtures/conforming.ts"), noExtension);
     chmodSync(noExtension, 0o755);
@@ -1504,8 +1521,7 @@ describe("acc check — the outcome exit code", () => {
       expect(r.code).toBe(0);
       const { data } = JSON.parse(r.stdout);
       const a6 = data.findings.find((f: { ruleId: string }) => f.ruleId === "A6");
-      expect(a6.verdict).toBe("unverified");
-      expect(a6.detail).toContain("bun");
+      expect(a6.verdict).toBe("pass");
       expect(data.conformant).toBe(true);
     } finally {
       rmSync(noExtension, { force: true });
@@ -1513,9 +1529,10 @@ describe("acc check — the outcome exit code", () => {
   }, 30_000);
 
   // The other side of the same resolution path: a target that is NOT a bun script must still be
-  // launched directly, so A6 is actually exercised. The `sh` fixtures are the only ones that can
-  // receive the terminator, and this is the only test that reaches them the way a user does —
-  // via `acc check`, which needs their exec bit to be committed.
+  // launched directly. Bun scripts get their own real A6 verdict too now, via the runner's
+  // launch compensation — this fixture just isn't one, and it is the only test that reaches the
+  // `sh` fixtures the way a user does, via `acc check`, which needs their exec bit to be
+  // committed.
   test("a shell CLI is launched directly, so A6 is exercised rather than skipped", async () => {
     const fixture = join(dirname(CLI), "kit/fixtures/sh/honours-double-dash.sh");
     const r = await run(["check", fixture, "--json"]);

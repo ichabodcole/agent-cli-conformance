@@ -20,6 +20,7 @@ coverage_gaps:
   - the delegator passthrough requirement is not exercised
   - a rejection is recognised only from an English unknown-option or unknown-flag phrase so a differently worded rejection reads as a pass
   - only a bare terminator at the root followed by a single value is probed
+  - a bun layer hidden inside a wrapper script is invisible here so its terminator is still eaten and the probe measures an argv the target never received
 coverage_established:
   - a hyphen-leading value after a bare terminator at the root draws no English unknown-option rejection naming it on stderr
 ---
@@ -45,11 +46,12 @@ and **MUST** pass everything after `--` to the child unmodified.
 > at `L0` and is named in this rule's own coverage gaps. If your CLI wraps another program, the
 > clause that admits no alternative is the one nothing here has tested.
 
-> **If you checked this rule through a wrapper, distrust the verdict.** Bun consumes a bare `--`
-> immediately after the script path, so the terminator never reaches the target. The kit detects
-> that when it can see the launcher and reports `unverified` — but a wrapper script hides the
-> launcher, the guard misses, and this rule reports a `fail` against an argv your tool never
-> received. See
+> **If you checked this rule through a wrapper, distrust the verdict.** Bun strips a bare `--`
+> immediately after the script path, one per bun layer between the launcher and the script
+> (measured on bun 1.4.0), so the terminator never reaches the target unless the kit compensates.
+> The kit does that when it can see the launcher — but a wrapper script hides a bun layer
+> inside it, the compensation misses, and this rule reports a verdict against an argv your tool
+> never received. See
 > [what an interposed layer can distort](../../concepts/probing.md#what-an-interposed-layer-can-distort).
 
 ## How to comply
@@ -91,13 +93,19 @@ that a particular rejection does not. The command may still exit non-zero for an
 (no verb was given), which is why the check reads stderr for that specific rejection rather than
 the exit code.
 
-**Reports `unverified` for any target launched through `bun`**, which is why A6 is the rule most
-often unverified in a report. `bun <script> -- --x` hands the script `["--x"]`: bun consumes
-exactly one bare `--` after the script path, which is exactly this probe's shape, so the target
-never receives the terminator and what would be measured is
-[A1](./unknown-flag-exits-nonzero.md) wearing A6's name. No launcher form avoids it, and a target
-whose shebang names `bun` is inside the guard too. Read that verdict as "not measured here" rather
-than as a fault, and re-run the check through a launcher that forwards `--` if you want an answer.
+**Compensates for a `bun` launcher at the spawn.** `bun <script> -- --x` hands the script
+`["--x"]`: bun strips one bare `--` per bun layer between the launcher and the script (measured
+on bun 1.4.0; see [the research measurements](../../../research/2026-08-29-bun-terminator-stripping.md)),
+which is exactly this probe's shape, so
+without help the target would never receive the terminator and what got measured would be
+[A1](./unknown-flag-exits-nonzero.md) wearing A6's name. The kit sends exactly one extra `--`
+because `toTarget` never names more than a single bun layer — `["bun", abs]` or `[abs]` — so one
+compensating `--` is always the right amount for what the runner can see; the real guarantor is
+that single-layer `argv0` shape, not a property of bun itself. The runner sends its extra `--`
+when it knows bun is the launcher — including a target whose shebang names `bun` — so the target
+receives the same argv a native target receives and this rule reports a real verdict. A bun layer
+hidden inside a wrapper script is outside what the runner can see and is still
+undercompensated; see the coverage gaps below.
 
 After a terminator the sentinel is **guaranteed** to arrive as a positional — that is what the
 probe is testing. For a CLI whose root positional is a verb it names no declared command, so the
@@ -118,8 +126,10 @@ the rest of this page, unexamined.
 - a hyphen-leading value after a bare terminator at the root draws no English unknown-option
   rejection naming it on stderr
 
-Through a `bun` launcher the probe is undeliverable — bun swallows the leading `--` — and the
-verdict is `unverified` rather than a measurement of an argv the target never received.
+Through a `bun` launcher the runner compensates at the spawn — bun strips one bare `--` per bun
+layer (measured on bun 1.4.0), and `toTarget` never names more than a single layer, so the
+runner sends exactly one extra `--` — and the verdict is a real measurement of the target's own
+argv.
 
 **Gaps**
 
@@ -129,6 +139,8 @@ verdict is `unverified` rather than a measurement of an argv the target never re
 - a rejection is recognised only from an English unknown-option or unknown-flag phrase so a
   differently worded rejection reads as a pass
 - only a bare terminator at the root followed by a single value is probed
+- a bun layer hidden inside a wrapper script is invisible here so its terminator is still eaten
+  and the probe measures an argv the target never received
 
 ## Evidence
 
