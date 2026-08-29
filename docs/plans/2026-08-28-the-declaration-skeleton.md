@@ -446,3 +446,131 @@ The judgement item is settled — the rule is location-based and shape-plural. I
 small parse job with a real risk of its own: an angle-bracketed blob is not always a verb list, and
 a second parser is a second place to be wrong. That risk did not exist in the costing above,
 because the costing could not see the shape.
+
+## Appendix B3: implementation risk, from two independent reviews
+
+Briefed as implementation risk only — the adopter's four answers are settled and none of this
+reopens one.
+
+### We already refused this, in writing, in the function B would widen
+
+`nonFlagSetsIn`'s own doc comment:
+
+> Only JSON documents are read. A prose near-miss would need the same enumerating-phrase heuristic
+> the prose path uses, and **guessing which prose list is "a set of something else" is exactly the
+> inference this capture refuses to make.**
+
+So widening the parse **reverses a documented decision** and has to beat the recorded reason rather
+than tiptoe around it. A reader six months out finds the comment and the widening and cannot tell
+which is current. Whatever ships must resolve that comment, not sit beside it.
+
+And the defence that works for flags does not transfer: the prose path for flags carries a marker
+**and** a member-shape test, and the shape test is what makes it safe, because `isFlag` is
+unambiguous. **There is no `isVerb`** — `open` and `file` are the same lexical object. That is
+precisely why the refusal exists, and no cleverer regex fixes it.
+
+### The asymmetry that inverts the safe default
+
+**A false negative in the parser becomes a false positive in the finding.** If the advertised set
+reads as EMPTY, every recorded path becomes _recorded but never advertised_ — a wall of findings
+about our reader, dressed as findings about the adopter's tool. That is the same 104 measured on
+the empty declaration, in a new place.
+
+So **"refuse when unsure" is the loud choice here, not the conservative one.** The design must
+carry the distinction the census already draws:
+
+    advertised set NOT READABLE   ≠   advertised set EMPTY
+
+and it must **reuse** the existing honesty case rather than reimplement it — `declaration.ts`
+already renders _"a target that did not enumerate has not agreed with anything; it has said
+nothing, and the diff did not happen."_ No readable verb set means the comparison **did not run**,
+and says so.
+
+**Build this first.** It is the clause that turns a parser bug into a fleet-wide accusation if it
+lands last.
+
+### Discrimination comes from provenance, not from shape
+
+Read the blob **only from the unknown-verb rejection's stream** — never from `--help`, never from
+arbitrary prose. That makes the legacy reader the structural twin of the one we have, since
+`nonFlagCandidates` reads `choices` out of a rejection too, and it inherits guards already written:
+the echo guard, and the exclusion of timed-out, crashed and **truncated** captures — which matters
+more here than for flags, because a usage line cut mid-blob yields a verb set short by an
+unknowable number.
+
+The narrowing stack, cheapest refusals first:
+
+1. only a line matching `^usage[:\s]`;
+2. only the **first** angle-bracket group after the program token, so
+   `usage: cli <open|state> <file>` never contributes `file`;
+3. at least two members — kills every singleton metavariable;
+4. every member token-shaped — kills `<FILE>`, `<key=value>`;
+5. what survives and still is not a verb list is the two-member type union (`<name|id>`), which no
+   lexical rule can separate from a two-verb tool. **The last discriminator is evidence, not
+   shape:** when a batch is present, require a majority of members to match recorded paths before
+   asserting the blob. Otherwise render hedged.
+
+**Boundary to hold in the code:** recorded paths **confirm** the blob, never **construct** it. The
+members come from the usage line alone, so the freshness property survives.
+
+### The ellipsis, found inside the adopter's own quoted string
+
+`usage: cli.ts <open|state|tail|…>` — **the ellipsis is a member of the blob.** An ellipsis is the
+usage line declaring its own set OPEN, and _recorded but never advertised_ cannot be asserted from
+a list that says it is incomplete: the verb may live in the elided tail.
+
+So `…`/`...` is a **marker, not a member** — dropped from the set, carried as an `open` flag, and
+the finding renders _"not among the N verbs the usage line names (the line marks its list open with
+…)"_ instead of a flat accusation.
+
+Nobody had seen this. We built a fixture from the adopter's line, **dropped the ellipsis without
+noticing**, measured a clean result, and would have shipped a parse reading `...` as a fifth verb.
+Whether it is literal in their tool or shorthand in their message is asked and unanswered; the
+answer decides whether open-set rendering is the main path or an edge.
+
+### The home, and where a second one would appear
+
+A **new** surface field, not a widening of `nonFlagCandidates` — whose contract is diagnostic
+(rejected sets, sampled for a report line) where B needs the opposite: full list, an interpretation
+(_this IS the advertised set_), a shape provenance (`envelope-choices` | `usage-line`), and the
+open flag. Overloading one field with both contracts is how sample-vs-full and
+diagnostic-vs-assertion end up disagreeing inside one structure.
+
+⚠ **The second home already exists in outline.** `recorded.ts`'s `readings[].nonFlagKeys` carries
+**keys only, no values**, and `report.ts` maps it from the surface. If B needs advertised values
+per path, widening that is a second edit in a second file — the exact shape of the `surfaceFrom`
+defect: one construction, two homes, six green unit tests, unchanged end-to-end output. **Derive
+the advertised set once, in `surface.ts`, and have the census read it.** If B parses a stream
+anywhere outside that one pass, the bug has arrived.
+
+### The bound: the adopter is right, but not for their reason
+
+Relaxing `SAMPLE = 4` to a 32-cap does not break the invariant the test names — a bound is a bound
+and only the constant moved. The test should be rewritten to assert the surviving invariant (text
+bounded, `count` always present) rather than the literal `4`.
+
+What actually relaxes is **full list always in the JSON**, which removes the bound entirely — and
+the guard's stated reason (_the members are the TARGET's bytes and the list has no length limit of
+its own_) is untouched by "verb sets are small". Small is the typical case; the guard was for the
+adversarial one.
+
+It is still sound, by an existing mechanism rather than an assumption: streams are capped at
+`MAX_STREAM_BYTES`, and `report.ts` **already documents leaning on exactly that** for `args`, in
+the same words — _"bounded only by `MAX_STREAM_BYTES`… it is written down because 'argv is small'
+is an assumption a reader would otherwise make."_ B is the second user of a documented reliance,
+not a new exception, and the field's comment should say so.
+
+### One state the costing missed
+
+**A check with no batch at all.** The advertised side is captured live on every plain check, so the
+field populates when there is nothing to compare against. Render that named — _"advertised set
+captured (N verbs, usage-line shape); no recorded surfaces in this run, so no comparison was
+made"_ — because omitting the field when there is no batch makes a missing thing render as an
+absent thing, and this project has a defect class named after that.
+
+### Build order
+
+1. the honesty case (not-readable ≠ empty)
+2. the provenance restriction (rejection stream only)
+3. the narrowing stack, including the ellipsis marker
+4. the bound, with the transitive-cap comment
