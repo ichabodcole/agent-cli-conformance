@@ -47,39 +47,53 @@
 //    position. What follows was observed on the change that introduced this file, not reasoned
 //    about.
 //
-//    MOST DEFECTS FOUND SO FAR WERE IN CONVERTED BULLETS, THE CONVERSION IS A FINISHED
-//    POPULATION, AND THE RISK IS NOT BOUNDED BY IT. That third clause is the one a reader will
-//    otherwise supply wrongly. Making this gate green turned two prose sections into 32 converted
-//    bullets, and that population is closed and now audited — but findings have since arrived from
-//    a lookup-table row, a verification paragraph, a bullet written fresh for a field that had
-//    only ever appeared inside a JSON specimen, and two claims that were already false in the page
-//    before this gate existed. None of those is in the conversion. The conversion bounds THE RATE,
-//    not the exposure.
+//    THE COST RECURS; IT DOES NOT RETIRE. The tempting story is that the risk lived in the
+//    one-time conversion and has now passed. It is false, and the numbers are what falsify it.
+//    Defects appear in bullets CONVERTED from prose and in bullets written FRESH for a field the
+//    gate demanded at rates too close to tell apart on these sample sizes — and the fresh
+//    population is the OPEN one: it grows every time a field is added, because the gate's whole
+//    function is to require a bullet whenever a field appears. What is defect-prone is not the
+//    conversion. It is writing a definition bullet about code you are not reading at that moment,
+//    which is equally available either way.
 //
-//    TWO COUNTS, AND THEY MUST NOT BE ADDED. One is a rate over a closed set; the other is a
-//    running total over an open one. A single number that moves for two reasons steers nothing —
-//    the same two-counter principle `staleExpectations` and `inertExpectations` turn on, arriving
-//    in the note that records it.
+//    THREE COUNTS, AND THEY MUST NOT BE ADDED. Two rates over different populations, one closed
+//    and one open, plus a running total with no denominator at all. A single number that moves for
+//    three reasons steers nothing — the same two-counter principle `staleExpectations` and
+//    `inertExpectations` turn on, arriving in the note that records it.
 //
-//    - 7 OF 32 CONVERTED BULLETS carried a false claim, and this is A FLOOR. It has not moved
-//      since the `sweep` finding. It can only ever be a floor, for the reason this whole note is
-//      about: the passes that produced it were each hunting ONE shape — an over-strong
-//      generalisation — so they could raise the count and could never confirm it; a bullet wrong
-//      in some other way was not being looked for. Reading it as "roughly one in four and a half"
-//      rather than "or worse" would assert more than the method could observe.
-//    - 5 FINDINGS OUTSIDE THAT POPULATION, a running total with NO DENOMINATOR — and deliberately
-//      not called a floor, because a count with nothing to divide by cannot bound a rate, and
-//      saying otherwise would be the overclaim this section exists to warn about. Their origins
-//      are four different places, which is the point: `excused` (a bullet written fresh for a
-//      field previously present only inside the JSON specimen), `launchAdjustment` and
-//      `evidenceGaps` (both already false in the page before this gate existed and untouched by
-//      it), a lookup-table row, and a verification paragraph.
+//    - 7 OF 32 CONVERTED BULLETS, ~22%, over a CLOSED population, and A FLOOR. Unmoved since the
+//      `sweep` finding. It can only ever be a floor, for the reason this whole note is about: the
+//      passes that produced it were each hunting ONE shape — an over-strong generalisation — so
+//      they could raise the count and could never confirm it; a bullet wrong in some other way was
+//      not being looked for.
+//    - 1 OF 8 FRESH GATE-DEMANDED FIELDS, ~12.5%, over an OPEN population that grows with every
+//      new field. TOO SMALL TO CARRY AN INFERENCE ON ITS OWN — and that cuts BOTH ways: it cannot
+//      show the conversion was special, and it cannot be read as showing this gate is safe. The
+//      eight were measured against the pre-gate revision, not assumed. Five had no mention there
+//      at all — `capturedAt`, `declaration`, `recordedSurfaces`, `stdoutDigest`, `stderrDigest` —
+//      and three appeared only inside the JSON specimen, where a reader gets a value and no
+//      statement: `probeLevel`, `excused`, `waived`. The one defect is in the `excused` bullet.
+//    - 5 FINDINGS OUTSIDE BOTH, a running total with NO DENOMINATOR, deliberately not called a
+//      floor: a count with nothing to divide by cannot bound a rate. `launchAdjustment` and
+//      `evidenceGaps` (already false before this gate existed, untouched by it), a lookup-table
+//      row, a verification paragraph, and a nested field (`hedged`) that no gate here covers.
+//
+//    THE PARTITION IS ITSELF IMPRECISE, and saying so matters more than the tidier table would.
+//    Defects attach to SENTENCES; the populations are defined over FIELDS; and a bullet can
+//    contain both kinds. Two of the defects sit in mixed bullets — `probeLevel` (fresh) beside
+//    `applicable` (converted), and `capturedAt` (fresh) beside `sweep` (converted) — and were
+//    assigned to the converted side because that is the name the false sentence was about. Assign
+//    them the other way and the two rates converge further. So the comparison above supports "we
+//    cannot distinguish these" and nothing sharper; it does not support any claim that one
+//    population is safer.
 //
 //    WRONG AT BIRTH, AND READ PAST THREE TIMES. `launchAdjustment` and `evidenceGaps` were false
 //    in the guide before this work began — verified verbatim against the pre-gate revision — sat
 //    through every review round this branch ran, and were found only once a pass was AIMED at the
-//    population. That is the sharpest evidence for the attention dependency below: ordinary review
-//    read past both, repeatedly, while looking directly at them.
+//    population. Kept here rather than folded into the recurrence point above, because it is a
+//    different claim: that one is about where defects are WRITTEN, this is about ordinary review
+//    failing to SEE them while looking directly at them. It remains the sharpest evidence for the
+//    attention dependency below.
 //
 //    THE PREDICTION HAS HELD THREE TIMES: each aimed pass said it could only raise the floor, and
 //    each did. One further pass is outstanding.
@@ -93,8 +107,10 @@
 //      described the field by what the target RECEIVED when it reports what the WIRE carried,
 //      inverting it; `evidenceGaps` scoped the set to passes when fails and unverifieds contribute
 //      rows too; and the lookup table promised one `detail` clause per observation, which the body
-//      of the same page explicitly denies. Each was a plausible generalisation — except the
-//      inversion, which was worse.
+//      of the same page explicitly denies; and `hedged` was described as captures that marked
+//      their list incomplete, which is `open`'s meaning — caught while writing the bullet next to
+//      it, by checking the field before committing rather than after. Each was a plausible
+//      generalisation — except the inversion, which was worse.
 //    - AN OPEN NAMING PROBLEM, NOT A FIXED ONE. The inversion is the recorded/wire/delivered
 //      ambiguity, and it is its THIRD occurrence — this one in a bullet written AFTER the same
 //      ambiguity was repaired at `compare.ts:82`. One word, `argv`, covers three things a reader
