@@ -140,6 +140,24 @@ Build **one file**: subject on line 1, blank line, then body.
 
 ## 2 · Cold-read it
 
+### First, diff the note's machine-readable claims against the tool
+
+A reader cannot tell a real field name from a plausible one, so every claim the note makes about
+output a machine parses — a field, a flag, an exit code, a verdict string — is invisible to every
+read below. Check those against the running tool before the first read:
+
+```bash
+acc schema        # the surface this version actually implements
+```
+
+Compare in **both** directions: a name the note uses that the tool does not emit, and a name the
+tool emits whose meaning the note states differently. The second is the one reads never catch,
+because the sentence is fluent and only the tool disagrees.
+
+A note documenting a machine-readable surface should be diffed against that surface, not only read.
+
+### Then the reads
+
 A second fresh agent, given **only the note text**, forbidden from looking anything up. If it wants
 to go check something, that is the finding.
 
@@ -176,6 +194,17 @@ when written can be false by the time it publishes.
 paragraph defending against an objection this reader never raised. That is a hazard of reading it
 more than once, and only a fresh pair of eyes will see it, because the person editing remembers
 why every sentence is there.
+
+### Last, cascade-check the contracts the note asserts
+
+Once the reads settle, run [`cascade-check`](../cascade-check/SKILL.md) on each contract the note
+states — a field, a rule's behaviour, a term, an exit code. Every reader in this section saw only
+the note, so none of them could see a second document stating the same contract and still saying
+the old thing. A note can be true while the guide beside it is false, and the release publishes
+both.
+
+Fix what it finds in the tree and commit before §3. A repair here changes what a reader meets, so
+it earns another read under the cycle above.
 
 ## 3 · Open or update the PR
 
