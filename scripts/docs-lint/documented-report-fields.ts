@@ -23,7 +23,8 @@
 // without the strip got eight false "missing" that way.
 //
 // THREE LIMITS, named here and in the failure message, because a green check is a claim and a gate
-// whose limits are unnamed claims more than it checks:
+// whose limits are unnamed claims more than it checks — plus a fourth, below them, that is a
+// property of the gate rather than a gap in it:
 //
 //  1. TOP-LEVEL KEYS ONLY. `DOCUMENTED_REPORT_FIELDS` is flat over four types; a key whose value is
 //     an object (`surface`, `counts`, `configSource`, …) is a leaf, and the fields INSIDE it are
@@ -38,6 +39,20 @@
 //     the reverse direction needs an allowlist maintained forever against a guide full of
 //     legitimate non-report identifiers (`jq`, envelope keys, rule ids), and field removal is rare
 //     before 1.0. Written down so that the day it bites, the record says this was chosen.
+//
+// 4. THIS GATE RAISES MECHANICAL COVERAGE AND OPENS THE DOOR TO FALSE CONTENT IN THE SAME MOTION,
+//    and the mechanism is worth stating because it is not a caution, it is how the rule works.
+//    Every field this gate forces into the guide is a SENTENCE SOMEONE HAS TO INVENT, and the
+//    gate can check only that the sentence exists in a definition position — never that it is
+//    true. Measured on the change that introduced this file: turning two prose sections into the
+//    34 definition bullets the rule demanded produced five false claims about the report's own
+//    behaviour (`exitCode`/`signal` said exactly one is set; `counts` said the tallies were over
+//    one set; `applicable` said `detail` distinguishes its two causes; `timeToFirstByteMs` said a
+//    null means a hang; `counts` again, on the repair, said two counts cover precisely what the
+//    others leave out). Each was a plausible generalisation with no code behind it, and each was
+//    introduced by the round that fixed the one before. So: when this gate makes you write a
+//    bullet, the bullet is NOT verified by the gate going green — check it against the code it
+//    describes, and prefer the unambitious sentence to the tidy one.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -56,7 +71,7 @@ const HEADING = /^\s{0,3}#{1,6}\s/;
 /** The guide's convention is `- **`name`** — explanation`; the dash is where the term ends. */
 const TERM_END = "—";
 /**
- * The fallback term when a bullet carries no em dash: its leading bold run.
+ * The fallback term when a bullet carries no em dash: the bold run the item OPENS with.
  *
  * Without it, a bullet written `- **`field`**: explanation` would have its WHOLE body treated as
  * the term, and every name in the explanation would silently count as defined. That failure mode
@@ -64,8 +79,13 @@ const TERM_END = "—";
  * going red — and a gate that weakens without saying so is the thing this file exists to prevent.
  * Latent rather than live when written: zero backtick-bearing bullets in the guide lack an em
  * dash today, which is exactly why it is worth pinning before one does.
+ *
+ * ANCHORED to the list marker deliberately. An unanchored `\*\*(.+?)\*\*` would take the first bold
+ * run ANYWHERE in the item, so `- see the **`env`** field` would define `env` from a sentence that
+ * defines nothing — a smaller version of the same widening. The guide opens every definition
+ * bullet with its term, so anchoring costs nothing it actually uses.
  */
-const BOLD_TERM = /\*\*(.+?)\*\*/s;
+const BOLD_TERM = /^\s{0,3}[-*+]\s+\*\*(.+?)\*\*/s;
 
 /**
  * Every name this page DEFINES, as opposed to merely mentions.
@@ -75,8 +95,8 @@ const BOLD_TERM = /\*\*(.+?)\*\*/s;
  * continuation lines prettier wraps it onto, since a term as long as
  * ``waivers`, `knownFailures`, `severityOverrides`, `staleExpectations`, `inertExpectations``
  * does not fit on one line and the last name in it is no less defined for that. Within the item
- * only the TERM counts — the text before the first em dash, or the leading bold run when the item
- * carries no em dash (see `BOLD_TERM`). That is what makes this stronger than "appears in
+ * only the TERM counts — the text before the first em dash, or, when the item carries no em dash,
+ * the bold run the item OPENS with (see `BOLD_TERM`). That is what makes this stronger than "appears in
  * backticks somewhere", because a field named in another field's explanation is being used, not
  * defined.
  */
@@ -88,7 +108,7 @@ export function definedNames(text: string): Set<string> {
   const term = (s: string) => {
     const at = s.indexOf(TERM_END);
     if (at !== -1) return s.slice(0, at);
-    // No em dash: fall back to the leading bold run rather than to the whole item.
+    // No em dash: fall back to the bold run the item opens with, rather than to the whole item.
     return BOLD_TERM.exec(s)?.[1] ?? "";
   };
 

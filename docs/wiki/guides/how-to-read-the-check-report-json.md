@@ -89,9 +89,11 @@ jq '.data | {conformant, fullyVerified, level, counts}' report.json
 - **`level`** — the probe depth this sweep reached. Both booleans above are claims made inside
   it, so read them together: fully verified at `L0` speaks for the rules `L0` can reach, not for
   the whole catalogue.
-- **`counts`** — the tallies shown above. Each one states its own scope, and they are not all
-  over the same set: `notApplicable` and `waived` count precisely the findings the others leave
-  out. `unverified` and `notApplicable` are different facts and the difference is the point:
+- **`counts`** — the tallies shown above, and they are not all over the same set. Every count but
+  the last two is taken over the applicable, unwaived findings; `notApplicable` and `waived` are
+  the two exclusions that set is defined by. Sharing a set does not make the rest a partition of
+  it — a passing diagnostic finding is counted by none of them — so do not derive one count by
+  subtracting others. `unverified` and `notApplicable` are different facts and the difference is the point:
   unverified means a probe ran and established neither answer, not-applicable means the rule was
   never attempted at this level. The text report — what a terminal run prints — draws them as
   `UNVR` and `N/A`, and conflating them misreads the report; per finding,

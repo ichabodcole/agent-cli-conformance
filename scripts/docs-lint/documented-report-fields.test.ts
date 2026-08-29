@@ -47,6 +47,13 @@ describe("definedNames", () => {
     expect([...definedNames("- see `env` and `repeat` for the rest\n")]).toEqual([]);
   });
 
+  // The fallback is ANCHORED to the item's opening. Unanchored, it would take the first bold run
+  // anywhere in the item, so a sentence that defines nothing would define its emphasised name —
+  // the same silent widening one step smaller.
+  test("a bold run mid-sentence is not a term, even with no em dash to cut at", () => {
+    expect([...definedNames("- see the **`env`** field for the rest\n")]).toEqual([]);
+  });
+
   test("a nested bullet is its own definition, not its parent's explanation", () => {
     const names = definedNames("- **`probes`** — five fields:\n  - **`id`** — the id.\n");
     expect(names.has("id")).toBe(true);
