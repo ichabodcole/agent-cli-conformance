@@ -574,3 +574,80 @@ absent thing, and this project has a defect class named after that.
 2. the provenance restriction (rejection stream only)
 3. the narrowing stack, including the ellipsis marker
 4. the bound, with the transitive-cap comment
+
+## Appendix B4: the settled specification
+
+Both reviews closed, and the adopter measured their fleet rather than recalling it. This is what
+B is.
+
+### One adjective, three consumers
+
+The design said "readable" in three places and meant "asserted" in all of them. A hedged blob
+counts as readable, so under the old wording a hedge could suppress a real finding — the mirror of
+the hole the union fix had just removed, introduced in the sentence that removed it. One word
+settles all three:
+
+    assert from the rejection when both are ASSERTED
+    the defect direction tests the union of ASSERTED sets
+    the disagreement line reports a difference between ASSERTED sets
+
+That also disposes of an edge nobody had written down: if the rejection is hedged or unreadable and
+the bare capture is asserted, **the bare capture is what we quote** — it falls out of "asserted" and
+needs no clause of its own. If neither is asserted, that is the honesty case, unchanged.
+
+### Why the union, and not just the precedence
+
+Precedence answers _whose statement are we repeating_. It is the wrong set to compare against, in
+one direction: with help naming four verbs and the rejection naming three, asserting the rejection's
+three and testing recorded paths against only those turns the fourth into a false
+`recorded but never advertised` — an accusation manufactured by our own choice of source. So the
+defect direction tests the **union**, while the quotation follows precedence.
+
+### What the adopter's fleet actually looks like — measured, not recalled
+
+Two legacy shapes, and **neither can produce a disagreement today**:
+
+- **One string constant behind one fallthrough.** Bare invocation, unknown verb, unknown root flag,
+  `--help` and `--version` all print the identical blob — five probes, byte-identical, one code
+  path. Both surfaces exist and agree _by construction_, because there is only one advertisement in
+  the binary.
+- **A help screen at exit 0** — a verb table, one verb per line, **no `usage:`-anchored bracket
+  blob anywhere** — whose unknown-verb rejection enumerates nothing at all.
+
+⚠ **On that second class our parse finds zero readable surfaces, so the honesty case is the MAIN
+render, not the rare one.** It will be the first thing half that fleet sees. Its wording is
+therefore a primary surface and should be sized as one — _"the comparison did not run"_, never
+anything that reads as a finding about the tool.
+
+That shape is also a third advertisement form — a one-verb-per-line table — that this parse
+deliberately does not read. Recorded here so the next person knows it was seen and declined, not
+missed.
+
+### The disagreement line survives on a case the fleet has not reached yet
+
+Where both surfaces are readable today they agree trivially, being one constant. The case that will
+feed the line is a **partial retrofit**: a tool grows a `choices` array on its rejection while its
+hand-maintained usage string goes stale, so the two advertisements come from different sources for
+the first time — which is exactly when they can diverge. Not hypothetical: it is the state every
+un-hardened tool in that fleet passes through, and the line catches it during the window when
+nothing else does.
+
+Rejection-over-help precedence is right for that case too: the `choices` array is the parser
+speaking, the stale usage string is the drift.
+
+### Build order, unchanged
+
+1. **the honesty case** — not-readable is not empty; now known to be the main render for half a
+   real fleet rather than a safety net
+2. **provenance** — root captures only: bare invocation and the unknown-verb rejection, never a
+   `--help` body
+3. **the narrowing stack** — `usage:`-anchored line, first bracket group, at least one pipe,
+   token-shaped members, ellipsis as an open-set marker; overlap-with-recorded-paths only for
+   two-member blobs
+4. **the bound** — full list in JSON under the documented stream cap, sampled only in the text line
+
+### How it gets validated when it ships
+
+The adopter's plan, in their words: the retrofitted tools as the assert-at-strength cases,
+the help-screen tools as the honesty-case calibration, and the next retrofit-in-progress as the
+live test of the disagreement line.
