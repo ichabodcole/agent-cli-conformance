@@ -49,6 +49,7 @@ export const doubleDashTerminatorChecker: Checker = {
     "the delegator passthrough requirement is not exercised",
     "a rejection is recognised only from an English unknown-option or unknown-flag phrase so a differently worded rejection reads as a pass",
     "only a bare terminator at the root followed by a single value is probed",
+    "a bun layer hidden inside a wrapper script is invisible here so its terminator is still eaten and the probe measures an argv the target never received",
   ],
   coverageEstablished: [
     "a hyphen-leading value after a bare terminator at the root draws no English unknown-option rejection naming it on stderr",
@@ -59,32 +60,24 @@ export const doubleDashTerminatorChecker: Checker = {
   ],
 
   check: (h: History): Finding => {
-    // The probe is UNDELIVERABLE through a Bun launcher, so there is nothing to report.
+    // Bun targets USED to short-circuit here. `bun <script> -- --x` hands the script `["--x"]`
+    // — bun strips one bare `--` per bun layer — so the terminator never arrived and what got
+    // measured was A1 wearing A6's name. Against `acc` itself the two answers are opposite, so
+    // the verdict was not merely unreliable, it was inverted, and the rule reported `unverified`
+    // rather than a measurement of an argv the target never received.
     //
-    // `bun <script> -- --x` hands the script `["--x"]`: Bun consumes exactly one bare `--`
-    // immediately after the script path. That is precisely this probe's shape, so the target
-    // never sees the terminator and what gets measured is A1 (does it reject an unknown flag),
-    // dressed as A6. Against `acc` itself the two answers are opposite — given the `--`, acc
-    // honours it — so the verdict was not merely unreliable, it was inverted.
+    // The runner now compensates at the spawn (see `runner.ts`), so the target receives the same
+    // argv a native target receives and this checker needs no launcher knowledge at all.
     //
-    // No launcher flag avoids it: `bun run`, `bun --bun`, and `bun -- <script>` all strip the
-    // same token (verified directly). Prepending a placeholder `--` to argv0 would restore the
-    // argv, but only for targets we already know are Bun scripts — and it would corrupt the
-    // argv of every other target. A diagnostic rule that cannot be delivered says so.
+    // The comment that stood here argued the fix was impossible because the compensation would
+    // "corrupt the argv of every other target" — true only of an UNCONDITIONAL compensation, and
+    // its own next paragraph recorded that `toTarget` had since learned to read the shebang, so
+    // the knowledge whose absence it cited had already arrived. The mechanism died and the
+    // conclusion kept asserting it.
     //
-    // The guard keys on the LAUNCHER, so whoever builds the TargetInfo has to name bun when
-    // bun is what will run the target. A Bun CLI installed without a `.ts` extension used to
-    // slip past this and collect a FAIL measured against an argv it never received; `toTarget`
-    // in src/acc/commands/check.ts now reads the shebang so those targets arrive here as
-    // `["bun", path]`. That is an interpreter fact from the kernel's own contract, not the
-    // free-form-positional guess `inert.ts` refuses — and it keeps this check pure.
-    if (h.target.argv0[0] === "bun") {
-      return finding(
-        "unverified",
-        "cannot be probed through a `bun` launcher: bun swallows the leading `--`, so the target never receives the terminator",
-        [],
-      );
-    }
+    // A compiled bun binary (`bun build --compile`) receives the terminator INTACT — measured,
+    // bun 1.4.0 — and is excluded from the compensation by construction, since its argv0 is the
+    // binary itself with no launcher token and no shebang to read.
 
     const o = findByArgs(h, ARGS);
     if (!o) return finding("unverified", "probe was not recorded", []);

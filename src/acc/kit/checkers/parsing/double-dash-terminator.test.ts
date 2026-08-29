@@ -8,18 +8,16 @@ import { doubleDashTerminatorChecker } from "./double-dash-terminator.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /**
- * A6 is the one rule in the catalogue that cannot be exercised against a `.ts` fixture at all.
- *
- * Its probe leads with a bare `--`, and Bun consumes exactly one such token immediately after
+ * A6's probe leads with a bare `--`, and Bun consumes exactly one such token immediately after
  * the script path before the script sees `process.argv` — confirmed by direct experiment, and
  * true of `bun <script>`, `bun run <script>`, `bun --bun <script>` and `bun -- <script>`
- * alike. This test file used to work around it by appending a placeholder `--` to `argv0` so
- * Bun would eat that one instead. That kept the TEST honest while the PRODUCT measured A1
- * dressed as A6 for every `.ts` target — including `acc` itself, whose real answer is the
- * opposite of the one it reported.
+ * alike. That used to leave the checker with nothing honest to report against a `.ts` fixture:
+ * either measure A1 dressed as A6 (the pre-regression bug) or refuse with `unverified`.
  *
- * The checker now refuses to guess: any target launched through `bun` is `unverified`. So the
- * fixtures here are POSIX shell, which passes a script's arguments through untouched.
+ * The runner (`runner.ts`) now compensates at the spawn by prepending the `--` Bun eats, so the
+ * target receives the same argv a native target receives and this checker needs no launcher
+ * knowledge at all. The `sh` fixtures below stay as the non-bun control; `bunFixture` exercises
+ * the launcher case directly.
  */
 const shFixture = (rel: string): TargetInfo => {
   const p = join(HERE, "../../fixtures/sh", rel);
@@ -48,20 +46,20 @@ describe("A6 — the `--` terminator", () => {
     expect(f.detail).toContain("still parsed as an option");
   });
 
-  // The regression this rule's rewrite exists for. Both fixtures below are `.ts`, and they
-  // disagree about `--` — conforming.ts honours it, ignores-double-dash.ts does not — so a
-  // checker that still believed the probe was delivered would return two different verdicts
-  // here. Through Bun neither ever receives the terminator, so the only honest answer is the
-  // same one for both.
-  test.each(["conforming.ts", "broken/ignores-double-dash.ts"])(
-    "reports unverified for %s, because bun swallows the probe's `--`",
-    async (rel) => {
-      const h = await record(bunFixture(rel), [doubleDashTerminatorChecker]);
-      const f = doubleDashTerminatorChecker.check(h);
-      expect(f.verdict).toBe("unverified");
-      expect(f.detail).toContain("bun");
-    },
-  );
+  // A6 through a bun launcher was `unverified` for the whole bun population — permanently, for a
+  // house whose every CLI is a bun script. The launch compensation (runner.ts) makes it
+  // measurable: the runner now prepends the `--` bun eats, so this checker needs no launcher
+  // knowledge at all and can return a real verdict.
+  test("a bun-launched target gets a real A6 verdict", async () => {
+    const target = bunFixture("conforming.ts");
+    expect(target.argv0[0]).toBe("bun"); // the case that used to short-circuit
+
+    const h = await record(target, [doubleDashTerminatorChecker]);
+    const f = doubleDashTerminatorChecker.check(h);
+
+    expect(f.verdict).not.toBe("unverified");
+    expect(f.evidence.length).toBeGreaterThan(0);
+  });
 
   test("cites the observations backing its verdict", async () => {
     const h = await record(shFixture("honours-double-dash.sh"), [doubleDashTerminatorChecker]);

@@ -944,8 +944,7 @@ describe("acc checks itself, through the kit", () => {
   // exists as a separate boolean: `conformant` alone would now be satisfied by a run in which
   // every core rule came back `unverified`. acc must clear the stronger bar — every applicable
   // core rule VERIFIED, not merely unfalsified. (A4 is core but above L0, so it is reported
-  // not-applicable and excluded from both claims; A6 is diagnostic and unverifiable through a
-  // bun launcher, so it gates neither.)
+  // not-applicable and excluded from both claims; A6 is diagnostic, so it gates neither.)
   test("every applicable core rule is verified, not merely unfailed", async () => {
     const h = await record(ACC, CHECKERS, true);
     const r = buildReport(h, runCheckers(h, CHECKERS), CHECKERS, ACC_DECLARES, "L0", VERSION);
@@ -1462,8 +1461,9 @@ describe("acc check — the outcome exit code", () => {
     }, 60_000);
 
     // Raising a severity is the other direction, and it has to bite or the field is decoration.
-    // A6 is diagnostic in the catalogue and this fixture is launched through bun, so its verdict
-    // is `unverified` — which gates `fullyVerified` once the rule is core, and nothing before.
+    // A6 is diagnostic in the catalogue; raising it to core is what pulls its verdict into the
+    // `coreUnverified` count alongside whatever this fixture already leaves unverified (A4, B3,
+    // B4, B5).
     test("raising a rule to core pulls it into the evidence claim", async () => {
       const conforming = join(dirname(CLI), "kit/fixtures/conforming.ts");
       const dir = configDir({
@@ -1494,8 +1494,9 @@ describe("acc check — the outcome exit code", () => {
   // A Bun CLI installed without a `.ts` extension used to be launched directly, so `argv0` never
   // said "bun", A6's swallow guard never fired, and the checker reported `FAIL` against an argv
   // the target never received — on a fixture that provably honours `--`. `toTarget` now reads
-  // the shebang. The honest verdict for any bun-launched target is `unverified`.
-  test("a bun CLI with no .ts extension is launched through bun, so A6 does not invent a FAIL", async () => {
+  // the shebang, and the runner compensates for the launcher at the spawn (see `runner.ts`), so
+  // the honest verdict for a bun-launched target that honours `--` is `pass`.
+  test("a bun CLI with no .ts extension is launched through bun, so A6 measures it correctly", async () => {
     const noExtension = join(tmpdir(), `acc-conforming-noext-${process.pid}`);
     copyFileSync(join(dirname(CLI), "kit/fixtures/conforming.ts"), noExtension);
     chmodSync(noExtension, 0o755);
@@ -1504,8 +1505,7 @@ describe("acc check — the outcome exit code", () => {
       expect(r.code).toBe(0);
       const { data } = JSON.parse(r.stdout);
       const a6 = data.findings.find((f: { ruleId: string }) => f.ruleId === "A6");
-      expect(a6.verdict).toBe("unverified");
-      expect(a6.detail).toContain("bun");
+      expect(a6.verdict).toBe("pass");
       expect(data.conformant).toBe(true);
     } finally {
       rmSync(noExtension, { force: true });
