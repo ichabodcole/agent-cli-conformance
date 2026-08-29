@@ -112,85 +112,119 @@ This is not costed and may be wrong. It is here because if the goal is the adopt
 material is one field away from where it needs to be, and a new verb is not obviously the cheapest
 route. **Both options go to the adopter.**
 
-## The proposal
+## THE QUESTION UPSTREAM OF ALL THREE OPTIONS
 
-One new read-only verb:
+Found in the second review round, and it reorders the document:
 
-```
-acc declare --paths ./paths.json > declaration.json
-```
+> **Do you regenerate your path list from dispatch on every run, or write it once and commit it?**
 
-It reads a path list and emits a `formatVersion: "0"` declaration containing exactly those
-command paths, with `args` and `positionals` **empty**, and the attested fields set to values the
-reader REFUSES.
+Nobody here knows, and it decides more than the skeleton. `paths.json` is a hand-derivation
+frozen the moment it is written; the recorded batch descends from it; a declaration built on it
+descends from it too. So a verb added to dispatch after the list was frozen is in no document —
+and **a path named in no document is in no iteration**. Measured on the census loop, which
+iterates declared paths ∪ recorded paths:
 
-That is all it does. It runs nothing, reads nothing but the file it is given, and writes to
-stdout like everything else here.
+    declaration stale, batch still covers the path  ->  CAUGHT — 15 disagreements, and the
+                                                        undeclared paths named explicitly
+    declaration AND batch both stale                ->  NOTHING. No finding, no NOT COMPARED,
+                                                        no count.
 
-### Why paths-only, and no attempt at `args`
+The second is the adopter's own shape. **The drift the kit can detect is the one this workflow
+cannot produce; the drift it cannot detect is the one the adopter found by hand.**
 
-`probe-plan` already refuses to guess paths from `--help`, on the argument that a guess produces
-records at paths that do not exist. The same argument forbids guessing `args`: a skeleton that
-invents flags produces a declaration whose census findings are about the generator rather than
-about the tool. The adopter asked for the bridge from a path list they had already derived — not
-for the kit to infer their surface.
+If the list is a build artifact, this dissolves for every option below. If it is a committed file,
+every option below degrades — including the comparison, whose recorded paths descend from the same
+frozen list.
 
-### Why it must not look finished
+## THE DIVISION OF LABOUR — the sentence the options were missing
 
-Prior art from the probe-plan plan, which settled this for the harness and applies unchanged:
+The two sides of the comparison **do not age together**, and that asymmetry organises everything
+below. The recorded path set descends from `paths.json` and freezes with it. The advertised verb
+set does not: `surface.nonFlagCandidates` is captured from the root probe on **every check run** —
+verified from a plain `acc check <target> --json` with no batch, no declaration and no path list
+in the invocation. It is live evidence, not a document.
 
-> **The attested fields must refuse to default.** If the skeleton ships with
-> `"completeness": "complete"` pre-filled, every adopter attests it without deciding, and the one
-> field the guide says only they can answer becomes the one field nobody answered. Emit an
-> explicit value that the reader **rejects**, so an unedited harness fails loudly rather than
-> lying quietly.
+> **The comparison covers the ADVERTISED side freshly, because one of its sides is live evidence
+> rather than a document; only the emitter — or regeneration, which is the same discipline applied
+> to the path list — covers the DISPATCH side. Neither alone covers both halves of drift.**
 
-A skeleton that reads as complete is worse than no skeleton: it converts "I have not declared my
-surface" into "I have declared it empty", and an empty declaration makes every accepted flag an
-`accepted-not-declared` finding — a wall of noise that reads as the tool being wrong.
+So the pair is coherent rather than redundant, and this isolates the skeleton without needing to
+settle whether it falls under trellis's never: **it adds a third document to the chain while
+covering neither side.**
 
-So an unedited skeleton must **refuse to run**, and the refusal must say which fields the human
-owes.
+It also narrows what the upstream question decides. If the adopter regenerates, everything
+sharpens. If they commit, the comparison still catches usage-side drift and batch staleness
+forever, and what remains is dispatch-side blindness — which only regeneration or an emitter was
+ever going to close.
 
-### `provenance` says where the paths came from, and does not overclaim
+## The three options, standing separately
 
-`provenance` is required. A skeleton's honest value is "these paths were supplied by the caller
-from a list they built" — weaker than "derived from the parser", and it should say so rather than
-borrow the stronger claim. If the census later disagrees with the declaration, the reader needs to
-know the paths were asserted rather than extracted.
+Sorted by a criterion from the review rather than by preference: **a tool survives trellis's
+never if its output is an ASSERTION; it fails if its output is an ARTEFACT THE ADOPTER COMMITS.**
+A finding is recomputed from evidence every run and, if stale, is simply absent. A file in their
+repository drifts by existing.
 
-## N6, the reality check — deliberately NOT in this proposal
+### A. The inspection technique, as guidance — no tool at all
 
-N6 asked for a cross-check while writing `paths.json`. The report guesses it and N3 are
-"plausibly one mechanism". **They are not**, and the difference decides the cost:
+Three read-only steps: enumerate paths from the dispatch you have, read your own usage line, diff.
+**This already produced the finding** — the adopter performed it with no `acc` feature involved,
+and it is the most valuable result of three trials. The counterfactual is not a guess.
 
-|                         | N3, the skeleton | N6, the reality check      |
-| ----------------------- | ---------------- | -------------------------- |
-| input                   | a path list      | a path list                |
-| output                  | a declaration    | which paths the target has |
-| **executes the target** | **no**           | **yes**                    |
+The registry guide teaches the adjacent CONSTRUCTION act (write the table, make the parser read
+it) and not this INSPECTION act. One adopter in three did it unprompted, which is the evidence
+that it is not what any agent does anyway.
 
-N3 is a pure transform. N6 inherits every safety question `acc check` already carries about
-running someone's CLI, plus a new one: a path list is written BEFORE anyone has established the
-target is safe to probe.
+**What it does not do:** make the finding land in an artifact the kit reads — which is literally
+what was asked. Guidance answers _"how would I find this again"_; the ask was _"how does what I
+found become checkable"_. Both real, not the same want.
 
-There is a cheaper form worth considering separately: check the path list against a **recorded
-batch** the adopter already has, which executes nothing. Whether that answers N6 or only part of
-it is a question for the adopter, not for us.
+### B. The advertised-verbs comparison — a tool whose output is an assertion
 
-**This proposal takes N3 only.** N6 is named here so the split is deliberate and visible, not so
-it is forgotten.
+`surface.nonFlagCandidates` already records the root's advertised verb set. Diff it against the
+**batch's recorded path set** — no declaration, no `paths.json` at read time, no hand-authoring
+anywhere — and state both directions: _advertised at the root but never recorded_, and _recorded
+but never advertised_. That second one is the adopter's exact discovery, named by the kit, from
+artifacts their workflow already produces.
 
-## What this does not do
+**Unpriced**, and honestly so: it needs the full set rather than `surface.ts`'s four-member
+sample, and a rule for when a non-flag list may be read as verbs — a `choices` list is not always
+a verb list. It also inherits the staleness above, so its sharpness depends on the upstream
+question.
 
-- It does not infer, guess, or probe anything.
-- It does not make a declaration correct — it makes one **startable**. The adopter still fills in
-  args and positionals, which is the work only they can do.
-- It does not close N6.
-- It does not bridge the registry guide's "one table to a declaration file" gap in PROSE. If the
-  verb lands, that guide should point at it — but a document change is not a substitute for the
-  bridge, and if the reviewers think the guide alone would have served the adopter, that is a
-  finding against this whole proposal and I want to hear it.
+### C. The emitter worked example — guidance that closes `args` by construction
+
+The registry guide already argues that the remediation the census recommends is the same work
+that makes a declaration emittable, so that _the expensive artifact stops being an artifact at
+all_. It does not demonstrate it. A worked example — table to declaration, programmatically —
+closes `args` by construction rather than by attestation, and repairs the guidance gap and the
+tooling gap with one change.
+
+### D. The skeleton, kept last and not recommended
+
+Emits a file the adopter commits with a region only a human can fill. Both reviews found against
+it, from different directions:
+
+- It makes `provenance: "modelled"` the default path for the population **least in need of it** —
+  anyone who can write `paths.json` has a dispatch table, and anyone with a dispatch table is a
+  short walk from an emitter. It points them away from their best move.
+- `paths.json` is itself a hand-derived parallel artifact, so the skeleton **does not create the
+  disease — it durably commits an ephemeral case of it**.
+- Measured: an empty skeleton produces 104 `accepted-not-declared` findings on one real 32-path
+  tool, every one an artefact of the skeleton being empty.
+- And the defence that rescues it — regenerate `paths.json` each run — **is the emitter**, which
+  does not need the skeleton.
+
+It survives only as a knowing third choice for an adopter who wants a modelled declaration and
+accepts what that word means.
+
+## Where the reviewers did NOT converge, kept open
+
+On whether the skeleton falls under trellis's never: one holds it is not categorical, because a
+declaration is the one parallel document this kit exists to diff against reality — with the
+weakness that the check costs a recording session nobody spends. The other holds the categorical
+defence has a measured hole in the adopter's own direction, per the blindness above. **Both
+readings are on the table**, and the adopter's answer to the upstream question is what decides
+between them.
 
 ## The open questions, as the reviews settled them
 
