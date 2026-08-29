@@ -135,14 +135,20 @@ export async function runProbe(
   // comparison exists to serve.
   //
   // THE GUARANTOR IS `toTarget`, NOT BUN. Stripping is one per layer, and this compensates by
-  // one; that is correct only while `argv0` names at most one layer, which `toTarget`
-  // (src/acc/commands/check.ts) is the sole producer of and check.test.ts asserts. A multi-layer
-  // argv0 would have this consumed whole and silently restore the defect. Measured on bun 1.4.0
-  // — see docs/plans/2026-08-29-a6-reaches-the-bun-population.md Appendix B.
+  // one; that is correct only while `argv0` names at most one NAMED bun layer, which `toTarget`
+  // (src/acc/commands/check.ts) is the sole producer of and check.test.ts asserts. A bun layer
+  // hidden behind a wrapper script — `argv0 = [abs]`, so `cmd !== "bun"` — is invisible here and
+  // stays uncompensated; that is a pre-existing limit of what `toTarget` can see, not something
+  // this change introduces. Measured on bun 1.4.0 — see
+  // docs/plans/2026-08-29-a6-reaches-the-bun-population.md Appendix B.
   //
   // If a future bun stops stripping, the survivor is ITSELF a terminator: an honouring target
   // reads it as a positional after an honoured `--` and still passes, a non-honouring one still
   // meets the sentinel and still fails by name. The probe's shape degrades, not its verdict.
+  //
+  // The predicate matches the literal token `"bun"` — the only form `toTarget` ever emits — so
+  // an absolute-path launcher (e.g. `/usr/bin/bun`) is not compensated. That is consistent with
+  // the rest of the kit rather than an oversight: nothing else here recognises bun by realpath.
   const compensated = cmd === "bun" && inv.args[0] === "--";
   const wireArgs = compensated ? ["--", ...inv.args] : inv.args;
 
@@ -193,7 +199,7 @@ export async function runProbe(
         purposes: [inv.purpose],
         ...(compensated
           ? {
-              launchAdjustment: `one \`--\` was prepended for the bun launcher and consumed before delivery; the wire argv was ${JSON.stringify([...base, ...wireArgs])}`,
+              launchAdjustment: `one \`--\` was prepended for the bun launcher and consumed before delivery; the wire argv was ${JSON.stringify([cmd, ...base, ...wireArgs])}`,
             }
           : {}),
         stdout: out.text,

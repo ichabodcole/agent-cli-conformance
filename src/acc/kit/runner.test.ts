@@ -44,7 +44,11 @@ describe("runProbe", () => {
 
     // The evidence id and `compare`'s alignment both key on the RECORDED args, which must not move.
     expect(o.invocation.args).toEqual(["--", `--${SENTINEL}-value`]);
-    expect(o.launchAdjustment).toContain("--");
+    // Not just "contains a dash": pin it to the actual wire form, so a message that stops
+    // naming what went over the wire fails this rather than a substring coincidence.
+    expect(o.launchAdjustment).toContain(
+      JSON.stringify(["bun", ECHO, "--", "--", `--${SENTINEL}-value`]),
+    );
   });
 
   test("a probe that does not lead with `--` is not compensated", async () => {
@@ -52,6 +56,19 @@ describe("runProbe", () => {
 
     const seen = JSON.parse(o.stderr) as { argv: string[] };
     expect(seen.argv).toEqual([`--${SENTINEL}-value`]);
+    expect(o.launchAdjustment).toBeUndefined();
+  });
+
+  // Guards the OTHER half of the predicate: `cmd === "bun"`. Deleting that half from the
+  // compensation would leave every test above green (they all target bun) while corrupting the
+  // argv of every non-bun target that happens to lead with `--`. `sh -c '... "$@"' sh` echoes
+  // its own argv one line per arg — verified by hand: `sh -c 'printf "%s\n" "$@"' sh -- "--x"`
+  // prints `--` then `--x`, so the shape round-trips before this relies on it.
+  test("a non-bun target with a leading `--` is not compensated", async () => {
+    const shTarget: TargetInfo = { path: "sh", argv0: ["sh", "-c", 'printf "%s\\n" "$@"', "sh"] };
+    const o = await runProbe(shTarget, inv(["--", `--${SENTINEL}-value`], "sentinel"));
+
+    expect(o.stdout).toBe(`--\n--${SENTINEL}-value\n`);
     expect(o.launchAdjustment).toBeUndefined();
   });
 
