@@ -173,6 +173,15 @@ invocation can decide C2 and D2 at once.
   read to decide it); the comparison in
   [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md) starts
   from this.
+- **`advertisedVerbs`** — the verb set the target names at its own root, against the first token
+  of each recorded path. `status` is `not-asserted`, `no-batch` or `compared`, and it is the field
+  to branch on: **`not-asserted` means nothing was compared, NOT that the target advertises no
+  verbs.** `open` is the openness of `union` — the set the directions are computed over — and is
+  the one to read before acting on a finding, because `quoted.open` describes only the capture
+  whose words are shown. When `status` is `compared`, `recordedNotAdvertised` is the defect
+  direction, `notCoveredByBatch` is coverage rather than an accusation, and `disagreement` names
+  spellings one asserted capture carries and the other does not. Evidence, not a rule: no rule id,
+  no verdict change.
 - **`evidenceGaps`** — per rule, what a pass did not establish: the JSON behind the text
   report's `NOT FULLY VERIFIED` block.
 - **`waivers`, `knownFailures`, `severityOverrides`, `staleExpectations`,
