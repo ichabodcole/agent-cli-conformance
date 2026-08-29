@@ -562,6 +562,149 @@ export interface Report {
 }
 
 /**
+ * A key this gate treats as a LEAF — a primitive, a literal union, or an object of a type the
+ * gate does not reach. See the limit named on `DOCUMENTED_REPORT_FIELDS`.
+ */
+const FIELD = "field";
+
+/**
+ * A key whose value is — or is an array of — another PUBLISHED report type, named rather than
+ * flattened.
+ *
+ * This is what stops the LIST OF TYPES from being the silent half of the gate. Four key lists
+ * check four interfaces and nothing checks that four is still the right number; a fifth published
+ * type reached from `Report` would simply never be listed, and nothing would say so. Naming the
+ * type here makes the set self-checking: `documentedReportFieldProblems` fails when a named type
+ * is not itself in the spec, so adding a report type that a listed type points at forces its own
+ * entry.
+ */
+const of = <N extends string>(type: N) => ({ type }) as const;
+
+/** One entry per key: a leaf, or a pointer at another published type. */
+type Marker = typeof FIELD | { readonly type: string };
+
+/**
+ * Compile-time proof that a spec covers every field of `T`, and only those.
+ *
+ * `-?` makes every key REQUIRED here even where the interface declares it optional, so a field
+ * added to the interface and not to the spec is a missing property `tsc` names by name; an entry
+ * for a key the interface does not have is an excess property on an object literal, which `tsc`
+ * also refuses. Neither direction is a comment anyone has to remember to read.
+ */
+type FieldSpec<T> = { readonly [K in keyof T & string]-?: Marker };
+
+/**
+ * Curried so `T` is given explicitly while the spec literal is still checked against it — a single
+ * call site cannot supply one without the other.
+ */
+const documented =
+  <T extends object>() =>
+  (spec: FieldSpec<T>): Readonly<Record<string, Marker>> =>
+    spec;
+
+/**
+ * EVERY TOP-LEVEL KEY OF EVERY PUBLISHED REPORT TYPE, bound to the type that declares it.
+ *
+ * Here because the JSON guide — `docs/wiki/guides/how-to-read-the-check-report-json.md` — is what a
+ * script author is pointed at, and twice in two consecutive releases a newly-shipped field reached
+ * that audience undocumented: `advertisedVerbs` on `Report`, then `launchAdjustment` on
+ * `ReportedObservation`. Each was caught only because a reviewer happened to look. An undocumented
+ * field is invisible to exactly the readers it exists for.
+ *
+ * Two gates hang off this one spec, and neither is a reminder. `tsc` fails if the spec drifts from
+ * the interfaces above; `scripts/docs-lint/documented-report-fields.ts` fails if the guide does not
+ * define every entry. Adding a field is therefore a three-file edit whose two other files announce
+ * themselves.
+ *
+ * `ReportedFinding extends Finding`, so its spec carries the inherited keys too. That is intended:
+ * the guide's reader sees one flat object and cannot tell which half of the declaration a key came
+ * from.
+ *
+ * **THE LIMIT, stated because a green check is a claim.** This reaches TOP-LEVEL KEYS ONLY. A key
+ * marked `FIELD` whose value is an object — `surface`, `configSource`, `targetIdentity`,
+ * `declaration`, `recordedSurfaces`, `advertisedVerbs`, `counts`, the element type of `waivers` —
+ * is a leaf HERE, and the fields inside it are not covered by either gate. Both misses that
+ * motivated this work were top-level keys, which is why top-level is where it starts; a recursive
+ * spec over nested types is a separate, larger piece of work, and the reason it was not folded in
+ * is cost rather than doubt — it would require roughly fifty further guide entries before this
+ * repo's whole-tree gate would go green again.
+ */
+export const DOCUMENTED_REPORT_FIELDS = {
+  Report: documented<Report>()({
+    target: FIELD,
+    targetArgv0: FIELD,
+    targetIdentity: FIELD,
+    kitVersion: FIELD,
+    capturedAt: FIELD,
+    sweep: FIELD,
+    configSource: FIELD,
+    level: FIELD,
+    conformant: FIELD,
+    fullyVerified: FIELD,
+    counts: FIELD,
+    evidenceGaps: FIELD,
+    findings: of("ReportedFinding"),
+    observations: of("ReportedObservation"),
+    notApplicable: FIELD,
+    surface: FIELD,
+    advertisedVerbs: FIELD,
+    declaration: FIELD,
+    recordedSurfaces: FIELD,
+    knownFailures: FIELD,
+    staleExpectations: FIELD,
+    inertExpectations: FIELD,
+    waivers: FIELD,
+    severityOverrides: FIELD,
+  }),
+  ReportedFinding: documented<ReportedFinding>()({
+    ruleId: FIELD,
+    verdict: FIELD,
+    detail: FIELD,
+    evidence: FIELD,
+    tier: FIELD,
+    deviation: FIELD,
+    rulePath: FIELD,
+    excused: FIELD,
+    waived: FIELD,
+    probeLevel: FIELD,
+    coverage: FIELD,
+    coverageGaps: FIELD,
+    applicable: FIELD,
+    probes: of("EvidenceProbe"),
+  }),
+  ReportedObservation: documented<ReportedObservation>()({
+    id: FIELD,
+    args: FIELD,
+    launchAdjustment: FIELD,
+    env: FIELD,
+    inertness: FIELD,
+    purposes: FIELD,
+    repeat: FIELD,
+    exitCode: FIELD,
+    signal: FIELD,
+    crashed: FIELD,
+    timedOut: FIELD,
+    spawnFailed: FIELD,
+    durationMs: FIELD,
+    timeToFirstByteMs: FIELD,
+    stdoutBytes: FIELD,
+    stderrBytes: FIELD,
+    stdoutDigest: FIELD,
+    stderrDigest: FIELD,
+    stdoutLossy: FIELD,
+    stderrLossy: FIELD,
+    truncated: FIELD,
+  }),
+  EvidenceProbe: documented<EvidenceProbe>()({
+    id: FIELD,
+    args: FIELD,
+    env: FIELD,
+    repeat: FIELD,
+    unresolved: FIELD,
+  }),
+} as const satisfies Readonly<Record<string, Readonly<Record<string, Marker>>>>;
+
+/**
  * The one rule to point a caller at when a report is not fully verified.
  *
  * Filtered to `applicable`, unexcused, UNWAIVED core findings: with no filter, an early DIAGNOSTIC fail

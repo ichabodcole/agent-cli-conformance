@@ -80,13 +80,21 @@ jq '.data | {conformant, fullyVerified, level, counts}' report.json
 }
 ```
 
-`conformant` is the gate: no core rule violated. `fullyVerified` is the stricter claim — see
-[conformance](../concepts/conformance.md) for why a target can hold the first without the
-second. In `counts`, `unverified` and `notApplicable` are different facts: unverified means a
-probe ran and established neither answer; not-applicable means the rule was never attempted at
-this level. The text report — what a terminal run prints — draws them as `UNVR` and `N/A`, and
-conflating them misreads the report; per finding, `"applicable": false` is what marks the
-never-attempted case.
+- **`conformant`** — the gate: no core rule was violated. This is the boolean the exit code
+  mirrors.
+- **`fullyVerified`** — the stricter claim, and the one that can be false over a clean sheet:
+  every applicable core rule was actually established, not merely un-violated. See
+  [conformance](../concepts/conformance.md) for why a target can hold the first without the
+  second.
+- **`level`** — the probe depth this sweep reached. Both booleans above are claims made inside
+  it, so read them together: fully verified at `L0` speaks for the rules `L0` can reach, not for
+  the whole catalogue.
+- **`counts`** — the tallies shown above, over applicable, unwaived findings. `unverified` and
+  `notApplicable` are different facts and the difference is the point: unverified means a probe
+  ran and established neither answer, not-applicable means the rule was never attempted at this
+  level. The text report — what a terminal run prints — draws them as `UNVR` and `N/A`, and
+  conflating them misreads the report; per finding, `applicable` is what marks the
+  never-attempted case.
 
 ### 3. Read one finding, field by field
 
@@ -94,7 +102,9 @@ never-attempted case.
 jq '.data.findings[0]' report.json
 ```
 
-The first finding of the fixture run, whole:
+`findings` holds one entry per rule in the catalogue — including the rules this run did not judge,
+which say so on the finding rather than by being absent. The first finding of the fixture run,
+whole:
 
 ```json
 {
@@ -134,35 +144,69 @@ The first finding of the fixture run, whole:
   A1 above happens to group its clauses by probe — that is the checker's wording, not a
   contract, and most findings in this same report do not. Use `probes` for what was sent, never
   the clause order.
-- **`probes`** — what was sent, resolved in place: one entry per cited evidence id, in
-  `evidence`'s order. `args` is the argv after the target. `env` and `repeat` appear only where
-  they are the thing that distinguishes two probes — `--version` under a hostile `HOME`, or the
-  third send of a byte-identical argv for a rule that compares runs. A probe entry carries
-  exactly what its id identifies and nothing more; what the target _did_ is the next step.
+- **`evidence` / `probes`** — the observation ids this verdict rests on, and those same ids
+  resolved in place: one probe entry per cited id, in `evidence`'s order. A probe entry carries
+  exactly what its id identifies and nothing more — what the target _did_ is the next step. Its
+  five fields:
+  - **`id`** — the observation id, repeated on the entry so you can match by id rather than by
+    position.
+  - **`args`** — the argv after the target, which is the part that varies between probes.
+  - **`env`** — environment overrides the probe imposed, present only where it imposed any:
+    `--version` under a hostile `HOME` is the case that needs it.
+  - **`repeat`** — which send this was, present only where a rule compares byte-identical runs
+    and the repetition is the thing being measured.
+  - **`unresolved`** — `true` on the entry for an id that names no observation in this run. A
+    kit bug when it appears, and published rather than dropped: a silently shorter list would
+    read as a complete one.
 - **`coverage` / `coverageGaps`** — how much of the rule this verdict actually establishes,
   and the named remainder. A `pass` with gaps is the text report's `PASS+`.
+- **`probeLevel` / `applicable`** — the depth the rule needs, and whether this run reached it.
+  `applicable` is the per-finding form of the `notApplicable` count above, and it is false for two
+  different reasons — the rule's `probeLevel` is deeper than the run's `level`, or no checker
+  answers to the rule at any level. The `detail` says which.
+- **`excused` / `waived`** — what your own `acc.config.json` said about this rule, and they are
+  opposite claims: `excused` is a `knownFailures` entry, a defect you have acknowledged and intend
+  to fix; `waived` is `severity: "off"`, a declaration that the rule does not apply to your tool.
+  Both are false throughout an unconfigured run, and each is echoed with its reason in a block of
+  its own further down.
 
 ### 4. Resolve a probe to what happened
 
-`probes` says what was sent. The outcome lives in `.data.observations[]`, one entry per probe
-that ran, joined by `id`:
+`probes` says what was sent. The outcome lives in `observations` — `.data.observations[]`, one
+entry per probe that ran, joined by `id`:
 
 ```
 jq '.data.observations[] | select(.id == "b8d1ef65cae5")' report.json
 ```
 
-An observation carries the same `args` (the field is `args` here too) plus the outcome: how it
-ended (`exitCode`, `signal`, `crashed`, `timedOut`, `spawnFailed`), where the bytes went
-(`stdoutBytes`, `stderrBytes`, digests of both, `stdoutLossy`/`stderrLossy`, `truncated`),
-timing (`durationMs`, `timeToFirstByteMs`), the probe's `inertness` class (the four classes are
-listed in
-[how to establish your target is safe to check](./how-to-establish-your-target-is-safe-to-check.md)),
-`purposes` — every rule that read this one invocation, which is how one bare (argument-less)
-invocation can decide C2 and D2 at once — and `launchAdjustment`, present only when the wire
-argv actually delivered to the target differed from the recorded `args` (today, the only source
-is the runner prepending a `--` for a `bun` launcher so A6's terminator survives Bun's own
-stripping). It names the wire form in prose: replay `args` alone against this target and you get
-a different delivered argv than the one this record's verdict was decided from.
+An observation repeats what was sent and adds what came back. What was sent:
+
+- **`id` / `args` / `env` / `repeat`** — the same four the probe entry carries, and the same
+  values: an observation is the outcome side of an invocation the probe entry identifies.
+- **`launchAdjustment`** — present only when the wire argv actually delivered to the target
+  differed from the recorded `args`. Today the only source is the runner prepending a `--` for a
+  `bun` launcher so A6's terminator survives Bun's own stripping. It names the wire form in
+  prose, and it is the field to read before replaying: `args` alone against this target gives you
+  a different delivered argv than the one this record's verdict was decided from.
+- **`inertness`** — the probe's safety class; the four are listed in
+  [how to establish your target is safe to check](./how-to-establish-your-target-is-safe-to-check.md).
+- **`purposes`** — every rule that read this one invocation, which is how one bare
+  (argument-less) invocation can decide C2 and D2 at once.
+
+And what came back:
+
+- **`exitCode` / `signal` / `crashed` / `timedOut` / `spawnFailed`** — how it ended. `exitCode`
+  and `signal` are both nullable and exactly one of them is set on a process that started;
+  `spawnFailed` is the case where none of the others mean anything, because nothing ran.
+- **`stdoutBytes` / `stderrBytes` / `stdoutDigest` / `stderrDigest`** — how much came back on
+  each stream, and a digest of it. The bytes themselves are deliberately absent: a digest answers
+  the equality question a report is actually asked, without the retention and redaction problems
+  an unbounded copy of the target's output would bring with it.
+- **`stdoutLossy` / `stderrLossy` / `truncated`** — the three ways the record is narrower than
+  the run. The `Lossy` pair say the decode threw information away, so the digest is the only
+  faithful record of that stream; `truncated` says the runner's stream ceiling was reached.
+- **`durationMs` / `timeToFirstByteMs`** — wall-clock timing. The second is null when nothing
+  was ever written, which is what a hang looks like from here.
 
 ### 5. The rest of `.data`, briefly
 
@@ -171,8 +215,18 @@ a different delivered argv than the one this record's verdict was decided from.
   this array by itself but whether a per-observation `launchAdjustment` compensated for it (see
   above): `targetArgv0` says how the target was launched, `launchAdjustment` says whether the
   argv it received matched the recorded `args`.
+- **`findings` / `observations`** — the two arrays steps 3 and 4 work through: one finding per
+  rule in the catalogue, one observation per probe that ran. Every other field on this list is
+  read alongside them rather than instead of them.
+- **`notApplicable`** — the rules this run did not judge, **by name**, so a rule mislabelled with
+  too deep a `probeLevel` — or one no checker has ever answered to — is visible instead of merely
+  absent. The same set `counts.notApplicable` gives the size of.
 - **`configSource`** — which `acc.config.json` was read: `{origin, path, dir}`, with
   `"origin": "none"` when none was.
+- **`capturedAt` / `sweep`** — when the sweep ran (ISO 8601), and the mark every rendering of that
+  one run shares. `capturedAt` is what tells a month-old artifact apart from a live one; `sweep` is
+  deliberately time-free, so two sweeps carry the same mark exactly when their evidence is
+  identical. Pair reports on `sweep`, date them with `capturedAt`.
 - **`targetIdentity`** — the target's own `--version` bytes, quoted, with the observation id
   they came from, and not verified to be a version.
 - **`surface`** — whether the root enumerated its flags (`status`, plus the rejection evidence
@@ -188,6 +242,12 @@ a different delivered argv than the one this record's verdict was decided from.
   direction, `notCoveredByBatch` is coverage rather than an accusation, and `disagreement` names
   spellings one asserted capture carries and the other does not. Evidence, not a rule: no rule id,
   no verdict change.
+- **`declaration` / `recordedSurfaces`** — the two fields that appear only when you supplied
+  something: a declaration file to diff the target against, and a batch of surfaces recorded below
+  the root. Both are evidence on the same terms as `surface` — no rule reads either, and neither
+  moves a count. Absent means you passed nothing, never that everything agreed;
+  [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md) is where they
+  are worked through.
 - **`evidenceGaps`** — per rule, what a pass did not establish: the JSON behind the text
   report's `NOT FULLY VERIFIED` block.
 - **`waivers`, `knownFailures`, `severityOverrides`, `staleExpectations`,
@@ -205,6 +265,6 @@ jq '[.data.findings[].probes[]?.id] - [.data.observations[].id] == []' report.js
 ```
 
 The third closes the join: every probe a finding cites resolves to an observation in the same
-document. If a citation ever cannot be resolved, its probe entry says so with
-`"unresolved": true` rather than silently shortening the list. No such entry appears in a
+document. If a citation ever cannot be resolved, its probe entry carries `unresolved` —
+`"unresolved": true` — rather than silently shortening the list. No such entry appears in a
 normal run — the first two checks, passing alongside the third, establish that.
