@@ -127,11 +127,12 @@ and it is the distinction the whole report is built around — see
 > file with no shebang, so `bun run acc check` launches it under Bun — and Bun strips a bare `--`
 > immediately after the script path before the fixture ever sees it. The kit knows this and
 > compensates at the spawn (see [the rule page](../rules/parsing/double-dash-terminator.md)), so
-> `A6` above reads `PASS+`, not a refusal. **This detection has a hole, and it is why you should
-> pass a `.ts` path directly.** The kit recognises a Bun launcher from the target's own path and
-> shebang. Point it at a **wrapper script** that `exec`s bun instead and the wrapper's shebang is
-> a shell, so the compensation misses and A6 reports a `FAIL` your tool did not earn — measured:
-> the same CLI reports `PASS` passed directly and `FAIL` behind a wrapper. A6 is `diagnostic` and
+> `A6` in your own report reads `PASS+`, not a refusal. **This detection has a hole, and it is why
+> you should pass a `.ts` path directly.** The kit recognises a Bun launcher from the target's own
+> path and shebang. Point it at a **wrapper script** that `exec`s bun instead and the wrapper's
+> shebang is a shell, so the compensation misses and A6 reports a `FAIL` your tool did not earn —
+> measured: the same CLI reports `PASS+` passed directly and `FAIL` behind a wrapper. A6 is
+> `diagnostic` and
 > never affects the exit code.
 
 Now the sentence from Step 1 should land. Our conforming fixture violated nothing — and still

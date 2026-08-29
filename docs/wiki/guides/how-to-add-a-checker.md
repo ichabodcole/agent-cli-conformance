@@ -145,7 +145,7 @@ The guard keys on the launcher, which left a hole worth knowing about: a Bun CLI
 **no `.ts` extension** named `bun` nowhere in the invocation, so the swallow happened anyway and
 the target collected a `FAIL` — a wrong verdict on a conforming tool, which is worse than a wrong
 `unverified`. `acc check` now reads the target's first line and treats a shebang naming `bun` as
-inside the guard.
+eligible for the spawn-time compensation described above.
 
 Reading a `#!` line is not the kind of guess the inertness gate refuses. That gate refuses to
 guess whether a root positional is free-form data — a property with no observable signal, where a

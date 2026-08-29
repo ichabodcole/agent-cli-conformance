@@ -70,7 +70,7 @@ Add to `src/acc/commands/check.test.ts`:
 // THE GUARANTOR OF THE A6 LAUNCH COMPENSATION (see runner.ts).
 //
 // Bun strips one bare `--` PER BUN LAYER: `bun script.ts` strips one, `bun run <script>` strips
-// two (measured, bun 1.4.0 — docs/plans/2026-08-29-a6-reaches-the-bun-population.md Appendix B).
+// two (measured, bun 1.4.0 — docs/research/2026-08-29-bun-terminator-stripping.md).
 // The runner compensates by exactly one, which is correct only while `argv0` names at most one
 // layer. Widen `toTarget` to emit a launcher flag, a package script, or an adopter-supplied
 // argv0, and the compensation is consumed whole and A6 silently returns to measuring A1 — with
@@ -222,7 +222,7 @@ In `src/acc/kit/runner.ts`, immediately after
   // one; that is correct only while `argv0` names at most one layer, which `toTarget`
   // (src/acc/commands/check.ts) is the sole producer of and check.test.ts asserts. A multi-layer
   // argv0 would have this consumed whole and silently restore the defect. Measured on bun 1.4.0
-  // — see docs/plans/2026-08-29-a6-reaches-the-bun-population.md Appendix B.
+  // — see docs/research/2026-08-29-bun-terminator-stripping.md.
   //
   // If a future bun stops stripping, the survivor is ITSELF a terminator: an honouring target
   // reads it as a positional after an honoured `--` and still passes, a non-honouring one still

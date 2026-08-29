@@ -130,7 +130,7 @@ exec bun /abs/path/to/cli.ts "$@"
 ```
 
 ⚠ **A wrapper hides the launcher from `acc`, and one verdict depends on seeing it.** Measured: the
-same CLI passed directly reports `PASS A6`, and behind a shell wrapper reports `FAIL A6 — a value
+same CLI passed directly reports `PASS+ A6`, and behind a shell wrapper reports `FAIL A6 — a value
 after \`--\` was still parsed as an option`, which the tool did not do. A6 is `diagnostic` and
 never affects your exit code. **Prefer the direct path wherever you have one.**
 
