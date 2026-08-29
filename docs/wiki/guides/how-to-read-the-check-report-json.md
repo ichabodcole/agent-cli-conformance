@@ -36,7 +36,7 @@ real counterpart:
 | ----------------------- | ------------------------------------------------------------- |
 | `.data.results`         | `.data.findings`                                              |
 | a finding's `.status`   | `.verdict` — `"pass"`, `"fail"`, or `"unverified"`            |
-| a finding's `.summary`  | `.detail` — one clause per observation that decided it        |
+| a finding's `.summary`  | `.detail` — the verdict in one line, in the checker's wording |
 | an observation's `argv` | `.args` — the argv **after** the target, which is what varies |
 
 ## Steps
@@ -82,8 +82,9 @@ jq '.data | {conformant, fullyVerified, level, counts}' report.json
 
 - **`conformant`** — the gate: no core rule was violated. This is the boolean the exit code
   mirrors.
-- **`fullyVerified`** — the stricter claim, and the one that can be false over a clean sheet:
-  every applicable core rule was actually established, not merely un-violated. See
+- **`fullyVerified`** — the stricter claim, and the one that can be false in a report where
+  `conformant` is true and no core rule failed: every applicable core rule was actually
+  established, not merely un-violated. See
   [conformance](../concepts/conformance.md) for why a target can hold the first without the
   second.
 - **`level`** — the probe depth this sweep reached. Both booleans above are claims made inside
@@ -137,8 +138,11 @@ whole:
 }
 ```
 
-- **`ruleId` / `rulePath`** — addressable: `acc show A1` prints the rule, `--body` the whole
-  page.
+- **`ruleId` / `rulePath`** — the catalogue id, and the repo-relative path of the wiki page that
+  states the rule (`docs/wiki/rules/…`, as in the specimen above). Every finding carries a path,
+  including one for a rule no checker answers to yet, so a verdict you cannot interpret always
+  names the page that explains it. Both are addressable without the file: `acc show A1` prints
+  the rule, `--body` the whole page.
 - **`verdict` / `tier` / `deviation`** — the verdict is `pass`, `fail`, or `unverified`; `tier`
   says whether a fail gates the run (`core`) or is reported only (`diagnostic`); `deviation`
   says what a violation means — `defect`, or `design-choice` where a waiver records a decision.
@@ -167,9 +171,9 @@ whole:
   says so in its `detail` and again in its `coverageGaps`, while a rule merely deeper than this
   run is visible by comparing its `probeLevel` against the report's `level`.
 - **`excused` / `waived`** — what your own `acc.config.json` said about this rule, and they are
-  opposite claims: `excused` is a `knownFailures` entry **that is still doing work** — a defect
-  you have acknowledged and intend to fix, and it goes false the moment the rule passes, when the
-  entry surfaces in `staleExpectations` instead; `waived` is `severity: "off"`, a declaration that
+  opposite claims: `excused` is true only while a `knownFailures` entry is suppressing something
+  — the rule is named in your config AND its verdict is still `fail` or `unverified`. It becomes
+  false the moment the rule passes, and the entry then surfaces in `staleExpectations` instead; `waived` is `severity: "off"`, a declaration that
   the rule does not apply to your tool.
   Both are false throughout an unconfigured run, and each is echoed with its reason in a block of
   its own further down.
@@ -187,11 +191,18 @@ An observation repeats what was sent and adds what came back. What was sent:
 
 - **`id` / `args` / `env` / `repeat`** — the same four the probe entry carries, and the same
   values: an observation is the outcome side of an invocation the probe entry identifies.
-- **`launchAdjustment`** — present only when the wire argv actually delivered to the target
-  differed from the recorded `args`. Today the only source is the runner prepending a `--` for a
-  `bun` launcher so A6's terminator survives Bun's own stripping. It names the wire form in
-  prose, and it is the field to read before replaying: `args` alone against this target gives you
-  a different delivered argv than the one this record's verdict was decided from.
+- **`launchAdjustment`** — present only when the argv the kit put ON THE WIRE differed from the
+  recorded `args`, and it names that wire form in prose. Three argv are in play and only two of
+  them are ever equal: `args` is what the probe asked to send, the wire form is what the kit
+  actually spawned, and what the target RECEIVES equals `args` — that is the point of the
+  compensation, not a coincidence. Its only source is the runner prepending a second `--`
+  for a `bun` launcher, which bun then strips, so A6's terminator survives and the target sees
+  exactly `args`. **Its use is REPLAY, and it is not a delivery check**: `args` alone against
+  this target gives you a different delivered argv than the one this record's verdict was decided
+  from. Do not reach for it to ask whether the target got what was recorded — it cannot answer
+  that, and it is absent in the one documented case where delivery really does differ (a bun
+  layer hidden inside a wrapper script, where `targetArgv0` is the script and no compensation
+  fires at all).
 - **`inertness`** — the probe's safety class; the four are listed in
   [how to establish your target is safe to check](./how-to-establish-your-target-is-safe-to-check.md).
 - **`purposes`** — every rule that read this one invocation, which is how one bare
@@ -208,9 +219,9 @@ And what came back:
   the kit did **not** send — so check `crashed`, `timedOut` and `truncated` before attributing a
   death. `spawnFailed` is published for completeness and is **always `false` in a report**: the
   first probe that cannot spawn aborts the whole run with a `not_found` error envelope instead of
-  producing a report at all. Do not make it your broken-install alarm — that branch can never
-  fire, and the signal you want is the error envelope on stderr, not a field in a document that
-  only exists when the target ran.
+  producing a report at all. So do not write a CI check that tests this field to catch a target
+  that will not execute: the branch can never fire. Test for the `not_found` error envelope
+  instead — a report exists only when the target ran.
 - **`stdoutBytes` / `stderrBytes` / `stdoutDigest` / `stderrDigest`** — how much was RETAINED on
   each stream, and a digest of exactly those retained bytes. Retained, not written: when
   `truncated` is true the target was killed at the ceiling and what it would have written next is
@@ -230,8 +241,9 @@ And what came back:
 - **`target` / `targetArgv0`** — the path you gave, and the argv the kit actually spawned —
   a `bun` launcher is resolved here. What decides a launcher limit like A6's `--` swallow is not
   this array by itself but whether a per-observation `launchAdjustment` compensated for it (see
-  above): `targetArgv0` says how the target was launched, `launchAdjustment` says whether the
-  argv it received matched the recorded `args`.
+  above): `targetArgv0` says how the target was launched, and `launchAdjustment` says the kit put
+  a different argv on the wire so that the target would receive `args` unaltered. Neither field
+  reports what the target received, and nothing in the report does.
 - **`notApplicable`** — the rules this run did not judge, **by name**, so a rule mislabelled with
   too deep a `probeLevel` — or one no checker has ever answered to — is visible instead of merely
   absent. The same set `counts.notApplicable` gives the size of.
@@ -252,24 +264,77 @@ And what came back:
   [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md) starts
   from this.
 - **`advertisedVerbs`** — the verb set the target names at its own root, against the first token
-  of each recorded path. `status` is `not-asserted`, `no-batch` or `compared`, and it is the field
-  to branch on: **`not-asserted` means nothing was compared, NOT that the target advertises no
-  verbs.** `open` is the openness of `union` — the set the directions are computed over — and is
-  the one to read before acting on a finding, because `quoted.open` describes only the capture
-  whose words are shown. When `status` is `compared`, `recordedNotAdvertised` is the defect
-  direction, `notCoveredByBatch` is coverage rather than an accusation, and `disagreement` names
-  spellings one asserted capture carries and the other does not. Evidence, not a rule: no rule id,
-  no verdict change.
+  of each recorded path. It is the one structure on this list a bullet cannot carry alone, so here
+  it is from a run you can reproduce — the kit against its own CLI, which unlike the fixture above
+  does advertise verbs:
+
+  ```
+  bun run acc check src/acc/cli.ts --json | jq '.data.advertisedVerbs'
+  ```
+
+  ```json
+  {
+    "status": "no-batch",
+    "capturesRead": 2,
+    "hedged": [],
+    "open": false,
+    "quoted": {
+      "verbs": ["rules", "show", "path", "tags", "version", "schema", "check", "probe-plan", "report", "compare"],
+      "shape": "envelope-choices",
+      "open": false,
+      "confirmationRequired": false,
+      "from": "unknown-verb-rejection",
+      "observationId": "7b14f3dba1a0",
+      "args": ["acc-probe-xyzzy-verb"],
+      "stream": "stderr"
+    },
+    "union": ["check", "compare", "path", "probe-plan", "report", "rules", "schema", "show", "tags", "version"]
+  }
+  ```
+
+  Read `status` first — `not-asserted`, `no-batch` or `compared` — and note that
+  **`not-asserted` means nothing was compared, NOT that the target advertises no verbs.**
+  `capturesRead` is how many root captures were readable at all — the denominator that makes
+  `not-asserted` a measurement rather than a shrug. `quoted` is the one capture whose words are
+  shown, carrying the verbs it named, the `shape` they were read in, and the `observationId` so
+  you can resolve it in `observations` like any other citation; `hedged` holds sets that WERE read
+  but not asserted, so a hedge renders as a hedge instead of as silence. `union` is the set the
+  comparison is computed over — above it
+  equals `quoted.verbs` sorted, because there was no batch to union with. `open` is the openness
+  of `union` and is the one to read before acting on a result, because `quoted.open` describes
+  only the single capture shown.
+
+  The three direction fields appear only when `status` is `compared`, which needs a recorded
+  batch — see
+  [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md).
+  `recordedNotAdvertised` is the defect direction (you recorded a verb the target never
+  advertises); `notCoveredByBatch` is coverage rather than an accusation (advertised, but your
+  batch did not record it); `disagreement` names spellings one asserted capture carries and the
+  other does not. Evidence, not a rule: no rule id, no verdict change.
+
 - **`declaration` / `recordedSurfaces`** — the two fields that appear only when you supplied
   something: a declaration file to diff the target against, and a batch of surfaces recorded below
   the root. Both are evidence on the same terms as `surface` — no rule reads either, and neither
   moves a count. Absent means you passed nothing, never that everything agreed;
   [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md) is where they
   are worked through.
-- **`evidenceGaps`** — per rule, what a pass did not establish: the JSON behind the text
-  report's `NOT FULLY VERIFIED` block.
-- **`waivers`, `knownFailures`, `severityOverrides`, `staleExpectations`,
-  `inertExpectations`** — your config's declared exceptions and what became of each.
+- **`evidenceGaps`** — per applicable core rule, what this run did not establish — **whatever the
+  verdict was**. A `pass` with partial coverage contributes the clauses its checker never looked
+  at; a `fail` and an `unverified` each contribute a row as well, and theirs opens with the
+  verdict and the finding's `detail`. So a row here is not evidence of a qualified pass: read the
+  matching finding's `verdict` before drawing one. It is the JSON behind the text report's
+  `NOT FULLY VERIFIED` block.
+- **`waivers` / `knownFailures` / `severityOverrides`** — what your `acc.config.json` declared,
+  echoed back joined to what this run actually found: rules you turned off and the verdict each
+  reached anyway, debts you acknowledged with the reason you gave, and rules you moved between
+  tiers in either direction.
+- **`staleExpectations` / `inertExpectations`** — the two ways a `knownFailures` entry stops
+  meaning what you wrote, and they call for opposite actions. `staleExpectations` lists entries
+  whose rule now **passes** — you fixed it, so delete the line. `inertExpectations` lists entries
+  the run never **evaluated**, because the rule was out of scope at this level or came back
+  `unverified`; the debt may be entirely intact, so do not delete those — go and find out. A rule
+  moving to a deeper probe level is what silently turns the second kind from a live suppression
+  into a line that suppresses nothing.
 - **`kitVersion`** — the kit that produced the report; the verdict line quotes it in text mode.
 
 ## Verification
@@ -285,4 +350,7 @@ jq '[.data.findings[].probes[]?.id] - [.data.observations[].id] == []' report.js
 The third closes the join: every probe a finding cites resolves to an observation in the same
 document. If a citation ever cannot be resolved, its probe entry carries `unresolved` —
 `"unresolved": true` — rather than silently shortening the list. No such entry appears in a
-normal run — the first two checks, passing alongside the third, establish that.
+normal run, and the third check passing is what establishes it: an unresolved entry keeps the id
+it could not resolve, so that id would survive the subtraction and the expression would be false.
+The first two checks are not part of that warrant — they pin the verdict and the verdict
+vocabulary, which is a separate claim.

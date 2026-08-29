@@ -47,49 +47,85 @@
 //    position. What follows was observed on the change that introduced this file, not reasoned
 //    about.
 //
-//    EIGHT FALSE SENTENCES were found in the 37 bullets, across three rounds of review and one
-//    audit aimed at this specific class. The aimed audit found THREE THAT THE THREE ROUNDS MISSED
-//    — including the worst of the eight, a `spawnFailed` bullet describing a branch that can never
-//    fire in any report this kit writes.
+//    MOST DEFECTS FOUND SO FAR WERE IN CONVERTED BULLETS, THE CONVERSION IS A FINISHED
+//    POPULATION, AND THE RISK IS NOT BOUNDED BY IT. That third clause is the one a reader will
+//    otherwise supply wrongly. Making this gate green turned two prose sections into 32 converted
+//    bullets, and that population is closed and now audited — but findings have since arrived from
+//    a lookup-table row, a verification paragraph, a bullet written fresh for a field that had
+//    only ever appeared inside a JSON specimen, and two claims that were already false in the page
+//    before this gate existed. None of those is in the conversion. The conversion bounds THE RATE,
+//    not the exposure.
 //
-//    WHERE THEY CAME FROM, and the honest version is not the tidy one. Making this gate green
-//    turned two prose sections into 32 converted bullets, and MOST of the defects fell there:
-//    pinned to the revisions, seven of the eight sit in a bullet converted from existing prose,
-//    where a sentence that already read well was rewritten into a definition and gained a claim on
-//    the way. That population is one-time, identified, and now audited. But the eighth
-//    (`excused`/`waived`) was NOT a conversion, so the risk is not retired by the migration ending
-//    — writing a bullet for a newly shipped field runs the same hazard, just at lower volume.
+//    TWO COUNTS, AND THEY MUST NOT BE ADDED. One is a rate over a closed set; the other is a
+//    running total over an open one. A single number that moves for two reasons steers nothing —
+//    the same two-counter principle `staleExpectations` and `inertExpectations` turn on, arriving
+//    in the note that records it.
 //
-//    THE RATE IS A FLOOR: AT LEAST 7 OF 32 CONVERTED BULLETS, roughly one in four and a half. It
-//    can only ever be a floor, and the reason is the same defect this note is about. The passes
-//    that produced the number were each hunting ONE shape — an over-strong generalisation — so
-//    they could raise the count and could never confirm it: a bullet wrong in some other way was
-//    not being looked for. Reading it as "one in four and a half" rather than "or worse" would be
-//    a number asserting more than its method could observe. Two further passes are queued against
-//    this same population and either may raise it again, as the last one did.
+//    - 7 OF 32 CONVERTED BULLETS carried a false claim, and this is A FLOOR. It has not moved
+//      since the `sweep` finding. It can only ever be a floor, for the reason this whole note is
+//      about: the passes that produced it were each hunting ONE shape — an over-strong
+//      generalisation — so they could raise the count and could never confirm it; a bullet wrong
+//      in some other way was not being looked for. Reading it as "roughly one in four and a half"
+//      rather than "or worse" would assert more than the method could observe.
+//    - 5 FINDINGS OUTSIDE THAT POPULATION, a running total with NO DENOMINATOR — and deliberately
+//      not called a floor, because a count with nothing to divide by cannot bound a rate, and
+//      saying otherwise would be the overclaim this section exists to warn about. Their origins
+//      are four different places, which is the point: `excused` (a bullet written fresh for a
+//      field previously present only inside the JSON specimen), `launchAdjustment` and
+//      `evidenceGaps` (both already false in the page before this gate existed and untouched by
+//      it), a lookup-table row, and a verification paragraph.
+//
+//    WRONG AT BIRTH, AND READ PAST THREE TIMES. `launchAdjustment` and `evidenceGaps` were false
+//    in the guide before this work began — verified verbatim against the pre-gate revision — sat
+//    through every review round this branch ran, and were found only once a pass was AIMED at the
+//    population. That is the sharpest evidence for the attention dependency below: ordinary review
+//    read past both, repeatedly, while looking directly at them.
+//
+//    THE PREDICTION HAS HELD THREE TIMES: each aimed pass said it could only raise the floor, and
+//    each did. One further pass is outstanding.
 //
 //    - FALSE CONTENT. `exitCode`/`signal` said exactly one is set; `counts` said the tallies were
 //      over one set; `applicable` said `detail` distinguishes its two causes; `timeToFirstByteMs`
 //      said a null means a hang; `counts` again, on the repair, said two counts cover precisely
-//      what the others leave out; `spawnFailed` offered a broken-install alarm that can never
-//      fire; `sweep` claimed equal marks prove identical evidence, when the hash omits the kill
-//      flags and both timings; `excused` omitted that it goes false once the rule passes. Each was
-//      a plausible generalisation invented to fill a bullet.
+//      what the others leave out; `spawnFailed` offered a check that can never fire; `sweep`
+//      claimed equal marks prove identical evidence, when the hash omits the kill flags and both
+//      timings; `excused` omitted that it goes false once the rule passes; `launchAdjustment`
+//      described the field by what the target RECEIVED when it reports what the WIRE carried,
+//      inverting it; `evidenceGaps` scoped the set to passes when fails and unverifieds contribute
+//      rows too; and the lookup table promised one `detail` clause per observation, which the body
+//      of the same page explicitly denies. Each was a plausible generalisation — except the
+//      inversion, which was worse.
+//    - AN OPEN NAMING PROBLEM, NOT A FIXED ONE. The inversion is the recorded/wire/delivered
+//      ambiguity, and it is its THIRD occurrence — this one in a bullet written AFTER the same
+//      ambiguity was repaired at `compare.ts:82`. One word, `argv`, covers three things a reader
+//      must hold apart: what a probe asked to send, what the kit spawned, and what the target
+//      received. Prose discipline has now failed to stop it three times, so it should be treated
+//      as a naming problem the code has not solved rather than a documentation slip. Until the
+//      three have distinct names, expect a fourth.
 //    - THE VOID BULLET, the writer-side hazard, and the sharper one because it is the CHEAPEST way
 //      to turn a red gate green. A bullet that asserts nothing — "`capturedAt` — when it was
 //      captured" — passes every instrument here and can never be falsified, because it contains no
 //      claim to falsify. It is WORSE than absence: absence signals undocumented and sends a reader
-//      to the source, while a void bullet reads as documentation and stops them. Not hypothetical
-//      — a blind reader found two in this guide without being told the class existed.
+//      to the source, while a void bullet reads as documentation and stops them.
+//
+//      NOW MEASURED ONCE, AND THE NUMBER IS ITS OWN, not part of either count above: ZERO FULL
+//      VOIDS AND TWO NEAR-VOIDS at this revision. A near-void asserts something about one of its
+//      names and nothing about another — a `ruleId`/`rulePath` bullet that never said what the
+//      path is, and a five-name collective line that defined the LIST rather than its members,
+//      leaving `inertExpectations` named and asserted nothing anywhere in the document. Both are
+//      repaired. That is a real bound and better than the speculation it replaces, but it is ONE
+//      pass by the only instrument that can see this class — a reader — and the class stays
+//      invisible to every other instrument here by construction.
 //    - COMPLETENESS KILLS ABSENCE, the reader-side counterpart. Before the gate, a field with no
 //      entry sent a reader to the source, and that silence was a WORKING SIGNAL. After it, every
 //      field carries a confident-looking line, so the reader stops at the guide — and the
 //      certification raises trust in exactly the sentences whose truth it cannot check. It is this
 //      repo's own `bounded-search-is-not-absence` inverted: the search now always returns
 //      something, so an empty result no longer exists to be read.
-//    - THE ATTENTION DEPENDENCY, and the eight above are its evidence rather than an illustration
-//      of it. Every one was caught by review this gate does not bring with it, and the three the
-//      aimed audit added are the measurement of what ordinary review misses. The steady state is
+//    - THE ATTENTION DEPENDENCY, and every count above is its evidence rather than an illustration
+//      of it. Not one was caught by this gate; all of them came from review the gate does not
+//      bring with it, and the ones the aimed passes added — over bullets three ordinary rounds had
+//      already read — are the measurement of what ordinary review misses here. The steady state is
 //      one field, one red gate, one bullet, and nobody with the code open ever reading it. A
 //      property that holds only under audit-level attention is not a property of the gate, and
 //      nothing here should let a later reader assume those catches were structural.
