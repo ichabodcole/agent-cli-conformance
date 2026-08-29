@@ -382,3 +382,67 @@ because that side is captured live from the root probe on every run. **Only rege
 emitter covers the dispatch side.** The adopter regenerates, so for them both halves are covered —
 that is a property of their workflow, not of B, and the guidance in the registry guide is what
 carries it to anyone else.
+
+## Appendix B2: the adopter's answers, and the defect they caught
+
+The costing above went to the adopter who asked for B. Four answers, and the first would have made
+B miss the finding it exists to reproduce.
+
+### The rule's LOCATION is right; its SHAPE was too narrow
+
+Root plus unknown-verb rejection is where these tools enumerate. But **the advertised set has two
+shapes in one fleet**, and the costing only saw one:
+
+- **Retrofitted tools** answer an unknown verb with a JSON envelope whose `choices` array is the
+  verb set. This is what `nonFlagCandidates` reads today.
+- **Legacy tools** — including the one whose drift motivated this whole thread — advertise only as
+  a pipe-delimited usage string on stderr: `usage: cli.ts <open|state|tail|…>`.
+
+Measured on a two-line fixture emitting exactly that string:
+
+    nonFlagCandidates: (absent)      status: not-enumerated
+
+`nonFlagSetsIn` returns nothing unless the **whole stream** parses as JSON. So B, as costed, would
+have reported an empty advertised set on exactly the un-retrofitted tools where the drift lives.
+**The adopter's own words: it "would have missed the finding it exists to reproduce."**
+
+So the parse widens to both forms at the same location. It does **not** chase `--help` bodies or
+JSON manifests — _"a manifest-advertised set is what a declaration is for, and you already compare
+those."_
+
+### Both directions, but they are not the same kind of statement
+
+- **`recorded but never advertised`** is the discovery and the defect-shaped one.
+- **`advertised but never recorded`** is coverage information. For a deliberately partial batch it
+  is the expected state, so **it must never read as an accusation** — phrase it _"not covered by
+  this batch"_, never _"missing"_. Keep it anyway: it is the only line that can flag a usage string
+  naming a verb that no longer exists, since nobody records a path they do not believe in.
+
+### Sampling does not serve this finding
+
+The costing proposed inheriting the four-member sample. The adopter rejected it, and the reason is
+about what the reader does next: the action on a verb-set disagreement is _go add THESE to help_,
+so four names and a count means re-running the diff by hand — **the tool saying what it did while
+withholding what it found.**
+
+Verb sets are small in practice — the finding that started this was three; a large tool is dozens,
+never the pathological hundreds the flag bound guards against. So: **full list to a sane cap (32
+covers every tool in that fleet), sample-plus-count past it, and the full list always in the JSON
+even if the text line samples**, because the JSON is where a script picks up the work list.
+
+### Evidence, not a rule — and not yet a rule id
+
+A text line in the census block plus a JSON field, under this project's existing _evidence, not a
+rule_ banner. The adopter's argument for it is stronger than ours: **the recorded side is
+caller-attested, and nothing gate-failing should rest on bytes the kit did not observe itself.**
+
+If a rule id is ever wanted, only `recorded but never advertised` could carry one, and only when
+someone asks with a batch in hand. Their own plan is to gate it themselves by grepping the JSON
+field in CI — _"the adopter opts into the gate, the kit stays evidence."_
+
+### What this does to the cost
+
+The judgement item is settled — the rule is location-based and shape-plural. In its place is a
+small parse job with a real risk of its own: an angle-bracketed blob is not always a verb list, and
+a second parser is a second place to be wrong. That risk did not exist in the costing above,
+because the costing could not see the shape.
