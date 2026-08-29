@@ -119,3 +119,23 @@ test("the path is always resolved to an absolute one", () => {
   expect(t.path.startsWith("/")).toBe(true);
   expect(t.path.endsWith("/src/acc/cli.ts")).toBe(true);
 });
+
+// THE GUARANTOR OF THE A6 LAUNCH COMPENSATION (see runner.ts).
+//
+// Bun strips one bare `--` PER BUN LAYER: `bun script.ts` strips one, `bun run <script>` strips
+// two (measured, bun 1.4.0 — docs/plans/2026-08-29-a6-reaches-the-bun-population.md Appendix B).
+// The runner compensates by exactly one, which is correct only while `argv0` names at most one
+// layer. Widen `toTarget` to emit a launcher flag, a package script, or an adopter-supplied
+// argv0, and the compensation is consumed whole and A6 silently returns to measuring A1 — with
+// the `unverified` branch that used to make someone look now deleted.
+//
+// Bun's behaviour has not moved in that scenario, so no fixture watching bun can fire. This can.
+test("toTarget emits a single-layer argv0", () => {
+  const bunScript = toTarget(join(FIXTURES, "echoes-argv.ts"));
+  expect(bunScript.argv0[0]).toBe("bun");
+  expect(bunScript.argv0).toHaveLength(2);
+
+  const native = toTarget("/bin/echo");
+  expect(native.argv0).toHaveLength(1);
+  expect(native.argv0[0]).not.toBe("bun");
+});
