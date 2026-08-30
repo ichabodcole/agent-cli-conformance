@@ -629,7 +629,8 @@ const documented =
  * **IF `tsc` SENT YOU HERE — READ THIS BEFORE YOU ADD THE LINE.** A missing property named by the
  * mapped type is the whole message the compiler can give you; it cannot carry a sentence, so the
  * sentence is here, immediately above the list you are about to type in. Adding the key satisfies
- * `tsc` and NOT the docs lint. The field also needs ONE of:
+ * `tsc` and NOT the docs lint (`bun run docs:lint:artifacts` — NOT `docs:lint`, which is the
+ * wiki's own linter and knows nothing about this spec). The field also needs ONE of:
  *
  * - a definition-shaped entry in `docs/wiki/guides/how-to-read-the-check-report-json.md` — the
  *   backticked name in the TERM of a bullet, the first cell of a table row, or a heading; or
