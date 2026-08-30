@@ -222,11 +222,40 @@ gh pr edit <n> --title "$(head -1 note.md)" --body-file <(tail -n +3 note.md)   
 
 ## 4 · Hand the human the merge command — with BOTH flags
 
+Give it as ONE line with the note's path written out. Do not introduce a variable for the
+path and do not split it across lines:
+
 ```bash
-gh pr merge <n> --merge \
-  --subject "$(head -1 note.md)" \
-  --body-file <(tail -n +3 note.md)
+gh pr merge <n> --merge --subject "$(head -1 /abs/path/note.md)" --body-file <(tail -n +3 /abs/path/note.md)
 ```
+
+> **⚠ Both flags fail SILENTLY and the merge still succeeds.** If the path does not resolve —
+> a `NOTE=` assignment that was not pasted, a typo, a file written somewhere else — `head` and
+> `tail` write to stderr, the substitutions yield an empty subject and an empty body, and the
+> pipeline exits `0`. GitHub then fills in its own defaults and `gh` prints a success URL. The
+> only evidence is two error lines scrolling past above a URL that says it worked. This is why
+> the path is written out rather than referenced: there is nothing to lose between two lines.
+
+**Verify before moving on — this is the last moment the fix is cheap:**
+
+```bash
+SHA=$(gh pr view <n> --json mergeCommit -q .mergeCommit.oid)
+git fetch origin && git log -1 --format='%s' $SHA
+git log -1 --format='%b' $SHA | wc -c
+```
+
+The subject must be the note's first line, NOT `Merge pull request #NN from …`, and the body
+must be close to the note's length. A body of `1` means it was dropped. Repair it now — the note file is already in git's
+message format, so it amends in directly:
+
+```bash
+git checkout main && git pull
+git commit --amend -F /abs/path/note.md
+git push --force-with-lease
+```
+
+Only while nothing has been built on top of it, though. Once release-please has opened its PR against that commit, leave the history alone
+and put the note on the published Release in §6 instead, which is where consumers read it.
 
 **Merge or rebase, never squash.** A squash resolves its headline to the PR _title_, and a title
 that is not a Conventional Commit leaves release-please with no version signal.
@@ -312,10 +341,14 @@ git checkout main && git pull && git checkout develop && git merge main && git p
 Then confirm the release is what you wrote:
 
 ```bash
-git log -1 --format='%s' main            # your subject, not "Merge pull request …"
-git log -1 --format='%b' main | wc -c    # ~subject length means --body-file was dropped
 gh release view v<version>
 ```
+
+> **⚠ Do not check the promotion merge's body HERE.** By this point `main`'s HEAD is the
+> release-please merge, whose body is a couple of dozen bytes by design — so
+> `git log -1 --format='%b' main | wc -c` reports a small, plausible number no matter what
+> happened to your note. That check belongs in §4, against the promotion merge's own SHA, and it
+> is run there.
 
 ## 8 · Feedback
 
