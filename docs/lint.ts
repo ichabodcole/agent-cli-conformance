@@ -17,6 +17,10 @@ import { readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  documentedReportFieldProblems,
+  reportFieldCountsLine,
+} from "../scripts/docs-lint/documented-report-fields.ts";
+import {
   checkLinks,
   parseFrontmatter,
   walkMarkdown,
@@ -222,12 +226,20 @@ export function artifactProblems(): string[] {
 }
 
 if (import.meta.main) {
-  const problems = [...artifactProblems(), ...versionLiteralProblems(REPO_ROOT)];
+  const problems = [
+    ...artifactProblems(),
+    ...versionLiteralProblems(REPO_ROOT),
+    ...documentedReportFieldProblems(REPO_ROOT),
+  ];
   for (const p of problems) console.log(p);
+  // Printed whether or not anything is wrong: the declared-undocumented set is a state, and a
+  // state only shown on failure is a state nobody watches. See limit 5 in
+  // scripts/docs-lint/documented-report-fields.ts for why one number would not do.
+  console.log(reportFieldCountsLine());
   console.log(
     problems.length
       ? `\n${problems.length} problem(s).`
-      : "OK — frontmatter, vocabularies, stated methods and version literals valid across docs/reports, docs/plans, docs/research and the live documents.",
+      : "OK — frontmatter, vocabularies, stated methods, version literals and report-field coverage valid across docs/reports, docs/plans, docs/research and the live documents.",
   );
   process.exit(problems.length ? 1 : 0);
 }
