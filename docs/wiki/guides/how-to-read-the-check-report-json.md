@@ -7,7 +7,7 @@ description:
 tags: [guide, conformance, acc-check, evidence]
 related: [tutorial/check-your-first-cli, concept/conformance, concept/machine-mode]
 status: stable
-generated: { by: claude-fable-5, at: 2026-08-27 }
+generated: { by: claude-opus-5, at: 2026-08-29 }
 ---
 
 # How to read the check report JSON
