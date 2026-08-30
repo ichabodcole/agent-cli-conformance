@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.9](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.8...v0.1.9) (2026-08-30)
+
+
+### Features
+
+* **docs:** declared absence, so no field is silently undocumented ([a547130](https://github.com/ichabodcole/agent-cli-conformance/commit/a547130c2f2e14e8602d49e71283e72029dfcd46))
+* **docs:** the JSON guide cannot omit a report field ([1031c1a](https://github.com/ichabodcole/agent-cli-conformance/commit/1031c1adbcdeeb92ca281e3eb145246efd81a670))
+* **docs:** the JSON guide cannot silently omit a report field ([0739e1d](https://github.com/ichabodcole/agent-cli-conformance/commit/0739e1d8d17c9b764bd5ed63cadf95ce58e7c29a))
+
+
+### Bug Fixes
+
+* **docs:** correct four invented claims in the JSON guide rewrite ([1299465](https://github.com/ichabodcole/agent-cli-conformance/commit/1299465bbab9b1d42313f9a7797f1b760df3decf))
+* **docs:** drop the overreaching counts clause and anchor the term fallback ([0bb7a60](https://github.com/ichabodcole/agent-cli-conformance/commit/0bb7a60e18ba20b82f26be4fbb58c0ec3e005294))
+* **docs:** repair an inverted field description and six review findings ([4f8ca86](https://github.com/ichabodcole/agent-cli-conformance/commit/4f8ca866461e766bb2aa44a25664798a827332b6))
+* **docs:** three more false bullets, and both homes of the sweep claim ([a69fb5a](https://github.com/ichabodcole/agent-cli-conformance/commit/a69fb5a4c0619f4d575b0ed92b91cf15e2b35a99))
+
 ## [0.1.8](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.7...v0.1.8) (2026-08-29)
 
 
