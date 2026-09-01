@@ -144,7 +144,7 @@ sentinel flag, each answered with an explicit, present, empty enumeration:
 **The kit reads that as `not-enumerated` and drops both paths from the census**, then renders
 `none named a set (NOT a tool with no flags)` — which is the precise opposite of what the target
 said. The clause responsible is `value.length > 0` in `keyedSets`
-([`surface.ts`](../surface.ts)), which discards the empty array before anything can read it.
+([`surface.ts`](../../surface.ts)), which discards the empty array before anything can read it.
 
 That status's own definition asserts _"the tool has flags, it simply does not list them"_, so the
 kit does not merely fail to record the answer: it asserts its negation. The type already separates

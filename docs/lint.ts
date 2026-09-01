@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
-// The artifact folders' lint: docs/reports/, docs/plans/, docs/research/.
+// The artifact folders' lint: docs/reports/, docs/plans/, docs/research/ — plus link and
+// anchor resolution for the authored Markdown no other lint reads (see unlinted-links.ts).
 //
 //   bun docs/lint.ts     → lint (non-zero exit on any problem; runs in `bun run check`)
 //
@@ -26,6 +27,7 @@ import {
   walkMarkdown,
   yamlList,
 } from "../scripts/docs-lint/index.ts";
+import { unlintedLinkProblems } from "../scripts/docs-lint/unlinted-links.ts";
 import { versionLiteralProblems } from "../scripts/docs-lint/version-literals.ts";
 
 const DOCS_ROOT = dirname(fileURLToPath(import.meta.url));
@@ -230,6 +232,7 @@ if (import.meta.main) {
     ...artifactProblems(),
     ...versionLiteralProblems(REPO_ROOT),
     ...documentedReportFieldProblems(REPO_ROOT),
+    ...unlintedLinkProblems(REPO_ROOT),
   ];
   for (const p of problems) console.log(p);
   // Printed whether or not anything is wrong: the declared-undocumented set is a state, and a
@@ -239,7 +242,7 @@ if (import.meta.main) {
   console.log(
     problems.length
       ? `\n${problems.length} problem(s).`
-      : "OK — frontmatter, vocabularies, stated methods, version literals and report-field coverage valid across docs/reports, docs/plans, docs/research and the live documents.",
+      : "OK — frontmatter, vocabularies, stated methods, version literals and report-field coverage valid across docs/reports, docs/plans, docs/research and the live documents; links and anchors resolve in every hand-authored Markdown file no other lint reads (the generated CHANGELOG.md excepted).",
   );
   process.exit(problems.length ? 1 : 0);
 }

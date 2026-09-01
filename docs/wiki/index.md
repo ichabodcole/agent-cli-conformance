@@ -39,6 +39,7 @@ you are **doing**, which is usually the faster way in.
 | looking up an error shape                | [the error envelope](./concepts/error-envelope.md#two-shapes-and-confirmation_required-is-one-of-the-errors)                                                                    |
 | covering paths below the root            | [How to record surfaces below the root](./guides/how-to-record-surfaces-below-the-root.md) — generate the capture with `acc probe-plan`, or record it yourself                  |
 | stopping drift instead of catching it    | [How to derive your surface from one registry](./guides/how-to-derive-your-surface-from-one-registry.md) — one table drives the parser, help, the rejection and the declaration |
+| deciding how a CLI _should_ behave       | [`STANDARD.md`](../../STANDARD.md) — the guidance itself, read rather than consulted: a recommendation, its reason, its evidence, and whether anything can check it             |
 | writing a checker                        | [How to add a checker](./guides/how-to-add-a-checker.md)                                                                                                                        |
 | editing these pages                      | [SCHEMA.md](./SCHEMA.md) for the contract, [STYLE.md](./STYLE.md) for how they are written                                                                                      |
 
