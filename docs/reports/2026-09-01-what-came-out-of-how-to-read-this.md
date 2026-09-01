@@ -201,6 +201,45 @@ for anyone who wants to argue about the placement.
 **The rule this adds for the rest of the pass:** before asking whether a passage's reason survives
 its story, ask whether the passage needed a reason. A definition does not.
 
+### R-9 · The section's lead preamble
+
+> **Two readers arrive here and this section is written for the second one.**
+
+**no reason needed.** A preamble to a two-item list, where the two items say which reader they are
+for. Nothing replaces it.
+
+### R-10 · The census anecdote — item 1
+
+> It also reaches where the kit does not: a census caught a live defect that two full `acc check`
+> runs had missed, because both probed the root and the defect lived below it ([DT-2], eight flags
+> the same binary publishes and refuses).
+
+**reason stated, and the evidence was decoration.** Why the census goes first is already carried by
+three reasons in the sentence before it — cheap, needs nothing from this project, needs no
+declaration. Reach is a fourth reason and it is structural rather than empirical: the kit probes
+the root only and a census reads every command path, which is true of the tools and not of one
+occasion. The anecdote was the most persuasive line in the section and it was still decoration.
+
+**The rule this adds:** once the reason is established, further evidence is not more reason. It is
+a cherry on top, and a page made of cherries is the thing this pass exists to remove.
+
+### R-11 · Item 2's duplicated reason, and the figures between the copies
+
+> Contingent, because an emitter **alone — with nothing recorded below the root** — is only checked
+> where the kit can already reach. On one real tool that was `0 of 25` declared command paths
+> compared; with the census's own captures handed back as a [recorded-surface batch], the same tool
+> compares [`23 of 26`].
+
+**evidence only, propping up a sentence that was already said.** The claim "an emitter is only
+checked where the kit can reach" and the claim "an emitter written before you have below-root
+evidence buys a report about what could not be compared" are the same claim. The second is better
+prose and stands alone. The figures sat between the two copies.
+
+**Third instance of the same structural finding**, after R-8's blockquote and the `usage diff`
+survey in Part 1: narrative or evidence placed between two statements of one claim stops a reader —
+and a writer — noticing they are the same claim. Removing the middle is what makes the duplication
+visible.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,

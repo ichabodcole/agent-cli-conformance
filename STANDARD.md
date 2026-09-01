@@ -81,8 +81,6 @@ reader, and [mixing them produces something that serves neither](CHARTER.md#what
 
 ### Where to start, if you already have a CLI
 
-**Two readers arrive here and this section is written for the second one.**
-
 - **You have not run `acc check` against your tool yet.** Start at
   [how to reach L0 in your project](docs/wiki/guides/how-to-reach-l0-in-your-project.md) instead —
   a baseline, then triage, then a config. Come back here afterwards.
@@ -95,19 +93,11 @@ first move, a second, and a "not until X"; below is that ordering.
 1. **First, the census** — [make the tool enumerate its own surface](#the-cheapest-version-of-checked)
    and diff that against what you publish, one inert probe per command path. It is first because it
    is cheap, it needs nothing from this project, and it needs no declaration to exist yet: a shell
-   loop and `jq` will do it. It also reaches where the kit does not: a census caught a live defect that two full `acc check`
-   runs had missed, because both probed the root and the defect lived below it
-   ([DT-2](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-2--eight-refused-flags-published-as-valid),
-   eight flags the same binary publishes and refuses).
+   loop and `jq` will do it. It also reaches further than the kit
+   does: the kit probes the root only, and a census reads every command path.
 
 2. **Second, and contingent on the first, the v0 emitter** — the format described in
-   [Part 2](#the-fields-and-why-each-exists). Contingent, because an emitter **alone — with nothing recorded below the root** — is only checked
-   where the kit can already reach. On one real tool that was `0 of 25` declared command paths
-   compared; with the census's own captures handed back as a
-   [recorded-surface batch](docs/wiki/guides/how-to-record-surfaces-below-the-root.md), the same tool
-   compares
-   [`23 of 26`](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three).
-   An emitter written before you have below-root evidence to compare it against buys a report about
+   [Part 2](#the-fields-and-why-each-exists). An emitter written before you have below-root evidence to compare it against buys a report about
    what could not be compared. Written after, every path the census already reads becomes a path the
    emitter is checked at.
 
