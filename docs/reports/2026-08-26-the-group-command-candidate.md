@@ -17,9 +17,11 @@ examined:
 
 # The group-command candidate — raised, evidenced, not minted
 
-**No rule id has been assigned and none should be cited.** This file exists so the decision has a
-home other than a chat channel, and so that whoever takes it up does not have to re-gather the
-evidence.
+**No rule id has been assigned and none should be cited.** This file exists so that whoever takes
+the candidate up does not have to re-gather the evidence. It was also, when written, the only home
+the decision had outside a chat channel; the recommendation itself now lives in
+[`STANDARD.md` § Parsing](../../STANDARD.md#a-group-node-that-refuses-a-flag-should-name-its-subcommands),
+and what remains here is the survey behind it and the argument for the tier.
 
 ## Who raised it, and why it is not a census feature
 
@@ -126,9 +128,18 @@ Four supporting reasons, in the order they carry weight:
 3. **Recovery crosses a format boundary.** The rejection may be JSON and help is prose, so the
    agent switches parsers mid-recovery for information it was already offered a pointer to.
 4. **The bloat objection does not survive its own evidence.** It is the strongest case for tier 2
-   and the survey refutes it: **`gh repo` prints 19 subcommands in a rejection** and nobody
-   considers that broken, while the two tools declining to print have 12 and 16. The tool with the
+   and the survey refutes it: **`gh repo` prints 18 subcommands in a rejection** and nobody
+   considers that broken, while the two tools declining to print have 12 and 15. The tool with the
    most to say says it.
+
+   > **Corrected 2026-08-31.** This bullet read **19** and **16**. Re-measured on the same builds
+   > this report names — `gh 2.98.0`, `Docker 29.2.0`, `kubectl v1.34.1` — the rejection lists 18
+   > for `gh repo`, and `kubectl config` holds 15; `docker image`'s 12 reproduced. Both wrong
+   > figures were one high, which suggests one counting slip rather than two, but the original
+   > method was not recorded and the mechanism is not established. The argument is unaffected: 18
+   > against 12 and 15 carries it exactly as 19 against 12 and 16 did. Found when the figures were
+   > promoted into [`STANDARD.md`](../../STANDARD.md#a-group-node-that-refuses-a-flag-should-name-its-subcommands),
+   > by a reviewer who re-ran them instead of trusting this page.
 
 **The deviation is `design-choice`, not `defect`, and that is the whole of what makes this
 sayable.** It puts this project on record recommending against Docker and Kubernetes, and the

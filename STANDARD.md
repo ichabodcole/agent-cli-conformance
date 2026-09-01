@@ -1082,8 +1082,9 @@ more dangerous of the two failures and it is the one nothing sees from outside.
 ## Parsing
 
 The catalogue covers this ground densely and this page will not restate it — read
-[the index](docs/wiki/index.md) for the seven rules. What is worth saying here is the shape they all
-defend against, because it is one shape:
+[the index](docs/wiki/index.md) for the seven rules. Two things are worth saying here. The first is
+the shape all seven defend against, because it is one shape; the second is a recommendation the
+catalogue does not carry at all, at the end of this section:
 
 **A parser that accepts something it does not understand and runs anyway is the defect.** An unknown
 flag accepted while the verb runs; a positional silently swallowed; `--flag=value` split on
@@ -1115,6 +1116,24 @@ Likewise, this page asserts **no flag spelling**. `sqlite3`, `openssl`, `ip`, GR
 and GDAL use single-dash long options; `dig +short`, `ps aux`, `tar cfv` and `dd if=/of=` are not
 even the same grammar. None of that falsifies anything above, and none of it is a defect.
 
+**[C]** `A1`–`A3` and `A5`–`A7`, at the root only. The
+[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) measured both `A6` and `A7` as
+`unverified` on all eight targets — `A6` because a `bun` launcher swallowed the leading `--` before
+the target saw it, `A7` because its prose extractor found no closed value set to falsify. `A6`'s
+swallow is now compensated at the spawn, so it returns a real verdict on bun-launched targets; `A7`
+still carries its caveat, because its checker still finds no closed value set and has yet to resolve
+on that population. **[—]** `A4` — the silently swallowed positional,
+which is the second item in the shape above — at any depth: its checker declares no probe and
+returns `unverified` unconditionally
+([`unexpected-positionals.ts`](src/acc/kit/checkers/parsing/unexpected-positionals.ts)), because
+testing arity means sending extra positionals to a _real_ verb and running it. It becomes checkable
+in a sandbox, or on a surface an operator recorded by running a generated probe plan — not on
+discovery, and not on anything the tool says about itself. **[C?]** The rest
+of them one level down, which is the largest single block of coverage debt in the catalogue —
+blocked on the tool declaring that the subcommand exists, and, for every one of them whose probe
+would run the subcommand rather than ask it for help, blocked a second time on knowing that command
+is safe to run. `bounty close --help` closed the board.
+
 ### A group node that refuses a flag should name its subcommands
 
 A **group node** is a command that exists to hold subcommands and has no flags of its own —
@@ -1133,39 +1152,28 @@ already holding.
 
 **The bloat objection is the strongest case for the pointer, and the survey refutes it.** Six group
 nodes across five vendors, one sentinel flag each: `git remote`, `git stash` and `gh repo` name a
-set; `docker image`, `kubectl config` and `anthill comms` do not. `gh repo` prints **19**
-subcommands in a rejection and nobody considers that broken, while the two tools that decline to
-print have 12 and 16 ([the group-command
-candidate](docs/reports/2026-08-26-the-group-command-candidate.md)).
+set; `docker image`, `kubectl config` and `anthill comms` do not. `gh repo` prints **18**
+subcommands in a rejection and nobody considers that broken, while the two tools that print a
+pointer instead hold 12 and 15 (measured here on `gh 2.98.0`, `Docker 29.2.0` and
+`kubectl v1.34.1` — the survey in [the group-command
+candidate](docs/reports/2026-08-26-the-group-command-candidate.md) reported 19 and 16, and both
+were one high).
 
-**This is a design choice, not a defect**, and the tier is doing real work: three of five vendors
-choose the other way, so this page recommends against `docker` and `kubectl` here and says openly
-that they chose differently rather than that they are broken. **No rule id has been minted for it
-and none should be cited** — the recommendation is what this page carries; the catalogue does not
-carry it.
+**This is a design choice, not a defect**, and the tier is what makes it one. Two of the five
+vendors — `docker` and `kubectl` — answer with a pointer to `--help`, which is a route forward and
+a defensible choice this page declines rather than condemns. Naming nothing at all is the third
+answer and it is not a design choice; it leaves a caller with nowhere to go. **No rule id has been
+minted for any of this and none should be cited** — the recommendation is what this page carries;
+the catalogue does not carry it.
 
-**[C?]** Blocked on `L1`, and only on that: sending a flag to a node that holds subcommands is
-sending a verb, which is above `L0` by the admission test, so a checker would report `unverified`
-on every target until `L1` exists. The observation is a parser error rather than an execution, so
-nothing here waits on a sandbox.
-
-**[C]** `A1`–`A3` and `A5`–`A7`, at the root only. The
-[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) measured both `A6` and `A7` as
-`unverified` on all eight targets — `A6` because a `bun` launcher swallowed the leading `--` before
-the target saw it, `A7` because its prose extractor found no closed value set to falsify. `A6`'s
-swallow is now compensated at the spawn, so it returns a real verdict on bun-launched targets; `A7`
-still carries its caveat, because its checker still finds no closed value set and has yet to resolve
-on that population. **[—]** `A4` — the silently swallowed positional,
-which is the second item in the shape above — at any depth: its checker declares no probe and
-returns `unverified` unconditionally
-([`unexpected-positionals.ts`](src/acc/kit/checkers/parsing/unexpected-positionals.ts)), because
-testing arity means sending extra positionals to a _real_ verb and running it. It becomes checkable
-in a sandbox, or on a surface an operator recorded by running a generated probe plan — not on
-discovery, and not on anything the tool says about itself. **[C?]** The rest
-of them one level down, which is the largest single block of coverage debt in the catalogue —
-blocked on the tool declaring that the subcommand exists, and, for every one of them whose probe
-would run the subcommand rather than ask it for help, blocked a second time on knowing that command
-is safe to run. `bounty close --help` closed the board.
+**[C?]** Checking it means sending a flag to a node that holds subcommands, which is sending a
+verb — and nothing in this project can select a verb to send without the target saying which of
+its commands are safe to reach. That is the blocker, and it is the only one: the observation
+itself is a parser error rather than an execution, so no sandbox is involved. **Minting a rule
+for it stays banked** with the question of what replaces the current probe-level vocabulary
+([the plan after the ladder](docs/plans/2026-08-26-the-plan-after-the-ladder.md)); the
+recommendation does not wait on that, because a recommendation costs no id, no denominator and no
+checker.
 
 ---
 

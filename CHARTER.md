@@ -185,16 +185,17 @@ that have quietly stopped being true. Build the checker first and it measures he
 ## What this does not establish
 
 Two limits on what the instrument can say. Neither is a gap being closed, neither has work behind
-it, and both are here because an adopter reached the end of a clean run still believing otherwise.
-Both were asked for by respondents in
+it, and both are here because an adopter could reach the end of a clean run still believing
+otherwise — which is how both were put to us, as a risk to foreclose rather than a mistake anyone
+is reported to have made. Both were asked for by respondents in
 [what three adopters want](docs/reports/2026-08-26-what-three-adopters-want.md) — the first for
 this page by name, the second asked to be stated loudly without a home named for it.
 
-**Consistency between artifacts, not the correctness of either.** Every comparison the kit makes is
-between two things the target produced: help against parser, declared surface against recorded
-surface, one command path against another. What it reports is whether they agree. **Two artifacts
-that are wrong in the same way agree**, and a census of them returns `0 disagreements` and is right
-to. A flag that is documented, accepted by the parser, and does nothing is invisible here, and so
+**Consistency between artifacts, not the correctness of either.** What the kit compares is
+artifacts against artifacts: a target's help against its parser, its declared surface against a
+recorded one, and in `acc compare`, one target's observations against another's. What it reports
+is whether they agree. **Two artifacts that are wrong in the same way agree**, and a census of
+them returns `0 disagreements` and is right to. A flag that is documented, accepted by the parser, and does nothing is invisible here, and so
 is a whole interface that is coherent and badly designed. The adopter who asked for this put the
 consequence and the reason together: _"It is not a weakness — it is what makes the kit
 language-agnostic — but it is load-bearing and I did not find it written down."_ Reading artifacts
@@ -209,14 +210,17 @@ this project reads it for truth. The evidence is one adopter's highest-value fix
 which this kit could not have found: instructions that told every seat for two weeks that an
 unknown positional to a subcommand was silently swallowed, when the behaviour had been corrected
 twelve hours after the prose was written. The tool was right and its instructions were lying, and
-every rule here would have passed.
+nothing in this catalogue looks at the place the lie was.
 
-The reason to state it loudly rather than note it is that the mistaken inference is a reasonable
-one. [`STANDARD.md`](STANDARD.md) already treats a tool's shipped instructions as load-bearing —
-they are what makes a flag global rather than local, and the standard says so — so a reader can
-fairly conclude the kit is looking at them. It reads them for **scope** and never for **truth**. An
-adopter who passes every rule has learned nothing about the half of their agent-facing contract
-that most often drifts, because it is the half nothing executes.
+The reason to state it here rather than leave it where it sits is that the narrower version is
+already written down and is easy to read past. [`STANDARD.md`](STANDARD.md) tells an author to
+settle a flag's scope by reading their own shipped documentation — a flag is global because the
+instructions to callers make it global — and then marks that claim **`[—]`**, saying plainly that
+_"nothing on this page reads a `SKILL.md`"_. That is the same limit, scoped to one declaration
+field. The general form is larger and belongs here: a reader who has been told the standard treats
+shipped instructions as a source of truth can fairly conclude something checks them, and nothing
+does. An adopter who passes every rule has learned nothing about the half of their agent-facing
+contract that most often drifts, because it is the half nothing executes.
 
 ## What is out of scope
 
@@ -281,12 +285,13 @@ to this one.
 **Three adopters were asked, separately, and all three said delete it — by three different
 routes.** None of them had ever used the word `L1`. One reached it from the withdrawn warrant (_"a
 ladder promises a climb, and the warrant reversal just demonstrated that rungs get withdrawn"_),
-one from cost (_"a vocabulary that is unused and wrong is pure cost"_), and one because **it
-misinformed them**: reading `N/A A4 — arity cannot be probed at L0 … only safe once the command
-has declared effects: read_only`, they took it for a roadmap promise and waited for the level
-rather than understanding that nothing does this today. _"A rung nothing is holding up is worse
-than a gap, because a gap is honest."_ That last one is an event rather than an opinion, and it is
-the strongest evidence this question has.
+one from a stack of three reasons led by the levels collapsing two orthogonal axes onto the one
+carrying the safety weight, with disuse last (_"a vocabulary that is unused and wrong is pure
+cost"_), and one because **it misinformed them**: reading `N/A A4 — arity cannot be probed at L0 …
+only safe once the command has declared effects: read_only`, they took it for a roadmap promise
+and briefly waited for the level rather than understanding that nothing does this today. _"A rung
+nothing is holding up is worse than a gap, because a gap is honest."_ That last one is an event
+rather than an opinion, which is a different kind of evidence from the other two.
 
 **And all three, independently, said keep something**, which is what stops this being a mandate to
 cut. The sharpest form the answer has taken, as the survey renders it: **names for boundaries, yes;
@@ -299,8 +304,9 @@ that its bare invocation printed help rather than starting a daemon _because the
 verdict line, which is the most-copied string this kit produces — into CI logs and READMEs. What
 replaces it should be decided before it propagates further, not after.
 
-Two things keep this as evidence rather than a decision. The respondents were three agents, none
-of their humans reviewed the answers, and one of them flagged the sample themselves: _"You are
+Two things keep this as evidence rather than a decision. The respondents were three agents, no
+human owner of an adopted tool has answered, and one of them flagged both the sample and their own
+human's absence from it: _"You are
 asking three people who are unusually invested, and we will all tell you to delete things.
 Deleting a ladder nobody uses is safe. Do not read our enthusiasm for pruning as license to cut the
 parts that are load-bearing for readers who never speak to you."_ And what the verdict line says
