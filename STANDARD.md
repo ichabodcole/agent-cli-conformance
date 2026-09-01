@@ -232,14 +232,12 @@ own structures, with no second copy able to fall out of date: one stale, seven n
 
 ### The cheapest version of "checked"
 
-The trial's highest-yield probe is worth adopting directly. It costs one inert invocation per
-command and needs no cooperation beyond one property most strict parsers already have:
-
-> **Make the tool enumerate its own surface.** anthill's unknown-flag error names the valid set —
-> `Unknown option '--nope'. Valid flags: --format`. That string is the parser's own account of what
-> it accepts, produced by the parser rather than by documentation. Diffing it against the
-> declaration's flag list across every command path is a complete census of the
-> declared-versus-accepted gap: fully inert, no mutation, no guessing, automatable end to end.
+**Make the tool enumerate its own surface.** A strict parser's unknown-flag error already names
+the valid set — `Unknown option '--nope'. Valid flags: --format` — and that string is the parser's
+own account of what it accepts, produced by the parser rather than by documentation. Diff it against
+the declaration's flag list across every command path and you have a complete census of the
+declared-versus-accepted gap: one inert invocation per command, no mutation, no guessing, automatable
+end to end.
 
 **This generalises to any CLI whose parse errors name the valid set**, and it is available today
 with no kit at all — a shell loop and `jq` will do it. If you build one thing from this page before
@@ -248,43 +246,27 @@ anything else, build that.
 **Or have the loop written for you.** `acc probe-plan <target> --paths ./paths.json --out
 ./capture.sh` emits a shell harness that sends one sentinel-bearing rejection per command path,
 keeps both streams verbatim, and writes a batch `acc check --recorded-surfaces` reads —
-[the guide](docs/wiki/guides/how-to-record-surfaces-below-the-root.md). That changes nothing about
-the ordering above: the census is first because it is cheap and needs no declaration, and a loop
-you wrote yourself is the same census.
+[the guide](docs/wiki/guides/how-to-record-surfaces-below-the-root.md). A loop you wrote yourself
+is the same census.
 
-**Note what a spec-to-spec differ is not.** `usage diff` is the closest existing thing to a CLI
-contract differ, and it is genuinely good: it classifies every change as breaking, compatible or
-metadata under one stated rule, with a published edge-case table
-([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#21-jdxusage--closest-on-expressiveness-weakest-on-legitimacy)). But when the left side is emitted
-by the binary it _is_ the implementation, so what it detects is release-over-release regression, not
-a lying declaration. The same gap appears wherever it is looked for. PowerShell's `OutputType`
-attribute is the one place in mainstream tooling where a command declares its output shape, and its
-own documentation, quoted in [the survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#7-the-failed-and-dormant-attempts), says:
-
-> _The OutputType attribute value isn't derived from the function code or compared to the actual
-> function output. As such, the value might be inaccurate._
-
-PSScriptAnalyzer has a rule to catch that — statically, by reading source, never by running the
-command. And MCP's official conformance suite validates protocol compliance and does **not** check
-that a tool annotated `readOnlyHint: true` is actually read-only
-([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#5-nothing-checks-a-tool-against-its-own-declaration)). **The same gap reappears one
-level up.**
+**A spec-to-spec differ does not reach this.** Comparing one document against another — however
+carefully — detects release-over-release regression, never a declaration that was never right. The
+gap reappears at every level it is looked for: nothing in mainstream tooling checks a declared
+output shape, an annotation, or a read-only hint against what the command actually does
+([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#5-nothing-checks-a-tool-against-its-own-declaration)).
 
 ### The ceiling, stated honestly
 
-The trial reached run-time behaviour for **4 of 25 commands**. Everything that spawns a process,
-writes a store, shells out or mutates state was refused and stayed refused, so **every mutating
-command's declaration is unverified**.
+**Every mutating command's declaration is unverified.** Anything that spawns a process, writes a
+store, shells out or changes state is refused and stays refused, so the commands that matter most —
+the ones that change something — are exactly the ones nothing here reaches. That ceiling is general:
+it is the case for any CLI worth checking.
 
-That ceiling is general rather than anthill's. It is the case for any CLI worth checking, because
-the commands that matter most are the ones that change something. This page used to say that passing
-it required the declaration to carry an effects claim and the tool to be trustworthy about it, while
-noting in the same clause that an effects claim nobody falsifies is exactly the kind of document the
-survey found drifting everywhere else. **That objection won.** A subject's account of itself is
-evidence to test, never a licence to execute it, so no claim in any format was ever going to lift
-this ceiling. What lifts it is somebody who already holds the authority doing the running — the
-operator, on their own machine, handing back what came out — or an execution boundary the checker
-owns. Neither is built here, and this page does not pretend it is solved.
+No claim in any format lifts it. **A subject's account of itself is evidence to test, never a licence
+to execute it**, so a declaration promising a command is safe buys nothing — it is the same document
+the survey found drifting everywhere else. What lifts it is somebody who already holds the authority
+doing the running: the operator, on their own machine, handing back what came out — or an execution
+boundary the checker owns. Neither is built here, and this page does not pretend it is solved.
 
 **[C?]** The declared-versus-accepted census, on any target whose parse errors name the valid set —
 and the kit now ships it, at the root, behind `acc check --declaration`. It is not `[C]`, because it

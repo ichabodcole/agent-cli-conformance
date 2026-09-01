@@ -349,6 +349,54 @@ Section 3 presented its measurement in detail; after R-12 it carries one clause.
 elsewhere describing that section by its old character had quietly stopped being true, and its bytes
 had not moved. Found by re-reading the section this pass had just finished rather than by any check.
 
+## Part 1 § 3's subsections — The cheapest version of "checked", The ceiling, stated honestly
+
+63 non-blank lines to 48.
+
+### R-18 · The spec-to-spec differ passage — the sixth instance of the duplication pattern
+
+> **Note what a spec-to-spec differ is not.** `usage diff` is the closest existing thing to a CLI
+> contract differ […] PowerShell's `OutputType` attribute is the one place in mainstream tooling
+> where a command declares its output shape, and its own documentation […] _"the value might be
+> inaccurate."_ PSScriptAnalyzer has a rule to catch that — statically, by reading source, never by
+> running the command. And MCP's official conformance suite […] does **not** check that a tool
+> annotated `readOnlyHint: true` is actually read-only.
+
+**evidence only, for a claim the page had already made two subsections earlier.** The reason inside
+it — comparing one document against another detects release-over-release regression, never a
+declaration that was never right — is the same claim §3 now states in one line about a
+regenerate-and-compare gate. Different mechanism, identical conclusion.
+
+Four named tools were carrying one sentence, and the sentence was already written. What replaces
+them keeps the generalisation, which is stronger than any of the instances: the gap reappears at
+every level it is looked for.
+
+### R-19 · The trial as the source of the census technique
+
+> The trial's highest-yield probe is worth adopting directly. […] > **Make the tool enumerate its
+> own surface.** anthill's unknown-flag error names the valid set […]
+
+**reason stated.** The technique was quoted from a trial and attributed to one tool. It is now the
+page's own instruction, and it applies to any strict parser. The example string
+`Unknown option '--nope'. Valid flags: --format` is kept deliberately: it **defines** what "names
+the valid set" means rather than evidencing that it works, which is a different job and one the
+reader needs done.
+
+### R-20 · The page's own revision history — "That objection won"
+
+> This page used to say that passing it required the declaration to carry an effects claim and the
+> tool to be trustworthy about it, while noting in the same clause that an effects claim nobody
+> falsifies is exactly the kind of document the survey found drifting everywhere else. **That
+> objection won.**
+
+**no reason needed; this is R-5's class again.** A record of what an earlier draft of this page
+said, addressed to a reader who never saw that draft. The position it settled on is the only part
+that binds anyone, and it stands without the account of what it replaced: a subject's account of
+itself is evidence to test, never a licence to execute it.
+
+The `4 of 25` figure went with it — the paragraph immediately after already said the ceiling is
+general rather than one tool's, so the count was an instance of a claim stated generally beside it.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,
