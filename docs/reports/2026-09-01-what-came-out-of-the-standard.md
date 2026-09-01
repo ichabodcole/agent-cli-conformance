@@ -430,6 +430,52 @@ the replacement helper, which inserted the new text without removing the old —
 duplicated paragraph, and the gate passed, because duplication is not a lint failure. Found by
 reading the output rather than by any check.
 
+## Part 2 § Emit v0, hold the rest
+
+35 non-blank lines to 32. Small again, and for the same reason: most of the section is a
+recommendation, the exact key list an implementer writes against, and an honest statement of what is
+unbuilt.
+
+### R-22 · The `effects` revision record — the third of its class
+
+> **What that costs this project — and this passage was wrong once, which is the first thing it owes
+> you.** It used to name `effects` as the blocker, twice over: the ceiling reached runtime for 4 of
+> 25 commands, and Part 4 marked `[—]` on rows said to need a declared read-only claim. It then
+> observed that _"probing below the root waits on an effects claim"_ was true but unreachable […]
+> **That dependency was asserted on this page and has since been withdrawn.**
+
+**no reason needed.** After R-5's wrong attribution and R-20's _"That objection won"_, this is the
+third passage where the standard keeps a diary of its own corrections in its body. The position that
+survives is the one that binds anyone: what gets you below the root is evidence, and evidence need
+not come from the checker's own probe — an operator can run their own tool and hand back the
+recordings, executing nothing on the checker's authority and reading no claim at all.
+
+Two smaller removals of the same shape: _"the two limits that used to stand beside that one are
+gone"_, where the tools existing is operative and their having once been limits is not; and two
+clauses of the page narrating its own conduct — _"so it is stated here rather than discovered in a
+rejection"_ and _"naming it exactly is the honest thing this page can do today"_.
+
+### R-23 · Three stale cross-references, two of them created by this pass
+
+**The pass is now the leading cause of the defect it is finding.** Each of these was a sentence
+whose bytes never moved and which stopped being true when a neighbour changed:
+
+1. This section cited _"the ceiling reached runtime for 4 of 25 commands"_ — a figure removed from
+   `The ceiling, stated honestly` two commits earlier, by this pass.
+2. The field table's `effects` row said **"and see the roadmap cost below"**, pointing at a passage
+   that now says the cost is nothing. Also created by this pass, in the commit above.
+3. A dangling antecedent: the replacement paragraph opened _"What v0's missing slot costs"_ with no
+   nearby introduction of which slot, because the text that introduced it had just been removed.
+
+All three were found by re-reading outward from the edit rather than by any check — the gate is
+green on every one of them, because a stale pointer resolves and a dangling antecedent parses.
+
+**The rule this adds, and it is the most important one so far:** after removing a passage, re-read
+what points _at_ it and what it pointed _to_. A cut does not only shorten a section; it changes what
+that section says about itself, and every sentence elsewhere describing it by its old character is
+now suspect. R-17 was the first instance and it read as bad luck. Three more makes it the method's
+main hazard.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,

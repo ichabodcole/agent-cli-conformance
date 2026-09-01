@@ -322,7 +322,7 @@ comparison at all. What to do about that is [below the table](#emit-v0-hold-the-
 | Error-envelope field names              | Unlocks checking that an error names the offending token, in the field it names           | only the implementation    | no                                                                                            |
 | Exit-code meanings                      | `1` is not always failure and `2` is not always usage                                     | only the implementation    | no                                                                                            |
 | Exit-code ownership                     | Whether the code you read was produced by a program this tool did not write               | only the implementation    | no                                                                                            |
-| Effects, per command                    | The only thing that would let a checker run a real verb — **and see the caveat below**    | nobody, confidently        | no — **and see the roadmap cost below**                                                       |
+| Effects, per command                    | The only thing that would let a checker run a real verb — **and see below**               | nobody, confidently        | no — **deliberately, and it costs nothing**                                                   |
 
 Three things about that table are worth stating outright.
 
@@ -355,8 +355,7 @@ recognises. `parseDeclaration` refuses an unknown key anywhere in the document, 
 `formatVersion` that is not the major it knows rather than reading the fields it does know — so a
 document carrying `exitCodes` or `effects` alongside its commands does not get a partial check, it
 gets no check. That is the reader working as designed: half-applying a document you half-understand
-is how a narrowing statement gets dropped and a widening one gets obeyed. The cost lands on the
-emitter author anyway, so it is stated here rather than discovered in a rejection.
+is how a narrowing statement gets dropped and a widening one gets obeyed.
 
 Concretely, a v0 document is `formatVersion: "0"`, `provenance`, `selfDescription` (an object or an
 explicit `null`), and `commands` — each with `path`, `args` and `positionals`, each argument
@@ -373,21 +372,14 @@ new command has no entry ([Part 1 §2](#2-generate-it-from-what-implements-the-b
 they do not yet have is a slot in `acc.declaration.json`, and an emitter written against them today
 buys a document nothing here can consume.
 
-**What that costs this project — and this passage was wrong once, which is the first thing it owes
-you.** It used to name `effects` as the blocker, twice over: [the ceiling](#the-ceiling-stated-honestly)
-reached runtime for 4 of 25 commands, and [Part 4](#checkable-and-not-built) marked `[—]` on rows
-said to need a declared read-only claim. It then observed that _"probing below the root waits on an
-effects claim"_ was true but unreachable, because v0 had nowhere to put the claim, and that there was
-no plan here for how. **That dependency was asserted on this page and has since been withdrawn.** It
-was never a format problem. What gets anyone below the root is evidence, and evidence need not come
-from the checker's own probe: an operator can run their own tool at the paths they choose and hand
-back the recordings, executing nothing on the checker's authority and reading no claim at all.
-`effects` is not being added, so v0's missing slot costs nothing.
+**`effects` is not being added, and v0 having no slot for it costs nothing.** What gets anyone
+below the root is evidence, and evidence need not come from the checker's own probe — an operator
+can run their own tool at the paths they choose and hand back the recordings, executing nothing on
+the checker's authority and reading no claim at all.
 
-What is genuinely unbuilt is narrower, and naming it exactly is the honest thing this page can do
-today: the kit owns no execution boundary of its own. The two limits that used to stand beside that
-one are gone — `acc check --recorded-surfaces` reads a recorded surface, and `acc probe-plan`
-generates the capture harness that produces one
+What is genuinely unbuilt is narrower: the kit owns no execution boundary of its own.
+`acc check --recorded-surfaces` reads a recorded surface, and `acc probe-plan` generates the
+capture harness that produces one
 ([the guide](docs/wiki/guides/how-to-record-surfaces-below-the-root.md)). The cost that leaves is
 that below-root coverage depends on somebody else doing the running — a limit on convenience, and
 on who can be checked without their cooperation, rather than on what is knowable from outside.
