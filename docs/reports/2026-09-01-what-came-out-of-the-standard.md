@@ -4,23 +4,42 @@ generated: { by: claude-opus-5, at: 2026-09-01 }
 status: draft
 lifecycle: live
 description:
-  Every passage removed from STANDARD.md's "How to read this" in the first pass of separating the
-  standard from the story of how it was arrived at. Each is kept verbatim with its original line
-  numbers, and classified by whether a reason survived the story or the story was the only
+  Every passage removed from STANDARD.md while separating the standard from the argument for the
+  standard, section by section. Each is kept verbatim with its original line numbers and classified
+  by whether a reason survived the story, the passage needed no reason, or the story was the only
   justification there was.
 tags: [documentation, method, evidence]
 subject:
-  the provenance narrative removed from STANDARD.md § How to read this, and what of it is worth a
-  home
+  the provenance narrative removed from STANDARD.md, and what of it is worth a permanent home
 examined:
   STANDARD.md lines 11-173 at commit e96419a on branch docs/the-bounds-the-consumers-named
 ---
 
-# What came out of "How to read this"
+# What came out of the standard
 
 **This file is a holding pen, not an argument.** It exists so a cut is reversible by reading one
 document, and so the second pass — deciding what deserves a permanent home — can be done against
 the whole set rather than passage by passage while editing.
+
+## The principle
+
+**The standard is the declaration, not the argument for the declaration.** Its reader — often an
+agent that has just been handed the kit and wants to know what it is being asked to do — spends
+attention on every line, and a line that does not change what they build is a line that cost them
+something for nothing.
+
+So the page states what to do and why, and the why is a **synthesis** — one or two sentences that
+stand on their own — rather than the case that produced it. The surveys, trials, censuses and
+adopter findings that led to a recommendation stay in the reports and research notes, linked for
+anyone who wants them. They are the about page, not the product.
+
+Two consequences worth stating, because both are deliberate:
+
+- **The page becomes asserted where it used to argue.** Its contract still holds — every
+  recommendation carries its reason — because the reason survives. What goes is the case for the
+  reason.
+- **Nothing is deleted from the project.** Every passage removed is verbatim below, and every
+  artifact it retold is still in the tree and still linked from the page.
 
 ## Why the cut was made
 
@@ -239,6 +258,37 @@ prose and stands alone. The figures sat between the two copies.
 survey in Part 1: narrative or evidence placed between two statements of one claim stops a reader —
 and a writer — noticing they are the same claim. Removing the middle is what makes the duplication
 visible.
+
+## Part 1 § 3 — Check it against the running tool
+
+### R-12 · The whole case for the section's own recommendation — 62 lines to 12
+
+The section opened _"This is the finding, and it is argued rather than asserted"_ and then argued
+it: that nothing else probes a running tool and falsifies what it declares, that the one exception
+had 10 stars and a 0-star reference implementation, what Azure's `azdev latest-index verify` does
+and why it answers a different question, how the trial target was chosen to be the strongest form
+of the bet, and eight findings across three classes with their `DT-` ids and worked detail.
+
+**reason stated, and the reason was never empirical.** What the section tells a reader to do is
+_check the declaration against the running tool_. The reason is **there is no test you can write
+against a field your type does not have** — true by inspection, needing no trial to believe. Sixty
+lines were not establishing it. They were demonstrating that the failure occurs in practice, which
+is a report's job, and the report has it: `DT-1` through `DT-10` are all in the drift trial, and the
+survey material appears seventeen times in the research note.
+
+What survives is the recommendation, the reason, the one distinction a reader acts on — a
+regenerate-and-compare gate answers whether the copy is current, never whether it was ever right —
+and a single measured clause, kept deliberately against the rule because it answers the one
+objection the reason invites: _how often does this actually bite?_ One stale, seven not.
+
+Deliberately not kept, and all of it recoverable through the links that remain: the novelty claim,
+which is positioning rather than a reason and which `CHARTER.md` already makes; the `azdev` and
+`clispec` attributions; the trial's methodology; and the eight findings in detail — including the
+best sentence in the section, that **the same binary publishes the flag and refuses it**.
+
+**This is the section where the page argued hardest, so it is where the change of character is
+most visible.** Nothing about the recommendation is weaker for it. The argument moved; it did not
+end.
 
 ## What the second pass has to decide
 

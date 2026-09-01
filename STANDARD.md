@@ -61,7 +61,7 @@ mid-sentence does not have to look anything up:
 **Phrases rather than a glyph — a judgement, not a measurement.** A glyph mid-sentence is one
 more thing to look up; three words are read. The reasoning and the condition under which this page
 may add another axis are in
-[what came out of "How to read this"](docs/reports/2026-09-01-what-came-out-of-how-to-read-this.md#r-2--the-glyph-versus-phrases-decision-record--l63-78).
+[what came out of "How to read this"](docs/reports/2026-09-01-what-came-out-of-the-standard.md#r-2--the-glyph-versus-phrases-decision-record--l63-78).
 
 **No new rule ids are minted here.** The catalogue mints an id when a checker design exists, and
 this page is upstream of that. Ids that do appear — `A1`, `B5`, `C2` and the rest — are existing
@@ -272,65 +272,20 @@ structures. What is visible is the consequence.
 
 ## 3. Check it against the running tool
 
-**This is the finding, and it is argued rather than asserted.**
+**Generation is necessary and not sufficient.** Generating the declaration from the structures that
+implement the behaviour eliminates one failure — a copy that has fallen behind its generator. It
+cannot eliminate a declaration that was never right at generation time, and that class is the
+larger one: **there is no test you can write against a field your type does not have.** From inside
+the process a missing field is an absence, and absences do not fail tests.
 
-`CHARTER.md` bets that a declaration bound to code is different from the declarations that died.
-The [first drift trial](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md) is the first
-test of that bet anywhere — the survey found **nothing that probes a running tool and falsifies
-what it declares**. Its own wording is "almost nothing, and the 'almost' is four months old": the
-single exception, clispec, had 10 stars and a 0-star reference implementation when the survey read
-it
-([§5](docs/research/2026-08-22-machine-readable-cli-declarations.md#5-nothing-checks-a-tool-against-its-own-declaration)).
+So a regenerate-and-compare gate — the strongest thing anyone does today
+([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md)) — answers whether the copy
+is current, never whether it was ever right. Only running the tool and comparing what it does
+against what it says reaches the rest.
 
-**The nearest thing anyone does is real, and it is not this.** Azure's `azdev latest-index verify`
-is what the survey calls
-[the cheapest generalisable drift gate found anywhere](docs/research/2026-08-22-machine-readable-cli-declarations.md#41-complete-declarations-are-emitted-never-authored):
-regenerate from the live command table, byte-compare to the checked-in JSON, exit non-zero naming
-the stale file. That is good practice and it answers a different question — it compares a
-generated artifact against a regenerated one, both from the same in-process source, so it catches
-a copy falling behind its generator. It cannot catch a declaration that was never right at
-generation time, and that is the class the trial below found.
-
-The target was chosen to be the strongest form of the bet. anthill emits its manifest from the same
-`define.ts` structures its parser consumes, regenerated live on every invocation, with no second
-copy to fall out of date. The survey says a document like that should not drift.
-
-**It found eight disagreements. One stale, one wrong, six incomplete.**
-
-The distribution is the argument.
-
-**The one stale finding is the smallest one.** A `0.1.0` scaffold literal in `info show`, while the
-manifest and `--version` both say `2.3.0` — two machine-readable outputs of one process disagreeing
-about what it is
-([DT-7](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-7--the-cli-reports-two-different-versions-of-itself)).
-Staleness is the entire failure mode the prior art knows about, and generation had already reduced
-it to this.
-
-**The finding that endangers a caller is wrong at generation time.**
-[DT-2](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-2--eight-refused-flags-published-as-valid):
-the framework has a `refused` property — a flag the command recognises and deliberately refuses,
-registered with the parser so it does not read as "unknown", and excluded from the advertised valid
-set. The manifest type has no `refused` field, so eight refused flags are emitted as ordinary valid
-ones. **The same binary publishes the flag and refuses it.** Regenerating does not help; the
-manifest has never been right. The refusal machinery is careful, well-reasoned work, and the
-manifest inverts it.
-
-**Six findings share one shape**: the model the generator writes into has no slot for part of the
-surface. Positionals emitted inside the array called `flags`, so a consumer that iterates `flags`
-constructs invalid argv for 7 of 25 commands — including the command every user runs. A `valueHint`
-string that is an enforced closed set on one flag and an ignored label on 21, with no field
-distinguishing them. A `type: "string"` hiding a validated integer, and three flags that are
-mutually exclusive with nowhere to say so. The entire universal surface, present and accepted and
-absent from the document.
-
-The trial's closing sentence is the one to carry:
-
-> Checking against behaviour is what makes a dropped field visible. From inside the tool it is an
-> absence, and **absences do not fail tests.**
-
-**So generation is necessary and not sufficient.** It eliminates the class the field knows about and
-leaves the larger class untouched, and the larger class is invisible from inside the process by
-construction. There is no test you can write against a field your type does not have.
+The first trial of this found eight disagreements in a manifest regenerated live from its parser's
+own structures, with no second copy able to fall out of date: one stale, seven not
+([drift trial](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md)).
 
 ### The cheapest version of "checked"
 
