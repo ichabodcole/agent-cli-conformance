@@ -290,6 +290,65 @@ best sentence in the section, that **the same binary publishes the flag and refu
 most visible.** Nothing about the recommendation is weaker for it. The argument moved; it did not
 end.
 
+## Part 1 §§ 1-2 — Emit it at runtime, Generate it from what implements the behaviour
+
+Both sections already had the right skeleton — **Recommendation**, then **Why** — and in both the
+Why had grown a case study. 121 non-blank lines to 73.
+
+### R-13 · The Fig post-mortem, and the survey blockquote behind it — §1
+
+> Fig is the post-mortem worth reading in full […] 25,218 stars, 735 spec directories, and a CI
+> pipeline that ran `build`, `lint`, `typecheck` — **type-checking the documents, and never probing
+> a real binary.** The collection is a zombie now, `fig.io` returns 503, and the npm packages still
+> serve tens of thousands of downloads a month against specs nobody has touched since May 2025.
+
+**reason stated.** A description that lives beside the tool has nothing binding it to the tool, so
+it drifts. That is structural and needs no corpse. The survey finding folded into the same
+sentence; the post-mortem is a click away for anyone who wants the cautionary tale.
+
+### R-14 · Four evidence blocks that supported requirements already stated — §1
+
+The `oclif.manifest.json` staleness example, the three named implementations under **Practical
+shape**, `clispec-cli` sanitising `HOME`, anthill's identification under **it must be listed in
+itself**, and the nine-line eight-CLI measurement under **it must not be the only machine surface**.
+
+**evidence only.** Every requirement and every reason survives. Two got better for losing their
+example: "a caller holding the declaration and nothing else cannot rediscover the door it came
+through" no longer needs a named tool, and "a document missing the fields the caller needs is worse
+than prose, because it parses" is the general form of what the eight-CLI run measured once.
+
+### R-15 · The grapevine flag-scope block — §2, and the largest single removal in either section
+
+Twenty-six lines: that the first outside application of the page hit this as its opening design
+question, the implementer's verbatim quote about `--as`/`--from`, and **24 flags moved per-verb,
+identity stayed global, all 107 pre-existing tests passed unmodified** — marked _as reported and not
+independently verified_.
+
+**reason stated, and the measurement was answering a question the rule does not raise.** The rule is
+one sentence and it was already bolded: a flag is global because the tool's own shipped instructions
+to its callers make it global. The warning underneath is actionable and kept in one clause — moving
+flags per-verb is a breaking change, because accepted-and-ignored flags become errors. The numbers
+showed it went safely once on one tool, which is not why it is safe on yours.
+
+### R-16 · The page citing itself as an authority — §2
+
+> `acc` — this repository's own kit, and the reference implementation of the spec — states the rule
+> in one line of its `schema.ts`, and it is the sentence to steal:
+
+**reason stated, and the framing was the only thing removed.** The sentence is the best in the
+section and is now the page's own: _a schema maintained separately from the parser is a document
+that lies as soon as anyone edits the other._ Where it was first written is not a reason to believe
+it. Same shape as R-4.
+
+### R-17 · A forward reference the section 3 cut had falsified
+
+> That is the next section, and it is a measurement rather than a worry.
+
+**not a removal but a repair, recorded because it is the pattern this pass keeps producing.**
+Section 3 presented its measurement in detail; after R-12 it carries one clause. A sentence
+elsewhere describing that section by its old character had quietly stopped being true, and its bytes
+had not moved. Found by re-reading the section this pass had just finished rather than by any check.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,

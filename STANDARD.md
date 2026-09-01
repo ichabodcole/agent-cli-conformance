@@ -127,62 +127,34 @@ and it is what makes the first two worth anything.
 **Recommendation.** Give your CLI one invocation that prints a machine-readable description of its
 own interface: on stdout, exit `0`, needing no configuration and no credentials.
 
-**Why.** The alternative — a description living beside the tool rather than inside it — has been
-tried at every scale and fails the same way each time. The
-[declaration survey](docs/research/2026-08-22-machine-readable-cli-declarations.md) went looking
-for a standard, found none, and found something more useful on the way:
+**Why.** A description that lives beside the tool has nothing binding it to the tool, so it
+drifts — at every scale it has been tried, and none of the hand-authored collections has a drift
+check. Every artifact covering 100% of a real CLI's surface is produced by loading the CLI
+in-process and walking it
+([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md)).
 
-> **Every artifact in that survey covering 100% of a real CLI's surface is produced by loading the
-> CLI in-process and walking it.** `dotnet --cli-schema` walks the live `System.CommandLine` tree;
-> gcloud's `cli_tree.Dump()` walks a live calliope CLI; Azure's `meta-export` loads the CLI
-> in-process; AWS's `ac.index` instantiates the live clidriver at wheel-build time.
->
-> **Every hand-authored one drifts, and none of them has a drift check.** Fig's 735 specs,
-> carapace's 533 completers, Cobra doc trees, `oclif.manifest.json`.
+**A runtime invocation specifically, rather than a build artifact.** A build artifact is a copy,
+and a copy can be stale by the time a caller reads it. An invocation cannot be stale relative to the
+binary that answers it, because it is the binary answering.
 
-Fig is the post-mortem worth reading in full, and every figure in it is **read from a primary
-source** and recorded in
-[the same survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#6-the-fig-post-mortem): 25,218 stars, 735 spec directories, and a CI pipeline
-that ran `build`, `lint`, `typecheck` — **type-checking the documents, and never probing a real
-binary.** The collection is a zombie now, `fig.io` returns 503, and the npm packages still serve
-tens of thousands of downloads a month against specs nobody has touched since May 2025.
+**Practical shape.** A flag or a subcommand; either works, and it is already done both ways
+([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#2-the-three-closest-candidates)).
+Two properties matter more than the spelling.
 
-**A runtime invocation specifically, rather than a build artifact.** A build artifact is a copy, and
-a copy can be stale by the time a caller reads it — `oclif.manifest.json` is generated in `prepack`
-for startup speed and, in [the survey's](docs/research/2026-08-22-machine-readable-cli-declarations.md#41-complete-declarations-are-emitted-never-authored)
-words, _"can and does go stale"_: rename a command, skip the
-regeneration, get `Cannot find module`. An invocation cannot be stale relative to the binary that
-answers it, because it is the binary answering.
+**It must need nothing.** A description you cannot read until you have authenticated is not one
+an agent can bootstrap from. It should survive a sanitised environment.
 
-**Practical shape**, all three read in [the survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#2-the-three-closest-candidates).
-`dotnet --cli-schema` (shipped in .NET 10 GA, on every `dotnet` command) uses a flag;
-[clispec](https://clispec.dev/) mandates a `schema` subcommand; `jdx/usage` documents a hidden
-`--usage-spec` as the integration pattern for both clap and Cobra. Any of the three works. Two
-properties matter more than the spelling.
+**It must be listed in itself.** A caller holding the declaration and nothing else cannot
+rediscover the door it came through. The same applies to `--help`, `-h`, `--version`, `-v`, `--` and
+a negation prefix: **the universal surface is what a generator walking "the commands" walks past**,
+because interceptors are not commands
+([DT-6](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-6--present-but-undeclared-the-entire-universal-surface-including-the-discovery-verb-itself)).
 
-**It must need nothing.** `clispec-cli` sanitises `HOME` before invoking a target's `schema`
-command, specifically to prove the declaration is reachable without config
-([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#22-clispec--closest-on-intent-effectively-pre-adoption)). A description you cannot read
-until you have authenticated is not one an agent can bootstrap from.
-
-**It must be listed in itself.** The one CLI anyone has run this check against — anthill, the
-owner's own team-orchestration tool, and the subject of the drift trial below — omits `help` from
-its manifest, the verb that produces the manifest
-([DT-6](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-6--present-but-undeclared-the-entire-universal-surface-including-the-discovery-verb-itself)),
-while the human help screen ends by telling the reader to run it. A caller holding the declaration
-and nothing else cannot rediscover the door it came through. The same finding covers `--help`, `-h`,
-`--version`, `-v`, `--` and the negation prefix: **the universal surface is what a generator walking
-"the commands" walks past**, because interceptors are not commands.
-
-**And it must not be the only machine surface, if help is one too.** Measured on eight of one
-author's CLIs, the tool that behaves most like this page recommends is the one the kit can say
-least about: anthill answers a piped `--help` with a 109-byte JSON document carrying no `flags`
-key, so help-based discovery finds a parseable document, treats it as a complete declaration, finds
-no value sets in it, and reports two rules `unverified` — **on the one target in the population
-that actually declares a closed set**
-([measurement](docs/reports/2026-08-24-eight-owner-clis.md)). Being machine-first makes a target
-less checkable today, which is an argument for reading a declaration rather than parsing help, and
-also a warning: if your help is a document, make it the same document, or make it complete.
+**And it must not be the only machine surface, if help is one too.** A tool whose piped `--help`
+is a JSON document invites a caller to read that instead — and a document missing the fields the
+caller needs is worse than prose, because it parses. If your help is a document, make it the same
+document, or make it complete
+([measurement](docs/reports/2026-08-24-eight-owner-clis.md)).
 
 **[C]** Of a much narrower claim than this recommendation makes: `D3` establishes that help _names_
 a machine path, and its own coverage gap records that a pass never establishes the flag is accepted.
@@ -202,61 +174,33 @@ also be able to read a description somebody else wrote, and the difference in wh
 **Recommendation.** Produce the description by walking the same structures your parser consumes.
 Not a second document kept in step by discipline, and not a document your CI type-checks.
 
-**Why.** This is the failure mode the field already knows about, and the survey's framing of the
-universal mitigation is exact: "regenerate in CI, fail on a dirty tree" is _"weaker than it sounds
-because it only catches divergence someone remembered to regenerate for."_ Two artifacts in the
-survey cannot drift at all, and both are the same move — gcloud's CLI tree is serialised from a live
-calliope CLI, and Azure's AAZ generates the Python from the model rather than the other way round.
-Junos closed the same loop by generating the CLI from a YANG model, which is why the survey records
-that _"conformance is structural and never tested"_
-([§7](docs/research/2026-08-22-machine-readable-cli-declarations.md#7-the-failed-and-dormant-attempts)).
+**Why.** A second document kept in step by discipline drifts, and regenerating it in CI is weaker
+than it sounds: it only catches divergence someone remembered to regenerate for. A schema
+maintained separately from the parser is a document that lies as soon as anyone edits the other.
+The artifacts that cannot drift at all are the ones serialised from the live command structures
+([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#7-the-failed-and-dormant-attempts)).
 
-`acc` — this repository's own kit, and the reference implementation of the spec — states the rule in
-one line of its `schema.ts`, and it is the sentence to steal:
+**Where generation gets you nothing, and you must write it by hand anyway.** Framework extraction
+gets you commands, flags, arity and enums for free. It gets you **nothing** for exit codes, output
+formats, effects or idempotency, because no framework models them.
 
-> A schema maintained separately from the parser is a document that lies as soon as anyone edits
-> the other.
+Declare those by hand, **adjacent to the code that implements them**, with a test that fails when
+a new command has no entry — adding a subcommand is exactly the moment the declarations go stale and
+exactly the moment nobody is thinking about the schema. The tightest version hangs the exit code off
+the error-kind enum and generates the declared `errors` array from that same function, so the
+declared mapping and the process status cannot drift apart.
 
-**Where generation gets you nothing, and you must write it by hand anyway.** The survey's second
-structural finding:
-
-> Framework extraction gets you commands, flags, arity and enums for free. It gets you **nothing**
-> for exit codes, output formats, effects or idempotency — because no framework models them.
-
-clispec and jdx/usage reached the same answer independently: declare those by hand, **adjacent to
-the code that implements them**, with a test that fails when a new command has no entry. clispec's
-Rust guide has the tightest version — hang the exit code off the error-kind enum and generate the
-schema's `errors` array from that same function, _"so the declared mapping and the process status
-cannot drift apart."_ Its implementation guide has a section titled _"The part your framework cannot
-generate"_, and the reason it gives for the test generalises: _"adding a subcommand is exactly the
-moment the declarations go stale, and exactly the moment nobody is thinking about the schema."_
-
-**And one source of truth sits outside the code entirely.** Generation walks the parser, so what it
-reports is the parser's organisation — which is not always the contract the caller is following. The
-first outside application of this page hit that as its opening design question: a CLI whose parser
-held one global flag registry had to decide whether to declare those flags global (honest to the
-parser, useless to the caller) or split them per verb. The implementer settled it by reading their
-own shipped documentation rather than their code
-([SG-7](docs/reports/2026-08-24-first-outside-application-grapevine.md#sg-7--what-the-standard-gained-a-flag-can-be-global-because-the-tools-docs-make-it-global)),
-in their words:
-
-> grapevine's own SKILL.md instructs agents to _pass identity on every verb_ ("a fresh shell per
-> command means the env var doesn't persist, so pass `--as`/`--from` explicitly"). So
-> `--as`/`--from` are contractually global — a caller following our own docs sends them everywhere —
-> and everything else goes per-verb.
-
+**And one source of truth sits outside the code entirely.** Generation walks the parser, so what
+it reports is the parser's organisation — which is not always the contract the caller is following.
 **A flag is global because the tool's own shipped instructions to its callers make it global.** That
 is a source of truth neither the parser nor the command table holds, and a declaration that
-contradicts the shipped SKILL.md, README or agent instructions is wrong even if it matches the code,
-because the caller is following the document and not reading the source. It bites hardest on
-agent-facing CLIs, where the shipped instructions are often _the_ interface an agent meets first.
+contradicts the shipped `SKILL.md`, README or agent instructions is wrong even if it matches the
+code, because the caller is following the document and not reading the source. It bites hardest on
+agent-facing CLIs, where the shipped instructions are often _the_ interface an agent meets first
+([SG-7](docs/reports/2026-08-24-first-outside-application-grapevine.md#sg-7--what-the-standard-gained-a-flag-can-be-global-because-the-tools-docs-make-it-global)).
 
-**The measurement is what makes the split safe to recommend to somebody else**, because moving flags
-per-verb is a breaking change: flags that were accepted-and-ignored become errors. On that CLI, **24
-flags moved per-verb, identity stayed global, and all 107 pre-existing tests passed unmodified** — so
-nothing in its own recorded usage had ever relied on a cross-verb flag. Those numbers are the
-implementer's, recorded in the report **as reported and not independently verified**, because their
-tree is not reachable from this checkout.
+**Moving flags per-verb is a breaking change**, because flags that were accepted-and-ignored become
+errors. Check your own recorded usage before you do it.
 
 **[—]** for the claim itself. Nothing on this page reads a SKILL.md: emitting from the parser,
 generating from the command table and checking against the running tool all miss it by construction,
@@ -264,8 +208,7 @@ and the kit has no way to falsify a declaration that contradicts the documentati
 binary.
 
 **What generation does not prevent.** It kills staleness. It does not kill **incompleteness**, and
-incompleteness is the larger problem. That is the next section, and it is a measurement rather than
-a worry.
+incompleteness is the larger problem. That is the next section.
 
 **[—]** Nothing outside your process can establish that your emitter walks your parser's
 structures. What is visible is the consequence.
