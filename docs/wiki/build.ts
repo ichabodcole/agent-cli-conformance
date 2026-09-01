@@ -89,7 +89,7 @@ const TAG_INDEX = "tags.html";
  * and the report itself is a record of that work rather than knowledge to publish. `docs/research/` is
  * rendered too, but separately — see EVIDENCE.
  */
-const SATELLITES = ["../roadmap.md"];
+const SATELLITES = ["../roadmap.md", "../../STANDARD.md", "../../CHARTER.md"];
 
 /**
  * Evidence reports: rendered, but not part of the knowledge and not pinned in the primary nav.

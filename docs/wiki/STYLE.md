@@ -123,13 +123,15 @@ Four things no measurement detects, which reading must catch:
 `type`. The type-specific language rules above do not bind them; the density rules do.
 `docs/research/` files are dated evidence documents and are not maintained after the fact.
 
-`STANDARD.md` is the exception worth naming, because it is the one satellite that is **maintained**
-and the one a reader is routed to first. No Diátaxis mode fits it — it explains, instructs and
-recommends in one pass — which is why the type-specific rules are the wrong instrument and why it
-carries its own instead: the four evidentiary phrases and the `[C] / [C?] / [—]` checkability
-legend declared in its own [How to read this](../../STANDARD.md#how-to-read-this). Those bind it,
-and a `prose-cold-read` pass is run against it. This entry records that arrangement rather than
-creating it; what it adds is that a contributor looking here now finds out where to look.
+`STANDARD.md` is the one worth naming separately, because it is the document a reader is routed to
+first and the only satellite carrying an explicit prose contract of its own. No Diátaxis mode fits
+it — it explains, instructs and recommends in one pass — which is why the type-specific rules are
+the wrong instrument. What binds it instead is declared in its own
+[How to read this](../../STANDARD.md#how-to-read-this): four evidentiary phrases, a sourcing
+requirement, and the `[C] / [C?] / [—]` checkability legend. Beyond that it has been reviewed with
+[`prose-cold-read`](../../.claude/skills/prose-cold-read/SKILL.md) — twice on the record, at
+`ed13111` and `762e158` — which is a practice rather than a gate: nothing schedules or enforces it.
+This entry records where to look; it does not add a rule.
 
 ## What is not enforced, and cannot be
 
