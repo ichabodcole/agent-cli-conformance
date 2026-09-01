@@ -72,18 +72,9 @@ binds instead of restating it.
 delivery should be addressed, whether the resource model is right — none of that is here, and a
 tool that gets it wrong is not failing this standard.
 
-The axis deciding what any external check can reach is **not** defect against missing feature —
-it is **general against domain-specific**
-([research](docs/research/2026-08-24-missing-capability-or-implementation-defect.md), whose own
-classifications are marked as judgements):
-
-> A kit can catch a **missing general affordance** — `--version`, a machine-mode error envelope, an
-> exit-code taxonomy. It can never catch a **missing domain capability** — `reap`, `roll`,
-> addressed delivery, session rotation — whether or not anything was built wrongly.
-
-Measured over a census of 298 CLI-source commits across two repositories: of the 77 capabilities
-that had never been there, **34 were general affordances** — the ones this page is about — and 41
-were domain capabilities, which are yours.
+The line is **general against domain-specific**: a missing `--version`, error envelope or
+exit-code taxonomy is this page's subject; a capability your domain needs and does not have is
+yours ([research](docs/research/2026-08-24-missing-capability-or-implementation-defect.md)).
 
 Guidance for a human at a terminal is also out of scope — a different document with a different
 reader, and [mixing them produces something that serves neither](CHARTER.md#what-is-out-of-scope).

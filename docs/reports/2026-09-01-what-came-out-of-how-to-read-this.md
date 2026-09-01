@@ -38,6 +38,8 @@ but to find out whether a reason exists underneath:
 - **reason stated** — the justification survives the story and is now one sentence on the page
 - **evidence only** — a measurement or citation with no reason to state; compressed to a citation
 - **no reason found** — the narrative was the justification. Recorded rather than papered over
+- **scope statement** — a declaration of what the project is, not a claim about the world. Needs
+  no evidence at all; a link is for whoever disputes where the line falls
 
 ## The removals
 
@@ -166,6 +168,38 @@ reason and is kept verbatim, as are the three figures that make the boundary con
 the framing that the boundary was "found by reading a record rather than chosen from taste" — a
 claim about how the project reached a position, not about whether the position is right — and the
 intermediate 201 that only exists to get from 298 to 77.
+
+### R-8 · The evidence under the scope boundary — the 298-commit census
+
+> The axis deciding what any external check can reach is **not** defect against missing feature —
+> it is **general against domain-specific** ([research], whose own classifications are marked as
+> judgements):
+>
+> > A kit can catch a **missing general affordance** — `--version`, a machine-mode error envelope,
+> > an exit-code taxonomy. It can never catch a **missing domain capability** — `reap`, `roll`,
+> > addressed delivery, session rotation — whether or not anything was built wrongly.
+>
+> Measured over a census of 298 CLI-source commits across two repositories: of the 77 capabilities
+> that had never been there, **34 were general affordances** — the ones this page is about — and 41
+> were domain capabilities, which are yours.
+
+**scope statement, and this is the category the first pass missed.** "This page does not cover
+domain design" is not a claim about the world that a census makes true or false. It is a statement
+of what the project is, and it is settled by the project saying it. The first pass kept the figures
+on the reasoning that they made the boundary concrete; the owner's correction is that the reader
+does not need the boundary made concrete, they need to know where it is.
+
+Removing the figures then exposed a second defect the figures had been hiding: **the blockquote
+restates the paragraph above it.** `reap`, `roll`, addressed delivery and session rotation against
+the opening paragraph's `reap` verb, delivery and resource model — the same distinction, in
+somebody else's words. And "whose own classifications are marked as judgements" was a sourcing
+qualifier attached to numbers that are no longer cited.
+
+Fifteen lines became four. What stands is the scope statement, where the line falls, and one link
+for anyone who wants to argue about the placement.
+
+**The rule this adds for the rest of the pass:** before asking whether a passage's reason survives
+its story, ask whether the passage needed a reason. A definition does not.
 
 ## What the second pass has to decide
 
