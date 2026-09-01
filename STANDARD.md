@@ -1115,6 +1115,40 @@ Likewise, this page asserts **no flag spelling**. `sqlite3`, `openssl`, `ip`, GR
 and GDAL use single-dash long options; `dig +short`, `ps aux`, `tar cfv` and `dd if=/of=` are not
 even the same grammar. None of that falsifies anything above, and none of it is a defect.
 
+### A group node that refuses a flag should name its subcommands
+
+A **group node** is a command that exists to hold subcommands and has no flags of its own —
+`docker image`, `kubectl config`, `git remote`. Send it a flag and it refuses correctly, by name,
+and then has no valid set to offer, because it has none. **Name the subcommands inline.** Pointing
+the caller at `<node> --help` is a legitimate design that this page would not choose.
+
+The reason is one sentence: **when a caller makes a mistake, return more information rather than
+less.** A rejection is the moment the tool knows most and the caller knows least, and it is the
+cheapest place in the interaction to close that gap. Three consequences follow, and the third is
+the one that decides it for an agent-facing tool. The tool already holds the list — `docker` has
+just printed the word `Usage:` about that node and is not being asked to compute anything. An agent
+pays for _"go run `--help`"_ in a model round-trip, not a process spawn. And the rejection may be
+JSON while help is prose, so recovery crosses a format boundary for information the tool was
+already holding.
+
+**The bloat objection is the strongest case for the pointer, and the survey refutes it.** Six group
+nodes across five vendors, one sentinel flag each: `git remote`, `git stash` and `gh repo` name a
+set; `docker image`, `kubectl config` and `anthill comms` do not. `gh repo` prints **19**
+subcommands in a rejection and nobody considers that broken, while the two tools that decline to
+print have 12 and 16 ([the group-command
+candidate](docs/reports/2026-08-26-the-group-command-candidate.md)).
+
+**This is a design choice, not a defect**, and the tier is doing real work: three of five vendors
+choose the other way, so this page recommends against `docker` and `kubectl` here and says openly
+that they chose differently rather than that they are broken. **No rule id has been minted for it
+and none should be cited** — the recommendation is what this page carries; the catalogue does not
+carry it.
+
+**[C?]** Blocked on `L1`, and only on that: sending a flag to a node that holds subcommands is
+sending a verb, which is above `L0` by the admission test, so a checker would report `unverified`
+on every target until `L1` exists. The observation is a parser error rather than an execution, so
+nothing here waits on a sandbox.
+
 **[C]** `A1`–`A3` and `A5`–`A7`, at the root only. The
 [owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) measured both `A6` and `A7` as
 `unverified` on all eight targets — `A6` because a `bun` launcher swallowed the leading `--` before
@@ -1228,6 +1262,11 @@ safely, which is a different kind of thing to be missing and belongs under a dif
   half waits on a sandbox, or on an operator running a generated probe plan, not on a declaration of
   the flag.
 - **Every declared enforced value set rejects an out-of-set value.**
+- **A group node names its subcommands when it refuses a flag.** Blocked on `L1` and on nothing
+  else — the observation is a parser error, not an execution, so no sandbox is involved. The
+  recommendation, its survey and the blocker are in
+  [Parsing](#a-group-node-that-refuses-a-flag-should-name-its-subcommands); no rule id is minted
+  for it.
 - **The declared error-envelope fields carry what they say they carry.**
 - **The declared exit-code mapping holds** — provoke each kind, compare.
 - **The emission does not contradict the tool's own help.** This one is special: it is a

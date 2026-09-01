@@ -144,10 +144,12 @@ this file argues against.
 
 ## Status
 
-**Still not minted, and that is the reversible half.** The recommendation above can be revised at
-no cost while it lives here. `rule_id` values are append-only — never reused, never re-pointed —
-so minting is the step that cannot be taken back, and it has not been taken. Anyone reading this
-as settled catalogue policy is reading it wrong: it is a recorded recommendation with its
+**Still not minted, and that is the reversible half.** The recommendation now lives in
+[`STANDARD.md` § Parsing](../../STANDARD.md#a-group-node-that-refuses-a-flag-should-name-its-subcommands),
+marked `[C?]`, so revising it costs an edit to the guidance rather than nothing — but it is still
+only guidance. `rule_id` values are append-only — never reused, never re-pointed — so minting is
+the step that cannot be taken back, and it has not been taken. Anyone reading this as settled
+catalogue policy is reading it wrong: it is a recommendation on the guidance page with its
 evidence, waiting on a decision to mint.
 
 **What minting now needs** is no longer a definition — tier 2 is settled — but a judgement that the

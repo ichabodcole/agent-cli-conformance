@@ -431,6 +431,14 @@ those. That is deliberately reported as two booleans: `conformant` (nothing the 
 violated) and `fullyVerified` (every core rule was actually established) — see
 [conformance](docs/wiki/concepts/conformance.md).
 
+**Two limits are worth knowing before you read a green run.** Every comparison the kit makes is
+between two things your tool produced — its help against its parser, what it declares against what
+it does — and what it reports is whether they agree. So a clean result is what you get when they
+agree, including when both are wrong the same way. And nothing here reads the prose you ship with
+the tool, which on an agent-facing CLI is the surface an agent meets first. Both are stated as
+standing bounds in
+[the charter](CHARTER.md#what-this-does-not-establish), with the evidence behind them.
+
 ## Where this is going
 
 **Today** — the [wiki](docs/wiki/index.md) (23 rules, 22 of them with a checker; the 23rd is
