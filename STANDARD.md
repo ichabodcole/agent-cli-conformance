@@ -45,9 +45,7 @@ that second axis for the shipped reader.
 `acc check`. It is neither a version of this page nor a version of your tool, and it is the only
 format any reader shipped here can read: it requires the keys
 [Part 2's table](#the-fields-and-why-each-exists) marks `yes`, and refuses every key it does not
-define. The term is defined here rather than where Part 2 first uses it because the first cold
-reader of this page met it in the paragraph above, guessed, and happened to guess right — a wrong
-guess would have carried them through all of Part 1 with nothing to correct it.
+define.
 
 **Every number on this page carries its evidentiary status, in one of four fixed phrases.** This is
 a second axis and not a fourth mark, and the phrases are used verbatim so that a reader meeting one
@@ -60,22 +58,10 @@ mid-sentence does not have to look anything up:
 | **as reported and not independently verified** | an implementer's figure from a tree this checkout cannot reach                                         |
 | **a judgement, not a measurement**             | somebody classified something and no checker ran                                                       |
 
-**That it is phrases and not a glyph was decided rather than defaulted.** A prior round faced the
-same question on a different axis, declined a new mark, and named the concept _"Evidence, not a
-rule"_ instead — a named phrase is self-teaching where a glyph is one more thing to memorise — while
-recording the objection that a population of two was thin, and that the question reopened if the axis
-grew. It grew: the first cold reader of this page reached Part 4 tracking four evidentiary classes in
-prose and deciding per paragraph how much weight to give a number, and reported that this page has
-"a three-mark legend for checkability and nothing equivalent for evidentiary status, and the second
-is now carrying as much load as the first." The precedent followed is the one that same round cited
-in support: `In v0`. **When the three-mark axis does not cover something, this page has added an axis
-or a column and never a mark**, and the reason holds harder here than it did there. The marks attach
-at one predictable place, the end of a recommendation, one per section. An evidentiary status attaches
-to a figure, mid-sentence, wherever a figure appears — a glyph there is looked up, three words there
-are read. Three of the four phrases were already on the page verbatim before this legend existed,
-which is the strongest evidence available that they teach themselves. **What would reopen it:** a
-figure whose status is genuinely none of these four, or a section where the phrases have to be
-restated so often that they stop reading as prose.
+**Phrases rather than a glyph — a judgement, not a measurement.** A glyph mid-sentence is one
+more thing to look up; three words are read. The reasoning and the condition under which this page
+may add another axis are in
+[what came out of "How to read this"](docs/reports/2026-09-01-what-came-out-of-how-to-read-this.md#r-2--the-glyph-versus-phrases-decision-record--l63-78).
 
 **No new rule ids are minted here.** The catalogue mints an id when a checker design exists, and
 this page is upstream of that. Ids that do appear — `A1`, `B5`, `C2` and the rest — are existing
@@ -86,9 +72,8 @@ binds instead of restating it.
 delivery should be addressed, whether the resource model is right — none of that is here, and a
 tool that gets it wrong is not failing this standard.
 
-That boundary was found by reading a record rather than chosen from taste. A census of 298
-CLI-source commits across two repositories concluded that the axis deciding what any external check
-can reach is **not** defect against missing feature — it is **general against domain-specific**
+The axis deciding what any external check can reach is **not** defect against missing feature —
+it is **general against domain-specific**
 ([research](docs/research/2026-08-24-missing-capability-or-implementation-defect.md), whose own
 classifications are marked as judgements):
 
@@ -96,9 +81,9 @@ classifications are marked as judgements):
 > exit-code taxonomy. It can never catch a **missing domain capability** — `reap`, `roll`,
 > addressed delivery, session rotation — whether or not anything was built wrongly.
 
-Of the 201 of those commits that iterate on something already built, 77 were a capability that had
-never been there. **Thirty-four of the 77 were general affordances** — the ones this page is about.
-Forty-one were domain capabilities, and those are yours.
+Measured over a census of 298 CLI-source commits across two repositories: of the 77 capabilities
+that had never been there, **34 were general affordances** — the ones this page is about — and 41
+were domain capabilities, which are yours.
 
 Guidance for a human at a terminal is also out of scope — a different document with a different
 reader, and [mixing them produces something that serves neither](CHARTER.md#what-is-out-of-scope).
@@ -113,52 +98,24 @@ reader, and [mixing them produces something that serves neither](CHARTER.md#what
 - **You have a baseline and are going after the gap between what your tool says and what it
   does.** That is this section. Everything below assumes you have already measured.
 
-The distinction was not drawn until a second adopter, briefed to reach L0 and routed here, worked
-through all three steps below before finding that none of them moved their verdict — because the
-census and the emitter are drift work and their brief was not. The quote below is the tell and it
-is three sentences in: its author had _"run the checker twice"_ before reading this page.
-
-**The rest of this page is in reading order, not in dependency order.** That is a defect a reader
-found and this section is the repair, in their ordering rather than in one invented for the fix. The
-adopter behind anthill — the CLI the drift trial below measured — read this page for the first time
-having run the checker twice, and reported:
-
-> I do not know what to do first… the v0 emitter, the census, the envelope work and the exit-code
-> mapping are argued at the same pitch and in reading order rather than in dependency order. A
-> retrofit reader wants a first move, a second, and a "not until X". The Fig post-mortem tells me
-> what happens if I do nothing; it does not tell me what to do on Monday.
-
-They then answered it against their own tool, and their reasons are the ones attached below.
+**The rest of this page is in reading order, not in dependency order.** A retrofit reader wants a
+first move, a second, and a "not until X"; below is that ordering.
 
 1. **First, the census** — [make the tool enumerate its own surface](#the-cheapest-version-of-checked)
    and diff that against what you publish, one inert probe per command path. It is first because it
    is cheap, it needs nothing from this project, and it needs no declaration to exist yet: a shell
-   loop and `jq` will do it. Their reason for putting it first is a measurement of their own tool
-   rather than an argument — the census caught a live defect in anthill that **two full `acc check`
-   runs had missed, because both probed the root and the defect lives below it**. The two runs are
-   theirs: [the first-contact trial](docs/reports/2026-08-21-anthill-first-contact-trial.md), and
-   their re-run against `v0.1.0`, which has no report of its own — it is message 8 of the
-   `acc-trial-anthill` channel, recorded in
-   [the runway plan](docs/plans/2026-08-23-clear-the-runway-then-take-off.md). Neither ran
-   `--declaration`. This attribution was wrong when first published — it named the eight-CLI run,
-   which is not theirs and which they never ran — and was corrected by them; the defect is
-   [DT-2](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-2--eight-refused-flags-published-as-valid),
-   eight flags the same binary publishes and refuses. The drift trial's own record of the kit's
-   contribution says the same thing from the other side: it
-   [found none of the eight findings and could not have](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#what-the-kit-found-and-what-it-structurally-could-not).
+   loop and `jq` will do it. It also reaches where the kit does not: a census caught a live defect that two full `acc check`
+   runs had missed, because both probed the root and the defect lived below it
+   ([DT-2](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-2--eight-refused-flags-published-as-valid),
+   eight flags the same binary publishes and refuses).
 
 2. **Second, and contingent on the first, the v0 emitter** — the format described in
-   [Part 2](#the-fields-and-why-each-exists). Contingent, because on their tool the emitter **alone —
-   with nothing recorded below the root** — buys `0 of 25 declared command paths compared`, because
-   the only path that does compare is the root, which their manifest has no slot for
-   ([DT-1](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-1--root---format-is-declared-in-code-absent-from-the-manifest-and-inert-where-it-looks-like-it-works)),
-   and the summary names it on a clause of its own rather than counting it toward the 25.
-   **That `0` is a figure about the kit's root-only probing, not a ceiling on the emitter**: the same
-   tool, with the census's own captures handed back as a
-   [recorded-surface batch](docs/wiki/guides/how-to-record-surfaces-below-the-root.md), compares
+   [Part 2](#the-fields-and-why-each-exists). Contingent, because an emitter **alone — with nothing recorded below the root** — is only checked
+   where the kit can already reach. On one real tool that was `0 of 25` declared command paths
+   compared; with the census's own captures handed back as a
+   [recorded-surface batch](docs/wiki/guides/how-to-record-surfaces-below-the-root.md), the same tool
+   compares
    [`23 of 26`](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three).
-   The qualifier is theirs to ask for and the correction is theirs: they cited the bare number in the
-   cold read this ordering came from, and it was adopted here on their say-so.
    An emitter written before you have below-root evidence to compare it against buys a report about
    what could not be compared. Written after, every path the census already reads becomes a path the
    emitter is checked at.
