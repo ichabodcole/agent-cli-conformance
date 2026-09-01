@@ -397,6 +397,39 @@ itself is evidence to test, never a licence to execute it.
 The `4 of 25` figure went with it — the paragraph immediately after already said the ceiling is
 general rather than one tool's, so the count was an instance of a claim stated generally beside it.
 
+## Part 2 — What the declaration carries, down to "Emit v0"
+
+**64 non-blank lines to 61, and the small number is the result.** This chunk is a field table, two
+rules about what a declaration may contain, and a legend explaining the `In v0` column. Reference
+material and requirements do not accumulate provenance the way an argument does, so there was little
+to take. Recorded because a pass that only reports where it cut a third is a pass nobody can
+calibrate against.
+
+### R-21 · Three small removals
+
+- **A lead-in.** _"Three things about that table are worth stating outright."_ The three items are
+  bolded and announce themselves.
+- **A self-reference.** _"This is the repository's own [if it is not in the config, it is not
+  inferred] applied one level down."_ Where a rule was first written is not a reason to follow it;
+  the link stays, the framing goes.
+- **`DT-4` as a worked case.** The rule now leads — a value list that does not say whether it binds
+  is a label, and a checker that treats a label as a constraint manufactures a failure — and the
+  mechanism follows it generically: two hint strings, identical declared shape, opposite behaviour,
+  no field distinguishing them. No tool named, no counts. The trial link remains.
+
+**Deliberately kept, against the pattern of the earlier sections:** the `ffmpeg` clause under
+_"every default is absent"_. It names the specific convention a template would reach for — `--help`
+on a tool documenting `-h` and `-help` — which teaches what "falls back to a convention" means
+rather than evidencing that it once happened. Same judgement as the `Unknown option '--nope'` string
+in R-19.
+
+**Two errors in running this chunk, recorded because the pass should not report only its successes.**
+The sizing given before the cut was `55 -> 46`; the real figures are `64 -> 61`, so both the
+baseline and the available reduction were wrong. And a scripting slip passed an empty terminator to
+the replacement helper, which inserted the new text without removing the old — the page carried a
+duplicated paragraph, and the gate passed, because duplication is not a lint failure. Found by
+reading the output rather than by any check.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,

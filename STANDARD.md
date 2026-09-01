@@ -336,19 +336,16 @@ modelling it from outside.
 report `unverified` and name the field as the remedy; it must not fall back to a convention. The
 reason is concrete: a template pre-filled with `--help` produces a wrong declaration for `ffmpeg`,
 which documents `-h` and `-help` and not `--help`
-([SURV-5](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)) — and a wrong declaration is worse than no declaration, because it convicts a correct
-tool. This is the repository's own
-[if it is not in the config, it is not inferred](docs/wiki/decisions/not-in-the-config-not-inferred.md)
-applied one level down.
+([SURV-5](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). **A wrong declaration
+is worse than no declaration, because it convicts a correct tool** — the same rule as
+[if it is not in the config, it is not inferred](docs/wiki/decisions/not-in-the-config-not-inferred.md),
+one level down.
 
-**Marked-as-enforced is not a detail.**
-[DT-4](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-4--valuehint-means-two-different-things-and-nothing-says-which)
-is the case: one hint string spelled `bug|friction|idea|docs` is enforced with a refusal, and
-another spelled `text|json` on 21 commands is silently ignored — an out-of-set value falls back to
-a TTY heuristic and exits `0`. Identical declared shape, opposite behaviour, and no field
-distinguishes them, so **that defect cannot be automated against any target**, including that one.
-A value list that does not say whether it binds is a label, and a checker that treats a label as a
-constraint manufactures a failure.
+**Marked-as-enforced is not a detail.** A value list that does not say whether it binds is a label,
+and a checker that treats a label as a constraint manufactures a failure. Two hint strings can have
+an identical declared shape and opposite behaviour — one refusing an out-of-set value, the other
+falling back to a heuristic and exiting `0` — with no field distinguishing them
+([DT-4](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-4--valuehint-means-two-different-things-and-nothing-says-which)).
 
 ### Emit v0, hold the rest
 
