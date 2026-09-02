@@ -107,9 +107,12 @@ for.** The root is then not compared at all — there is nothing to compare it a
 reported as a limit rather than as a path:
 
 ```
-17 of 17 declared command paths compared; 289 disagreements (modelled declaration)
-NOT COMPARED: (root) — did not enumerate at the root; 5 rejections read, none named a set of flags (NOT a tool with no flags) [probed-by-kit]
+3 of 4 declared command paths compared; 3 disagreements (modelled declaration)
+NOT COMPARED: (root) — did not enumerate at the root; 7 rejections read, none named a set of flags (NOT a tool with no flags) [probed-by-kit]
 ```
+
+Your three recorded paths compared; the fourth path the declaration names is the root, and the kit
+probed it and got no set back.
 
 **A root that names an empty set is not this case.** `"validFlags": []` is an answer rather than a
 silence, so the root is compared like any other path and gets no `NOT COMPARED` line. Against an
@@ -119,6 +122,8 @@ empty accepted set every flag your declaration marks `valid` there is reported i
 1 of 4 declared command paths compared; 1 disagreement (modelled declaration)
 declared-not-accepted  --help at (root) [probed-by-kit]
 ```
+
+That run passed no batch, which is why only the root of the declaration's four paths compared.
 
 **A recorded path is a path you assert exists. Nothing in a batch establishes that it does.**
 
