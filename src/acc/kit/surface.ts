@@ -415,25 +415,6 @@ KEYS.add("choices");
 const normaliseKey = (k: string) => k.toLowerCase().replace(/[^a-z]/g, "");
 
 /**
- * KEYS WHOSE EMPTINESS SETTLES NOTHING — read exactly as before when they hold members, ignored by
- * the empty scan alone.
- *
- * `choices` is the one recognised key that is ambiguous between flags and verbs. It is why
- * `advertisedVerbs` exists at all, and why the near-miss branch goes out of its way to say "a set
- * of something else, not of flags". For a NON-EMPTY array the flag-shape test resolves that
- * ambiguity by inspecting the members — `["rules","show"]` is verbs, `["--a"]` is flags. An empty
- * array has no members, so the test cannot run and the ambiguity is unresolvable: "I have no
- * subcommands" and "I accept no flags" are the same two bytes.
- *
- * So an empty `choices` ALONE leaves the status where it already was. Minting `enumerated-none`
- * from it would publish a target that said it has no subcommands as having stated it accepts no
- * flags — the same misattribution this state exists to end, one key over. The qualified keys carry
- * no such ambiguity: a field called `validFlags` cannot be about anything but flags whether it is
- * full or empty, which is the same reason `KEYS` admits them and refuses bare `flags`.
- */
-const AMBIGUOUS_WHEN_EMPTY = new Set(["choices"]);
-
-/**
  * Flag tokens from the start of `text`, stopping at the first token that is not one.
  *
  * The stop is what bounds the read to the list: "Valid flags: --format. See the manual for more"
@@ -519,13 +500,13 @@ function keyedSets(
       } else if (
         empty &&
         KEYS.has(normaliseKey(key)) &&
-        !AMBIGUOUS_WHEN_EMPTY.has(normaliseKey(key)) &&
         Array.isArray(value) &&
         value.length === 0
       ) {
-        // Matched a key this reads that can only be about flags, and it held nothing. That is an
-        // answer — not a near miss and not a silence — and it is the one case where the emptiness
-        // itself is the whole content.
+        // Matched a key this reads and held nothing. That is an answer — not a near miss and not a
+        // silence — and it is the one case where the emptiness itself is the whole content. WHICH
+        // of these keys settles anything is not decided here: it depends on WHERE the document was
+        // captured, which this reader cannot see. See `surfaceFrom`'s `ambiguousWhenEmpty`.
         empty.push(key);
       }
       visit(value);
@@ -597,8 +578,11 @@ export function nonFlagSetsIn(text: string): Array<{ key: string; values: string
  * flags, which is `not-enumerated`, and inventing an empty-set marker for prose would be the kit
  * deciding what one of the target's sentences MEANS.
  *
- * It reads a NARROWER set of keys than the other two passes do — see `AMBIGUOUS_WHEN_EMPTY` for
- * the one key whose emptiness settles nothing and why the narrowing is not an oversight.
+ * IT REPORTS EVERY RECOGNISED KEY HELD EMPTY AND JUDGES NONE OF THEM. Whether a particular key's
+ * emptiness settles anything depends on WHERE the document was captured — see `surfaceFrom`'s
+ * `ambiguousWhenEmpty` and the two constants beside `captureSurface` — and this function is handed
+ * one stream's text with no idea which path it came from. A reader that filtered here would be
+ * deciding a positional question from a position it cannot see.
  */
 export function emptySetsIn(text: string): string[] {
   const trimmed = text.trim();
@@ -680,6 +664,41 @@ function isReadableRejection(o: Observation): boolean {
 }
 
 /**
+ * KEYS WHOSE EMPTINESS SETTLES NOTHING AT THE ROOT — and the reason it is a POSITION and not a
+ * property of the key.
+ *
+ * `choices` is the one recognised key ambiguous between flags and verbs. For a NON-EMPTY array the
+ * flag-shape test resolves it by inspecting the members — `["rules","show"]` is verbs and
+ * `["--a"]` is flags — but an empty array has no members, so the test cannot run.
+ *
+ * AT THE ROOT that leaves a real ambiguity. `advertisedVerbsFrom` is attached to the root capture
+ * and nowhere else, so the root is the one place in this kit where `choices` is read as a set of
+ * SUBCOMMANDS; a root saying `"choices": []` is as likely announcing that it has no subcommands as
+ * that it accepts no flags, and minting `enumerated-none` from it would publish the first as the
+ * second. So at the root, and only there, an empty `choices` alone leaves the status where it was.
+ *
+ * BELOW THE ROOT THE AMBIGUITY IS NOT THERE TO RESOLVE — see `NO_AMBIGUOUS_KEYS`. This is why the
+ * exclusion is a parameter rather than a constant inside the reader: the fact that decides it is
+ * "which position is this", and the reader is handed one stream's bytes with no way to know.
+ */
+export const ROOT_AMBIGUOUS_WHEN_EMPTY: ReadonlySet<string> = new Set(["choices"]);
+
+/**
+ * NO KEY'S EMPTINESS IS CONTESTED HERE — the exclusion set for every position below the root.
+ *
+ * A recorded path is not read for an advertised verb set by anything in this kit: `advertisedVerbs`
+ * is derived in `captureSurface` alone, and `readRecordedBatch` calls `surfaceFrom` directly. So
+ * below the root nothing reads `choices` as verbs, and a verb-first CLI answering
+ * `sessions --nope` with `"choices": []` is saying what it accepts AT `sessions` — which is the
+ * adopter report this state was built for. A group node that really does name subcommands names
+ * them, and a non-empty list is resolved by the flag-shape test as it always was.
+ *
+ * Passed explicitly rather than defaulted, because a caller that has not thought about its own
+ * position is the caller most likely to be at the root.
+ */
+export const NO_AMBIGUOUS_KEYS: ReadonlySet<string> = new Set();
+
+/**
  * Capture what the target said about its own accepted flags, from probes already recorded.
  *
  * PURE over observations — nothing here spawns, exactly as a checker does not.
@@ -707,6 +726,10 @@ export function captureSurface(observations: readonly Observation[]): Surface {
     evidence,
     rejections.length,
     rejections.flatMap((o) => [o.stderr, o.stdout]),
+    // THIS IS THE ROOT, and the root is where `choices` means verbs — see the constant. The fact
+    // is supplied here because this is the function that knows it, and it is the same fact the
+    // `advertisedVerbs` derivation below rests on.
+    ROOT_AMBIGUOUS_WHEN_EMPTY,
   );
   // THE ONE DERIVATION. Attached here rather than inside `surfaceFrom` because that function is
   // shared with the caller-recorded reader, and a recorded batch is the RECORDED side of this
@@ -727,11 +750,19 @@ export function captureSurface(observations: readonly Observation[]): Surface {
  *
  * `streams` is the raw text of every rejection read, scanned only when nothing enumerated — that
  * is the branch where "which set did you see" is a question anyone asks.
+ *
+ * `ambiguousWhenEmpty` IS THE CALLER'S POSITION, expressed as the keys whose emptiness settles
+ * nothing there, and it has no default on purpose. `choices` is contested between flags and verbs
+ * at the root and nowhere else — `advertisedVerbs` is derived in `captureSurface` alone — so the
+ * rule cannot live in this function or in the reader beneath it: neither can see where the bytes
+ * came from. Both positions are named and documented as constants beside `captureSurface`, and a
+ * new caller has to pick one rather than inherit whichever was convenient to default to.
  */
 export function surfaceFrom(
   evidence: SurfaceEvidence[],
   probesRead: number,
   streams: readonly string[],
+  ambiguousWhenEmpty: ReadonlySet<string>,
 ): Surface {
   if (evidence.length > 0) {
     const sets = evidence.map((e) => e.flags.join("\0"));
@@ -758,7 +789,12 @@ export function surfaceFrom(
   // is an ANSWER — the target named the set and there was nothing in it — so it decides the status
   // rather than merely annotating it. `probesRead > 0` still gates the whole branch: a run that
   // read no rejection has heard nothing, whatever the streams it never read contain.
-  const emptyKeys = [...new Set(streams.flatMap((text) => emptySetsIn(text)))];
+  //
+  // MINUS THE KEYS WHOSE EMPTINESS SETTLES NOTHING WHERE THE CALLER IS STANDING. Compared on the
+  // normalised spelling, because the target chose the capitalisation and this set names the key.
+  const emptyKeys = [...new Set(streams.flatMap((text) => emptySetsIn(text)))].filter(
+    (key) => !ambiguousWhenEmpty.has(normaliseKey(key)),
+  );
   const statedNone = probesRead > 0 && emptyKeys.length > 0;
   return {
     status: probesRead > 0 ? (statedNone ? "enumerated-none" : "not-enumerated") : "no-evidence",

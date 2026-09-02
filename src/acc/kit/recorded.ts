@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import type { PathSurface } from "./declaration.ts";
 import {
   isRejectionShape,
+  NO_AMBIGUOUS_KEYS,
   readStream,
   type Surface,
   type SurfaceEvidence,
@@ -494,7 +495,13 @@ export function readRecordedBatch(batch: RecordedBatch): RecordedReading {
     // BUILT BY THE SAME FUNCTION THE KIT'S OWN CAPTURE USES. This was a second copy of that
     // construction, and the copy is why the non-flag-list field first landed on the kit's probes
     // and not on recorded batches — which is to say, not on the 49-path batch that prompted it.
-    const surface: Surface = surfaceFrom(evidence, read, streamTexts);
+    //
+    // NO KEY'S EMPTINESS IS CONTESTED AT A RECORDED PATH. `advertisedVerbs` is derived in
+    // `captureSurface` and never here, so nothing below the root reads `choices` as a set of
+    // verbs — a verb-first CLI answering an unknown flag at `sessions` with `"choices": []` is
+    // saying what `sessions` accepts. The constant carries the reasoning; passing it is not
+    // optional, so this line is where a reader learns which position the batch is read from.
+    const surface: Surface = surfaceFrom(evidence, read, streamTexts, NO_AMBIGUOUS_KEYS);
     surfaces.push({
       path,
       surface,

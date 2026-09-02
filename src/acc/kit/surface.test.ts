@@ -13,6 +13,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Declaration, diffDeclaration } from "./declaration.ts";
 import { record } from "./record.ts";
+import { parseRecordedBatch, readRecordedBatch } from "./recorded.ts";
 import { CHECKERS } from "./registry.ts";
 import { digestOfText } from "./runner.ts";
 import {
@@ -277,29 +278,62 @@ describe("a target that named an empty set", () => {
     expect(surfaceSummary(s)).toContain("under `acceptedOptions`");
   });
 
-  test("an empty `choices` alone is NOT this state, because it settles nothing", () => {
-    // `choices` is the one recognised key ambiguous between flags and verbs — for a non-empty
-    // array the flag-shape test resolves it by inspecting the members, and an empty array has no
-    // members to inspect. "I have no subcommands" and "I accept no flags" are the same two bytes,
-    // so the status stays exactly where it was rather than picking one of the two readings.
+  test("AT THE ROOT an empty `choices` alone is NOT this state, because there it settles nothing", () => {
+    // `choices` is the one recognised key ambiguous between flags and verbs. For a non-empty array
+    // the flag-shape test resolves it by inspecting the members; an empty array has none to
+    // inspect. AT THE ROOT that ambiguity is real, because the root is the one place this kit
+    // reads `choices` as a set of SUBCOMMANDS — `advertisedVerbsFrom` runs on the root capture and
+    // nowhere else. "I have no subcommands" and "I accept no flags" are the same two bytes there,
+    // so the status stays where it was rather than picking one of the readings.
     const s = captureSurface([rejection(`{"error":{"choices":[]}}`)]);
     expect(s.status).toBe("not-enumerated");
     expect(s.emptySetKeys).toBeUndefined();
     expect(surfaceSummary(s)).not.toContain("empty set");
   });
 
-  test("...and an empty `choices` cannot be laundered by a probe that read nothing either", () => {
+  test("...and AT THE ROOT it cannot be laundered by a probe that read nothing either", () => {
     // The same key, on a run with no readable rejection at all: still the status it already had.
     const s = captureSurface([rejection(`{"error":{"choices":[]}}`, { truncated: true })]);
     expect(s.status).toBe("no-evidence");
     expect(s.emptySetKeys).toBeUndefined();
   });
 
-  test("an unambiguous empty key still mints the state beside an empty `choices`", () => {
+  test("AT THE ROOT an unambiguous empty key still mints the state beside an empty `choices`", () => {
     // The exclusion is about what `choices` alone can establish, not a veto on the document.
     const s = captureSurface([rejection(`{"error":{"choices":[],"validFlags":[]}}`)]);
     expect(s.status).toBe("enumerated-none");
     expect(s.emptySetKeys).toEqual(["validFlags"]);
+  });
+
+  test("BELOW THE ROOT an empty `choices` DOES mint it, because there it is unambiguous", () => {
+    // THE MIRROR OF THE ROOT PINS ABOVE, and the reason the exclusion is a position rather than a
+    // property of the key. Nothing below the root reads `choices` as verbs: `advertisedVerbs` is
+    // derived in `captureSurface` alone and `readRecordedBatch` calls `surfaceFrom` directly. A
+    // verb-first CLI whose verbs scope their own flags answers `sessions --nope` with an empty
+    // `choices` and is saying what `sessions` accepts — the adopter report this state exists for.
+    const reading = readRecordedBatch(
+      parseRecordedBatch("<test>", {
+        formatVersion: "0",
+        records: [
+          {
+            path: ["sessions"],
+            argv: ["sessions", "--acc-not-a-flag"],
+            exitCode: 2,
+            streams: "separated",
+            stdout: "",
+            stderr: `{"ok":false,"error":{"kind":"usage","choices":[]}}\n`,
+            completeness: "complete",
+            recordedBy: "ci@test",
+            recordedAt: "2026-08-25T09:14:02Z",
+          },
+        ],
+      }),
+    );
+    const s = reading.surfaces[0]?.surface;
+    expect(s?.status).toBe("enumerated-none");
+    expect(s?.emptySetKeys).toEqual(["choices"]);
+    expect("flags" in (s ?? {})).toBe(false);
+    expect(surfaceSummary(s, ["sessions"])).toContain("stated an empty set of flags at sessions");
   });
 
   test("the sentence says the target stated an empty set, and cannot be read as silence", () => {
