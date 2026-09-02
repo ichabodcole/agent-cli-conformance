@@ -45,15 +45,22 @@ npx --yes release-please@latest release-pr \
   --target-branch=develop --dry-run 2>&1 | grep -E 'updating from|Considering:'
 ```
 
-It prints `updating from X to Y` and how many commits it considered. Both matter — a commit count
-far larger than your range means it has lost its anchor and will regenerate the changelog from
-much further back.
+It prints `updating from X to Y`. **X is the check**: it names the version release-please found as
+its anchor, and it is right when it matches the version currently released. If X is older than that,
+the anchor is lost and the changelog will regenerate from further back — compare
+`.release-please-manifest.json` on the target branch against the released version; they disagree
+when a release commit never reached that branch.
 
-> **⚠ It reads the config and manifest from the TARGET branch**, not from your working tree. So it
-> measures what that branch would release, and a change to `release-please-config.json` or
-> `.release-please-manifest.json` still sitting on a feature branch is invisible to it. When the
-> thing you want measured is not merged yet, push the would-be state to a scratch branch and
-> target that instead — then delete the branch.
+The commit count it also prints is **not** that check. It reports how many commits were fetched, not
+how many were attributed to this release, and it stops at the anchor regardless. A count far larger
+than your range is expected and diagnoses nothing on its own.
+
+> **⚠ It reads the TARGET branch as pushed — never your working tree.** Two things follow. A change
+> to `release-please-config.json` or `.release-please-manifest.json` still sitting on a feature
+> branch is invisible to it, so when the state you want measured is not merged yet, push it to a
+> scratch branch, target that, and delete the branch afterwards. And an **unpushed commit is absent
+> from the range it measures**: it contributes no version signal and no changelog entry, so the
+> release you measure is not the release you will cut. Push before you measure.
 
 **To force a specific version**, put a `Release-As:` footer on a commit in the range:
 
