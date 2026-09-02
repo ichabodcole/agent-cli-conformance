@@ -312,11 +312,12 @@ export interface DeclarationDiff {
    * the one most likely to be read wrongly: a diff that could not run and a diff that found
    * nothing look identical in a count.
    *
-   * The analogy is exact rather than approximate, and it used to name "a tool with no flags" as
-   * the case `SurfaceStatus` could not express. It can: a target that answers an unknown-flag
-   * probe with an explicitly empty set is `enumerated-none`, and that is a set this diff runs
-   * against. Such a path is `checked`, every `valid` arg declared at it is `declared-not-accepted`,
-   * and a run whose only evidence was empty enumerations is `checked` here too.
+   * What `enumerated-none` contributes here is a path that can be diffed while naming no flags.
+   * It records that the target ANSWERED the probe — it named its accepted set, and the set it
+   * named held nothing — and that is a set difference this can perform. It is NOT a claim that
+   * the tool accepts no flags: the kit reports what the target said and does not adopt it. Such a
+   * path is `checked`, every `valid` arg declared at it is `declared-not-accepted`, and a run
+   * whose only evidence was empty enumerations is `checked` here too.
    *
    * `self-description-not-declared` findings can be present while this is `not-checked`, because
    * that check reads the document and never the target.
