@@ -428,36 +428,23 @@ record and a caller's waiver agreeing is a thing a person checks, not a thing th
 
 ## Where the declaration lives, and who may say what
 
-[Two independent design sketches](docs/research/2026-08-24-two-declaration-format-sketches.md) were
-written for this, from opposite starting points — one derived from what the checkers need, one from
-what a person can honestly say. They converged on more than they disagreed about, and the
-convergences are the load-bearing part. Both are filed whole, with what has since overtaken them
-marked rather than corrected; this section is a reading of them and they are the source.
+**A statement that narrows the probe surface may be accepted on anyone's word. A statement that
+widens it must come from the tool.** A wrong "do not probe me" costs coverage. A wrong "you may
+probe me" costs somebody a written file
+([two design sketches](docs/research/2026-08-24-two-declaration-format-sketches.md)).
 
-**They converged on the asymmetry, and it is the most useful rule in this section.** Both reached it
-independently, from different premises:
-
-> **A statement that narrows the probe surface may be accepted on anyone's word. A statement that
-> widens it must come from the tool.**
->
-> A wrong "do not probe me" costs coverage. A wrong "you may probe me" costs somebody a written
-> file.
-
-The concrete case is the file-writing population the
-[grammar survey triage](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md) collected under `SURV-4`. `ffmpeg` documents that _"anything found on
-the command line which cannot be interpreted as an option is considered to be an output url"_;
-`sqlite3`'s first positional is a database path, created if absent; `ogr2ogr` and `cdo` take an
-output file as a positional. An outside observer who declares "my first positional
-selects from a fixed table of verbs" and is wrong has authorised a probe that writes a file. One
-who declares "my first positional is data, do not send sentinels" and is wrong has only lost a
-verdict.
+Positionals are where this bites: `sqlite3`'s first positional is a database path, created if
+absent, and it is not the only tool whose unmatched argument becomes a file
+([SURV-4](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). An outside observer who
+declares "my first positional selects from a fixed table of verbs" and is wrong has authorised a
+probe that writes a file. One who declares "my first positional is data, do not send sentinels" and
+is wrong has only lost a verdict.
 
 So the narrowing direction is admissible from anyone and the widening direction is not, and **an
 unfalsifiable field is admissible exactly when the only thing it can do is remove probes and
 withdraw verdicts. The declarer buys silence, not a pass.**
 
-**They converged on several other things**, briefly, because agreement reached from two directions
-is worth more than either argument alone:
+The rest, briefly:
 
 - An emitted declaration wins over an outside model on every field it speaks to, and a
   disagreement is reported rather than silently resolved.
@@ -475,19 +462,16 @@ is worth more than either argument alone:
 - Refuse to run against a declaration whose format version you do not understand, rather than
   ignoring it and carrying on. The fields unlock probes, and unknown semantics on an unlocking
   field means running an invocation whose justification you cannot read.
-- Say nothing about **effects** — and do not record it as a placeholder either. Both sketches scoped
-  it out, for the reason the drift trial hit its ceiling: there is no sandbox to falsify such a claim
-  in. An earlier version of this page told you to record it and let it gate nothing; **that advice is
-  withdrawn**, and no field is coming for it. An inert field is not a neutral placeholder: it lends
+- Say nothing about **effects** — and do not record it as a placeholder either. There is no sandbox to falsify such a
+  claim in, and no field is coming for it. An inert field is not a neutral placeholder: it lends
   its names apparent authority, invites a consumer to infer safety from them, and fixes a meaning
   before any consumer exists to need one. `read_only` already reads two ways — no mutation of the
   tool's own state, versus no externally visible effect — and a command that writes nothing of its
   own while opening a browser on the operator's machine is exactly where the two come apart. The
   field earns its place when a concrete consumer and a testable contract for it exist, and that
   consumer picks the meaning.
-- Do not add a field for bitmask exit codes. `pylint` ORs fatal `1`, error `2`, warning `4`,
-  convention `8`, refactor `16` and usage `32`, so a run with a fatal and a warning exits `5`;
-  `fsck` documents its status across filesystems as _"the bit-wise OR of the exit statuses"_
+- Do not add a field for bitmask exit codes. Some tools OR their statuses
+  together — `fsck` documents its own as _"the bit-wise OR of the exit statuses"_
   ([SURV-8](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). No declaration
   changes what `2` means in a taxonomy that assumes an enumeration. **The taxonomy grows a position
   on bit fields or it does not**, and adding a field would let a format look like it had answered a

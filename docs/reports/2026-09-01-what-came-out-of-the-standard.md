@@ -523,6 +523,53 @@ untouched.
 fact: the heading is an anchor cited from `How to read this` as _"the decision needs a home"_, and the
 section still delivers that; its three outbound anchors all still resolve.
 
+## Part 2 § Where the declaration lives, and who may say what
+
+57 non-blank lines to 46.
+
+### R-26 · The section's provenance opener, and the convergence framing that ran through it
+
+> [Two independent design sketches] were written for this, from opposite starting points — one
+> derived from what the checkers need, one from what a person can honestly say. They converged on
+> more than they disagreed about […] this section is a reading of them and they are the source.
+
+Plus two more instances of the same framing: _"They converged on the asymmetry […] Both reached it
+independently, from different premises"_ and _"because agreement reached from two directions is worth
+more than either argument alone"_.
+
+**no reason needed, and the framing was costing the section its best rule.** That two sketches agreed
+is an argument for the project trusting the rule. It is not a reason the rule is right, and the rule
+states its own reason completely: a wrong "do not probe me" costs coverage, a wrong "you may probe
+me" costs somebody a written file.
+
+The side effect is the part worth noting. Because the asymmetry arrived as a **quotation from the
+sketches**, the standard's most useful rule was presented as somebody else's finding. It is now the
+page's own sentence. Third time this has happened — after R-4's adopter quotation and R-16's
+`schema.ts` — and it is becoming a reliable tell: **where a page cites a source for its best line,
+check whether the line is actually the page's own position.**
+
+### R-27 · A fourth revision record, and two tool inventories
+
+> An earlier version of this page told you to record it and let it gate nothing; **that advice is
+> withdrawn**, and no field is coming for it.
+
+After R-5, R-20 and R-22. The bullet's reason is untouched and is one of the strongest on the page:
+an inert field lends its names apparent authority, invites a consumer to infer safety from them, and
+fixes a meaning before any consumer exists to need one — with `read_only` already reading two ways.
+
+Two inventories reduced to one example each, on the R-19 principle that an example teaching what a
+term means is doing a different job from an example showing a claim held once:
+
+- the file-writing population (`ffmpeg`, `sqlite3`, `ogr2ogr`, `cdo`) keeps `sqlite3`, because "a
+  probe that writes a file" is theoretical until one tool makes it concrete;
+- the bitmask population (`pylint`'s OR'd 1/2/4/8/16/32, `fsck`) keeps `fsck`'s own wording. The rule
+  is general and complete: no declaration changes what `2` means in a taxonomy that assumes an
+  enumeration.
+
+**R-23 applied before committing:** five citations point at this section's anchor, the heading is
+unchanged, and the narrowing-versus-widening asymmetry they reference is still stated. The chunk has
+no outbound anchors.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,
