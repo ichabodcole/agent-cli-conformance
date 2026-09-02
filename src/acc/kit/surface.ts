@@ -415,6 +415,25 @@ KEYS.add("choices");
 const normaliseKey = (k: string) => k.toLowerCase().replace(/[^a-z]/g, "");
 
 /**
+ * KEYS WHOSE EMPTINESS SETTLES NOTHING — read exactly as before when they hold members, ignored by
+ * the empty scan alone.
+ *
+ * `choices` is the one recognised key that is ambiguous between flags and verbs. It is why
+ * `advertisedVerbs` exists at all, and why the near-miss branch goes out of its way to say "a set
+ * of something else, not of flags". For a NON-EMPTY array the flag-shape test resolves that
+ * ambiguity by inspecting the members — `["rules","show"]` is verbs, `["--a"]` is flags. An empty
+ * array has no members, so the test cannot run and the ambiguity is unresolvable: "I have no
+ * subcommands" and "I accept no flags" are the same two bytes.
+ *
+ * So an empty `choices` ALONE leaves the status where it already was. Minting `enumerated-none`
+ * from it would publish a target that said it has no subcommands as having stated it accepts no
+ * flags — the same misattribution this state exists to end, one key over. The qualified keys carry
+ * no such ambiguity: a field called `validFlags` cannot be about anything but flags whether it is
+ * full or empty, which is the same reason `KEYS` admits them and refuses bare `flags`.
+ */
+const AMBIGUOUS_WHEN_EMPTY = new Set(["choices"]);
+
+/**
  * Flag tokens from the start of `text`, stopping at the first token that is not one.
  *
  * The stop is what bounds the read to the list: "Valid flags: --format. See the manual for more"
@@ -500,11 +519,13 @@ function keyedSets(
       } else if (
         empty &&
         KEYS.has(normaliseKey(key)) &&
+        !AMBIGUOUS_WHEN_EMPTY.has(normaliseKey(key)) &&
         Array.isArray(value) &&
         value.length === 0
       ) {
-        // Matched a key this reads and held nothing. That is an answer, not a near miss and not a
-        // silence — and it is the one case where the emptiness itself is the whole content.
+        // Matched a key this reads that can only be about flags, and it held nothing. That is an
+        // answer — not a near miss and not a silence — and it is the one case where the emptiness
+        // itself is the whole content.
         empty.push(key);
       }
       visit(value);
@@ -575,6 +596,9 @@ export function nonFlagSetsIn(text: string): Array<{ key: string; values: string
  * prose spelling of an empty list. A sentence that names no flags is a sentence that named no
  * flags, which is `not-enumerated`, and inventing an empty-set marker for prose would be the kit
  * deciding what one of the target's sentences MEANS.
+ *
+ * It reads a NARROWER set of keys than the other two passes do — see `AMBIGUOUS_WHEN_EMPTY` for
+ * the one key whose emptiness settles nothing and why the narrowing is not an oversight.
  */
 export function emptySetsIn(text: string): string[] {
   const trimmed = text.trim();
@@ -822,6 +846,15 @@ export function surfaceSummary(s: Surface | undefined, path: readonly string[] =
     case "no-evidence":
       return `nothing readable was recorded at ${where}, so nothing was read (not a statement about the tool)`;
   }
+  // NOT A `default` CLAUSE, AND NOT A BARE TRAILING RETURN — the two shapes that would each undo
+  // the switch. Without this line the compiler's complaint about a fourth status is `TS2366:
+  // Function lacks ending return statement`, which names no status, and whose obvious repair is a
+  // trailing sentence — restoring the exact fallthrough this switch removed. Assigning the status
+  // to `never` makes the error name the member that has no clause, which is the thing a maintainer
+  // needs to be told. Returning it is unreachable by construction: it is `never`, so there is no
+  // value here for a future status to inherit.
+  const unhandled: never = s.status;
+  return unhandled;
 }
 
 /**

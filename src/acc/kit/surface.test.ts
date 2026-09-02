@@ -267,9 +267,39 @@ describe("a target that named an empty set", () => {
   });
 
   test("it names WHICH key was empty, so the claim can be checked against the bytes", () => {
-    const s = captureSurface([rejection(`{"error":{"choices":[]}}`)]);
+    // An UNAMBIGUOUS key, and the SENTENCE and not just the status: an earlier draft asserted the
+    // status alone on `choices`, which is how a target saying it has no SUBCOMMANDS came to render
+    // as one stating it accepts no flags. The rendered line is where that shows.
+    const s = captureSurface([rejection(`{"error":{"acceptedOptions":[]}}`)]);
     expect(s.status).toBe("enumerated-none");
-    expect(s.emptySetKeys).toEqual(["choices"]);
+    expect(s.emptySetKeys).toEqual(["acceptedOptions"]);
+    expect(surfaceSummary(s)).toContain("stated an empty set of flags at the root");
+    expect(surfaceSummary(s)).toContain("under `acceptedOptions`");
+  });
+
+  test("an empty `choices` alone is NOT this state, because it settles nothing", () => {
+    // `choices` is the one recognised key ambiguous between flags and verbs — for a non-empty
+    // array the flag-shape test resolves it by inspecting the members, and an empty array has no
+    // members to inspect. "I have no subcommands" and "I accept no flags" are the same two bytes,
+    // so the status stays exactly where it was rather than picking one of the two readings.
+    const s = captureSurface([rejection(`{"error":{"choices":[]}}`)]);
+    expect(s.status).toBe("not-enumerated");
+    expect(s.emptySetKeys).toBeUndefined();
+    expect(surfaceSummary(s)).not.toContain("empty set");
+  });
+
+  test("...and an empty `choices` cannot be laundered by a probe that read nothing either", () => {
+    // The same key, on a run with no readable rejection at all: still the status it already had.
+    const s = captureSurface([rejection(`{"error":{"choices":[]}}`, { truncated: true })]);
+    expect(s.status).toBe("no-evidence");
+    expect(s.emptySetKeys).toBeUndefined();
+  });
+
+  test("an unambiguous empty key still mints the state beside an empty `choices`", () => {
+    // The exclusion is about what `choices` alone can establish, not a veto on the document.
+    const s = captureSurface([rejection(`{"error":{"choices":[],"validFlags":[]}}`)]);
+    expect(s.status).toBe("enumerated-none");
+    expect(s.emptySetKeys).toEqual(["validFlags"]);
   });
 
   test("the sentence says the target stated an empty set, and cannot be read as silence", () => {
