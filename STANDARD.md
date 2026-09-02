@@ -490,14 +490,15 @@ the root has to be recorded by somebody who already holds the authority to run t
 to the kit as a [recorded-surface batch](docs/wiki/guides/how-to-record-surfaces-below-the-root.md),
 which it reads — what stops at the root is what the kit will **send**.
 A verb-first tool's declaration is a document about its **verbs**, so every path it declares is a
-path nothing probes, and the one path that is probed is often the one it does not declare. Measured
-on this repository's own CLI, which is verb-first: `acc --nope` lists its verbs and names no flag, so
+path nothing probes, and the one path that is probed is often the one it does not declare. **Measured in this tree** on
+this repository's own CLI, which is verb-first: `acc --nope` lists its verbs and names no flag, so
 the root surface reads `did not enumerate`, and a four-command modelled declaration for it reports
 **`THE DIFF DID NOT RUN — 0 of 4 declared command paths compared`**.
 
 **That figure is about what the kit probes for itself, and it is not a ceiling.** Record a batch
 below the root and the same modelled declaration compares the paths the batch covers — on one real
-tool, [`23 of 26`](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three).
+tool, [`23 of 26`](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three)
+— **as reported and not independently verified**.
 The limit is on probing, and the caller who can lift it is the one who may already run the tool.
 
 So the `[C?]` on this Part, and every `yes` in the [`In v0` column](#the-fields-and-why-each-exists),
@@ -516,9 +517,9 @@ not the file's.
 
 **Exit-code ownership: may an outside observer declare it?** **Nothing here decides it.** The
 field switches off a whole family of checks, so the question is who may be trusted with it, and both
-answers are defensible. The honest split is that some tools state ownership plainly — `ssh(1)` says
-it _"exits with the exit status of the remote command or with 255 if an error occurred"_, so a reader
-of the man page is not guessing — while `tar`, `xargs` and `bazel run` do not. It is settleable by
+answers are defensible. The honest split is that some tools state ownership plainly — `ssh(1)` says it
+_"exits with the exit status of the remote command or with 255 if an error occurred"_ — **read from
+a primary source** — so a reader of the man page is not guessing — while `tar`, `xargs` and `bazel run` do not. It is settleable by
 experiment rather than argument: take the delegators the survey names, have several people who did
 not write them answer ownership from the documentation alone, and see whether they agree and are
 right.
@@ -621,7 +622,7 @@ short form: set the exit code and return from the entry point; do not call `proc
 `exit()` or `os.Exit()` after writing.
 
 **And do not assert the buffer size.** Bun 1.4 delivered 131,072 bytes through a code path that
-had previously delivered 65,536 — the reason `B4` asserts delivery rather than a
+had previously delivered 65,536 (**measured in this tree**) — the reason `B4` asserts delivery rather than a
 number. A rule written around the number would have been wrong within weeks: the invariant is "every
 byte it wrote", and the figures belong in
 [a dated note](docs/research/2026-08-19-flush-on-exit-by-runtime.md).
@@ -690,8 +691,8 @@ range below the reserved band, publish the mapping in your declaration, and neve
 
 The taxonomy this project uses — nine codes, plus a separate band for outcomes that are answers
 rather than failures — is in [exit codes](docs/wiki/concepts/exit-codes.md). It is a house standard
-and says so. Measured against one probe, an unrecognised flag, `git` returns `129` and `docker` returns `125`,
-while `kubectl`, `gh` and `cargo` all return `1`
+and says so. Against one probe, an unrecognised flag, `git` returns `129` and `docker`
+returns `125`, while `kubectl`, `gh` and `cargo` all return `1` — **measured in this tree**
 ([exit codes](docs/wiki/concepts/exit-codes.md#there-is-no-industry-standard)). **None uses
 `EX_USAGE`.** The value is not
 that it is right in some universal sense; it is that an agent learns it once and it holds across
@@ -846,8 +847,8 @@ already holding.
 nodes across five vendors, one sentinel flag each: `git remote`, `git stash` and `gh repo` name a
 set; `docker image`, `kubectl config` and `anthill comms` do not. `gh repo` prints **18**
 subcommands in a rejection and nobody considers that broken, while the two tools that print a
-pointer instead hold 12 and 15 (measured here on `gh 2.98.0`, `Docker 29.2.0` and
-`kubectl v1.34.1` — the survey in [the group-command
+pointer instead hold 12 and 15 (**measured in this tree** on `gh 2.98.0`, `Docker 29.2.0`
+and `kubectl v1.34.1` — the survey in [the group-command
 candidate](docs/reports/2026-08-26-the-group-command-candidate.md) reported 19 and 16, and both
 were one high).
 
@@ -883,10 +884,9 @@ below it, every one declaring `coverage: partial` over more than 90 named gaps
 **A checker existing is not the same as a check running, and two of the twenty-two do not run one.**
 `B3` and `A4` declare no probe and return `unverified` from every branch, and say so in their own
 coverage fields. A third, `B5`, has a real probe but is gated on `defaultOutput` and reported `unverified` on all
-eight targets of the [owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md). Read the number
-as **twenty-three rules, nineteen of which can return a verdict at all against an undeclared
-target** — and measured rather than reasoned, that run found **only eight rules that discriminated
-between its eight targets**.
+eight targets of the [owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md). Read the number as **twenty-three rules, nineteen of which
+can return a verdict at all against an undeclared target**; that run found **only eight rules that
+discriminated between its eight targets** (**measured in this tree**).
 
 What the ones that do run establish is real and narrow: an unknown flag
 exits non-zero, help succeeds and is deterministic, stdout carries only data, no ANSI reaches a

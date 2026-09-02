@@ -1072,6 +1072,61 @@ Both of this pass's real failures support it:
 
 **A paraphrase is the worst of both worlds: a second copy that does not look like one.**
 
+## The closing cold read — R-52 to R-54
+
+### R-52 · The pass removed every applied use of a convention the page declares in bold
+
+`How to read this` states: _"**Every number on this page carries its evidentiary status, in one of
+four fixed phrases.**"_ A cold read found that no number did.
+
+| phrase                                     | before the pass | after | restored |
+| ------------------------------------------ | --------------- | ----- | -------- |
+| measured in this tree                      | 4               | 1     | 5        |
+| read from a primary source                 | 1               | 1     | 2        |
+| as reported and not independently verified | 2               | 1     | 2        |
+| a judgement, not a measurement             | 2               | 2     | 2        |
+
+Every surviving use was **the table row defining the phrase**. The phrases had been attached to the
+measurements the pass cut, so they left with them — and the declaration stood with nothing marked.
+The one applied use outside the table was written _by_ the pass, and applies a reserved phrase to a
+notation decision rather than to a number, which is the collision the convention exists to prevent.
+
+**This is the largest instance of the class R-23 named, and it inverts the usual direction.** The
+earlier cases were a sentence left pointing at something removed. This is a _rule_ left standing with
+nothing obeying it — the page kept promising a discipline it had stopped practising, and every gate
+passed because a promise is not a link.
+
+Restoring it meant establishing each figure's provenance rather than sprinkling labels. The
+exit-code divergence was re-measured (`git` 129, `docker` 125, `kubectl`/`gh`/`cargo` 1, git 2.55.0,
+Docker 29.2.0); the drift-trial figure was marked _as reported_ on the strength of the report's own
+sentence, _"are theirs as reported; the accounting around them is this report's"_.
+
+### R-53 · Two figures fit none of the four phrases, which is the reopening condition
+
+`9 commits against 151` and `26 of 33 functions undecidable` are this project's measurements of
+repositories **this checkout cannot reach**. So:
+
+- not _measured in this tree_ — nothing here reproduces them;
+- not _as reported and not independently verified_ — that phrase says **an implementer's** figure,
+  and these are ours;
+- not _read from a primary source_ — the source is our own note, not somebody else's artifact.
+
+The glyph decision record (R-2) named exactly this as what would reopen the question: _"a figure
+whose status is genuinely none of these four."_ **It has now occurred.** Left unmarked and recorded
+rather than forced into the nearest slot, because forcing it is what the four phrases exist to stop.
+
+### R-54 · A split link is invisible to the link checker
+
+Inserting a phrase mid-sentence broke a markdown link in half — label and URL separated by the new
+text — and **the gate passed**. `checkLinks` looks for `](`; a link broken badly enough no longer
+contains that, so it stops being a link the checker can see. Destroying a link removes it from the
+corpus that checks links.
+
+Found by reading the changed passage. The check that would catch it is structural — a `]` not
+followed by `(` or `:` — and is not worth adding on one instance, but the property is worth knowing:
+**this repository's link checking is sound for links that point somewhere wrong, and blind to text
+that has stopped being a link at all.**
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,
