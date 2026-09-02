@@ -142,7 +142,7 @@ function rowLabel(probe: ProbeComparison, runs: number): string {
  * capture through ONE function. The `not-enumerated` sentence is the one this whole capture exists
  * to get right, and two copies of it are two chances to get it wrong in one place only.
  */
-function rowSurface(row: SurfaceRow): Surface | undefined {
+export function rowSurface(row: SurfaceRow): Surface | undefined {
   if (row.status === "not-recorded") return undefined;
   return {
     status: row.status,
@@ -150,6 +150,14 @@ function rowSurface(row: SurfaceRow): Surface | undefined {
     ...(row.consistent === undefined ? {} : { consistent: row.consistent }),
     evidence: [],
     probesRead: row.probesRead,
+    // CARRIED, NOT DROPPED: `surfaceSummary` reads these for `enumerated-none` (`emptySetKeys`)
+    // and for the near-miss clause both `not-enumerated` and `enumerated-none` render
+    // (`nonFlagCandidates`). `SurfaceRow` never carries `evidence` above and no clause of
+    // `surfaceSummary` reads it, but a field the sentence DOES read has to travel here too, or
+    // `check` and `compare` print two different sentences for one status — the thing the comment
+    // above this function forbids.
+    ...(row.emptySetKeys ? { emptySetKeys: row.emptySetKeys } : {}),
+    ...(row.nonFlagCandidates ? { nonFlagCandidates: row.nonFlagCandidates } : {}),
   };
 }
 

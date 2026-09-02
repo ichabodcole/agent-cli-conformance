@@ -174,6 +174,20 @@ export interface SurfaceRow {
   /** Carried across rather than assumed: see `Surface.consistent`. */
   consistent?: boolean;
   probesRead: number;
+  /**
+   * Carried across on the same terms as `Surface.emptySetKeys` — present only for
+   * `enumerated-none`, which is minted from it. `rowSurface` in `commands/compare.ts` rebuilds a
+   * `Surface` from this row so `check` and `compare` render the `enumerated-none` sentence
+   * through the one `surfaceSummary` function; dropping this field here would make that rebuild
+   * lossy and produce two different sentences for one status.
+   */
+  emptySetKeys?: string[];
+  /**
+   * Carried across on the same terms as `Surface.nonFlagCandidates` — the near-miss clause both
+   * `not-enumerated` and `enumerated-none` render. Same reason as `emptySetKeys`: the compare
+   * path renders through `surfaceSummary` too, and that clause reads this field.
+   */
+  nonFlagCandidates?: Surface["nonFlagCandidates"];
 }
 
 export interface Comparison {
@@ -345,15 +359,33 @@ export function compareReports(inputs: LabelledReport[]): Comparison {
   };
 }
 
+/**
+ * `flags` MUST STAY ABSENT, NOT EMPTY — `Surface.flags`'s own contract, present only for
+ * `enumerated`. A truthiness spread (`surface.flags ? … : {}`) lets an empty array through
+ * unnoticed, because `[]` is truthy in JS; nothing today MINTS a non-`enumerated` surface with a
+ * `flags` field, but that is an invariant held elsewhere, and this boundary is where a violation
+ * would otherwise reach a published artifact silently. Asserted rather than assumed.
+ */
+function assertFlagsOnlyOnEnumerated(surface: Surface): void {
+  if (surface.status !== "enumerated" && "flags" in surface) {
+    throw new Error(
+      `surface with status "${surface.status}" carries a "flags" field — flags must stay absent, not empty`,
+    );
+  }
+}
+
 /** Tolerant of a report written before the capture existed: `surface` is absent, not empty. */
-function surfaceRow(label: string, surface: Surface | undefined): SurfaceRow {
+export function surfaceRow(label: string, surface: Surface | undefined): SurfaceRow {
   if (!surface) return { label, status: "not-recorded", probesRead: 0 };
+  assertFlagsOnlyOnEnumerated(surface);
   return {
     label,
     status: surface.status,
     ...(surface.flags ? { flags: [...surface.flags] } : {}),
     ...(surface.consistent === undefined ? {} : { consistent: surface.consistent }),
     probesRead: surface.probesRead,
+    ...(surface.emptySetKeys ? { emptySetKeys: [...surface.emptySetKeys] } : {}),
+    ...(surface.nonFlagCandidates ? { nonFlagCandidates: [...surface.nonFlagCandidates] } : {}),
   };
 }
 

@@ -118,6 +118,62 @@ describe("self-declared flags", () => {
     // Two tools accepting different flags is two tools. Only `ending` and `placement` decide.
     expect(c.counts.divergent).toBe(0);
   });
+
+  // `rowSurface` in commands/compare.ts rebuilds a `Surface` from this row so `check` and
+  // `compare` render through the one `surfaceSummary` function. A row that dropped a
+  // state-specific field the sentence reads would make that rebuild lossy — the row has to carry
+  // what `enumerated-none`'s sentence needs, on the same terms `enumerated`'s `flags` already does.
+  test("`enumerated-none` carries its empty keys and near-miss candidates across", () => {
+    const c = compareReports([
+      withSurface("empty", {
+        status: "enumerated-none",
+        evidence: [],
+        probesRead: 1,
+        emptySetKeys: ["validFlags"],
+        nonFlagCandidates: [{ key: "choices", sample: ["run", "build"], count: 2 }],
+      }),
+    ]);
+    expect(c.surfaces).toEqual([
+      {
+        label: "empty",
+        status: "enumerated-none",
+        probesRead: 1,
+        emptySetKeys: ["validFlags"],
+        nonFlagCandidates: [{ key: "choices", sample: ["run", "build"], count: 2 }],
+      },
+    ]);
+  });
+
+  // The same field `not-enumerated` reads for its own near-miss clause, carried the same way.
+  test("`not-enumerated` carries its near-miss candidates across too", () => {
+    const c = compareReports([
+      withSurface("verbs", {
+        status: "not-enumerated",
+        evidence: [],
+        probesRead: 1,
+        nonFlagCandidates: [{ key: "choices", sample: ["run", "build"], count: 2 }],
+      }),
+    ]);
+    expect(c.surfaces[0]?.nonFlagCandidates).toEqual([
+      { key: "choices", sample: ["run", "build"], count: 2 },
+    ]);
+  });
+
+  // `flags` MUST STAY ABSENT, NOT EMPTY — the field's own contract, and `[]` is truthy so a
+  // truthiness spread lets one through. `enumerated-none` never carries `flags` today; this
+  // asserts that boundary rather than assuming it holds.
+  test("a non-`enumerated` status carrying a `flags` field is refused at the boundary, not spread", () => {
+    expect(() =>
+      compareReports([
+        withSurface("bug", {
+          status: "enumerated-none",
+          evidence: [],
+          probesRead: 1,
+          flags: [],
+        }),
+      ]),
+    ).toThrow();
+  });
 });
 
 describe("alignment", () => {

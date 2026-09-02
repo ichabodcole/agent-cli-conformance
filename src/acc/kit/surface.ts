@@ -875,9 +875,28 @@ export function surfaceSummary(s: Surface | undefined, path: readonly string[] =
       // without the keys still gets a true sentence.
       const keys = s.emptySetKeys ?? [];
       const under = keys.length === 0 ? "" : ` under ${keys.map((k) => `\`${k}\``).join(", ")}`;
+      // THE SAME NEAR-MISS CLAUSE `not-enumerated` RENDERS, and worded identically on purpose: a
+      // target can name one key empty (minting this status) while a DIFFERENT key on the same
+      // rejection carried a non-flag list — `choices: ["run","build"]` beside `validFlags: []` is
+      // exactly this shape. `surfaceFrom` already attaches `nonFlagCandidates` here, right beside
+      // `emptySetKeys`, so withholding the clause would drop data the JSON still carries.
+      const near = s.nonFlagCandidates ?? [];
+      const seen =
+        near.length === 0
+          ? ""
+          : `; ${near
+              .map(
+                (c) =>
+                  `a \`${c.key}\` list of ${c.count} was present and its members are not flag-shaped (${c.sample
+                    .map((v) => JSON.stringify(v))
+                    .join(
+                      ", ",
+                    )}${c.count > c.sample.length ? ", …" : ""}) — a set of something else, not of flags`,
+              )
+              .join("; ")}`;
       return `stated an empty set of flags at ${where}${under}; ${s.probesRead} rejection${
         s.probesRead === 1 ? "" : "s"
-      } read, and the set the target named held nothing (the target's own answer, not silence read as one)`;
+      } read, and the set the target named held nothing (the target's own answer, not silence read as one)${seen}`;
     }
     case "no-evidence":
       return `nothing readable was recorded at ${where}, so nothing was read (not a statement about the tool)`;

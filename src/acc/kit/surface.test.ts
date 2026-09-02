@@ -661,6 +661,26 @@ describe("a list that is not a flag list", () => {
     expect(line).toContain("set of flags");
     expect(line).not.toContain("choices");
   });
+
+  test("`enumerated-none` still names a non-flag list seen alongside the empty set", () => {
+    // The DATA already survives this shape — `surfaceFrom` computes `nonFlagCandidates` in the
+    // same non-evidence branch that mints `enumerated-none`, and attaches it right beside
+    // `emptySetKeys` on the returned object. What was missing is the SENTENCE: `surfaceSummary`'s
+    // `enumerated-none` case did not read `nonFlagCandidates` the way `not-enumerated`'s does, so
+    // a target answering both a verb-shaped `choices` list and an empty `validFlags` kept the
+    // near-miss data in the JSON while the rendered line silently dropped it.
+    const s = captureSurface([json({ error: { choices: ["run", "build"], validFlags: [] } })]);
+    expect(s.status).toBe("enumerated-none");
+    expect(s.emptySetKeys).toEqual(["validFlags"]);
+    expect(s.nonFlagCandidates?.map((c) => c.key)).toEqual(["choices"]);
+
+    const line = surfaceSummary(s);
+    expect(line).toContain("stated an empty set of flags at the root");
+    expect(line).toContain("`choices`");
+    expect(line).toContain("run");
+    expect(line).toContain("build");
+    expect(line).toContain("not flag-shaped");
+  });
 });
 
 // THE ADVERTISED VERB SET — what the target says its commands are, and the difference against a

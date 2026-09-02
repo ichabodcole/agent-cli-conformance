@@ -18,7 +18,15 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Comparison, ProbeComparison } from "../kit/compare.ts";
+import {
+  type Comparison,
+  type ProbeComparison,
+  type SurfaceRow,
+  surfaceRow,
+} from "../kit/compare.ts";
+import type { Surface } from "../kit/surface.ts";
+import { surfaceSummary } from "../kit/surface.ts";
+import { rowSurface } from "./compare.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = join(HERE, "../cli.ts");
@@ -287,6 +295,67 @@ describe("self-declared flags across the population", () => {
     expect(r.stdout).toContain("did not enumerate");
     expect(r.stdout).toContain("NOT a tool with no flags");
   }, 60_000);
+});
+
+// `rowSurface` (this command) rebuilds a `Surface` from `surfaceRow`'s compact `SurfaceRow` so
+// `acc check` and `acc compare` render the flag-surface capture through ONE function,
+// `surfaceSummary`. A row that dropped a state-specific field the sentence reads would make that
+// round trip lossy — two different sentences for one status, which `surface.ts`'s own comment
+// forbids. This exercises the round trip directly rather than through a fixture: the point is
+// that `surfaceRow → SurfaceRow → rowSurface → surfaceSummary` renders IDENTICALLY to
+// `surfaceSummary` on the original `Surface`, for every status this capture can produce.
+describe("the compare row renders the same sentence as `acc check`", () => {
+  const roundTrip = (surface: Surface): string =>
+    surfaceSummary(rowSurface(surfaceRow("t", surface)));
+
+  test("`enumerated` — flags and consistency survive the round trip", () => {
+    const s: Surface = {
+      status: "enumerated",
+      flags: ["--format", "--help"],
+      consistent: true,
+      evidence: [],
+      probesRead: 2,
+    };
+    expect(roundTrip(s)).toBe(surfaceSummary(s));
+  });
+
+  test("`not-enumerated` — including its near-miss clause", () => {
+    const s: Surface = {
+      status: "not-enumerated",
+      evidence: [],
+      probesRead: 3,
+      nonFlagCandidates: [{ key: "choices", sample: ["rules", "show"], count: 2 }],
+    };
+    const rendered = roundTrip(s);
+    expect(rendered).toBe(surfaceSummary(s));
+    expect(rendered).toContain("choices");
+  });
+
+  // THE SHAPE THE BRIEF NAMED: a target answering both a verb-shaped `choices` list and an empty
+  // `validFlags` — `enumerated-none`, carrying both `emptySetKeys` and `nonFlagCandidates`. Before
+  // this fix, `rowSurface` hardcoded these fields away and the compare-path sentence silently
+  // dropped the near-miss clause the check-path sentence still carried.
+  test("`enumerated-none` — including the near-miss clause that named this task", () => {
+    const s: Surface = {
+      status: "enumerated-none",
+      evidence: [],
+      probesRead: 1,
+      emptySetKeys: ["validFlags"],
+      nonFlagCandidates: [{ key: "choices", sample: ["run", "build"], count: 2 }],
+    };
+    const rendered = roundTrip(s);
+    expect(rendered).toBe(surfaceSummary(s));
+    expect(rendered).toContain("stated an empty set of flags");
+    expect(rendered).toContain("choices");
+    expect(rendered).toContain("not flag-shaped");
+  });
+
+  test("`no-evidence` and `not-recorded`", () => {
+    const s: Surface = { status: "no-evidence", evidence: [], probesRead: 0 };
+    expect(roundTrip(s)).toBe(surfaceSummary(s));
+    const row: SurfaceRow = { label: "t", status: "not-recorded", probesRead: 0 };
+    expect(surfaceSummary(rowSurface(row))).toBe(surfaceSummary(undefined));
+  });
 });
 
 describe("bad input", () => {
