@@ -838,6 +838,46 @@ that surfaces fleet divergence is putting the declarations side by side.**
 **The distinction R-39 adds:** an inventory is decoration when it repeats a claim one case already
 makes, and it is the argument when the claim is about a population.
 
+## Part 3 §§ Pagination, Non-interactivity
+
+24 to 23, and 16 to 16. Both sections are near-identical in length and materially different in
+content — which is the clearest demonstration yet that the counts are not the measure.
+
+### R-40 · A section breaking Part 3's own stated rule, verbatim
+
+Part 3's preamble says: _"Where the catalogue already has a rule, this section points at it and
+stops."_ The bypass-flag paragraph did both at once — it restated the rule and then said _"That rule
+page carries both."_ Measured against
+[`never-block-without-a-tty.md:57-59`](../wiki/rules/interactivity/never-block-without-a-tty.md), the
+two are near-verbatim: same bolded sentence, same two examples, same order.
+
+**This is the duplication predicted before the pass began.** When the wiki-versus-standard question
+was first asked, this exact paragraph was the one instance found of the standard restating a rule
+page rather than pointing at it. It is now the only one repaired, and finding it took no instrument —
+the section's own preamble names the rule it was breaking.
+
+**The rule that generalises:** where a page states a policy about itself, check the page against it.
+A stated policy is a test the document has already written and left unrun.
+
+### R-41 · A fifth attribution tell, in a section that had already done the lifting
+
+> clispec states the rule this page endorses — _"do not probe what the tool did not claim"_ […]:
+> only a command declared with unbounded output owes you pagination
+
+The page quotes the rule and then, one clause later, states it in its own words. After R-4, R-16,
+R-26 and R-28, this is the first instance where the paraphrase was **already sitting beside the
+quotation** — so the removal cost nothing at all and the section reads the same minus an attribution.
+
+Two smaller removals: the Docker maintainer's _"for compatibility reason, this can't be fixed"_,
+where the concept page carries the case and the page's own punchline is what matters — the
+inconsistency is permanent **because it was never declared, only observed** — and a phrase pointing
+at a mark that does not exist (_"and it is marked as such"_, with no mark anywhere).
+
+**Kept deliberately:** the whole of _"this is the thinnest recommendation on the page"_. It tells a
+reader how much weight to give a recommendation whose reasoning is sound and whose evidence is
+absent, which is the evidentiary discipline `How to read this` promises and one of the few places
+the page marks its own confidence down.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,

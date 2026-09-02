@@ -743,21 +743,18 @@ thousand records into an agent's context has failed even though every byte was v
 selection is the cheaper half — most of the time a caller wants three fields of each record and has
 no way to ask.
 
-**Only declare it where it applies, and only expect it where it was declared.** clispec states the
-rule this page endorses — _"do not probe what the tool did not claim"_
-([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#22-clispec--closest-on-intent-effectively-pre-adoption)): only a command declared with
-unbounded output owes you pagination, and the limit flag and cursor field come from the document
-rather than from a convention. A command returning one record owes nothing here.
+**Only declare it where it applies, and only expect it where it was declared.** Do not probe what
+the tool did not claim: only a command declared with unbounded output owes you pagination, and the
+limit flag and cursor field come from the document rather than from a convention. A command
+returning one record owes nothing here.
 
 The kinds and cardinality vocabulary are in [output kind](docs/wiki/concepts/output-kind.md#why-it-matters-for-agents), which also
 carries the Docker case: under the same `--format json` flag, `docker version` emits one object,
-`docker ps` emits NDJSON with no enclosing array, and `docker inspect` emits an array. The
-inconsistency is now permanent — asked to fix `docker ps`, a maintainer replied that _"for
-compatibility reason, this can't be fixed"_ — and it is permanent **because it was never declared,
-only observed.**
+`docker ps` emits NDJSON with no enclosing array, and `docker inspect` emits an array. The inconsistency is now permanent, **because it was never declared, only
+observed.**
 
-**This is the thinnest recommendation on the page, and it is marked as such.** The reasoning is
-sound and the Docker case is real, but no defect in either archaeology corpus is a pagination
+**This is the thinnest recommendation on the page.** The reasoning is sound and the Docker case is
+real, but no defect in either archaeology corpus is a pagination
 defect, and nothing in this repository has measured the cost of its absence. Take it as a design
 argument rather than as a finding.
 
@@ -777,11 +774,9 @@ stdin as a decline and exits `0`, so an agent invoking it non-interactively gets
 no work done ([E1](docs/wiki/rules/interactivity/never-block-without-a-tty.md#why)). Declining is a decision the caller did not make, and it must not be reported as
 success.
 
-**A bypass flag is consent to skip the prompt, not consent to guess the argument.** `gh` ignores
-`--yes` when the repository would be inferred from the working directory; Vercel applies no default
-scope non-interactively and returns an action-required error naming the flag that resolves it. That
-rule page — [never block on input without a terminal](docs/wiki/rules/interactivity/never-block-without-a-tty.md#how-to-comply) — carries both, along with
-the per-language terminal checks and the naming conventions.
+**A bypass flag is consent to skip the prompt, not consent to guess the argument** — see
+[never block on input without a terminal](docs/wiki/rules/interactivity/never-block-without-a-tty.md#how-to-comply),
+which carries that, the per-language terminal checks and the naming conventions.
 
 **[C]** `E1`, for the hang. **[—]** For the silent EOF answer — the rule page's own coverage gap says
 it: treating EOF or closed stdin as an answer is not detectable from termination alone. That is the
