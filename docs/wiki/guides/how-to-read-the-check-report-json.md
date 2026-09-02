@@ -286,8 +286,12 @@ And what came back:
   (see [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md)) carries
   `emptySetKeys` on the same terms, but not `nonFlagCandidates`: in its place it carries
   **`nonFlagKeys`**, the bare key names with no count and no sample, because the census line it
-  feeds groups and rolls up keys rather than quoting members. The full entries stay on the root
-  `surface`; a reading gives you which keys, not how many members or which.
+  feeds groups and rolls up keys rather than quoting members. The full entries are nowhere else to
+  be found for that path: the root `surface` is the root's OWN capture and never carries a recorded
+  path's `nonFlagCandidates`. The count and the members do reach you, but only inside the reading's
+  `summary` — the prose field — which quotes them exactly as the text report's clause does. So on a
+  recorded path this is the one place a machine consumer is left reading a sentence: `nonFlagKeys`
+  is what can be checked, and the members behind it cannot.
 
   **A report written before `enumerated-none` existed cannot be reread as one.** The rule this
   kit otherwise holds — a thing missing from an older artifact renders as "not recorded by that

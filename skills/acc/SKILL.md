@@ -163,26 +163,51 @@ To cover those paths you record your tool's own error messages and hand them bac
 `docs/wiki/guides/how-to-record-surfaces-below-the-root.md` walks through it; `acc probe-plan`
 generates a script that does the recording for you.
 
-**Four situations, and your report tells you which you are in.** One line per path — the root, and
-each path you recorded. Every line names its own path, so `the root` below is `sessions` on a line
-about `sessions`:
+**Four situations, and your report tells you which you are in.** They are read at two places and
+printed in two blocks: the kit's own root reading opens `SELF-DECLARED FLAGS`, and the paths you
+recorded are read further down under `RECORDED SURFACES`. These are the four sentences as they
+print at the root:
 
 ```
-enumerated 3 flags at the root: --format --help --verbose
-stated an empty set of flags at the root under `choices`; 2 rejections read, and the set the target named held nothing (the target's own answer, not silence read as one)
+enumerated 5 flags at the root: --format --help --version -V -h
+stated an empty set of flags at the root under `validFlags`; 7 rejections read, and the set the target named held nothing (the target's own answer, not silence read as one)
 did not enumerate at the root; 7 rejections read, none named a set of flags (NOT a tool with no flags)
 nothing readable was recorded at the root, so nothing was read (not a statement about the tool)
 ```
+
+A recorded path gets the same four sentences, naming itself instead of the root, and naming
+whichever key your tool used there:
+
+```
+stated an empty set of flags at sessions under `choices`; 1 rejection read, and the set the target named held nothing (the target's own answer, not silence read as one)
+```
+
+**Once four or more of your recorded paths land on the same one of the four, the census rolls them
+up rather than listing them** — so on a verb-first CLI, the shape most likely to answer the same way
+everywhere, the per-path sentence is not what you will see. Five recorded paths that all named an
+empty set print:
+
+```
+5 paths: 5 stated an empty set
+the folded 5 are listed individually in .data.recordedSurfaces.readings
+```
+
+Only the repetition folds. A sixth path answering differently is still printed in full beside the
+rollup, and the folded paths keep their own sentences in the JSON.
 
 **`enumerated`** means that when your tool refuses an unknown flag, it lists the flags it does
 accept. That listing is what the comparison reads, so you already get some coverage without doing
 anything.
 
-**`stated an empty set of flags`** means your tool named its set and left it empty — it accepts no
-flags at that path, and said so. That counts as a comparison, exactly as a non-empty list does, so
-this line buys you the same coverage `enumerated` does. It is what a verb-first CLI whose flags all
-live under its verbs says at a path you recorded. The line names the key it read — `choices`, above —
-because that key's name is the only thing saying the set was a set of _flags_. Check it.
+**`stated an empty set of flags`** means your tool named a set and left it empty. The report records
+that it said so, and stops there: an empty array is as easily a serializer that dropped its contents
+as a tool with nothing to declare, so nothing here concludes that your tool accepts no flags at that
+path. It is what a verb-first CLI whose flags all live under its verbs says at a path you recorded.
+The answer counts as a comparison exactly as a non-empty list does, so the path enters the census the
+way `enumerated` does — with the opposite outcome: against an empty accepted set, every flag your
+declaration marks `valid` there comes back as a `declared-not-accepted` finding. The line names the
+key it read — `choices`, above — because that key's name is the only thing saying the set was a set
+of _flags_. Check it.
 
 **`did not enumerate`** means your tool refuses without saying what it would have accepted. For
 a non-enumerating tool, recording buys **observation, not comparison** — the kit reads what your
