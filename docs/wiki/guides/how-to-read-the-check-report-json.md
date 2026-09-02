@@ -269,8 +269,16 @@ And what came back:
   key held it), or `no-evidence` (nothing readable was recorded at all — a statement about the
   run, not the tool). **`emptySetKeys` names the key an `enumerated-none` set came from**, so the
   claim is checkable against the bytes rather than trusted; it carries no members because there
-  were none — the whole content of the observation is which key was empty. The same field, on the
-  same terms, appears on a recorded-surfaces reading (see
+  were none — the whole content of the observation is which key was empty. **`nonFlagCandidates`**
+  is the neighbouring diagnostic, present on `not-enumerated` and `enumerated-none` alike: the
+  recognised keys that held a set the kit read but whose members are not all flag-shaped — a
+  target's own list of verbs or subcommands, say, seen and set aside rather than misread as a flag
+  surface. It is "something was there and it is not this kind of thing," distinct from
+  `not-enumerated`'s and `no-evidence`'s "there was nothing to read": each entry names the key,
+  the total count, and up to a sample of the members verbatim, which is what lets the text report
+  add a clause naming the key, the count and a sample — "a set of something else, not of flags" —
+  instead of rendering the same sentence it would for silence. The same two fields, on the same
+  terms, appear on a recorded-surfaces reading (see
   [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md)) and on
   `acc compare`'s per-target `SurfaceRow`, described below.
 
