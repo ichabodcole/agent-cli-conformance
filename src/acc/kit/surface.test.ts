@@ -196,12 +196,14 @@ describe("what the capture refuses, which is the half that keeps it honest", () 
     expect(s.status).toBe("not-enumerated");
   });
 
-  test("an empty set declares nothing", () => {
+  test("an empty set never becomes a set of flags", () => {
     const s = captureSurface([rejection(`{"error":{"validFlags":[]}}`)]);
-    // "Enumerated zero flags" is the one output this capture must never produce: it is
-    // indistinguishable from a tool with no flags, and from a serializer that dropped the list.
-    expect(s.status).toBe("not-enumerated");
+    // `flags: []` is the one output this capture must never produce: an empty array published as
+    // a list is indistinguishable from a list, and a consumer reading `.flags` would take it for
+    // one. What the target said is carried by the STATUS, where a reader has to look at it.
+    expect(s.status).not.toBe("enumerated");
     expect(s.flags).toBeUndefined();
+    expect("flags" in s).toBe(false);
   });
 
   test("a truncated capture, whose list may be short by an unknowable number of flags", () => {
@@ -242,6 +244,69 @@ describe("what the capture refuses, which is the half that keeps it honest", () 
       rejection("valid flags: --a", { args: ["--", "--acc-probe-xyzzy-value"], id: "dd" }),
     ]);
     expect(s.status).toBe("no-evidence");
+  });
+});
+
+/**
+ * THE TARGET ANSWERED, AND THE ANSWER WAS NONE.
+ *
+ * `not-enumerated` asserts the tool has flags and did not list them, so recording it for a target
+ * whose rejection carried the right key EMPTY published the negation of what that target said. The
+ * two sentences have to be unmistakably different from each other, because the statuses are not:
+ * one is a fact about the tool's error text going quiet, the other is a fact about the tool's error
+ * text speaking.
+ */
+describe("a target that named an empty set", () => {
+  test("`enumerated-none` is minted, and carries no flags field", () => {
+    const s = captureSurface([rejection(`{"error":{"validFlags":[]}}`)]);
+    expect(s.status).toBe("enumerated-none");
+    expect(s.probesRead).toBe(1);
+    // The invariant `flags` exists to hold: absent, never empty, on every non-`enumerated` status.
+    expect("flags" in s).toBe(false);
+    expect(s.consistent).toBeUndefined();
+  });
+
+  test("it names WHICH key was empty, so the claim can be checked against the bytes", () => {
+    const s = captureSurface([rejection(`{"error":{"choices":[]}}`)]);
+    expect(s.status).toBe("enumerated-none");
+    expect(s.emptySetKeys).toEqual(["choices"]);
+  });
+
+  test("the sentence says the target stated an empty set, and cannot be read as silence", () => {
+    const text = surfaceSummary(captureSurface([rejection(`{"error":{"validFlags":[]}}`)]));
+    expect(text).toContain("empty set");
+    expect(text).toContain("at the root");
+    expect(text).toContain("`validFlags`");
+    // The two sentences the renderer used to reach instead, both of which say the opposite of
+    // what this target said. The fallthrough one is the sharper failure: it claims we never looked.
+    expect(text).not.toContain("NOT a tool with no flags");
+    expect(text).not.toContain("did not enumerate");
+    expect(text).not.toContain("nothing readable was recorded");
+  });
+
+  test("the sentence names the path, exactly as the other three do", () => {
+    const s = captureSurface([rejection(`{"error":{"validFlags":[]}}`)]);
+    expect(surfaceSummary(s, ["sessions"])).toContain("at sessions");
+  });
+
+  test("a real enumeration still wins over an empty key elsewhere in the document", () => {
+    // The early return on evidence is untouched: a target that named a set HAS enumerated, and
+    // an empty second key cannot demote it.
+    const s = captureSurface([rejection(`{"error":{"validFlags":["--a"],"choices":[]}}`)]);
+    expect(s.status).toBe("enumerated");
+    expect(s.flags).toEqual(["--a"]);
+  });
+
+  test("an empty key on an UNQUALIFIED name declares nothing, exactly as a full one does not", () => {
+    // `flags: []` is a field, not a declaration — the same reason `flags: ["--a"]` is not read.
+    const s = captureSurface([rejection(`{"error":{"flags":[]}}`)]);
+    expect(s.status).toBe("not-enumerated");
+  });
+
+  test("nothing readable was recorded is still its own claim", () => {
+    // The status means the target ANSWERED. A run that read no rejection at all cannot reach it,
+    // however many empty arrays are lying around in streams nobody read.
+    expect(captureSurface([]).status).toBe("no-evidence");
   });
 });
 
@@ -419,9 +484,14 @@ describe("against real fixtures", () => {
       CHECKERS,
     );
     const s = captureSurface(h.observations);
-    // An empty array under `validFlags` declares nothing, and the honest answer is silence.
-    expect(s.status).toBe("not-enumerated");
+    // The target named the key this reads and put nothing in it. That is an answer, and reporting
+    // it as `not-enumerated` — which asserts the tool HAS flags it declined to list — published
+    // the negation of what the target said.
+    expect(s.status).toBe("enumerated-none");
     expect(s.probesRead).toBeGreaterThan(0);
+    expect(s.emptySetKeys).toEqual(["validFlags"]);
+    // Still no fabricated list: an empty array is not an enumeration OF anything.
+    expect("flags" in s).toBe(false);
   }, 60_000);
 
   test("`acc check` prints the capture, folding the repeated rejections", async () => {
@@ -439,15 +509,19 @@ describe("against real fixtures", () => {
     expect(run.stdout).toContain("identical rejections");
   }, 120_000);
 
-  test("...and says plainly when a target named nothing", async () => {
+  test("...and says plainly when a target named an EMPTY set", async () => {
     const acc = join(HERE, "..", "cli.ts");
     const run = spawnSync(
       "bun",
       [acc, "check", fixture("enumerates-nothing-explicitly.ts"), "--format", "text"],
       { encoding: "utf8" },
     );
-    expect(run.stdout).toContain("did not enumerate");
-    expect(run.stdout).toContain("NOT a tool with no flags");
+    expect(run.stdout).toContain("empty set");
+    expect(run.stdout).toContain("`validFlags`");
+    // Neither of the two sentences the renderer used to reach for this target, both of which
+    // contradict what it actually said.
+    expect(run.stdout).not.toContain("NOT a tool with no flags");
+    expect(run.stdout).not.toContain("nothing readable was recorded");
   }, 120_000);
 
   test("the kit's own reference implementation, which enumerates its COMMANDS", async () => {

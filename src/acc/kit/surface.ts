@@ -65,6 +65,24 @@ export type SurfaceStatus =
    */
   | "not-enumerated"
   /**
+   * A root-level rejection named a set under a key this reads AND THAT SET WAS EMPTY. The target
+   * answered the question rather than declining it, which is the whole difference from
+   * `not-enumerated`: that status asserts the tool has flags it did not list, and recording it here
+   * publishes the negation of what the target said. `emptySetKeys` names the key, so the claim can
+   * be checked against the bytes rather than trusted.
+   *
+   * WHAT IT DOES NOT SAY IS THAT THE TOOL ACCEPTS NO FLAGS. This is the target's assertion,
+   * captured, and an empty array is as easily a serializer that dropped its contents as a program
+   * with nothing to declare — the kit reports what was said and does not adopt it. `flags` stays
+   * ABSENT for the same reason it is absent on the other two: an empty list published as a list is
+   * indistinguishable from a list, and nothing here enumerated anything.
+   *
+   * Like `not-enumerated` it says nothing about a subcommand. A verb-first CLI whose verbs scope
+   * their own flags answers at the root with an empty set and lands here, which is why the rendered
+   * sentence names the scope.
+   */
+  | "enumerated-none"
+  /**
    * Nothing readable was recorded — no root-level flag rejection ran, or every one of them hung,
    * crashed, failed to spawn or was truncated at the output ceiling. A statement about the RUN.
    * Distinguished from `not-enumerated` for the same reason `unverified` is distinguished from
@@ -177,6 +195,16 @@ export interface Surface {
     /** How many members there were, so a truncated sample cannot pass for the whole list. */
     count: number;
   }>;
+  /**
+   * THE KEYS THE TARGET NAMED AND LEFT EMPTY — present only on `enumerated-none`, which is minted
+   * from them.
+   *
+   * Deduplicated and in first-sighting order, the way `nonFlagCandidates` is: one key repeated
+   * across four probes is one entry. It carries no members because there were none; the whole
+   * content of the observation is WHICH key was empty, and that is what makes the status a claim a
+   * reader can check against the recorded bytes rather than one they have to take on trust.
+   */
+  emptySetKeys?: string[];
   /**
    * THE ADVERTISED VERB SET — what the target says its commands are, read from its root captures.
    *
@@ -429,10 +457,17 @@ function flagsAfter(text: string): string[] {
  * `rejected` collects the pairs that matched a key and FAILED the flag-shape test, so a caller can
  * report having seen them. It is deliberately a separate output rather than a looser `out`: nothing
  * downstream may confuse the two, and the shape test stays exactly as strict as it was.
+ *
+ * `empty` collects the keys that matched and held NOTHING, and it is a third output for the same
+ * reason. An empty array is not a set of flags and must never reach `out` — the two `value.length
+ * > 0` guards below are what stop it, and the guards below them are all vacuously satisfied by
+ * `[]`, so an empty array threaded through `out` would be published as an enumeration of zero
+ * flags. It is a key with no members, and it goes where a key with no members goes.
  */
 function keyedSets(
   document: unknown,
   rejected?: Array<{ key: string; values: string[] }>,
+  empty?: string[],
 ): Array<{ key: string; values: string[] }> {
   const out: Array<{ key: string; values: string[] }> = [];
   const visit = (node: unknown): void => {
@@ -462,6 +497,15 @@ function keyedSets(
       ) {
         // Matched a key this reads, held strings, and was not a flag list. That is the near miss.
         rejected.push({ key, values: value as string[] });
+      } else if (
+        empty &&
+        KEYS.has(normaliseKey(key)) &&
+        Array.isArray(value) &&
+        value.length === 0
+      ) {
+        // Matched a key this reads and held nothing. That is an answer, not a near miss and not a
+        // silence — and it is the one case where the emptiness itself is the whole content.
+        empty.push(key);
       }
       visit(value);
     }
@@ -514,6 +558,30 @@ export function nonFlagSetsIn(text: string): Array<{ key: string; values: string
   const rejected: Array<{ key: string; values: string[] }> = [];
   keyedSets(JSON.parse(trimmed) as unknown, rejected);
   return rejected;
+}
+
+/**
+ * Keys this reads that the target named and left EMPTY — the channel that carries an explicit
+ * "none" up to `surfaceFrom`.
+ *
+ * A SECOND PASS over the raw text, on exactly the model of `nonFlagSetsIn` above and for the same
+ * reason: `readStream` answers "is there a flag surface here", every caller reads it that way, and
+ * an empty set is the one answer that must never travel beside a flag list. `surfaceFrom` is handed
+ * evidence and raw streams rather than a parsed document, so the answer has to be re-read from the
+ * bytes there — which is what keeps this reachable from the caller-recorded reader too, through the
+ * stream texts it already passes.
+ *
+ * ONLY JSON DOCUMENTS ARE READ, for a stronger reason than the near-miss reader has: there is no
+ * prose spelling of an empty list. A sentence that names no flags is a sentence that named no
+ * flags, which is `not-enumerated`, and inventing an empty-set marker for prose would be the kit
+ * deciding what one of the target's sentences MEANS.
+ */
+export function emptySetsIn(text: string): string[] {
+  const trimmed = text.trim();
+  if (trimmed === "" || !parsesWhole(trimmed)) return [];
+  const empty: string[] = [];
+  keyedSets(JSON.parse(trimmed) as unknown, undefined, empty);
+  return empty;
 }
 
 export function readStream(
@@ -662,11 +730,18 @@ export function surfaceFrom(
       }
     }
   }
+  // Deduped and in first-sighting order, exactly as the near-miss keys above are. A key held empty
+  // is an ANSWER — the target named the set and there was nothing in it — so it decides the status
+  // rather than merely annotating it. `probesRead > 0` still gates the whole branch: a run that
+  // read no rejection has heard nothing, whatever the streams it never read contain.
+  const emptyKeys = [...new Set(streams.flatMap((text) => emptySetsIn(text)))];
+  const statedNone = probesRead > 0 && emptyKeys.length > 0;
   return {
-    status: probesRead > 0 ? "not-enumerated" : "no-evidence",
+    status: probesRead > 0 ? (statedNone ? "enumerated-none" : "not-enumerated") : "no-evidence",
     evidence: [],
     probesRead,
     ...(byKey.size > 0 ? { nonFlagCandidates: [...byKey.values()] } : {}),
+    ...(statedNone ? { emptySetKeys: emptyKeys } : {}),
   };
 }
 
@@ -690,41 +765,63 @@ export function surfaceFrom(
  * root — the only path probed" ABOUT `state`: a false scope claim, produced by the very wording
  * `SG-2` added to stop one. The claim about coverage — which paths were reached, and by whom —
  * belongs where the set of paths is actually held, which is the census header and not here.
+ *
+ * A SWITCH WITH NO `default`, AND EVERY STATUS SPELLED OUT, because the alternative failed silently.
+ * This was an `if`-chain ending in an unconditional `return` that WAS the `no-evidence` sentence,
+ * so a status added without a clause printed "nothing readable was recorded" — a confident "we did
+ * not look" — about a target that had answered explicitly, and nothing in the compiler could say
+ * so, because an `if`-chain is never checked for exhaustiveness. `no-evidence` has its own case for
+ * that reason: it must be a sentence a status is GIVEN, never one it inherits by falling past the
+ * others. The next member of `SurfaceStatus` is a type error here.
  */
 export function surfaceSummary(s: Surface | undefined, path: readonly string[] = []): string {
   if (!s) return "not recorded — this report predates the flag-surface capture";
   const where = path.length === 0 ? "the root" : path.join(" ");
-  if (s.status === "enumerated") {
-    const flags = s.flags ?? [];
-    const n = flags.length;
-    const disagreed = s.consistent === false;
-    return `enumerated ${n} flag${n === 1 ? "" : "s"} at ${where}: ${flags.join(" ")}${
-      disagreed ? "  (rejections disagreed; see the per-probe lists)" : ""
-    }`;
+  switch (s.status) {
+    case "enumerated": {
+      const flags = s.flags ?? [];
+      const n = flags.length;
+      const disagreed = s.consistent === false;
+      return `enumerated ${n} flag${n === 1 ? "" : "s"} at ${where}: ${flags.join(" ")}${
+        disagreed ? "  (rejections disagreed; see the per-probe lists)" : ""
+      }`;
+    }
+    case "not-enumerated": {
+      // "A SET" NEVER SAID WHICH SET. A target naming a list of VERBS landed here reading exactly
+      // like a target that named nothing, so the clause now says `set of flags` and, when a
+      // non-flag list was actually seen, names it and quotes enough of it to recognise.
+      const near = s.nonFlagCandidates ?? [];
+      const seen =
+        near.length === 0
+          ? ""
+          : `; ${near
+              .map(
+                (c) =>
+                  `a \`${c.key}\` list of ${c.count} was present and its members are not flag-shaped (${c.sample
+                    .map((v) => JSON.stringify(v))
+                    .join(
+                      ", ",
+                    )}${c.count > c.sample.length ? ", …" : ""}) — a set of something else, not of flags`,
+              )
+              .join("; ")}`;
+      return `did not enumerate at ${where}; ${s.probesRead} rejection${
+        s.probesRead === 1 ? "" : "s"
+      } read, none named a set of flags (NOT a tool with no flags)${seen}`;
+    }
+    case "enumerated-none": {
+      // NOTHING HERE MAY READ AS THE OTHER TWO. This target spoke: it named the key and left it
+      // empty, so the sentence has to attribute the emptiness to the target and not to the read.
+      // Naming the key is a clause rather than the claim, so a caller that carries the status
+      // without the keys still gets a true sentence.
+      const keys = s.emptySetKeys ?? [];
+      const under = keys.length === 0 ? "" : ` under ${keys.map((k) => `\`${k}\``).join(", ")}`;
+      return `stated an empty set of flags at ${where}${under}; ${s.probesRead} rejection${
+        s.probesRead === 1 ? "" : "s"
+      } read, and the set the target named held nothing (the target's own answer, not silence read as one)`;
+    }
+    case "no-evidence":
+      return `nothing readable was recorded at ${where}, so nothing was read (not a statement about the tool)`;
   }
-  if (s.status === "not-enumerated") {
-    // "A SET" NEVER SAID WHICH SET. A target naming a list of VERBS landed here reading exactly
-    // like a target that named nothing, so the clause now says `set of flags` and, when a
-    // non-flag list was actually seen, names it and quotes enough of it to recognise.
-    const near = s.nonFlagCandidates ?? [];
-    const seen =
-      near.length === 0
-        ? ""
-        : `; ${near
-            .map(
-              (c) =>
-                `a \`${c.key}\` list of ${c.count} was present and its members are not flag-shaped (${c.sample
-                  .map((v) => JSON.stringify(v))
-                  .join(
-                    ", ",
-                  )}${c.count > c.sample.length ? ", …" : ""}) — a set of something else, not of flags`,
-            )
-            .join("; ")}`;
-    return `did not enumerate at ${where}; ${s.probesRead} rejection${
-      s.probesRead === 1 ? "" : "s"
-    } read, none named a set of flags (NOT a tool with no flags)${seen}`;
-  }
-  return `nothing readable was recorded at ${where}, so nothing was read (not a statement about the tool)`;
 }
 
 /**
