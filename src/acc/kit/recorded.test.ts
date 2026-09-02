@@ -758,4 +758,21 @@ describe("the census rolls up what repeats and itemises what does not", () => {
       new Set(["not-enumerated"]),
     );
   });
+
+  test("a rolled-up `enumerated-none` group reads as English, not the raw status token", () => {
+    // Below the root, an empty `choices` set is the target answering rather than declining —
+    // `enumerated-none`. Four paths clear FOLD_AT, so this drives the census through the rollup
+    // rather than the itemised list, which is the only place `VERDICT_WORD` is read.
+    const emptySet = JSON.stringify({ error: { choices: [] } });
+    const many = Array.from({ length: 4 }, (_, i) => at([`verb${i}`], emptySet));
+    const path = write("empty-set.json", batch({ records: many }));
+    const r = run(["--recorded-surfaces", path]);
+    expect(r.stdout).toMatch(/4 paths/);
+    // The rollup names the group in English, not the raw enum token — that degradation, via
+    // `VERDICT_WORD[status] ?? status`, is the defect this test exists to catch.
+    expect(r.stdout).not.toContain("enumerated-none");
+    // And it must not read as `not-enumerated`'s noun — that confusion is the whole point of
+    // giving this status its own word.
+    expect(r.stdout).not.toMatch(/4 did not enumerate/);
+  });
 });

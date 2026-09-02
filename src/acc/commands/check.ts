@@ -37,7 +37,7 @@ import {
   type ReportedFinding,
   runCheckers,
 } from "../kit/report.ts";
-import { advertisedVerbsSummary, surfaceSummary } from "../kit/surface.ts";
+import { advertisedVerbsSummary, type SurfaceStatus, surfaceSummary } from "../kit/surface.ts";
 import type { History, TargetInfo } from "../kit/types.ts";
 import { VERSION } from "../version.ts";
 
@@ -137,9 +137,10 @@ export function isExecutable(abs: string): boolean {
  * writes a SENTENCE about one path and this needs a NOUN for a group — and slicing a substring
  * out of the sentence would be the text-matching predicate this rollup deliberately avoids.
  */
-const VERDICT_WORD: Record<string, string> = {
+const VERDICT_WORD: Record<SurfaceStatus, string> = {
   enumerated: "enumerated",
   "not-enumerated": "did not enumerate",
+  "enumerated-none": "stated an empty set",
   "no-evidence": "recorded nothing readable",
 };
 
@@ -706,7 +707,11 @@ export function renderCheckReportText(r: Report, prelude: string[] = []): string
           // always stated so nothing reads as fewer paths than there were.
           ...((rs) => {
             const FOLD_AT = 4;
-            const groups = new Map<string, typeof rs.readings>();
+            // Keyed by `SurfaceStatus`, not `string` — `p.status` is already that type (see
+            // `RecordedSurfacesReport.readings`), so this is the annotation matching what the
+            // value already is, not a cast. It is what lets `VERDICT_WORD[status]` below be
+            // read without a fallback: the lookup is total over every status this Map can hold.
+            const groups = new Map<SurfaceStatus, typeof rs.readings>();
             for (const p of rs.readings) {
               groups.set(p.status, [...(groups.get(p.status) ?? []), p]);
             }
@@ -715,7 +720,7 @@ export function renderCheckReportText(r: Report, prelude: string[] = []): string
             const said = new Set(folded.flatMap(([, g]) => g.map((p) => p.path.join(" "))));
             return [
               `      ${rs.readings.length} paths: ${[...groups.entries()]
-                .map(([status, g]) => `${g.length} ${VERDICT_WORD[status] ?? status}`)
+                .map(([status, g]) => `${g.length} ${VERDICT_WORD[status]}`)
                 .join(", ")}`,
               // THE ROLLUP MUST NOT FOLD AWAY WHAT THE LINE ABOVE IT EXISTS TO SAY. The
               // per-path sentence names a non-flag list where one was seen; collapsing 48 of
