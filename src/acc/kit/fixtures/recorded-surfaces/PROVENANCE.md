@@ -141,27 +141,48 @@ sentinel flag, each answered with an explicit, present, empty enumeration:
 
 `choices` is present and it is `[]`. The tool was asked what it accepts there and said "nothing".
 
-**The kit reads that as `not-enumerated` and drops both paths from the census**, then renders
+**The kit read that as `not-enumerated` and dropped both paths from the census**, then rendered
 `none named a set (NOT a tool with no flags)` — which is the precise opposite of what the target
-said. The clause responsible is `value.length > 0` in `keyedSets`
-([`surface.ts`](../../surface.ts)), which discards the empty array before anything can read it.
+said. The clause responsible was `value.length > 0` in `keyedSets`
+([`surface.ts`](../../surface.ts)), which discarded the empty array before anything could read it.
 
 That status's own definition asserts _"the tool has flags, it simply does not list them"_, so the
-kit does not merely fail to record the answer: it asserts its negation. The type already separates
-"we did not look" (`no-evidence`) from "we looked and found nothing" (`not-enumerated`) — two of
-the three states [Part 3 of `STANDARD.md`](../../../../../STANDARD.md) requires of any field — and
-has no way to say **"we looked and it said none."**
+kit did not merely fail to record the answer: it asserted its negation. The type separated "we did
+not look" (`no-evidence`) from "we looked and found nothing" (`not-enumerated`) — two of the three
+states [Part 3 of `STANDARD.md`](../../../../../STANDARD.md) requires of any field — and had no way
+to say **"we looked and it said none."**
 
-**Why it is vendored before the fix.** The naive repair — delete the length clause — turns any
-recognised key holding an empty array into an enumeration of zero flags, and every flag a
-declaration names at that path then becomes a `declared-not-accepted` finding. A false empty
-enumeration GENERATES findings where a false `not-enumerated` only suppresses them, so this needs
-the missing state rather than the clause removed. These bytes are the before-case for that sweep,
-and they are a real tool's real answer, which is not something that can be fabricated honestly.
+**What shipped.** `SurfaceStatus` grew a fourth member, `enumerated-none`, and `keyedSets` grew a
+third output: a recognised key held empty is now collected rather than discarded, on the same model
+as the near-miss keys beside it. A path whose rejection named such a key now renders:
 
-**The severity argument is the adopter's**, and it is the one that makes this disqualifying rather
+```
+stated an empty set of flags at sessions under `choices`; 1 rejection read, and the set the target named held nothing (the target's own answer, not silence read as one)
+```
+
+`emptySetKeys` carries the key, so the claim can be checked against these bytes instead of trusted,
+and the rejection count is what makes it a measurement rather than an assertion — the same
+denominator `not-enumerated` rests on. That is the third of Part 3's states, in the field that was
+missing it.
+
+**What the status does not say is that these paths accept no flags.** It records what `magpie`
+said; it does not adopt the claim as true of the tool. `flags` stays absent on `enumerated-none`
+exactly as on `not-enumerated` and `no-evidence` — an empty array is as easily a serializer that
+dropped its contents as a program with nothing to declare, and publishing one would put the kit's
+name on a claim only the target made.
+
+**Why it was vendored before the fix, and why the fix has the shape it has.** The naive repair —
+delete the length clause — turns any recognised key holding an empty array into an enumeration of
+zero flags, and every flag a declaration names at that path then becomes a `declared-not-accepted`
+finding. A false empty enumeration GENERATES findings where a false `not-enumerated` only
+suppresses them, so this needed the missing state rather than the clause removed. That argument is
+still the whole reason the answer is a fourth status with no `flags` field, rather than an empty
+list threaded through the existing one. These bytes are the before-case for that sweep, and they
+are a real tool's real answer, which is not something that can be fabricated honestly.
+
+**The severity argument is the adopter's**, and it is the one that made this disqualifying rather
 than cosmetic: every tool that takes this project's advice about per-verb flag scoping acquires
-flagless verbs, and each one costs it census coverage while the report claims it enumerated
+flagless verbs, and each one cost it census coverage while the report claimed it enumerated
 nothing. _"The fraction moves the wrong way as the tool improves, which is the one direction a
 measurement must never move."_
 

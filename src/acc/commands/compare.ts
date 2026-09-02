@@ -139,8 +139,10 @@ function rowLabel(probe: ProbeComparison, runs: number): string {
 
 /**
  * A `SurfaceRow` back in the shape `surfaceSummary` reads, so `check` and `compare` render the
- * capture through ONE function. The `not-enumerated` sentence is the one this whole capture exists
- * to get right, and two copies of it are two chances to get it wrong in one place only.
+ * capture through ONE function. The `not-enumerated` and `enumerated-none` sentences are the ones
+ * this whole capture exists to keep apart — a silence attributed to the read against an emptiness
+ * attributed to the target — and two copies of either are two chances to get it wrong in one place
+ * only.
  */
 export function rowSurface(row: SurfaceRow): Surface | undefined {
   if (row.status === "not-recorded") return undefined;
