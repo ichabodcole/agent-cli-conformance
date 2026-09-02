@@ -66,18 +66,22 @@ export type SurfaceStatus =
   /** At least one rejection named a set of flags. `flags` is present. */
   | "enumerated"
   /**
-   * Root-level rejections were read and none named a set. A STATEMENT ABOUT THE TOOL'S ROOT ERROR
-   * TEXT, and not about what it accepts: the tool has flags, it simply does not list them when it
-   * refuses one at the root. It says nothing about a subcommand — a verb-first CLI that enumerates
-   * one level down lands here too, which is why every rendered sentence names the scope.
+   * Root-level rejections were read and none named a set of flags. A STATEMENT ABOUT THE TOOL'S
+   * ROOT ERROR TEXT, and not about what it accepts: whether the tool has flags is exactly what this does not
+   * settle. A tool with flags it never lists and a tool with none that stays quiet land here alike,
+   * and nothing in the condition that mints this — rejections read, no flag list, no recognised key
+   * left empty — can tell them apart. It says nothing about a subcommand either: a verb-first CLI
+   * that enumerates one level down lands here too, which is why every rendered sentence names the
+   * scope.
    */
   | "not-enumerated"
   /**
    * A root-level rejection named a set under a key this reads AND THAT SET WAS EMPTY. The target
    * answered the question rather than declining it, which is the whole difference from
-   * `not-enumerated`: that status asserts the tool has flags it did not list, and recording it here
-   * publishes the negation of what the target said. `emptySetKeys` names the key, so the claim can
-   * be checked against the bytes rather than trusted.
+   * `not-enumerated`: that status says no rejection named a set at all, and one here did. Recording
+   * it as the other publishes a sentence — `none named a set of flags` — that the target's own
+   * bytes refute. `emptySetKeys` names the key, so the claim can be checked against those bytes
+   * rather than trusted.
    *
    * WHAT IT DOES NOT SAY IS THAT THE TOOL ACCEPTS NO FLAGS. This is the target's assertion,
    * captured, and an empty array is as easily a serializer that dropped its contents as a program
@@ -181,8 +185,8 @@ export interface Surface {
   evidence: SurfaceEvidence[];
   /**
    * How many recorded rejections were readable, which is what makes `not-enumerated` AND
-   * `enumerated-none` measurements rather than assumptions: "4 rejections read, none named a set"
-   * and "4 rejections read, and the set the target named held nothing" are both claims with a
+   * `enumerated-none` measurements rather than assumptions: "4 rejections read, none named a set of
+   * flags" and "4 rejections read, and the set the target named held nothing" are both claims with a
    * denominator. Undenominated, either one degrades into a bare assertion about the tool — the
    * one thing this capture may never make.
    */
@@ -995,13 +999,15 @@ function membersOf(raw: readonly string[]): { verbs: string[]; open: boolean } |
   // `validFlags` and leaves it empty has ANSWERED the only question asked at that path: nothing
   // else speaks for it, so dropping the answer published its negation, which is what
   // `enumerated-none` exists to stop. A verb blob is not in that position. `advertisedVerbsFrom`
-  // reads TWO root captures in a fixed order and takes a set from whichever yields one, so a `null`
-  // here withholds nothing — it hands the question to the next source rather than settling it.
+  // reads TWO KINDS of root capture — the unknown-verb rejection and the bare invocation — over
+  // however many observations carry them, and collects a set from every one that yields, so a
+  // `null` here settles nothing: it leaves the question to the other captures. What it does cost is
+  // real and worth naming — when NO capture yields, the fact that a `choices` was present and empty
+  // is recorded nowhere on the verb side, and only `capturesRead` says we looked.
   // And an empty `choices` on an unknown-verb rejection is as easily a tool that scopes its verbs
   // somewhere this cannot see as one that advertises none; minting a set from it would be the kit
   // deciding what an absence MEANS, the same fabrication the flag side refuses, reached from the
-  // other direction. "We looked" is carried by `capturesRead`, exactly as `probesRead` carries it
-  // for flags.
+  // other direction.
   return verbs.length === 0 ? null : { verbs, open };
 }
 

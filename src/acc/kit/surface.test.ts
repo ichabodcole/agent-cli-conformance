@@ -251,11 +251,11 @@ describe("what the capture refuses, which is the half that keeps it honest", () 
 /**
  * THE TARGET ANSWERED, AND THE ANSWER WAS NONE.
  *
- * `not-enumerated` asserts the tool has flags and did not list them, so recording it for a target
- * whose rejection carried the right key EMPTY published the negation of what that target said. The
- * two sentences have to be unmistakably different from each other, because the statuses are not:
- * one is a fact about the tool's error text going quiet, the other is a fact about the tool's error
- * text speaking.
+ * `not-enumerated` renders `none named a set of flags`, so recording it for a target whose
+ * rejection carried the right key EMPTY published a sentence that target's own bytes refute — it
+ * named one. The two sentences have to be unmistakably different from each other, because the
+ * statuses are not: one is a fact about the tool's error text going quiet, the other is a fact
+ * about the tool's error text speaking.
  */
 describe("a target that named an empty set", () => {
   test("`enumerated-none` is minted, and carries no flags field", () => {

@@ -262,10 +262,11 @@ And what came back:
 - **`surface`** — whether the root enumerated its flags (`status`, plus the rejection evidence
   read to decide it); the comparison in
   [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md) starts
-  from this. `status` is one of four: `enumerated` (`flags` is present), `not-enumerated` (root
-  rejections were read and none named a set — a statement about the tool's error text, not about
-  what it accepts), `enumerated-none` (a root rejection named a set under a recognised key AND
-  that set was empty — a statement about what the target SAID, never that the tool accepts no
+  from this. `status` is one of four: `enumerated` (at least one rejection named a set of flags —
+  `flags` holds the union, and it is the target's list, not the kit's), `not-enumerated` (root
+  rejections were read and none named a set of flags — a statement about the tool's error text, not
+  about what it accepts), `enumerated-none` (a root rejection named a set under a recognised key and
+  that set was empty — a statement about what the target said, never that the tool accepts no
   flags), or `no-evidence` (nothing readable was recorded at all — a statement about the run, not
   the tool). On `enumerated-none` the target answered rather than declined, but an empty array
   reads the same whether the tool has nothing to declare or a serializer dropped its contents,

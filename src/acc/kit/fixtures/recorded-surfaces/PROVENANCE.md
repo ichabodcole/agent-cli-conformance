@@ -132,8 +132,8 @@ third census of a second adopter's tool with nothing changed but the record sele
 | Captured against  | this repository's batch spec, unchanged at `formatVersion: "0"`                   |
 | sha256            | `73e40c606497d22a7e5cb4fba8b0efbcbae726aa3d66b425c8ffbb5eeecb1577`                |
 
-**What it is for.** `magpie`'s `sessions` and `help` accept no flags, by design. Asked with one
-sentinel flag, each answered with an explicit, present, empty enumeration:
+**What it is for.** `magpie`'s author reports that `sessions` and `help` accept no flags, by
+design. Asked with one sentinel flag, each answered with an explicit, present, empty enumeration:
 
 ```json
 { "ok": false, "error": { "kind": "usage", "…": "…", "choices": [] } }
@@ -146,11 +146,12 @@ sentinel flag, each answered with an explicit, present, empty enumeration:
 said. The clause responsible was `value.length > 0` in `keyedSets`
 ([`surface.ts`](../../surface.ts)), which discarded the empty array before anything could read it.
 
-That status's own definition asserts _"the tool has flags, it simply does not list them"_, so the
-kit did not merely fail to record the answer: it asserted its negation. The type separated "we did
-not look" (`no-evidence`) from "we looked and found nothing" (`not-enumerated`) — two of the three
-states [Part 3 of `STANDARD.md`](../../../../../STANDARD.md) requires of any field — and had no way
-to say **"we looked and it said none."**
+So the kit did not merely fail to record the answer: the sentence it printed instead said that no
+rejection named a set of flags, about a rejection that demonstrably named one. That is a claim about
+these bytes, and these bytes refute it. The type separated "we did not look" (`no-evidence`) from
+"we looked and found nothing" (`not-enumerated`) — two of the three states
+[Part 3 of `STANDARD.md`](../../../../../STANDARD.md) requires of any field — and had no way to say
+**"we looked and it said none."**
 
 **What shipped.** `SurfaceStatus` grew a fourth member, `enumerated-none`, and `keyedSets` grew a
 third output: a recognised key held empty is now collected rather than discarded, on the same model
