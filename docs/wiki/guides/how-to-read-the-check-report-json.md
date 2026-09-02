@@ -266,8 +266,11 @@ And what came back:
   rejections were read and none named a set — a statement about the tool's error text, not about
   what it accepts), `enumerated-none` (a root rejection named a set under a recognised key AND
   that set was empty — the target answered rather than declined, and `emptySetKeys` names which
-  key held it), or `no-evidence` (nothing readable was recorded at all — a statement about the
-  run, not the tool). **`emptySetKeys` names the key an `enumerated-none` set came from**, so the
+  key held it, but this is a statement about what the target SAID and never that the tool accepts
+  no flags: an empty array reads the same whether the tool has nothing to declare or a serializer
+  dropped its contents, so the kit reports the assertion and does not adopt it), or `no-evidence`
+  (nothing readable was recorded at all — a statement about the run, not the tool).
+  **`emptySetKeys` names the key an `enumerated-none` set came from**, so the
   claim is checkable against the bytes rather than trusted; it carries no members because there
   were none — the whole content of the observation is which key was empty. **`nonFlagCandidates`**
   is the neighbouring diagnostic, present on `not-enumerated` and `enumerated-none` alike: the
