@@ -1028,6 +1028,50 @@ figure that drifted between a page and the note it cited — `114,101` against `
 verbatim duplication is the mechanism that produces it. A second copy is a second thing to keep
 true.
 
+## The closing sweep — cross-document duplication
+
+A 12-word shingle comparison of `STANDARD.md` against `CHARTER.md`, `README.md` and all 45 wiki
+files: **172 of 10,914 shingles overlap, 1.6%**, concentrated in four passages.
+
+| passage                                                                                                 | shared with         | words |
+| ------------------------------------------------------------------------------------------------------- | ------------------- | ----- |
+| _"good errors and schema introspection are two views of one thing… a just-in-time slice of the schema"_ | `error-envelope.md` | 52    |
+| the machine-mode precedence order                                                                       | `machine-mode.md`   | 34    |
+| _"every miss is a defect that only manifests when a verb runs…"_                                        | `CHARTER.md`        | 27    |
+| _"an adopter binds a declaration to their code, the tool drifts from it…"_                              | `CHARTER.md`        | 23    |
+
+**None was findable by the section-by-section pass**, which is R-36's limit: reading one section
+whole cannot show you that another document says the same thing.
+
+### R-50 · Duplication earns its place when the copy is the reasoning
+
+**Decided by the owner, and it corrects the rule this pass had been applying.** All four are a
+recommendation or a reason, and none is retold evidence. Rewriting one of them into a paraphrase, or
+replacing it with a pointer, would trade a strong sentence for a weaker one purely to avoid saying
+the same thing twice. That is a bad trade: the value is in the synthesis, and a synthesis restated
+to be different is a synthesis made worse.
+
+So the rule is not "do not duplicate". It is:
+
+- **duplicate a reason** where two documents both need a reader to have it;
+- **do not duplicate evidence** — that is what a link is for, and it is where copies drift.
+
+### R-51 · If a passage earns duplication, duplicate it verbatim
+
+The owner's point about synchronisation is that a recognisable copy is its own weak signal — an
+editor changing one will notice the other exists. **That works precisely because the copy is
+recognisable, which makes paraphrase the dangerous form.** Two differently-worded statements of one
+thing do not announce themselves as twins, and an editor changing one gets no signal at all.
+
+Both of this pass's real failures support it:
+
+- the `114,101` against `114,042` drift was between two **differently-worded** statements of one
+  measurement, not a verbatim copy;
+- the `Both` antecedent (R-37) was lost in a **compression** of the wiki's sentence. Had the standard
+  taken the paragraph verbatim, the clause supplying the antecedent would have come with it.
+
+**A paraphrase is the worst of both worlds: a second copy that does not look like one.**
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,
