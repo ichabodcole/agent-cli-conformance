@@ -85,13 +85,30 @@ export type SurfaceStatus =
    * A root-level rejection named a set under a key this reads AND THAT SET WAS EMPTY — one whose
    * emptiness is not excluded where the caller is standing. The target answered the question
    * rather than declining it, which is the whole difference from `not-enumerated`: that status
-   * says no rejection named a set OF FLAGS, and the rejection here named one — empty, but named
-   * under a key that can mean nothing else. (It is NOT "named no set at all" — `not-enumerated`
+   * says no rejection named a set OF FLAGS, and the rejection here named one — empty, and named
+   * under a key this reader recognises. (It is NOT "named no set at all" — `not-enumerated`
    * renders a near-miss clause for a set the target did name but whose members are not flags, and
    * an empty `choices` at the root lands there too.) Recording
    * this as that one publishes a sentence — `none named a set of flags` — that the target's own
-   * bytes refute. `emptySetKeys` names the key, so the claim can be checked against those bytes
-   * rather than trusted.
+   * bytes refute.
+   *
+   * THAT THE SET WAS A SET OF FLAGS RESTS ON THE KEY'S NAME, AND ON NOTHING ELSE. For a NON-empty
+   * array the flag-shape test resolves the question by inspecting the members — `["--a"]` is flags
+   * and `["run","build"]` is not — and it is that test, not the key, that carries the claim. An
+   * empty array has no members, so the test cannot run and the key's name is the whole of the
+   * evidence. `KEYS` is six adjectives crossed with four nouns, and one of those nouns is
+   * `arguments`: a target answering `"acceptedArguments": []` — a natural spelling for POSITIONAL
+   * arguments — mints this status, and the rendered sentence says "an empty set of flags" on the
+   * strength of the noun in a key someone else chose.
+   *
+   * So what the status establishes is narrower than its name: A RECOGNISED KEY WAS NAMED AND HELD
+   * NOTHING. Whether the key meant flags is the target's spelling to answer for, not something
+   * this capture measured. `emptySetKeys` is the whole answer to that, and the reason it is
+   * published rather than folded into the prose: it names the key so a reader can check the claim
+   * against the bytes and disagree with it. The rendered sentence names the key for the same
+   * reason. `ROOT_AMBIGUOUS_WHEN_EMPTY` is not a counter-example and does not close this gap — it
+   * excludes one key whose emptiness is ambiguous between two things THE KIT ITSELF READS at the
+   * root, which is a fact about this reader's position, not about what any key can mean.
    *
    * WHAT IT DOES NOT SAY IS THAT THE TOOL ACCEPTS NO FLAGS. This is the target's assertion,
    * captured, and an empty array is as easily a serializer that dropped its contents as a program
