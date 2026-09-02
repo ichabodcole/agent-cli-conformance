@@ -61,7 +61,7 @@ mid-sentence does not have to look anything up:
 **Phrases rather than a glyph — a judgement, not a measurement.** A glyph mid-sentence is one
 more thing to look up; three words are read. The reasoning and the condition under which this page
 may add another axis are in
-[what came out of "How to read this"](docs/reports/2026-09-01-what-came-out-of-the-standard.md#r-2--the-glyph-versus-phrases-decision-record--l63-78).
+[what came out of the standard](docs/reports/2026-09-01-what-came-out-of-the-standard.md#r-2--the-glyph-versus-phrases-decision-record--l63-78).
 
 **No new rule ids are minted here.** The catalogue mints an id when a checker design exists, and
 this page is upstream of that. Ids that do appear — `A1`, `B5`, `C2` and the rest — are existing
@@ -963,8 +963,7 @@ Named rather than dressed up.
   every SKILL.md tells agents to pass on every verb is contractually global whatever the parser
   does ([Part 1 §2](#2-generate-it-from-what-implements-the-behaviour)), and no probe over argv,
   streams, exit codes or help output reads a document that ships beside the binary.
-- **Effects.** That a command performs no writes is unobservable from argv and streams alone, which
-  is why the drift trial reached runtime for four commands in twenty-five. A sandbox moves this into
+- **Effects.** That a command performs no writes is unobservable from argv and streams alone. A sandbox moves this into
   the row above; nothing else does.
 - **Exit-code ownership.** You cannot show from outside that `ssh`'s `255` is its own and its `3` is
   the remote's.
@@ -999,9 +998,9 @@ is the clearest case — this page says so rather than filling the gap.
 
 **It will lag what it governs.** The one comparable artifact anyone here has measured is the
 house-style document inside one of the archaeology corpora
-([research](docs/research/2026-08-24-missing-capability-or-implementation-defect.md)): it is real, it works, it names `--stdin` and cursor-resume and snapshot/restore —
-and it does **not** name `start`, `restart`, `doctor`, `reap`, `roll`, `--version` or bounded
-catch-up, the exact set the next CLI in that repository had to discover alone. It grew nine commits
+([research](docs/research/2026-08-24-missing-capability-or-implementation-defect.md)): it is real, it works, and it names `--stdin` and cursor-resume — while
+saying nothing about `start`, `doctor` or `--version`, the set the next CLI in that repository had
+to discover alone. It grew nine commits
 against 151 CLI commits, lagging the surface it governs by an order of magnitude. Expect the same of
 this page, and prefer a check that fails to a paragraph that advises.
 

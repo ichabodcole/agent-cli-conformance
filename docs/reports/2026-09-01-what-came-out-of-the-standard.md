@@ -973,6 +973,35 @@ evidence about where this one _did_.
 Recorded as a near-miss rather than a defect because it never reached a commit. It was caught by the
 same practice that has now found something in every section it has been applied to.
 
+### R-48 · The back half of Part 4, reviewed after being declared clean
+
+**The previous round declared `Nothing outside can check it` and the four closing sections "keeping"
+without presenting candidates, and the R-34 read covered only Part 4's head.** The owner asked
+whether they had actually been reviewed. They had not. Three items came out of doing it properly,
+and one of them was a straight inconsistency:
+
+- **`Effects`** carried _"which is why the drift trial reached runtime for four commands in
+  twenty-five"_ — the same `4 of 25` figure cut from `The ceiling, stated honestly` in R-20, on the
+  grounds that the general statement beside it was complete. Leaving it in one place while cutting
+  it from the other was inconsistent, not a judgement.
+- **The lag evidence** named ten verbs, three the house-style document covers and seven it does not.
+  Trimmed under R-43: the ratio is the punchline — nine commits against 151 — and two-and-two shows
+  the shape.
+- **The link text at line 64** still read _"what came out of 'How to read this'"_, the report's title
+  before it was renamed. The URL had been updated; the words had not. Found by reading, invisible to
+  the link checker, which resolves targets and never reads labels.
+
+**Kept against the pattern**, and worth recording as a decision rather than an oversight: the
+type-sentinel probe's failure figures under `Semantic honesty of a value` — zero true positives, two
+false positives, 26 of 33 undecidable. Same shape as the `EX_USAGE` inventory in R-39: the claim is
+an **impossibility**, and a recorded failed attempt forecloses _"could you not just…?"_ in a way an
+assertion cannot.
+
+**The lesson is about the pass rather than the page.** Declaring a section clean without listing
+what was considered produces no record anyone can check — including the person who declared it. The
+sections that got a written candidate list all yielded findings on review; the two that got a
+sentence yielded three more when someone asked.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,
