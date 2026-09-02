@@ -33,6 +33,13 @@ stand on their own — rather than the case that produced it. The surveys, trial
 adopter findings that led to a recommendation stay in the reports and research notes, linked for
 anyone who wants them. They are the about page, not the product.
 
+**Length is not the measure.** Every entry below reports a line count because the counts are cheap
+to record and easy to check, but a removal earns its place by making the page clearer or truer, not
+shorter. Several replacements here run nearly as long as what they replaced — that is a fine
+outcome when the reason being preserved needed the room. Where the two have coincided it is a happy
+intersection and not the goal, and a pass that started optimising the counter would begin cutting
+reasons.
+
 Two consequences worth stating, because both are deliberate:
 
 - **The page becomes asserted where it used to argue.** Its contract still holds — every
@@ -475,6 +482,46 @@ what points _at_ it and what it pointed _to_. A cut does not only shorten a sect
 that section says about itself, and every sentence elsewhere describing it by its old character is
 now suspect. R-17 was the first instance and it read as bad luck. Three more makes it the method's
 main hazard.
+
+## Part 2 § The two things a declaration must never carry
+
+44 non-blank lines to 35.
+
+### R-24 · The kit confessing its own weakness inside an instruction
+
+> The hazard is not hypothetical in shape, though nobody here has yet produced the target that
+> exhibits it: one checker in this repository decides a verdict by matching an English phrase on
+> stderr, over a locale inherited from whoever invoked it […] ([SURV-3], which records that it could
+> not find a tool localising its parser errors).
+
+**reason stated.** The rule is _do not declare anything about the run rather than the tool_ and its
+reason is complete in one sentence: a target declaring "my errors are English" is answering for the
+caller's shell. What followed was this project disclosing a weakness in its own checker, hedged into
+near-nothing by its own admission that no target exhibiting it has been found.
+
+The failure mode is worth keeping and is now stated generally: a check matching an English phrase on
+stderr can pass under one `LC_ALL` and fail under another with nothing in the report telling the two
+runs apart. True of any such check, including somebody else's.
+
+### R-25 · The `anthill`/`D2` case behind "a declined recommendation has no home"
+
+> The noticing then had nowhere to live, and the first cold reader of this page found the gap. The
+> case is anthill and `D2` […] **The waiver went in a local `acc.config.json` on the machine that ran
+> the check, which they declined to commit** — _"dead config carrying a live opinion"_ — **and the
+> durable copy of the reason ended up in a report in this repository.**
+
+**reason stated.** The problem is two sentences: a waiver belongs to whoever runs the check and
+travels in their config; a reason written down in somebody else's report belongs to them. A
+maintainer who declines on the merits ends up with either a temporary file or a stranger owning the
+record. Eleven lines were one tool's instance of that, plus an account of who noticed it.
+
+The answer beneath it — the waiver stays caller policy, the reason is a **narrowing** statement and
+belongs in the tool's own repository beside the code — is the guidance the section exists for and is
+untouched.
+
+**R-23's rule was applied before committing**, for the first time deliberately rather than after the
+fact: the heading is an anchor cited from `How to read this` as _"the decision needs a home"_, and the
+section still delivers that; its three outbound anchors all still resolve.
 
 ## What the second pass has to decide
 

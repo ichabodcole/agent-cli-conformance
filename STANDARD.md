@@ -394,28 +394,17 @@ carriers unchanged: the tool's own emission, a file in the tool's repository, an
 third party's CI config.
 
 **Anything about the run rather than the tool.** Locale, platform, the shell's inherited variables.
-A target declaring "my errors are English" is answering for the caller's shell. The hazard is not
-hypothetical in shape, though nobody here has yet produced the target that exhibits it: one checker
-in this repository decides a verdict by matching an English phrase on stderr, over a locale
-inherited from whoever invoked it, so the same target and the same argv would pass under one
-`LC_ALL` and fail under another with nothing in the report distinguishing the two runs
-([SURV-3](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md), which records that it
-could not find a tool localising its parser errors). Measure the environment, print it beside the
+A target declaring "my errors are English" is answering for the caller's shell. A check that
+matches an English phrase on stderr can pass under one `LC_ALL` and fail under another with nothing
+in the report telling the two runs apart. Measure the environment, print it beside the
 declaration, and label it as measured.
 
 ### Where a declined recommendation is recorded, which is not in either of those files
 
 [How to read this](#how-to-read-this) says declining a recommendation is a decision and the thing
-worth avoiding is declining one without noticing. The noticing then had nowhere to live, and the
-first cold reader of this page found the gap. The case is anthill and `D2`: its bare invocation
-returns the manifest rather than a usage error, deliberately, because bare invocation is how an
-agent gets the declaration. Its maintainer decided that on the merits, wrote the reason down, and
-had two places to put it, neither of which is theirs to keep. **The waiver went in a local
-`acc.config.json` on the machine that ran the check, which they declined to commit** — _"dead config
-carrying a live opinion"_ in a repository that does not otherwise depend on `acc` — **and the
-durable copy of the reason ended up in a report in this repository**
-([first-contact trial](docs/reports/2026-08-21-anthill-first-contact-trial.md)). The maintainer made
-the decision, and either a temporary file or a stranger owns the record.
+worth avoiding is declining one without noticing. The noticing has nowhere durable to live. A waiver belongs to whoever runs the check and travels
+in their config; a reason written down in somebody else's report belongs to them. A maintainer who
+declines on the merits ends up with either a temporary file or a stranger owning the record.
 
 **The narrowing-versus-widening asymmetry [in the next section](#where-the-declaration-lives-and-who-may-say-what)
 already says how to split it**, and the split is the answer rather than a new file format:
