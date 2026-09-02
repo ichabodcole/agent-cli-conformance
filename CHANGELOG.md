@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.10](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.9...v0.1.10) (2026-09-02)
+
+
+### Features
+
+* **lint:** the gate reads the markdown no other lint opened ([f766377](https://github.com/ichabodcole/agent-cli-conformance/commit/f7663771538a6cf17dab9860d60c5e535f2dc7a8))
+* **skills:** add repair-chain methodology ([d1cd2a6](https://github.com/ichabodcole/agent-cli-conformance/commit/d1cd2a627e145614621aa05971a6ae2e9a16d368))
+* **skills:** guidance-not-argument, the pass this session ran by hand ([ad8bd3b](https://github.com/ichabodcole/agent-cli-conformance/commit/ad8bd3b329c6eaaa8379b0fa5416c51d85ff8352))
+* **skills:** strengthen cascade and two-lens review ([5e59b2f](https://github.com/ichabodcole/agent-cli-conformance/commit/5e59b2f778459598f4a549252f064d77643689eb))
+
+
+### Bug Fixes
+
+* **docs:** four contradictions a cold reading of the tree found before release ([d760879](https://github.com/ichabodcole/agent-cli-conformance/commit/d760879d7d6cc1cbf355c7b9d8a728e67af7d4a2))
+* **lint:** gate what git tracks, and publish the two documents the wiki points at ([6a088e4](https://github.com/ichabodcole/agent-cli-conformance/commit/6a088e41a51c1648813e490d021067b72cf58ac7))
+* **site:** a link out of the wiki points at the repository, not at a path ([e96419a](https://github.com/ichabodcole/agent-cli-conformance/commit/e96419a31cefdcc1e021ebd7a9d132225ad657bd))
+
 ## [0.1.9](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.8...v0.1.9) (2026-08-30)
 
 
