@@ -923,6 +923,56 @@ the bun-launcher repair shipped days ago had already made obsolete. It is now si
 `A1`–`A3`, `A5`–`A7` range, which is what it is. **A passage that narrates a fix goes stale the
 moment the fix lands.**
 
+## Part 4 — What is checkable, collected
+
+142 non-blank lines to 122.
+
+### R-45 · The eighth stale reference, and the one the sweep was proposed for
+
+> Thirty-eight per cent of the 201 — **the 77 counted at the top of this page** — is capability that
+> was never there.
+
+`77` appeared nowhere else in the document. The census it pointed at was in `How to read this` and
+was removed eight commits earlier, in the cut that established R-8 — a scope statement needs no
+evidence. The reference survived in Part 4, a hundred sections away, reading as competent prose and
+passing every gate.
+
+**Second instance to cross a Part boundary, after R-31's design sketches.** Both were created by a
+cut that was correct, and both were invisible until somebody read the far end of the document. This
+is the case the closing re-read exists for.
+
+### R-46 · Three more revision records, in one section
+
+- _"This row read `[C?]` until this revision and the correction comes from this project's own
+  corpus"_
+- _"effects, which an earlier revision named here as a third route"_
+- _"These two were one bullet until this revision, and they split because…"_
+- _"The recommendation is unchanged; only the claim about who can verify it is."_
+
+Sixth, seventh and eighth, plus a coda. Every one of the underlying rows is excellent and untouched —
+_"there is no observation of acceptance that is not an execution"_ is among the sharpest lines on the
+page. What went is the page telling a reader about a draft they never saw.
+
+### R-47 · I nearly shipped a false cross-reference, and the read caught it
+
+Cutting the `1 in 7` replay and the 28% ceiling, I wrote that the figures live in `CHARTER.md`. On
+the full read, two things were wrong at once: the hit rate is under **What the project offers**, not
+the anchor I linked, and the charter **does not carry the 28% ceiling or the under-10% reach at
+all**. Deleting them on that reasoning would have removed two figures from the only page holding
+them, and pointed the reader at a document that never had them.
+
+They are in [the census](../research/2026-08-24-missing-capability-or-implementation-defect.md) —
+`~28% of iteration (≈57 of 201 commits)`, `under 10% of iteration today`, and the three-quarters
+framing — which is where the sentence now points.
+
+**The rule, and it is one this pass stated on day one and then failed to apply:** before cutting a
+passage on the grounds that it lives elsewhere, **verify that it lives elsewhere**. "Belongs in the
+charter" was an inference from R-38, and R-38 is a rule about where such claims _should_ live, not
+evidence about where this one _did_.
+
+Recorded as a near-miss rather than a defect because it never reached a commit. It was caught by the
+same practice that has now found something in every section it has been applied to.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,

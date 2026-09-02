@@ -881,11 +881,8 @@ below it, every one declaring `coverage: partial` over more than 90 named gaps
 ([the catalogue](docs/wiki/index.md)).
 
 **A checker existing is not the same as a check running, and two of the twenty-two do not run one.**
-`B3` and `A4` both declare `probes: []` and return `unverified` from every branch; their own
-`coverageEstablished` fields say so in as many words —
-[_"nothing at L0"_](src/acc/kit/checkers/streams/machine-output-parseable.ts) and
-[_"nothing because no probe is declared"_](src/acc/kit/checkers/parsing/unexpected-positionals.ts).
-A third, `B5`, has a real probe but is gated on `defaultOutput` and reported `unverified` on all
+`B3` and `A4` declare no probe and return `unverified` from every branch, and say so in their own
+coverage fields. A third, `B5`, has a real probe but is gated on `defaultOutput` and reported `unverified` on all
 eight targets of the [owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md). Read the number
 as **twenty-three rules, nineteen of which can return a verdict at all against an undeclared
 target** — and measured rather than reasoned, that run found **only eight rules that discriminated
@@ -896,11 +893,8 @@ exits non-zero, help succeeds and is deterministic, stdout carries only data, no
 pipe, identical invocations produce identical codes, nothing blocks with stdin closed, nothing
 crashes on an inert path.
 
-**Read the limits with the coverage.** Replayed against seven real fixed defects from the
-archaeology corpus, at the pre-fix and post-fix trees, the kit's hit rate was **1 in 7** — and for
-six of the seven, every rule returned exactly the same verdict before the fix as after it. The kit
-could not tell the defective tree from the repaired one on anything. The reason is
-structural, and it is this whole page's argument:
+**Read the limits with the coverage.** What the kit misses, it misses structurally, and the reason
+is this whole page's argument:
 
 > Every miss is a defect that only manifests when a verb runs, when a flag carries a value, when a
 > payload exceeds a pipe buffer, or when machine mode is selected — four conditions `L0` excludes by
@@ -908,21 +902,10 @@ structural, and it is this whole page's argument:
 
 `L0` is the kit's name for the only probe depth that exists today: help paths, sentinel arguments
 and the bare invocation, sent to the root and nowhere below it. Every one of those four conditions
-sits outside it, and a declaration is what would move the boundary.
-
-**The ceiling, if every one of those conditions were reachable, is about 28%.** The denominator is
-the same 201 commits — the ones iterating on something already built rather than building it the
-first time — and the numerator is the 57 whose rater judged that a mechanical black-box check on argv, streams, exit codes or help output
-could in principle have caught them. **It is a judgement, not a measurement — none of the raters ran
-a checker** — and it is quoted with that caveat attached because a project arguing for evidence
-should not launder its own estimates. The same census puts the catalogue's reach today under 10%,
-and the distance between the two is almost entirely what a declaration would unlock.
-
-So roughly three quarters of that history is out of any external checker's reach by construction.
-Thirty-eight per cent of the 201 — the 77 counted at the top of this page — is capability that was
-never there, and a large slice of the remainder is semantic — a `0` that is a lie, a field whose absence is unreadable. **Both halves hold
-at once and neither cancels the other**: the kit's last four findings in that corpus were real, and
-one of them was a missing capability a rule actually caught.
+sits outside it, and a declaration is what would move the boundary. How much of one real iteration history a
+black-box check could reach — today, and at best if all four conditions were reachable — is measured
+in [the census](docs/research/2026-08-24-missing-capability-or-implementation-defect.md), and it is
+a claim about this project rather than guidance for yours.
 
 ## Checkable, and not built
 
@@ -938,27 +921,22 @@ safely, which is a different kind of thing to be missing and belongs under a dif
 - **The declared self-description invocation actually runs and parses.** The document half is
   built — the kit reports a declaration that omits the verb it says emits it — and the running half
   is not.
-- **[—] Every declared command answers `--help` rather than "unknown command."** This row read
-  **[C?]** until this revision and the correction comes from this project's own corpus: checking it
-  means _running a subcommand_, and a subcommand's help path is not inert. In the archaeology
+- **[—] Every declared command answers `--help` rather than "unknown command."** Checking it means
+  _running a subcommand_, and a subcommand's help path is not inert: in the archaeology
   `bounty close --help` **closed the board**, `state --help` dumped it, and `tail --help` opened a
   stream that never exited
   ([defect archaeology §6.1](docs/research/2026-08-15-defect-archaeology.md)). So a declaration that
   the command exists does not make this checkable; what would is a real OS sandbox, or an operator
   running a generated probe plan and handing back what came out. Neither is something a declaration
-  can supply — and effects, which an earlier revision named here as a third route, is filed under
-  [nothing outside can check it](#nothing-outside-can-check-it) below — which is why the mark is
-  `[—]` and not `[C?]`. The kit already refuses the shape rather than guessing at it:
-  `classifyInertness` in [`src/acc/kit/inert.ts`](src/acc/kit/inert.ts) grants a `help-path`
-  classification only when _every_ argv token is a help or format token, so `mycli deploy --help`
-  does not classify and will not run. **The recommendation is unchanged**; only the claim about who
-  can verify it is.
+  can supply, which is why the mark is `[—]` and not `[C?]` — and effects is filed under
+  [nothing outside can check it](#nothing-outside-can-check-it) below. The kit refuses the shape
+  rather than guessing at it: a `help-path` classification is granted only when _every_ argv token
+  is a help or format token, so `mycli deploy --help` does not classify and will not run.
 - **Every declared value flag rejects a missing value.** A parser-error probe, sound at the root,
   and a declaration is genuinely all it needs.
-- **[—] Every declared boolean flag is accepted.** These two were one bullet until this revision,
-  and they split because only one half survives the same test as `--help` above. Rejecting a missing
-  value is a parser error, observable before anything runs; an _accepted_ flag is accepted **by
-  running the command**, and there is no observation of acceptance that is not an execution. So this
+- **[—] Every declared boolean flag is accepted.** Only one half of this survives the same test as
+  `--help` above. Rejecting a missing value is a parser error, observable before anything runs; an
+  _accepted_ flag is accepted **by running the command**, and there is no observation of acceptance that is not an execution. So this
   half waits on a sandbox, or on an operator running a generated probe plan, not on a declaration of
   the flag.
 - **Every declared enforced value set rejects an out-of-set value.**
