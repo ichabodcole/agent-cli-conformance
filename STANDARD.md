@@ -556,17 +556,18 @@ The precedence order:
 2. **An explicit environment variable**, for callers that cannot alter argv.
 3. **Inference** — stdout is not a TTY, or an agent-harness variable is set.
 
-**Why the override, both ways.** Detection is genuinely useful and is also a documented failure
-mode: when behaviour depends solely on inference about the caller, a caller that guesses wrong has no
+**Why the override, both ways.** Detection is genuinely useful and it also fails: when behaviour
+depends solely on inference about the caller, a caller that guesses wrong has no
 recourse. `gh` gets this right in both directions, honouring an `AI_AGENT` override and spelling the
-reverse `GH_FORCE_TTY=1`. That page also carries the full contract and the table of what changes between
-the two modes; read it rather than a summary here.
+reverse `GH_FORCE_TTY=1`. [Machine mode](docs/wiki/concepts/machine-mode.md) carries the full contract and the table of what
+changes between the two modes, and the sourcing for this recommendation; read it rather than a
+summary here.
 
 **Machine mode is a mode, not a flag on one command.** Once selected it should govern success
 output, failure output, and every subcommand alike.
 
-**The output whose whole job is to be machine-readable is the one most likely to be exempted, and
-it must not be.** A tool that answers every command with an envelope and returns its own declaration
+**The output whose whole job is to be machine-readable is the one most likely to be exempted from
+the envelope, and it must not be.** A tool that answers every command with an envelope and returns its own declaration
 as a bare document forces every consumer written against the mode to special-case the one document
 they came for
 ([DT-9](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-9--the-manifest-is-a-bare-document-while-every-other-output-is-enveloped)).

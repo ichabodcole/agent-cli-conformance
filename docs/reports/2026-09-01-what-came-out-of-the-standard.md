@@ -714,6 +714,35 @@ reason stands without the cautionary tale, and `gh`'s two spellings are kept bec
 "both directions" means), and a flag-spelling inventory reduced to two examples with the kit's
 self-confession about its own false pass compressed to the conclusion it supports (R-24, R-27).
 
+### R-34 · A grep is a flashlight; the section needs a lamp
+
+**The owner found a defect this pass had just created, by reading.** After the machine-mode cuts, a
+sentence still read _"That page also carries the full contract and the table of what changes between
+the two modes"_ — and the link it referred to had been inside the Vercel citation the cut removed.
+The concept page was no longer linked from the section at all.
+
+**R-31's sweep could not have found it.** That rule says to search the document for later uses of a
+removed term. `That page` contains no distinctive noun, so there is no term to search for. A removed
+**link** leaves a **pronoun** dangling, and pronouns are invisible to the instrument.
+
+Reading the section whole then found two more that no search would have named:
+
+- _"a documented failure mode"_ — the document that made it documented was the citation removed;
+- _"most likely to be exempted"_ — exempted from **what**? Its object left with the worked case, and
+  the bolded lead sentence stopped standing alone.
+
+It also cleared a false alarm: ragged line lengths in the edited paragraphs are not an artefact of
+this pass. `proseWrap: "preserve"` is deliberate — hard-wrapping _"splits greppable phrases across
+lines"_ — and untouched sections run to 188 characters.
+
+**The rule, and it supersedes the sweep rather than adding to it:** after editing a section, read
+the whole section. Searches confirm what you already know to name; they cannot report that a
+sentence no longer makes sense. Every stale reference this pass has created was invisible to the
+gate, and the three found here were invisible to the greps written specifically to catch them.
+
+This is the same failure the standard itself is about: an instrument that reaches lexical carriers
+and misses semantic ones. The pass has now demonstrated it on itself four times.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,
