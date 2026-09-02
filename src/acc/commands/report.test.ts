@@ -176,3 +176,72 @@ describe("the three refusals branch in the envelope, not only in prose", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 });
+
+// A REPORT WRITTEN BY A NEWER KIT, which `how-to-read-the-check-report-json.md` names as a live
+// case: `acc report` and `acc compare` accept any report file, and `surface.status` arrives from
+// `JSON.parse` with nothing on the path validating it against this build's `SurfaceStatus`. The
+// compile-time exhaustiveness in `surfaceSummary` and the `Record<SurfaceStatus, string>` keying
+// of `VERDICT_WORD` are both claims about the TYPE; neither is a claim about a file on disk.
+//
+// The rule this kit holds for a field an older artifact lacks — render it as "not recorded by
+// that kit", never as an absent or garbled thing — is the same rule here, reached from the other
+// direction: a status this build cannot read is not a status it may print raw or drop.
+describe("a status from a kit this build has never heard of", () => {
+  const doctored = (mutate: (data: Record<string, unknown>) => void): string => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-future-"));
+    const envelope = structuredClone(brokenReport());
+    mutate(envelope.data);
+    const file = join(dir, "future.json");
+    writeFileSync(file, JSON.stringify(envelope));
+    return file;
+  };
+
+  test("the surface sentence names the unreadable status; it never prints the bare token alone", () => {
+    const file = doctored((data) => {
+      data.surface = { status: "enumerated-partial", evidence: [], probesRead: 7 };
+    });
+    const r = run(["report", file, "--format", "text"]);
+    expect(r.code).toBe(9);
+    const line = r.stdout
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => l.includes("enumerated-partial"));
+    // Present at all — a status the reader cannot interpret must still reach the reader.
+    expect(line).toBeDefined();
+    // ...and not AS the sentence. `enumerated-partial` alone is what the `never` fallthrough
+    // returned: an enum token with no scope, no qualifier and no statement of the limit.
+    expect(line).not.toBe("enumerated-partial");
+    expect(line).toContain("not recorded by this kit");
+    // The same qualifier every other surface sentence carries: this is a limit of the reader.
+    expect(line).toContain("not a statement about the tool");
+    rmSync(dirname(file), { recursive: true, force: true });
+  });
+
+  test("the census rollup prints a word for it, never `undefined`", () => {
+    // FOLD_AT is 4, so five readings at one status is the shape that reaches `VERDICT_WORD`.
+    const file = doctored((data) => {
+      data.recordedSurfaces = {
+        source: "/tmp/batch.json",
+        records: 5,
+        readings: Array.from({ length: 5 }, (_, i) => ({
+          path: [`p${i}`],
+          status: "enumerated-partial",
+          nonFlagKeys: [],
+          summary: `something at p${i}`,
+        })),
+        recordedBy: ["a-newer-kit"],
+        identity: null,
+      };
+    });
+    const r = run(["report", file, "--format", "text"]);
+    const line = r.stdout
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => l.startsWith("5 paths:"));
+    expect(line).toBeDefined();
+    expect(line).not.toContain("undefined");
+    expect(line).toContain("not recorded by this kit");
+    expect(line).toContain("enumerated-partial");
+    rmSync(dirname(file), { recursive: true, force: true });
+  });
+});

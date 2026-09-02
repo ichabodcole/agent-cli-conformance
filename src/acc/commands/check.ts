@@ -144,6 +144,27 @@ const VERDICT_WORD: Record<SurfaceStatus, string> = {
   "no-evidence": "recorded nothing readable",
 };
 
+/**
+ * `VERDICT_WORD`, READ AS THE RUNTIME LOOKUP IT ACTUALLY IS.
+ *
+ * The `Record<SurfaceStatus, string>` above is total over the TYPE, and that is worth keeping: a
+ * fifth status is a `tsc` failure at the literal rather than a missing word at runtime. It is not
+ * total over the VALUE. `p.status` is annotated `SurfaceStatus` but arrives from `JSON.parse` of a
+ * stored report — `acc report` renders any report file, including one a newer kit wrote — and
+ * nothing on that path validates it. Read without this guard the lookup printed `5 paths: 5
+ * undefined`, which is the census reporting a count of nothing at all.
+ *
+ * The fallback says the same thing `surfaceSummary` says for a status it cannot read, and for the
+ * same reason: this project renders what it cannot read as "not recorded by that kit", never as an
+ * absent or garbled thing. The token is quoted so a reader can look it up in the kit that wrote it.
+ */
+function verdictWord(status: SurfaceStatus): string {
+  // The cast is the honest half: it is what makes the `??` a real branch rather than dead code the
+  // annotation has already promised away.
+  const word = (VERDICT_WORD as Record<string, string | undefined>)[status];
+  return word ?? `not recorded by this kit (status ${JSON.stringify(status)})`;
+}
+
 export function toTarget(path: string): TargetInfo {
   const abs = resolve(path);
   const interpreter = shebangInterpreter(abs);
@@ -709,8 +730,11 @@ export function renderCheckReportText(r: Report, prelude: string[] = []): string
             const FOLD_AT = 4;
             // Keyed by `SurfaceStatus`, not `string` — `p.status` is already that type (see
             // `RecordedSurfacesReport.readings`), so this is the annotation matching what the
-            // value already is, not a cast. It is what lets `VERDICT_WORD[status]` below be
-            // read without a fallback: the lookup is total over every status this Map can hold.
+            // value already is, not a cast. What that buys is a COMPILE-TIME obligation: a fifth
+            // status makes `VERDICT_WORD`'s literal fail `tsc` rather than quietly lack a word.
+            // It buys nothing at runtime — `p.status` is read out of a stored report by
+            // `JSON.parse` and nothing on that path validates it against this build's type — so
+            // the word comes from `verdictWord`, which handles a status this build cannot read.
             const groups = new Map<SurfaceStatus, typeof rs.readings>();
             for (const p of rs.readings) {
               groups.set(p.status, [...(groups.get(p.status) ?? []), p]);
@@ -720,7 +744,7 @@ export function renderCheckReportText(r: Report, prelude: string[] = []): string
             const said = new Set(folded.flatMap(([, g]) => g.map((p) => p.path.join(" "))));
             return [
               `      ${rs.readings.length} paths: ${[...groups.entries()]
-                .map(([status, g]) => `${g.length} ${VERDICT_WORD[status]}`)
+                .map(([status, g]) => `${g.length} ${verdictWord(status)}`)
                 .join(", ")}`,
               // THE ROLLUP MUST NOT FOLD AWAY WHAT THE LINE ABOVE IT EXISTS TO SAY. The
               // per-path sentence names a non-flag list where one was seen; collapsing 48 of

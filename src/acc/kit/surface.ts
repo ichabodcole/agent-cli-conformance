@@ -938,10 +938,24 @@ export function surfaceSummary(s: Surface | undefined, path: readonly string[] =
   // Function lacks ending return statement`, which names no status, and whose obvious repair is a
   // trailing sentence — restoring the exact fallthrough this switch removed. Assigning the status
   // to `never` makes the error name the member that has no clause, which is the thing a maintainer
-  // needs to be told. Returning it is unreachable by construction: it is `never`, so there is no
-  // value here for a future status to inherit.
+  // needs to be told, and that half of this is unchanged.
   const unhandled: never = s.status;
-  return unhandled;
+  // WHAT IS NOT UNREACHABLE IS THIS LINE. The exhaustiveness above is a compile-time property of
+  // `SurfaceStatus`; `s` on this path came from `JSON.parse` of a stored report, and `acc report`
+  // and `acc compare` accept any report file — including one a NEWER kit wrote, which the JSON
+  // guide names as a live case. So the type says `never` and the value can be a string this build
+  // has never heard of. Returning it published the bare enum token AS the surface sentence: no
+  // scope, no qualifier, and no statement that the reader could not read it.
+  //
+  // The sentence below is this project's standing rule for an artifact it cannot fully read —
+  // render it as "not recorded by that kit", never as an absent or garbled thing — applied in the
+  // direction the older-artifact guards do not cover. It names the scope like every other sentence
+  // here, quotes the token so a reader can look it up in the kit that wrote it, and carries the
+  // same "not a statement about the tool" qualifier as `no-evidence`: what is unknown here is the
+  // READING, and nothing about the target has been established either way.
+  return `not recorded by this kit at ${where} — the stored status ${JSON.stringify(
+    unhandled as string,
+  )} is one this build cannot read, so nothing was read from it (not a statement about the tool)`;
 }
 
 /**

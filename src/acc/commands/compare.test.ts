@@ -494,3 +494,31 @@ describe("the NOTE about targets that call themselves the same thing", () => {
     60_000,
   );
 });
+
+// THE SAME UNVALIDATED FIELD, AT THE SECOND COMMAND THAT READS IT. `acc compare` renders every
+// input report's surface through `surfaceSummary` (see `rowSurface`), so the guard that keeps a
+// status this build cannot read from printing as a bare enum token has to hold here too — and
+// this is the entry point the sweep measured it at.
+describe("a stored report whose surface status this build has never heard of", () => {
+  test("the SELF-DECLARED FLAGS row renders a sentence, not the raw token", async () => {
+    const future = join(dir, "future-status.json");
+    const envelope = JSON.parse(readFileSync(reports[TARGETS.seven] as string, "utf8"));
+    envelope.data.surface = { status: "enumerated-partial", evidence: [], probesRead: 7 };
+    writeFileSync(future, JSON.stringify(envelope));
+
+    const r = await run([
+      "compare",
+      future,
+      reports[TARGETS.anthill] as string,
+      "--format",
+      "text",
+    ]);
+    expect(r.code).toBe(0);
+    const line = r.stdout
+      .split("\n")
+      .find((l) => l.includes("future-status") && l.includes("enumerated-partial"));
+    expect(line).toBeDefined();
+    expect(line).toContain("not recorded by this kit");
+    expect(line).toContain("not a statement about the tool");
+  }, 60_000);
+});
