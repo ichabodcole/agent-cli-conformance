@@ -163,16 +163,26 @@ To cover those paths you record your tool's own error messages and hand them bac
 `docs/wiki/guides/how-to-record-surfaces-below-the-root.md` walks through it; `acc probe-plan`
 generates a script that does the recording for you.
 
-**Two situations, and your report tells you which you are in.** Look for one of these lines:
+**Four situations, and your report tells you which you are in.** One line per path — the root, and
+each path you recorded. Every line names its own path, so `the root` below is `sessions` on a line
+about `sessions`:
 
 ```
-enumerated N flags at the root:
-did not enumerate at the root; N rejections read, none named a set
+enumerated 3 flags at the root: --format --help --verbose
+stated an empty set of flags at the root under `choices`; 2 rejections read, and the set the target named held nothing (the target's own answer, not silence read as one)
+did not enumerate at the root; 7 rejections read, none named a set of flags (NOT a tool with no flags)
+nothing readable was recorded at the root, so nothing was read (not a statement about the tool)
 ```
 
 **`enumerated`** means that when your tool refuses an unknown flag, it lists the flags it does
 accept. That listing is what the comparison reads, so you already get some coverage without doing
 anything.
+
+**`stated an empty set of flags`** means your tool named its set and left it empty — it accepts no
+flags at that path, and said so. That counts as a comparison, exactly as a non-empty list does, so
+this line buys you the same coverage `enumerated` does. It is what a verb-first CLI whose flags all
+live under its verbs says at a path you recorded. The line names the key it read — `choices`, above —
+because that key's name is the only thing saying the set was a set of _flags_. Check it.
 
 **`did not enumerate`** means your tool refuses without saying what it would have accepted. For
 a non-enumerating tool, recording buys **observation, not comparison** — the kit reads what your
@@ -181,7 +191,11 @@ refused from. The comparison starts when your rejections name their set: that is
 `A3` (`acc show A3 --body`) — **naming the set is the guidance**, the thing that makes your tool
 legible to the agents that drive it, **and the census is how it sticks.**
 
-Neither is a failure, and either way the guide is the same one.
+**`nothing readable was recorded`** is about the run, not about your tool: nothing at that path
+survived to be read. Check the records you handed back for that path before reading anything into
+it.
+
+None of the four is a failure, and whichever you are in the guide is the same one.
 
 ## 6. Optional: stop the drift instead of finding it
 

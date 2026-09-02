@@ -131,6 +131,21 @@ so the flags an error offers are by construction the flags the parser accepts.
 Contrast a parser that accepts `--frmat` silently: there is no error, so there is no slice, so
 there is nothing to correct.
 
+**What `acc`'s own reader makes of an EMPTY `choices`, since it reads one.** Nothing above
+constrains `choices` to flags, and nothing below changes that: it is the valid alternatives to
+whatever the caller got wrong, and `acc`'s own envelope uses it for subcommand names. But the kit's
+flag-surface capture ([how to record surfaces below the root](../guides/how-to-record-surfaces-below-the-root.md))
+does read a present-but-empty `choices` on a rejection you recorded **below the root** as your tool
+saying it accepts no flags at that path, and at the root it reads the same bytes as saying nothing
+at all. The asymmetry is about where the kit is standing, not about what the key means: the root is
+the one place the kit ALSO reads `choices` as a list of subcommands, so an empty one there is as
+likely to be "I have no subcommands" as "I accept no flags" and is left alone; below the root
+nothing in the kit reads `choices` as verbs, so there is no second reading to confuse it with. A
+non-empty list is not affected either way — its members are inspected, and a list of verbs is
+recognised as one. The reading is published with the key it came from, so a consumer can see what
+it rests on and disagree; if you spell an empty `choices` below the root to mean something other
+than "no flags here", that is the thing to check in your report.
+
 ### `next` carries remediation as an executable plus an argv array
 
 **Success** responses may carry `next`. This addresses a real and specific agent failure: a
