@@ -306,11 +306,17 @@ export interface DeclarationDiff {
   /**
    * WHETHER THE SET DIFFERENCE HAPPENED AT ALL — the field to read before `findings`.
    *
-   * `not-checked` means no declared path had a usable enumeration, so an empty `findings` says
-   * NOTHING AGREED; it says nothing was compared. This is the same distinction `SurfaceStatus`
-   * draws between `not-enumerated` and a tool with no flags, one level up, and it is the one most
-   * likely to be read wrongly: a diff that could not run and a diff that found nothing look
-   * identical in a count.
+   * `not-checked` means no declared path had a usable enumeration, so an empty `findings` does
+   * NOT say everything agreed; it says nothing was compared. This is the same distinction
+   * `SurfaceStatus` draws between `not-enumerated` and `enumerated-none`, one level up, and it is
+   * the one most likely to be read wrongly: a diff that could not run and a diff that found
+   * nothing look identical in a count.
+   *
+   * The analogy is exact rather than approximate, and it used to name "a tool with no flags" as
+   * the case `SurfaceStatus` could not express. It can: a target that answers an unknown-flag
+   * probe with an explicitly empty set is `enumerated-none`, and that is a set this diff runs
+   * against. Such a path is `checked`, every `valid` arg declared at it is `declared-not-accepted`,
+   * and a run whose only evidence was empty enumerations is `checked` here too.
    *
    * `self-description-not-declared` findings can be present while this is `not-checked`, because
    * that check reads the document and never the target.
@@ -656,7 +662,26 @@ export function diffDeclaration(
       });
       continue;
     }
-    if (found.surface.status !== "enumerated" || !found.surface.flags) {
+    // THE ACCEPTED SET, OR NOTHING — and `enumerated-none` yields a set, an empty one.
+    //
+    // Two statuses carry an answer and two do not. `enumerated-none` is the target SAYING its
+    // accepted set is empty, which is a set difference this can perform: every `valid` declared
+    // arg is absent from it, `refused-but-enumerated` cannot fire because nothing is in it, and
+    // `accepted-not-declared` cannot fire because it names no flags. That is a comparison with a
+    // predictable shape, not a silence, so `checked` is `true` for it — `checked: false` means the
+    // diff DID NOT RUN at this path, and here it ran.
+    //
+    // Written as `undefined` versus a set rather than as `!flags`, deliberately. `![]` is `false`,
+    // so a truthiness test would admit an empty array by accident and the distinction this
+    // function is supposed to draw would rest on a coincidence. `enumerated` with no `flags` is
+    // still not comparable, and that is the branch below, reached by name.
+    const acceptedFlags =
+      found.surface.status === "enumerated"
+        ? found.surface.flags
+        : found.surface.status === "enumerated-none"
+          ? []
+          : undefined;
+    if (acceptedFlags === undefined) {
       // THE HONESTY CASE. A target that did not enumerate has not agreed with anything; it has
       // said nothing, and the diff did not happen. Reusing `surfaceSummary` so this sentence
       // cannot drift from the one the surface block prints two lines above it — and passing the
@@ -676,7 +701,7 @@ export function diffDeclaration(
       surfaceProvenance: found.surfaceProvenance,
       ...(declared === undefined ? { undeclared: true as const } : {}),
     });
-    const accepted = new Set(found.surface.flags);
+    const accepted = new Set(acceptedFlags);
     const args = declared?.args ?? [];
     for (const arg of args) {
       if (arg.status === "valid" && !accepted.has(arg.name))
@@ -695,7 +720,7 @@ export function diffDeclaration(
       // finding belongs to the arg side, not here.
       ...(declared?.positionals ?? []).map((p) => `--${p.name}`),
     ]);
-    for (const flag of found.surface.flags) {
+    for (const flag of acceptedFlags) {
       if (!named.has(flag)) add("accepted-not-declared", path, flag);
     }
   }
