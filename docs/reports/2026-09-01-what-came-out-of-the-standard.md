@@ -1002,6 +1002,32 @@ what was considered produces no record anyone can check — including the person
 sections that got a written candidate list all yielded findings on review; the two that got a
 sentence yielded three more when someone asked.
 
+### R-49 · A paragraph the concept page already carried verbatim
+
+> **Get this right when the CLI is born.** Kubernetes' KEP-2551 proposed normalising kubectl's exit
+> codes and has sat alpha-gated behind an environment variable since 2022 — not because the design
+> is bad, but because retrofitting exit codes onto a tool with existing consumers is close to
+> impossible.
+
+[`exit-codes.md:184`](../wiki/concepts/exit-codes.md) carries that sentence **word for word**, and
+closes with _"Get this right when a CLI is born"_ — which the standard uses as its opening lead. The
+same paragraph, reordered.
+
+**Raised by the owner as a genuinely open question**, and the answer is a split rather than a cut.
+The case for keeping it — _it is important enough that you would not want to hide it behind a link_
+— is right about the **recommendation** and not about the evidence. And the placement proves it: the
+urgency is the concept page's last line and the standard's first, so the standard is already doing
+the thing that argues for keeping it, while the concept page buries it.
+
+So the recommendation and its mechanism stay, and the retold KEP goes. _"Close to impossible"_ is
+true on its face; _"alpha-gated since 2022"_ is the one fact that stings, and it survives as a clause
+rather than a paragraph.
+
+**The reason not to keep both copies is measured, not stylistic.** This pass has already caught one
+figure that drifted between a page and the note it cited — `114,101` against `114,042` — and
+verbatim duplication is the mechanism that produces it. A second copy is a second thing to keep
+true.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,

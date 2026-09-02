@@ -698,10 +698,10 @@ that it is right in some universal sense; it is that an agent learns it once and
 every tool that adopts it — which is exactly why a local convention that is not machine-discoverable
 is tribal knowledge.
 
-**Get this right when the CLI is born.** Kubernetes' KEP-2551 proposed normalising kubectl's exit
-codes and has sat alpha-gated behind an environment variable since 2022
-([exit codes](docs/wiki/concepts/exit-codes.md#exit-codes-are-append-only)) — not because the design is bad, but because
-retrofitting exit codes onto a tool with existing consumers is close to impossible.
+**Get this right when the CLI is born.** Retrofitting exit codes onto a tool with existing
+consumers is close to impossible: Kubernetes' attempt has been alpha-gated behind an environment
+variable since 2022
+([exit codes](docs/wiki/concepts/exit-codes.md#exit-codes-are-append-only)).
 
 **Three counter-examples that bite, all three defensible.**
 
