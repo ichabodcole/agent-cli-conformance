@@ -1,9 +1,9 @@
 # Recorded-surface batches — vendored, with attribution and caveats
 
-Four JSON artifacts, vendored **verbatim**, that nothing in this tree reads yet. They are evidence
-captured by somebody else against a specification this repository published, and they landed here
-**before** the ingestion code that will consume them — which is the only ordering under which they
-can say anything about whether the specification was writable.
+Four JSON artifacts, vendored **verbatim** before anything in this tree could read them. They are
+evidence captured by somebody else against a specification this repository published, and they
+landed here **before** the ingestion code that reads them today — which is the only ordering under
+which they can say anything about whether the specification was writable.
 
 They are also the first artifacts anyone has produced from
 [`docs/plans/2026-08-25-the-recorded-surface-batch.md`](../../../../../docs/plans/2026-08-25-the-recorded-surface-batch.md).
@@ -187,4 +187,8 @@ flagless verbs, and each one cost it census coverage while the report claimed it
 nothing. _"The fraction moves the wrong way as the tool improves, which is the one direction a
 measurement must never move."_
 
-**Nothing in this tree reads this file yet**, exactly as with the four batches above.
+**This file is now read.** `recorded.test.ts`'s `"magpie's empty enumeration — the regression
+enumerated-none exists to fix"` block reads it through `readRecordedBatch`, pins the sentence above
+byte-exact, and drives it through `acc check --recorded-surfaces` end to end — asserting the census
+counts both paths as compared, as a number, rather than dropped — exactly as the four batches above
+are read by the vendored-batch tests.

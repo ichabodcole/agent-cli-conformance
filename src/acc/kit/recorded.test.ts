@@ -23,6 +23,7 @@ import {
   provenanceLabel,
   RecordedSurfacesError,
   readRecordedBatch,
+  recordedPathSummary,
 } from "./recorded.ts";
 import { captureSurface } from "./surface.ts";
 
@@ -556,6 +557,112 @@ describe("the vendored batches, read with the kit's own extraction", () => {
     // the quote is a quotation, and a helpfully cleaned one is a different capture.
     expect(lines[0]).toContain(JSON.stringify('{"name":"grapevine","version":"2.2.0"}'));
     expect(lines[1]).toContain("not verified to be a version");
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// THE MAGPIE BATCH — the end-to-end regression for `enumerated-none`.
+//
+// `magpie.empty-enumeration.json` is the deliberate before-case: two records, `sessions` and
+// `help`, each answering a sentinel flag with a present, empty `choices` list — the target
+// SAYING it accepts none, at a path it was actually asked about. The kit used to read that as
+// `not-enumerated` and drop both paths from the census, publishing the opposite of what the
+// target said (see PROVENANCE.md's "magpie.empty-enumeration.json" section). This is the first
+// and only place in the tree that reads it.
+// ---------------------------------------------------------------------------------------------
+describe("magpie's empty enumeration — the regression enumerated-none exists to fix", () => {
+  const magpie = batchFixture("magpie.empty-enumeration.json");
+
+  test("the reader mints enumerated-none at both paths, byte-exact against the vendored bytes", () => {
+    const reading = readRecordedBatch(loadRecordedBatch(magpie));
+    expect(reading.records).toBe(2);
+    for (const key of ["sessions", "help"] as const) {
+      const s = reading.surfaces.find((p) => p.path[0] === key);
+      // The whole `Surface`, not a subset — an extra `flags` or `nonFlagCandidates` key here
+      // would be exactly the false claim this status exists to refuse.
+      expect(s?.surface).toEqual({
+        status: "enumerated-none",
+        evidence: [],
+        probesRead: 1,
+        emptySetKeys: ["choices"],
+      });
+      expect(s?.surfaceProvenance).toBe("recorded-by-caller");
+    }
+  });
+
+  test("the printed sentence is the one confirmed byte-exact against the shipped code", () => {
+    const reading = readRecordedBatch(loadRecordedBatch(magpie));
+    for (const key of ["sessions", "help"] as const) {
+      const p = reading.surfaces.find((s) => s.path[0] === key);
+      expect(recordedPathSummary(p as never)).toBe(
+        `stated an empty set of flags at ${key} under \`choices\`; 1 rejection read, and the ` +
+          "set the target named held nothing (the target's own answer, not silence read as one)",
+      );
+    }
+  });
+
+  describe("acc check --recorded-surfaces over the vendored batch", () => {
+    const acc = join(HERE, "..", "cli.ts");
+    const target = join(HERE, "fixtures", "enumerates-flags-in-prose.ts");
+    const tmp = mkdtempSync(join(tmpdir(), "acc-magpie-"));
+    const write = (name: string, body: unknown): string => {
+      const path = join(tmp, name);
+      writeFileSync(path, `${JSON.stringify(body, null, 2)}\n`);
+      return path;
+    };
+    const run = (args: string[], format = "text") =>
+      spawnSync("bun", [acc, "check", target, "--format", format, ...args], { encoding: "utf8" });
+
+    const declaration = write("magpie.declaration.json", {
+      formatVersion: "0",
+      provenance: "modelled",
+      selfDescription: null,
+      commands: [
+        { path: ["sessions"], args: [], positionals: [] },
+        { path: ["help"], args: [], positionals: [] },
+      ],
+    });
+
+    test("both paths report enumerated-none, with no near-miss clause", () => {
+      const r = run(["--recorded-surfaces", magpie, "--declaration", declaration], "json");
+      const data = JSON.parse(r.stdout).data;
+      const readings: Array<{
+        path: string[];
+        status: string;
+        nonFlagKeys: string[];
+        summary: string;
+      }> = data.recordedSurfaces.readings;
+      for (const key of ["sessions", "help"]) {
+        const p = readings.find((x) => x.path[0] === key);
+        expect(p?.status).toBe("enumerated-none");
+        // No near-miss clause: `choices` is empty rather than non-empty-and-not-flag-shaped.
+        expect(p?.nonFlagKeys).toEqual([]);
+        expect(p?.summary).toBe(
+          `stated an empty set of flags at ${key} under \`choices\`; 1 rejection read, and the ` +
+            "set the target named held nothing (the target's own answer, not silence read as one)",
+        );
+      }
+    });
+
+    // THE ADOPTER'S ACTUAL COMPLAINT: "the fraction moves the wrong way as the tool improves,
+    // which is the one direction a measurement must never move." Asserted as a NUMBER, because a
+    // prose assertion ("...compared") would stay green while the number underneath it drifted.
+    test("the census counts both paths as COMPARED, not dropped — the fraction as a number", () => {
+      const r = run(["--recorded-surfaces", magpie, "--declaration", declaration], "json");
+      const data = JSON.parse(r.stdout).data;
+      expect(data.declaration.declaredCommands).toBe(2);
+      expect(data.declaration.checkedCommands).toBe(2);
+      for (const key of ["sessions", "help"]) {
+        const p = data.declaration.paths.find((x: { path: string[] }) => x.path[0] === key);
+        expect(p.checked).toBe(true);
+      }
+    });
+
+    test("the text census names both as compared, and never as not-enumerated", () => {
+      const r = run(["--recorded-surfaces", magpie, "--declaration", declaration]);
+      expect(r.stdout).toMatch(/2 of 2 declared command paths compared/);
+      expect(r.stdout).not.toMatch(/did not enumerate/);
+    });
   });
 });
 
