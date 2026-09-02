@@ -1,9 +1,12 @@
 // Link and anchor resolution for the authored Markdown no other lint reads.
 //
 // `docs/lint.ts` walks docs/reports, docs/plans and docs/research; `docs/wiki/lint.ts` walks
-// docs/wiki. Between them they left STANDARD.md, CHARTER.md, README.md, AGENTS.md,
-// docs/roadmap.md, docs/techniques.md, the shipped `skills/acc/` pages and the skill definitions
-// unread — link TARGETS the gate protected and link SOURCES it never opened.
+// docs/wiki. This reads EVERYTHING ELSE git tracks — not a named list of root documents, which is
+// what the finding that prompted it proposed. The corpus is `git ls-files -- '*.md'` minus those
+// four prefixes and the generated CHANGELOG.md, so STANDARD.md, CHARTER.md, README.md, AGENTS.md,
+// docs/roadmap.md, the shipped `skills/acc/` pages, the skill definitions and two `src/` fixtures
+// are all in it, and a markdown file added anywhere new joins on `git add` rather than by being
+// listed here.
 //
 // The direction that was missing is the one that helps least to leave out. A page's own
 // cross-references are the live hazard: rename a heading in STANDARD.md and its same-file anchors

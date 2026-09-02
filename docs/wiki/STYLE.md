@@ -119,7 +119,7 @@ Four things no measurement detects, which reading must catch:
 
 ## Satellites
 
-`docs/roadmap.md`, `STANDARD.md` and the files in `docs/research/` are not wiki pages and carry no
+`docs/roadmap.md`, `STANDARD.md`, `CHARTER.md` and the files in `docs/research/` are not wiki pages and carry no
 `type`. The type-specific language rules above do not bind them; the density rules do.
 `docs/research/` files are dated evidence documents and are not maintained after the fact.
 

@@ -12,7 +12,8 @@ tags: [documentation, method, evidence]
 subject:
   the provenance narrative removed from STANDARD.md, and what of it is worth a permanent home
 examined:
-  STANDARD.md lines 11-173 at commit e96419a on branch docs/the-bounds-the-consumers-named
+  STANDARD.md across its whole length, from commit e96419a to 1d1f6bb on branch
+  docs/the-bounds-the-consumers-named; 1,343 non-blank lines to 1,026
 ---
 
 # What came out of the standard
@@ -1203,9 +1204,15 @@ nothing in the repository does it, because an id is a label and labels are not c
 
 ## What this pass did not do
 
-- **It did not touch any other section.** `How to read this` is one of two large sections; the
-  same pass over the rest is unstarted, and the ratio found here (roughly a third) should not be
-  assumed to hold elsewhere.
+- **It did not check its own claims about coverage as it went.** This section was written after
+  the first chunk, said the pass over the rest was unstarted, and stayed that way while `R-12`
+  through `R-56` were added below it across Parts 1 to 4 and a closing sweep. It was caught during
+  the release, by an agent reading the tree cold. **The document describing a pass that empties out
+  self-descriptions had emptied out its own** — which is the strongest instance in it and was not
+  found by anyone who worked on it.
+- **The ratio is not uniform and should not be projected.** `Part 1 §3` went 47 non-blank lines to
+  14; `Emit v0` went 35 to 32; `Error envelopes` netted zero. Reference material and requirements do
+  not accumulate provenance the way an argument does.
 - **It did not verify that every removed passage is fully carried by the artifact it cites.** The
   claim that the reports and research notes already hold these stories was checked for `R-5` and
   `R-7` and taken on the strength of the existing links for the others.

@@ -242,7 +242,7 @@ if (import.meta.main) {
   console.log(
     problems.length
       ? `\n${problems.length} problem(s).`
-      : "OK — frontmatter, vocabularies, stated methods, version literals and report-field coverage valid across docs/reports, docs/plans, docs/research and the live documents; links and anchors resolve in every hand-authored Markdown file no other lint reads (the generated CHANGELOG.md excepted).",
+      : "OK — frontmatter, vocabularies, stated methods, version literals and report-field coverage valid across docs/reports, docs/plans, docs/research and the live documents; inline links and anchors resolve in every hand-authored Markdown file no other lint reads (the generated CHANGELOG.md excepted; reference-style links are not read).",
   );
   process.exit(problems.length ? 1 : 0);
 }
