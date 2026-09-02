@@ -16,7 +16,7 @@ standing supply of defensible tools that decline conventions on this page — `f
 `dd`, `jq`, `ssh` and `psql` are not badly built, they are built for something else. Where a
 recommendation has a known counter-example, this page names it. Declining one is a decision; the
 thing worth avoiding is declining one without noticing — and
-[the decision needs a home](#where-a-declined-recommendation-is-recorded-which-is-not-in-either-of-those-files),
+[the decision needs a home](#where-a-declined-recommendation-is-recorded),
 which is not the declaration and not the caller's config.
 
 **Every recommendation carries its reason.** A bare rule is not this project's voice. If a
@@ -48,7 +48,7 @@ format any reader shipped here can read: it requires the keys
 define.
 
 **Every number on this page carries its evidentiary status, in one of four fixed phrases.** This is
-a second axis and not a fourth mark, and the phrases are used verbatim so that a reader meeting one
+a third axis and not a fourth mark, and the phrases are used verbatim so that a reader meeting one
 mid-sentence does not have to look anything up:
 
 | Phrase                                         | What produced the number                                                                               |
@@ -202,13 +202,13 @@ agent-facing CLIs, where the shipped instructions are often _the_ interface an a
 **Moving flags per-verb is a breaking change**, because flags that were accepted-and-ignored become
 errors. Check your own recorded usage before you do it.
 
+**What generation does not prevent.** It kills staleness. It does not kill **incompleteness**, and
+incompleteness is the larger problem. That is the next section.
+
 **[—]** for the claim itself. Nothing on this page reads a SKILL.md: emitting from the parser,
 generating from the command table and checking against the running tool all miss it by construction,
 and the kit has no way to falsify a declaration that contradicts the documentation shipped beside the
 binary.
-
-**What generation does not prevent.** It kills staleness. It does not kill **incompleteness**, and
-incompleteness is the larger problem. That is the next section.
 
 **[—]** Nothing outside your process can establish that your emitter walks your parser's
 structures. What is visible is the consequence.
@@ -399,7 +399,7 @@ matches an English phrase on stderr can pass under one `LC_ALL` and fail under a
 in the report telling the two runs apart. Measure the environment, print it beside the
 declaration, and label it as measured.
 
-### Where a declined recommendation is recorded, which is not in either of those files
+### Where a declined recommendation is recorded
 
 [How to read this](#how-to-read-this) says declining a recommendation is a decision and the thing
 worth avoiding is declining one without noticing. The noticing has nowhere durable to live. A waiver
@@ -408,7 +408,7 @@ in their config; a reason written down in somebody else's report belongs to them
 declines on the merits ends up with either a temporary file or a stranger owning the record.
 
 **The narrowing-versus-widening asymmetry [in the next section](#where-the-declaration-lives-and-who-may-say-what)
-already says how to split it**, and the split is the answer rather than a new file format:
+says how to split it**, and the split is the answer rather than a new file format:
 
 - **The waiver stays caller policy** and stays out of the declaration, exactly as this section says.
   It binds a gate, it is neither true nor false, and it belongs to whoever is running the check.
@@ -518,7 +518,7 @@ which paths went uncompared and why. But an author writing one today should expe
 what could not be compared rather than about what agreed, and the fix is the kit's and the tool's,
 not the file's.
 
-### Where they disagreed, and it is not settled here
+### Two questions this page leaves open
 
 **Exit-code ownership: may an outside observer declare it?** **Nothing here decides it.** The
 field switches off a whole family of checks, so the question is who may be trusted with it, and both
@@ -564,7 +564,7 @@ The precedence order:
 3. **Inference** — stdout is not a TTY, or an agent-harness variable is set.
 
 **Why the override, both ways.** Detection is genuinely useful and it also fails: when behaviour
-depends solely on inference about the caller, a caller that guesses wrong has no
+depends solely on inference about the caller, a tool that infers wrongly leaves the caller no
 recourse. `gh` gets this right in both directions, honouring an `AI_AGENT` override and spelling the
 reverse `GH_FORCE_TTY=1`. [Machine mode](docs/wiki/concepts/machine-mode.md) carries the full contract and the table of what
 changes between the two modes, and the sourcing for this recommendation; read it rather than a
@@ -824,7 +824,8 @@ on the command line to be ignored"_
 order-dependent by design, say so in the declaration; the clause is not for you.
 
 Likewise, this page asserts **no flag spelling**. `sqlite3`, `openssl` and GDAL use single-dash long options;
-`dig +short`, `ps aux` and `dd if=/of=` are not even the same grammar. None of that falsifies
+`dig +short`, `ps aux` and `dd if=/of=` are not even the same grammar
+([the grammar survey](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md#warnings-that-do-not-apply-to-us)). None of that falsifies
 anything above, and none of it is a defect.
 
 **[C]** `A1`–`A3` and `A5`–`A7`, at the root only. `A7` is the exception in practice: its prose

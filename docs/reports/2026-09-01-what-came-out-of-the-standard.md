@@ -1154,6 +1154,44 @@ was ragged. Thirteen rewrapped.
 mechanical signal of where a document was edited without being reread. It found no defect by itself
 — but every one of the five above sat on or beside one of those lines.
 
+### R-56 · The seven pre-existing prose findings, and a fabricated citation
+
+All seven from the cold read, decided individually:
+
+1. **Two competing `"second axis"` claims.** Both were _second relative to the marks_, so they
+   competed for one ordinal rather than meaning different things in different frames. Counted
+   honestly there are three axes — the marks, `In v0`, evidentiary status — so the second became
+   **a third axis**, keeping the _"not a fourth mark"_ contrast that was doing the work.
+2. **`### Where they disagreed`** — `they` named nobody once the design sketches were removed by
+   R-26. Now `### Two questions this page leaves open`.
+3. **`### Where a declined recommendation is recorded, which is not in either of those files`** — a
+   heading read in a table of contents and from a link 383 lines away, whose `those files` antecedent
+   sits in the parent section. Exactly one inbound link existed, on line 19 of the same file, so the
+   rename cost one edit.
+4. **The flag-spelling sentence had no citation**, in a page whose own rule is _"every claim about
+   another tool traces to a source"_. Traced to `50d05ca`: it never had one. The survey does cover
+   the claims — single-dash-long parsers and the exotic-syntax family are both in
+   `## Warnings that do not apply to us` — so the source existed and the link was simply never
+   written.
+5. **`"a caller that guesses wrong"`** — the tool is what infers. Now _"a tool that infers wrongly
+   leaves the caller no recourse"_, which names the actor and keeps the harm where it lands.
+6. **Two `[—]` blocks with a paragraph between them** in Part 1 §2, where every other section closes
+   with its marks in one block. The prose moved above them; nothing cut.
+7. **`"already says"` pointing forward** to the next section. `already` dropped.
+
+### The near-miss, and it is the point of the entry
+
+Fixing (4), **a citation id was invented — `SURV-12`, which does not exist.** The survey runs
+`SURV-1` to `SURV-11`.
+
+**The gate passed.** The link resolved to the report file, and `checkLinks` reads targets, never
+labels — the blind spot R-54 had just recorded, exercised within the hour by the person who recorded
+it. Caught by reading the line back.
+
+A sweep of every cited id followed: seven `SURV-n`, three `DT-n` and sixteen rule ids all resolve to
+something real. **Fabricating one id is reason to check the class**, and the check is cheap — but
+nothing in the repository does it, because an id is a label and labels are not checked.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,
