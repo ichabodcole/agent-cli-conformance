@@ -1,7 +1,7 @@
 ---
 type: report
 generated: { by: claude-opus-5, at: 2026-08-31 }
-status: draft
+status: stable
 lifecycle: live
 description:
   The repair record for the four documentation items in the 2026-08-31 bounds plan, and the first

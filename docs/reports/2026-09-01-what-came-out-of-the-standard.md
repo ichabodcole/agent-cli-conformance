@@ -1,7 +1,7 @@
 ---
 type: report
 generated: { by: claude-opus-5, at: 2026-09-01 }
-status: draft
+status: stable
 lifecycle: live
 description:
   Every passage removed from STANDARD.md while separating the standard from the argument for the

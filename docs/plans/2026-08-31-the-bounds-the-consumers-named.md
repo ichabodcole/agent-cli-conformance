@@ -1,8 +1,8 @@
 ---
 type: plan
 generated: { by: claude-opus-5, at: 2026-08-31 }
-status: draft
-lifecycle: live
+status: stable
+lifecycle: discharged
 description:
   Four documentation changes drawn from the outstanding consumer asks — two bounds three adopters
   asked to have written down, the evidence for two charter questions that was gathered after those
