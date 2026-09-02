@@ -171,8 +171,8 @@ also be able to read a description somebody else wrote, and the difference in wh
 
 ## 2. Generate it from what implements the behaviour
 
-**Recommendation.** Produce the description by walking the same structures your parser consumes.
-Not a second document kept in step by discipline, and not a document your CI type-checks.
+**Recommendation.** Produce the description by walking the same structures your parser consumes —
+not a second document, and not one your CI type-checks.
 
 **Why.** A second document kept in step by discipline drifts, and regenerating it in CI is weaker
 than it sounds: it only catches divergence someone remembered to regenerate for. A schema
@@ -402,7 +402,8 @@ declaration, and label it as measured.
 ### Where a declined recommendation is recorded, which is not in either of those files
 
 [How to read this](#how-to-read-this) says declining a recommendation is a decision and the thing
-worth avoiding is declining one without noticing. The noticing has nowhere durable to live. A waiver belongs to whoever runs the check and travels
+worth avoiding is declining one without noticing. The noticing has nowhere durable to live. A waiver
+belongs to whoever runs the check and travels
 in their config; a reason written down in somebody else's report belongs to them. A maintainer who
 declines on the merits ends up with either a temporary file or a stranger owning the record.
 
@@ -462,7 +463,8 @@ The rest, briefly:
 - Refuse to run against a declaration whose format version you do not understand, rather than
   ignoring it and carrying on. The fields unlock probes, and unknown semantics on an unlocking
   field means running an invocation whose justification you cannot read.
-- Say nothing about **effects** — and do not record it as a placeholder either. There is no sandbox to falsify such a
+- Say nothing about **effects** — and do not record it as a placeholder either. There is no sandbox
+  to falsify such a
   claim in, and no field is coming for it. An inert field is not a neutral placeholder: it lends
   its names apparent authority, invites a consumer to infer safety from them, and fixes a meaning
   before any consumer exists to need one. `read_only` already reads two ways — no mutation of the
@@ -480,7 +482,8 @@ The rest, briefly:
 ### A caller may declare — and at the root, that is all the census can act on
 
 **The claim above is not weakened: a caller who did not write the tool may author a declaration for
-it**, and the narrowing-versus-widening asymmetry is what makes that safe. What follows is a limit on what the **census** can do with one today —
+it**, and the narrowing-versus-widening asymmetry is what makes that safe. What follows is a limit
+on what the **census** can do with one today —
 invisible from the format layer, where a modelled document is as well-formed as an emitted one.
 
 The kit probes **the root only** — `captureSurface` in
@@ -490,7 +493,8 @@ the root has to be recorded by somebody who already holds the authority to run t
 to the kit as a [recorded-surface batch](docs/wiki/guides/how-to-record-surfaces-below-the-root.md),
 which it reads — what stops at the root is what the kit will **send**.
 A verb-first tool's declaration is a document about its **verbs**, so every path it declares is a
-path nothing probes, and the one path that is probed is often the one it does not declare. **Measured in this tree** on
+path nothing probes, and the one path that is probed is often the one it does not declare.
+**Measured in this tree** on
 this repository's own CLI, which is verb-first: `acc --nope` lists its verbs and names no flag, so
 the root surface reads `did not enumerate`, and a four-command modelled declaration for it reports
 **`THE DIFF DID NOT RUN — 0 of 4 declared command paths compared`**.
@@ -503,7 +507,8 @@ The limit is on probing, and the caller who can lift it is the one who may alrea
 
 So the `[C?]` on this Part, and every `yes` in the [`In v0` column](#the-fields-and-why-each-exists),
 carry a condition already stated in both places and worth stating plainly: **on any target that
-enumerates _at the root_**. For the verb-first population — plausibly most agent-facing CLIs — a modelled declaration currently
+enumerates _at the root_**. For the verb-first population — plausibly most agent-facing CLIs — a
+modelled declaration currently
 buys zero comparison: **"a caller may declare for a tool" is true at the format layer and inert at
 the census layer**
 ([the first outside application](docs/reports/2026-08-24-first-outside-application-grapevine.md#the-modelled-negative-which-is-the-most-useful-failure-in-the-session)).
@@ -519,7 +524,8 @@ not the file's.
 field switches off a whole family of checks, so the question is who may be trusted with it, and both
 answers are defensible. The honest split is that some tools state ownership plainly — `ssh(1)` says it
 _"exits with the exit status of the remote command or with 255 if an error occurred"_ — **read from
-a primary source** — so a reader of the man page is not guessing — while `tar`, `xargs` and `bazel run` do not. It is settleable by
+a primary source** — so a reader of the man page is not guessing — while `tar`, `xargs` and `bazel
+run` do not. It is settleable by
 experiment rather than argument: take the delegators the survey names, have several people who did
 not write them answer ownership from the documentation alone, and see whether they agree and are
 right.
@@ -568,7 +574,8 @@ summary here.
 output, failure output, and every subcommand alike.
 
 **The output whose whole job is to be machine-readable is the one most likely to be exempted from
-the envelope, and it must not be.** A tool that answers every command with an envelope and returns its own declaration
+the envelope, and it must not be.** A tool that answers every command with an envelope and returns
+its own declaration
 as a bare document forces every consumer written against the mode to special-case the one document
 they came for
 ([DT-9](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-9--the-manifest-is-a-bare-document-while-every-other-output-is-enveloped)).
@@ -672,13 +679,14 @@ consumer can spawn one safely and still not know whether it writes anything.
 state by other means.
 
 **A field must distinguish absent, null and zero.** Three states an envelope routinely collapses:
-"there are none", "I could not tell", and "I did not look". A `0` that means "I could not count" is a lie a caller cannot detect, and a field that is absent rather than
+"there are none", "I could not tell", and "I did not look". A `0` that means "I could not count" is
+a lie a caller cannot detect, and a field that is absent rather than
 present-and-null is unreadable, because absence and a null answer are the same bytes.
 
 **[C]** `B1` (stdout carries only data, so it is empty when the command failed), `A3` (an error
 names the offending token), `C2` (usage errors distinguishable from internal faults) — and `B5`
 (machine mode holds on the parser-error path) **only where `defaultOutput` is declared** — see
-[machine mode](#machine-mode) for why that has so far been nobody.
+[machine mode](#machine-mode) for why no target has declared one so far.
 **[C?]** `kind`, `retryable`, the two-shape discipline and the `choices` list — all checkable the
 moment the envelope's field names are declared, which is exactly what
 [A3's coverage gap asks for](docs/wiki/rules/parsing/errors-name-the-offending-token.md). **[—]**
@@ -751,7 +759,8 @@ returning one record owes nothing here.
 
 The kinds and cardinality vocabulary are in [output kind](docs/wiki/concepts/output-kind.md#why-it-matters-for-agents), which also
 carries the Docker case: under the same `--format json` flag, `docker version` emits one object,
-`docker ps` emits NDJSON with no enclosing array, and `docker inspect` emits an array. The inconsistency is now permanent, **because it was never declared, only
+`docker ps` emits NDJSON with no enclosing array, and `docker inspect` emits an array. The
+inconsistency is now permanent, **because it was never declared, only
 observed.**
 
 **This is the thinnest recommendation on the page.** The reasoning is sound and the Docker case is
@@ -786,9 +795,9 @@ more dangerous of the two failures and it is the one nothing sees from outside.
 ## Parsing
 
 The catalogue covers this ground densely and this page will not restate it — read
-[the index](docs/wiki/index.md) for the seven rules. Two things are worth saying here. The first is
-the shape all seven defend against, because it is one shape; the second is a recommendation the
-catalogue does not carry at all, at the end of this section:
+[the index](docs/wiki/index.md) for the seven rules. What is worth saying here is the shape all seven
+defend against, because it is one shape — and, at the end of the section, a recommendation the
+catalogue does not carry at all:
 
 **A parser that accepts something it does not understand and runs anyway is the defect.** An unknown
 flag accepted while the verb runs; a positional silently swallowed; `--flag=value` split on
@@ -800,7 +809,8 @@ which is why documentation does not fix this class. All four are measured, repea
 One clause deserves highlighting because it is counter-intuitive: **never act on a guessed
 correction.** A parser that accepts `--frmat` silently produces no error, so there is no
 just-in-time slice of the schema, so there is nothing for the caller to correct from. Suggesting the
-correction is good; applying it is not. Real tools do apply it — PLINK resolves flag names by exact match, then prefix, then
+correction is good; applying it is not. Real tools do apply it — PLINK resolves flag names by exact
+match, then prefix, then
 Damerau-Levenshtein distance 1 — and a tool that guesses and proceeds looks, to any checker reading
 exit codes and diagnostics, exactly like a tool that rejected
 ([SURV-10](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)).
@@ -814,7 +824,8 @@ on the command line to be ignored"_
 order-dependent by design, say so in the declaration; the clause is not for you.
 
 Likewise, this page asserts **no flag spelling**. `sqlite3`, `openssl` and GDAL use single-dash long options;
-`dig +short`, `ps aux` and `dd if=/of=` are not even the same grammar. None of that falsifies anything above, and none of it is a defect.
+`dig +short`, `ps aux` and `dd if=/of=` are not even the same grammar. None of that falsifies
+anything above, and none of it is a defect.
 
 **[C]** `A1`–`A3` and `A5`–`A7`, at the root only. `A7` is the exception in practice: its prose
 extractor finds no closed value set to falsify on the population measured so far
@@ -831,12 +842,12 @@ than ask it for help, blocked a second time on knowing that command is safe to r
 
 A **group node** is a command that exists to hold subcommands and has no flags of its own —
 `docker image`, `kubectl config`, `git remote`. Send it a flag and it refuses correctly, by name,
-and then has no valid set to offer, because it has none. **Name the subcommands inline.** Pointing
+and then has no valid set to offer. **Name the subcommands inline.** Pointing
 the caller at `<node> --help` is a legitimate design that this page would not choose.
 
 The reason is one sentence: **when a caller makes a mistake, return more information rather than
 less.** A rejection is the moment the tool knows most and the caller knows least, and it is the
-cheapest place in the interaction to close that gap. Three consequences follow, and the third is
+cheapest place in the interaction to close that gap. Three consequences follow, and the format boundary is
 the one that decides it for an agent-facing tool. The tool already holds the list — `docker` has
 just printed the word `Usage:` about that node and is not being asked to compute anything. An agent
 pays for _"go run `--help`"_ in a model round-trip, not a process spawn. And the rejection may be
@@ -936,7 +947,8 @@ safely, which is a different kind of thing to be missing and belongs under a dif
   and a declaration is genuinely all it needs.
 - **[—] Every declared boolean flag is accepted.** Only one half of this survives the same test as
   `--help` above. Rejecting a missing value is a parser error, observable before anything runs; an
-  _accepted_ flag is accepted **by running the command**, and there is no observation of acceptance that is not an execution. So this
+  _accepted_ flag is accepted **by running the command**, and there is no observation of acceptance
+  that is not an execution. So this
   half waits on a sandbox, or on an operator running a generated probe plan, not on a declaration of
   the flag.
 - **Every declared enforced value set rejects an out-of-set value.**
@@ -963,7 +975,8 @@ Named rather than dressed up.
   every SKILL.md tells agents to pass on every verb is contractually global whatever the parser
   does ([Part 1 §2](#2-generate-it-from-what-implements-the-behaviour)), and no probe over argv,
   streams, exit codes or help output reads a document that ships beside the binary.
-- **Effects.** That a command performs no writes is unobservable from argv and streams alone. A sandbox moves this into
+- **Effects.** That a command performs no writes is unobservable from argv and streams alone. A
+  sandbox moves this into
   the row above; nothing else does.
 - **Exit-code ownership.** You cannot show from outside that `ssh`'s `255` is its own and its `3` is
   the remote's.

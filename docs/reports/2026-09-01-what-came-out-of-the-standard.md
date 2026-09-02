@@ -1127,6 +1127,33 @@ followed by `(` or `:` — and is not worth adding on one instance, but the prop
 **this repository's link checking is sound for links that point somewhere wrong, and blind to text
 that has stopped being a link at all.**
 
+### R-55 · Five defects this pass wrote, and one it left behind
+
+The cold read's most useful output was not the pre-existing prose it found. It was the list of
+things the pass itself introduced, none of which any gate could see:
+
+- **A count the section does not keep.** _"Two things are worth saying here"_ in Parsing, followed by
+  eight bolded items. Written during the R-17 repair — a stale self-description replaced by an
+  inaccurate one.
+- **A seven-word phrase repeated across a recommendation and its reason.** _"a second document kept
+  in step by discipline"_ at both ends of Part 1 §2, with nothing added the second time.
+- **An ordinal the reader miscounts.** _"the third is the one that decides it for an agent-facing
+  tool"_ — the explicitly agent-facing consequence is the second, so a reader who counts stops and
+  recounts. Replaced by naming the consequence rather than numbering it.
+- **A reason that restates its claim.** _"has no valid set to offer, because it has none"_ — the
+  definition two clauses earlier already gives the reason.
+- **A pronoun standing in for a person it cannot be.** _"see machine mode for why that has so far
+  been nobody"_, where `that` is a condition.
+
+**And the formatting tell, which is the useful one.** Lines over 115 columns went from **2** before
+the pass to **13** — the un-rewrapped inserts, marking exactly the passages this pass edited. Lines
+between 100 and 115 stayed proportionally flat, so the register was unchanged and only the new text
+was ragged. Thirteen rewrapped.
+
+**Worth keeping as a method note:** with `proseWrap: "preserve"`, an over-long line is a free,
+mechanical signal of where a document was edited without being reread. It found no defect by itself
+— but every one of the five above sat on or beside one of those lines.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,
