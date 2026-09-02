@@ -480,9 +480,8 @@ The rest, briefly:
 ### A caller may declare — and at the root, that is all the census can act on
 
 **The claim above is not weakened: a caller who did not write the tool may author a declaration for
-it**, and the narrowing-versus-widening asymmetry is what makes that safe. What follows is a limit
-on what the **census** can do with one today, and it belongs here because it is invisible from the
-format layer, where a modelled document is as well-formed as an emitted one.
+it**, and the narrowing-versus-widening asymmetry is what makes that safe. What follows is a limit on what the **census** can do with one today —
+invisible from the format layer, where a modelled document is as well-formed as an emitted one.
 
 The kit probes **the root only** — `captureSurface` in
 [`src/acc/kit/surface.ts`](src/acc/kit/surface.ts) reads a flag set out of root-level rejections,
@@ -492,45 +491,26 @@ to the kit as a [recorded-surface batch](docs/wiki/guides/how-to-record-surfaces
 which it reads — what stops at the root is what the kit will **send**.
 A verb-first tool's declaration is a document about its **verbs**, so every path it declares is a
 path nothing probes, and the one path that is probed is often the one it does not declare. Measured
-on this repository's own CLI, which is verb-first: `acc --nope` answers `unknown option '--nope'`
-and lists its verbs, naming no flag, so the root surface reads `did not enumerate` — and a
-four-command modelled declaration for it reports `THE DIFF DID NOT RUN — 0 of 4 declared command
-paths compared`. anthill v2.3.0 is the better case and still a narrow one: its root rejection does
-name `--format`, so the root does compare — but its manifest has no slot for root flags, so the only
-comparable path is one the document never declares (DT-1), and the summary reads **`0 of 25`
-declared command paths compared**, naming the root beside the fraction instead of inside it. That
-figure is **measured in this tree** against the anthill repo checkout, and it is the build that
-matters: the published `2.3.0`
-launcher answers the same probe `No command specified.`, naming no flag at all, so on that build
-nothing compares and the figure is a property of the build rather than of the version
-([DT-10](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-10--two-builds-of-the-same-declared-version-disagree-about-whether-the-root-enumerates)).
+on this repository's own CLI, which is verb-first: `acc --nope` lists its verbs and names no flag, so
+the root surface reads `did not enumerate`, and a four-command modelled declaration for it reports
+**`THE DIFF DID NOT RUN — 0 of 4 declared command paths compared`**.
 
-**Every figure in this section is about what the kit probes for itself, and none of them is a
-ceiling.** Hand the same anthill checkout a batch recorded below the root and the same modelled
-declaration compares
-[`23 of 26` paths](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three)
-rather than `0 of 25`. The limit the rest of this section states is unchanged: it is a limit on
-probing, and the caller who can lift it is the one who may already run the tool.
+**That figure is about what the kit probes for itself, and it is not a ceiling.** Record a batch
+below the root and the same modelled declaration compares the paths the batch covers — on one real
+tool, [`23 of 26`](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three).
+The limit is on probing, and the caller who can lift it is the one who may already run the tool.
 
 So the `[C?]` on this Part, and every `yes` in the [`In v0` column](#the-fields-and-why-each-exists),
 carry a condition already stated in both places and worth stating plainly: **on any target that
-enumerates _at the root_**. The conclusion is not this page's. It was drawn by the implementer in
-[the first outside application of the standard](docs/reports/2026-08-24-first-outside-application-grapevine.md#the-modelled-negative-which-is-the-most-useful-failure-in-the-session),
-and it belongs here in their words rather than in a paraphrase:
+enumerates _at the root_**. For the verb-first population — plausibly most agent-facing CLIs — a modelled declaration currently
+buys zero comparison: **"a caller may declare for a tool" is true at the format layer and inert at
+the census layer**
+([the first outside application](docs/reports/2026-08-24-first-outside-application-grapevine.md#the-modelled-negative-which-is-the-most-useful-failure-in-the-session)).
 
-> for the verb-first population — most of this fleet, and I suspect most agent-facing CLIs — a
-> modelled declaration currently buys zero comparison. The standard's "a caller may declare for a
-> tool" is true at the format layer and inert at the census layer.
-
-**The worked `0 of 4` above is this repository's own CLI, measured in this tree**, and it is not the
-run that produced that sentence: that session modelled a declaration for a different tool, on a tree
-this checkout cannot reach, and the report records its numbers as reported rather than verified. The
-grammar in the sentence is also not the invariant — anthill is verb-first and does enumerate at the
-root — which is why the limit above is stated as the root-slot mismatch rather than as a fact about
-verb-first parsers. It is not wasted: the self-description check runs on it with no probe at all, and the report
-says which paths went uncompared and why. But an author writing one today should expect a report
-about what could not be compared rather than about what agreed, and the fix is the kit's and the
-tool's, not the file's.
+It is not wasted: the self-description check runs on it with no probe at all, and the report says
+which paths went uncompared and why. But an author writing one today should expect a report about
+what could not be compared rather than about what agreed, and the fix is the kit's and the tool's,
+not the file's.
 
 ### Where they disagreed, and it is not settled here
 

@@ -570,6 +570,61 @@ term means is doing a different job from an example showing a claim held once:
 unchanged, and the narrowing-versus-widening asymmetry they reference is still stated. The chunk has
 no outbound anchors.
 
+## Part 2 § A caller may declare
+
+54 non-blank lines to 30.
+
+### R-28 · A quotation that was costing six lines to fence
+
+> The conclusion is not this page's. It was drawn by the implementer in [the first outside
+> application], and it belongs here in their words rather than in a paraphrase:
+>
+> > for the verb-first population […] a modelled declaration currently buys zero comparison. The
+> > standard's "a caller may declare for a tool" is **true at the format layer and inert at the
+> > census layer**.
+
+Followed, six lines later, by the fence:
+
+> The worked `0 of 4` above is this repository's own CLI, measured in this tree, **and it is not the
+> run that produced that sentence**: that session modelled a declaration for a different tool, on a
+> tree this checkout cannot reach […] The grammar in the sentence is also not the invariant — anthill
+> is verb-first and does enumerate at the root — which is why the limit above is stated as the
+> root-slot mismatch rather than as a fact about verb-first parsers.
+
+**reason stated, and the structural finding is the interesting part.** The sharpest sentence in the
+section — _true at the format layer and inert at the census layer_ — was again the one inside
+quotation marks (fourth instance, after R-4, R-16 and R-26). Lifting it as the page's own claim did
+not only remove the attribution: **the entire fencing paragraph had nothing left to do.**
+
+Quoting somebody commits a page to defending their exact words, including the parts it does not
+mean. Two of those six lines existed to disown a generalisation in the quote, and one to disown a
+measurement the quote might be read as claiming. State the position yourself and you state only what
+you mean, and there is nothing to walk back.
+
+**The rule this adds:** when a passage is followed by qualifications of its own quotation, the
+qualifications are not the problem. The quotation is.
+
+### R-29 · The measurement block
+
+Thirteen lines: `acc --nope` and its `0 of 4`; anthill `2.3.0` and its `0 of 25` with the root named
+beside the fraction rather than inside it; then the build-versus-version caveat, where a published
+launcher answers `No command specified.` so the figure is _"a property of the build rather than of
+the version"_.
+
+**evidence only.** The mechanism is complete without any of it: a verb-first tool's declaration is a
+document about its verbs, so every path it declares is a path nothing probes, and the one path that
+is probed is often the one it does not declare. One worked figure keeps it concrete; three plus a
+build caveat is a trial report.
+
+**A stale reference of this pass's own making, again:** removing the anthill figures left a later
+paragraph saying _"the same anthill checkout"_ and _"rather than `0 of 25`"_, with neither antecedent
+still present. Caught by re-reading the section after the cut. That is the fifth instance, and the
+first where R-23 was applied and still missed one on the first pass — the rule says re-read what
+points at the section and what it points to, and this pointer was _inside_ the section.
+
+**Extension to R-23:** re-read the whole section after cutting, not only its seams. A paragraph can
+reference a figure four paragraphs above it.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,
