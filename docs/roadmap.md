@@ -630,6 +630,40 @@ counts about itself is the same defect it was built to find, one level up.
 
 **Blocked on** the marking convention above. Nothing else.
 
+## Claims about the code that nothing re-derives
+
+**What it is.** The other half of the entry above, and the same instrument. A check that takes each
+render, output shape or count quoted in prose — in a document, a skill, or a code comment — and
+asserts the emitting function can actually produce it.
+
+**Why it matters.** Adding a fourth enumeration status produced **nine** instances of one defect: a
+sentence asserting something the code does not establish. Every one was caught by a person reading
+prose against code; **none** was caught by `bun run check`, which typechecks, lints, formats,
+resolves links, builds the site and runs the suite without ever comparing a claim to its subject.
+Three of the nine were introduced _by the repair for another one_, which is what shows the writing
+act reproduces the defect rather than any individual writer being careless.
+
+The sharpest specimen: the consumer skill quoted `stated an empty set of flags at the root under
+`choices`` — a sentence the kit cannot emit, because the root excludes that key, the key reaches
+the field only through a reader that refuses root records, and the word "root" appears only when the
+path is empty. Three independent reasons, none visible to a reader who has not just read those
+three functions. An adopter matching their output against it concludes their tool misbehaved.
+
+**Why it is one instrument, not two.** A stale figure and an impossible render are the same shape:
+a claim about this repository that was true when written, is mechanically checkable, and is checked
+by nobody. `185 lines` described a file; `stated an empty set of flags…` describes a function. Both
+went false in silence.
+
+**The hard part, as before, is the citation site.** A fenced block is findable; a render quoted
+inline in a comment is not, and neither announces which function it came from. The same marking
+convention that entry is blocked on would serve here — which is the argument for doing them
+together rather than in sequence.
+
+**Blocked on** nothing beyond that shared convention. The cheap first move is narrower than the
+general check: pin the specific renders the consumer skill quotes with a test asserting they equal
+what the renderer emits, which converts the highest-cost instances from unverifiable prose into a
+gate failure.
+
 ## The first screen is the coverage prose, not the finding
 
 **What it is.** Reorder `acc check`'s text report so the census and the verdict deltas come first

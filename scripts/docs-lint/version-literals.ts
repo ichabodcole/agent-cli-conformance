@@ -135,13 +135,20 @@ export function scanFile(
   return { problems, allowlistHits };
 }
 
+/** Git-ignored working directories. Exported so a test can hold it against `.gitignore`. */
+export const IGNORED_DIRS = new Set(["node_modules", ".git", ".scratch", ".superpowers", "dist"]);
+
 export function versionLiteralProblems(repoRoot: string): string[] {
   const hazards = hazardVersions(repoRoot);
   const problems: string[] = [];
   const hitEntries = new Set<AllowlistEntry>();
 
-  // `.scratch` is untracked working material; nothing there ships, so nothing there rots.
-  const files = walkMarkdown(repoRoot, new Set(["node_modules", ".git", ".scratch"]));
+  // GIT-IGNORED SCRATCH IS NOT A LIVE DOCUMENT: nothing there ships, so nothing there rots. The set
+  // must agree with `.gitignore` and nothing keeps them in sync — `.superpowers` was missing until
+  // an agent workspace under it failed this check on files that were never going to be published.
+  // Its sibling `unlinted-links.ts` has no such list because it takes its corpus from `git ls-files`,
+  // which is the better shape and the one to move to when this list next needs a member.
+  const files = walkMarkdown(repoRoot, IGNORED_DIRS);
   for (const file of files) {
     const rel = relative(repoRoot, file).replaceAll("\\", "/");
     if (RECORD_DIRS.some((d) => rel.startsWith(`${d}/`))) continue;

@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { type AllowlistEntry, scanFile } from "./version-literals.ts";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { type AllowlistEntry, IGNORED_DIRS, scanFile } from "./version-literals.ts";
 
 const HAZARDS = ["0.1.0", "0.1.2"];
 
@@ -66,5 +68,21 @@ describe("scanFile", () => {
   test("a hazard version embedded in a longer version does not match", () => {
     const { problems } = scanFile("docs/x.md", "bun 10.1.0.2 and v0.1.20 shipped\n", HAZARDS, []);
     expect(problems).toHaveLength(0);
+  });
+});
+
+describe("IGNORED_DIRS", () => {
+  // THE LIST IS THE DEFECT SURFACE, not the walk. `.superpowers` was absent until an agent
+  // workspace under it failed the check, so this holds the set against the file that decides
+  // what is ignored rather than against a second hand-maintained copy.
+  test("covers every top-level directory .gitignore ignores", () => {
+    const ignored = readFileSync(join(import.meta.dir, "../../.gitignore"), "utf8")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0 && !l.startsWith("#") && l.endsWith("/") && !l.includes("*"))
+      // `skipDirs` matches a BASENAME, so `docs/dist/` is covered by the entry `dist`.
+      .map((l) => l.replace(/\/$/, "").split("/").pop() as string);
+    const missing = ignored.filter((d) => !IGNORED_DIRS.has(d));
+    expect(missing).toEqual([]);
   });
 });
