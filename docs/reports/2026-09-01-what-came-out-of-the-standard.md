@@ -801,6 +801,43 @@ editing; it is what happens when you remove the sentence that introduced somethi
 sentence that refers to it. R-34's read is the only instrument that finds them, and it found four of
 the five.
 
+## Part 3 § Exit codes
+
+54 non-blank lines to 41.
+
+### R-38 · The standard carrying the charter's self-assessment — second instance
+
+Twenty lines on fleet divergence: a five-bullet inventory of one author's eight CLIs, then _"no rule
+in the catalogue reports any of it"_ with its structural reasons, then **`15 of 23` rules returning
+an identical verdict on all eight targets** and the six scaffold-sharing tools producing one verdict
+vector **six times over**.
+
+Both figures are already in `CHARTER.md:171-173`, in fuller form — with the `nine PASS+ / three UNVR
+/ three N/A` breakdown this page omits. **Second cross-document duplication after the 57% fixture in
+R-35, and the same shape both times: a claim about the kit's reach, sitting in the guidance.**
+
+The division is now clear enough to state as a rule. **A claim about what this project can and
+cannot establish belongs in the charter. The standard says what to build.** When the standard argues
+the project's case, it is duplicating an argument made better elsewhere and spending the reader's
+attention on a question they did not ask.
+
+What survives is the guidance, and it is the argument for declaring at all: **the only instrument
+that surfaces fleet divergence is putting the declarations side by side.**
+
+### R-39 · Three tool inventories, one kept deliberately
+
+- Delegators — `ssh`, `tar`, `timeout`/`xargs`/`env`, `jq`'s `halt_error` — cut to two. The rule and
+  the actionable part both survive: verbatim passthrough makes the wrapper's own `125`/`126`/`127`
+  indistinguishable from the child's, so carry the child's code as a field in your envelope.
+- Non-zero-is-not-failure — `rg`, `expr 1 = 2`, `kubectl diff` — cut to `rg`, which is canonical.
+- **`git` `129`, `docker` `125`, `kubectl`/`gh`/`cargo` `1` — kept in full**, against the R-27
+  pattern. Here the inventory _is_ the reason: the claim is that no industry standard exists, and one
+  example cannot establish an absence. Five tools disagreeing, and **none using `EX_USAGE`**, is the
+  evidence for calling the taxonomy a house standard rather than a convention.
+
+**The distinction R-39 adds:** an inventory is decoration when it repeats a claim one case already
+makes, and it is the argument when the claim is about a population.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,

@@ -690,9 +690,10 @@ range below the reserved band, publish the mapping in your declaration, and neve
 
 The taxonomy this project uses — nine codes, plus a separate band for outcomes that are answers
 rather than failures — is in [exit codes](docs/wiki/concepts/exit-codes.md). It is a house standard
-and says so. Measured against one probe, an unrecognised flag, `git` returns `129`, `docker`
-returns `125`, and `kubectl`, `gh` and `cargo` all return `1`
-([exit codes](docs/wiki/concepts/exit-codes.md#there-is-no-industry-standard)). **None uses `EX_USAGE`.** The value is not
+and says so. Measured against one probe, an unrecognised flag, `git` returns `129` and `docker` returns `125`,
+while `kubectl`, `gh` and `cargo` all return `1`
+([exit codes](docs/wiki/concepts/exit-codes.md#there-is-no-industry-standard)). **None uses
+`EX_USAGE`.** The value is not
 that it is right in some universal sense; it is that an agent learns it once and it holds across
 every tool that adopts it — which is exactly why a local convention that is not machine-discoverable
 is tribal knowledge.
@@ -704,46 +705,27 @@ retrofitting exit codes onto a tool with existing consumers is close to impossib
 
 **Three counter-examples that bite, all three defensible.**
 
-**Non-zero does not always mean failure.** `rg` exits `1` for "no matches", a complete and correct
-and successful run, and `expr 1 = 2` exits `1` the same way
-([SURV-4](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)); `kubectl diff` reuses exit `1` to mean "differences found"
-([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#43-cloud-vendors-rich-api-models-missing-cli-models)). A tool in this family should say so in its declaration, and a
-checker that assumes `1` is a failure reads a correct answer as a broken one.
+**Non-zero does not always mean failure.** `rg` exits `1` for "no matches" — a complete, correct and successful
+run ([SURV-4](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). A tool in this family
+should say so in its declaration, and a checker that assumes `1` is a failure reads a correct answer
+as a broken one.
 
 **Some tools do not own their exit codes.** `ssh` delegates the entire namespace, not just a
-reserved band; `tar` documents that _"if a subprocess exits non-zero, tar assumes that exit code as
-well"_; `timeout`, `xargs` and `env` reserve a small band and pass the rest through verbatim; `jq`'s
-`halt_error(n)` puts the code under the control of the input program, which is a positional the
-caller supplied
-([SURV-9](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). The archetype and its
-hazards are in [delegator](docs/wiki/archetypes/delegator.md) — including the honest admission that
-verbatim passthrough makes the wrapper's own `125` / `126` / `127` indistinguishable from the
-child's, and that a delegator needing the distinction should carry the child's code as a field in
-its envelope.
+reserved band, and `timeout`, `xargs` and `env` reserve a small band and pass the rest through
+verbatim ([SURV-9](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). The archetype
+and its hazards are in [delegator](docs/wiki/archetypes/delegator.md) — including that verbatim
+passthrough makes the wrapper's own `125` / `126` / `127` indistinguishable from the child's, so a
+delegator needing the distinction should carry the child's code as a field in its envelope.
 
 **Some tools compose codes as bit fields.** Covered in Part 2; the taxonomy has no position on them
 and this page does not invent one.
 
-**This is where fleet divergence shows up first, and where nothing reports it.** Across one author's
-eight agent-facing CLIs
-([measurement](docs/reports/2026-08-24-eight-owner-clis.md)):
-
-- seven answer an unknown flag with exit `2`; one answers with exit `1`;
-- `--help` goes to stdout in six, to **stderr at exit 2** in one, and to stdout as **JSON** in one;
-- `--version` exists in exactly one of the eight;
-- machine mode is unconditional and unflagged in seven and TTY-conditional and flagged in one;
-- one repository bans `process.exit()` after a write at every entry point, in a comment ending
-  _"Do not tidy this back into an explicit exit"_, and the other calls it at six sites.
-
-**No rule in the catalogue reports any of it**, for two structural reasons the report states
-plainly: every relevant checker requires only that a code be non-zero, and every run judges one tool
-alone — a divergence is a relation between reports, and a report is the largest object the kit
-produces. On a corpus chosen to expose inconsistency, 15 of 23 rules returned an identical verdict
-on all eight targets, and the six tools sharing a scaffold produced one identical set of verdicts
-six times over.
-
-One author, one toolset, and every one of those questions answered more than once. The only
-instrument that surfaces it is putting the declarations side by side.
+**This is where fleet divergence shows up first.** One author's eight agent-facing CLIs answered
+every one of these questions more than once — unknown-flag code, where `--help` goes, whether
+`--version` exists at all, whether machine mode is conditional
+([measurement](docs/reports/2026-08-24-eight-owner-clis.md)). Nothing in a per-tool verdict can
+report that: a divergence is a relation between reports, and a report is the largest object the kit
+produces. **The only instrument that surfaces it is putting the declarations side by side.**
 
 **[C]** `C1` (help exits zero), `C2` (usage distinguishable from internal), `C3` (deterministic
 codes), `A1` / `A2` (unknown flag, unknown command exit non-zero). **[C?]** Holding a tool to its
