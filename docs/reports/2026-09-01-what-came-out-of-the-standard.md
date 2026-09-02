@@ -743,6 +743,64 @@ gate, and the three found here were invisible to the greps written specifically 
 This is the same failure the standard itself is about: an instrument that reaches lexical carriers
 and misses semantic ones. The pass has now demonstrated it on itself four times.
 
+## Part 3 §§ Complete and untruncated output, Error envelopes
+
+27 to 23, and 43 to 43. The second number is not a failure to cut — that section is the leanest in
+Part 3 and is mostly recommendation-and-reason prose with no story in it. Its net change is a repair.
+
+### R-35 · The self-criticism belonged to the charter, and the page's copy of a figure had drifted
+
+> The [archaeology] has the fixture measured both ways: **65,536 bytes through the pipe before the
+> fix, 114,101 after** […] The defective binary delivers 57% of its payload at exit `0` — and
+> `acc check` scores it `conformant: true`, zero core failures. That is the kit's own headline
+> verdict certifying a CLI that loses more than half its output, **and it is recorded here rather
+> than hidden because** it is the clearest thing anyone has measured about the limits of black-box
+> checking.
+
+**evidence only, and duplicated across documents.** `CHARTER.md:161` already makes this argument —
+_"one fixture that silently loses 57% of its output scores `conformant: true` with zero core
+failures"_ — where it belongs, because it is a claim about the project's limits rather than guidance
+for someone building a CLI. The closing clause is the page narrating its own honesty.
+
+**The page's copy had already drifted from its source:** `STANDARD.md` said the fixture delivered
+`114,101` bytes after the fix; the archaeology note says `Bun.spawn` pipe **`114,042`**. Not chased,
+because the discrepancy is the argument — a second copy of a measurement is how a figure goes stale,
+and the fix is to keep one and link it.
+
+### R-36 · A cross-section duplication, the first of its kind
+
+`Machine mode` and `Error envelopes` both disclosed that `B5` is gated on `defaultOutput` and that
+none of the eight owner-CLI targets declared one — ninety lines apart, in two different `[C]` blocks,
+in different words. `Machine mode`'s version carries the sharper conclusion and stays; this one now
+points at it.
+
+Every earlier instance of the duplication pattern was within a single section or between adjacent
+subsections. This one crossed a section boundary, which means **the reading practice of R-34 will not
+find them all**: reading one section whole cannot show you that another section says the same thing.
+
+### R-37 · A birth defect, found by detective work rather than by reading
+
+> **Why enumerate the alternatives in the envelope.** An error is a just-in-time slice of the schema
+> […] **Both** are generated from the same declaration.
+
+**Both what?** Nothing plural precedes it. An explorer traced the sentence to
+`docs/wiki/concepts/error-envelope.md:126-129`, where it survives intact with the clause that
+supplies the antecedent: _"This makes **good errors and schema introspection** two views of one
+thing."_ `git log -S` confirms `STANDARD.md`'s version arrived whole in `50d05ca`, the commit that
+created the page — so the antecedent was lost **when the passage was distilled from the wiki**, not
+by any later edit. Verified against the source before acting, not taken on the agent's report.
+
+**This is the finding that matters most for the playbook, because the defect is the pass's own
+failure mode.** Whoever wrote `STANDARD.md` was doing exactly what this pass does — compressing a
+longer passage into a shorter one — and dropped the clause that made the remainder coherent. This
+pass has done the same thing five times in two days: _"That page"_, _"the same code path"_, _"v0's
+missing slot"_, _"Both positions are defensible"_, _"most likely to be exempted"_.
+
+**Compression is the operation that creates dangling antecedents.** It is not a hazard of careless
+editing; it is what happens when you remove the sentence that introduced something and keep the
+sentence that refers to it. R-34's read is the only instrument that finds them, and it found four of
+the five.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,

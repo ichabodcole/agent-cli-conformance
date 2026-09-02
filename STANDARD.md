@@ -611,27 +611,20 @@ terminates. Machine-mode values are never abbreviated, never humanised, never el
 **Why.** This is the sharpest instance of the shape every defect in this project shares — **the tool
 does the wrong thing and reports success.** A payload cut off at a pipe buffer stops mid-string and
 exits `0`, so a caller receives two thirds of an answer with nothing anywhere to say a third is
-missing. The [archaeology](docs/research/2026-08-15-defect-archaeology.md) has the fixture measured
-both ways: **65,536 bytes through the pipe before the fix, 114,101 after**, with the only difference
-being a `process.exit()` on a path that had written to a stream it had not drained. The defective
-binary delivers 57% of its payload at exit `0` — and `acc check` scores it `conformant: true`, zero
-core failures. That is the kit's own headline verdict certifying a CLI that loses more than half its
-output, and it is recorded here rather than hidden because it is the clearest thing anyone has
-measured about the limits of black-box checking.
-
-The class is also the most expensive one in that corpus: ten-plus commits, nine or ten entry-point
-sites, thirty-seven exit sites pinned, and a regression after the first fix.
+missing. It is also expensive once shipped: the sites are every exit path in the program,
+and the first fix for it regressed
+([archaeology](docs/research/2026-08-15-defect-archaeology.md)).
 
 **How to comply** is runtime-specific and measured per runtime — see
 [a command delivers every byte it wrote](docs/wiki/rules/streams/output-is-delivered-whole.md). The
 short form: set the exit code and return from the entry point; do not call `process.exit()`,
 `exit()` or `os.Exit()` after writing.
 
-**And do not assert the buffer size.** Bun 1.4 delivered 131,072 bytes through the same code path
-that had delivered 65,536 — the reason `B4` asserts delivery rather than a number, and why the
-figures live in [a dated note](docs/research/2026-08-19-flush-on-exit-by-runtime.md) rather than on a rule page. A rule written around the number
-would have been wrong within weeks.
-The invariant is "every byte it wrote"; the number belongs in a dated note.
+**And do not assert the buffer size.** Bun 1.4 delivered 131,072 bytes through a code path that
+had previously delivered 65,536 — the reason `B4` asserts delivery rather than a
+number. A rule written around the number would have been wrong within weeks: the invariant is "every
+byte it wrote", and the figures belong in
+[a dated note](docs/research/2026-08-19-flush-on-exit-by-runtime.md).
 
 **[C?]** `B4` states the rule and its checker is `planned` — the blocker is the runner, because a
 pipe the runner creates cannot exhibit the defect at all. `B4` therefore reports not-applicable on
@@ -657,9 +650,10 @@ to stdout and the error to stderr at exit `1`
 for — sees an empty result set, not a failure. The tool answered a question it could not answer, in
 the shape of a successful answer.
 
-**Why enumerate the alternatives in the envelope.** An error is a just-in-time slice of the schema,
-delivered exactly when the caller has demonstrated it needs that slice and paid for only on failure.
-Both are generated from the same declaration, so the flags an error offers are by construction the
+**Why enumerate the alternatives in the envelope.** Good errors and schema introspection are two
+views of one thing: an error is a just-in-time slice of the schema, delivered exactly when the caller
+has demonstrated it needs that slice and paid for only on failure. Both are generated from the same
+declaration, so the flags an error offers are by construction the
 flags the parser accepts.
 
 The full shape, the `confirmation_required` case and the `next` field's real semantics are in
@@ -677,16 +671,13 @@ consumer can spawn one safely and still not know whether it writes anything.
 state by other means.
 
 **A field must distinguish absent, null and zero.** Three states an envelope routinely collapses:
-"there are none", "I could not tell", and "I did not look". Across two repositories this was the
-largest single cost in the corpus and belongs to none of the usual defect categories — a `0` that
-means "I could not count" is a lie a caller cannot detect, and a field that is absent rather than
+"there are none", "I could not tell", and "I did not look". A `0` that means "I could not count" is a lie a caller cannot detect, and a field that is absent rather than
 present-and-null is unreadable, because absence and a null answer are the same bytes.
 
 **[C]** `B1` (stdout carries only data, so it is empty when the command failed), `A3` (an error
 names the offending token), `C2` (usage errors distinguishable from internal faults) — and `B5`
-(machine mode holds on the parser-error path) **only where `defaultOutput` is declared**, which was
-true of none of the eight targets in the
-[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md).
+(machine mode holds on the parser-error path) **only where `defaultOutput` is declared** — see
+[machine mode](#machine-mode) for why that has so far been nobody.
 **[C?]** `kind`, `retryable`, the two-shape discipline and the `choices` list — all checkable the
 moment the envelope's field names are declared, which is exactly what
 [A3's coverage gap asks for](docs/wiki/rules/parsing/errors-name-the-offending-token.md). **[—]**
