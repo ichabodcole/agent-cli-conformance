@@ -410,16 +410,16 @@ describe("against real fixtures", () => {
     expect(s.evidence.every((e) => e.shape === "json-field")).toBe(true);
   }, 60_000);
 
-  test("a target that talks about flags without naming any", async () => {
+  test("a target whose rejection carries the right key, empty", async () => {
     const h = await record(
       {
-        path: fixture("mentions-flags-without-enumerating.ts"),
-        argv0: ["bun", fixture("mentions-flags-without-enumerating.ts")],
+        path: fixture("enumerates-nothing-explicitly.ts"),
+        argv0: ["bun", fixture("enumerates-nothing-explicitly.ts")],
       },
       CHECKERS,
     );
     const s = captureSurface(h.observations);
-    // Five separate traps in one error document, and the honest answer to all of them is silence.
+    // An empty array under `validFlags` declares nothing, and the honest answer is silence.
     expect(s.status).toBe("not-enumerated");
     expect(s.probesRead).toBeGreaterThan(0);
   }, 60_000);
@@ -443,7 +443,7 @@ describe("against real fixtures", () => {
     const acc = join(HERE, "..", "cli.ts");
     const run = spawnSync(
       "bun",
-      [acc, "check", fixture("mentions-flags-without-enumerating.ts"), "--format", "text"],
+      [acc, "check", fixture("enumerates-nothing-explicitly.ts"), "--format", "text"],
       { encoding: "utf8" },
     );
     expect(run.stdout).toContain("did not enumerate");
