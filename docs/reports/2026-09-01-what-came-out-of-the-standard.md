@@ -675,6 +675,45 @@ Merging the two exit-code paragraphs left _"switches off a whole family of check
 dangling _"Both positions are defensible"_ whose antecedent the cut had just removed. Found by
 re-reading the section after editing it, which is the rule working as intended for once.
 
+## Part 3 § Machine mode
+
+55 non-blank lines to 45. Estimated 35 beforehand — the third consecutive overestimate, and the
+reason is consistent: where a removal preserves a reason, the replacement runs nearly as long as what
+it replaced. Recorded rather than corrected, because the counts are not the measure.
+
+### R-32 · A rule that was never stated, only instantiated
+
+> **The place it breaks is the command you would least expect, and the case was found by a reader of
+> this page rather than by anything here.** anthill answers every command with `{ok, data, meta}` […]
+> except `help --json`, which returns the manifest as a bare document […] Nothing here caught it:
+> every check that would have runs below the root.
+
+**reason stated, and the rule had to be written for the first time.** This is the only entry so far
+where the general form did not already exist somewhere in the passage: the section had a worked case
+and no sentence naming what it was a case of. It does now — **the output whose whole job is to be
+machine-readable is the one most likely to be exempted from the envelope, and it must not be** —
+which is a rule an author can apply to their own tool without knowing anything about anybody else's.
+
+The heading also carried its own provenance (_"found by a reader of this page rather than by anything
+here"_), and the closing clause was a limitation already covered by the section's `[C?]` marks.
+
+### R-33 · A fifth revision record, and checker internals inside a mark
+
+> `B3` (machine output parses) — **listed as checked today until this revision, and it is not.** Its
+> checker declares `probes: []`, every branch returns `unverified`, and its own `coverageEstablished`
+> reads _"nothing at L0"_ […]
+
+After R-5, R-20, R-22 and R-27. A checkability mark should say what is and is not established, not
+narrate its own correction or quote the checker's source. What stands is the honest finding, which is
+the strongest thing in the block: `B5` came back `unverified` on all eight targets of the owner-CLI
+run, every one of them a machine-mode tool, **so the rule is unreachable on the population it was
+proposed for**.
+
+Two smaller removals of established classes: the Vercel bug-report narrative (R-13's shape — the
+reason stands without the cautionary tale, and `gh`'s two spellings are kept because they teach what
+"both directions" means), and a flag-spelling inventory reduced to two examples with the kit's
+self-confession about its own false pass compressed to the conclusion it supports (R-24, R-27).
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,

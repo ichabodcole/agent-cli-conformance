@@ -557,56 +557,44 @@ The precedence order:
 3. **Inference** — stdout is not a TTY, or an agent-harness variable is set.
 
 **Why the override, both ways.** Detection is genuinely useful and is also a documented failure
-mode: Vercel's agent-mode envelope was discovered _through a bug report_ caused by its own agent
-detection, which users worked around by faking a PTY
-([machine mode](docs/wiki/concepts/machine-mode.md#the-detection-hazard), which carries the sourcing for this and for `gh` below).
-When behaviour depends solely on inference
-about the caller, a caller that guesses wrong has no recourse. `gh` gets this right in both
-directions, honouring an `AI_AGENT` override and spelling the reverse `GH_FORCE_TTY=1`, both
-verified directly. That page also carries the full contract and the table of what changes between
+mode: when behaviour depends solely on inference about the caller, a caller that guesses wrong has no
+recourse. `gh` gets this right in both directions, honouring an `AI_AGENT` override and spelling the
+reverse `GH_FORCE_TTY=1`. That page also carries the full contract and the table of what changes between
 the two modes; read it rather than a summary here.
 
 **Machine mode is a mode, not a flag on one command.** Once selected it should govern success
 output, failure output, and every subcommand alike.
 
-**The place it breaks is the command you would least expect, and the case was found by a reader of
-this page rather than by anything here.** anthill answers every command with `{ok, data, meta}` and
-every failure with `{ok: false, error, meta}` — except `help --json`, which returns the manifest as
-a bare document. The single machine output whose whole job is to be machine-readable is the one that
-does not speak the envelope, so a consumer written against the mode has to special-case the
-declaration ([DT-9](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-9--the-manifest-is-a-bare-document-while-every-other-output-is-enveloped),
-**measured in this tree**). Nothing here caught it: every check that would have runs below the root.
+**The output whose whole job is to be machine-readable is the one most likely to be exempted, and
+it must not be.** A tool that answers every command with an envelope and returns its own declaration
+as a bare document forces every consumer written against the mode to special-case the one document
+they came for
+([DT-9](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-9--the-manifest-is-a-bare-document-while-every-other-output-is-enveloped)).
 
 **Declare what your machine mode covers, because two different things share the spelling.** `rg
 --json` selects a JSON Lines format for search results; it is not a CLI-wide output mode and does
 not govern help, version or diagnostics. A checker that reads `--json` out of help and concludes
 "this tool has a machine mode" then fails it on the parser-error path for a feature it never claimed
-— measured in the [blind trial](docs/reports/2026-08-23-blind-trial-ripgrep.md), where one misread
-produced three downstream failures. Declaring the scope is what lets an honest tool decline an
+([blind trial](docs/reports/2026-08-23-blind-trial-ripgrep.md)). Declaring the scope is what lets an honest tool decline an
 obligation instead of failing it.
 
-**And do not assume a flag spelling means what you think.** `--output` names a file at least as
-often as a format — `curl`, `ffmpeg`, `ogr2ogr`, every `cp`-shaped tool — and `--format` is `ps`'s
-column layout and `ffprobe`'s writer name
-([SURV-2](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). A `--output <file>`
-spelling produces a **false pass** in this repository's own kit — reproduced against a fixture whose
-help documents it as writing a body to a file — which is the honest reason this page asks for a
-declaration instead of a convention.
+**And do not assume a flag spelling means what you think.** `--output` names a file at least as often as a
+format — `curl` and every `cp`-shaped tool — and `--format` is `ps`'s column layout
+([SURV-2](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). Reading a format mode
+out of a spelling produces a false pass, which is the honest reason this page asks for a declaration
+instead of a convention.
 
 **[C]** `B2` (no ANSI when piped), `B1` (stdout carries only data), `D3` (help advertises it,
 diagnostic).
 
-**[C?]** `B3` (machine output parses) — listed as checked today until this revision, and it is not.
-Its checker declares `probes: []`, every branch returns `unverified`, and its own
-`coverageEstablished` reads _"nothing at L0"_
-([`machine-output-parseable.ts`](src/acc/kit/checkers/streams/machine-output-parseable.ts)). Its
-subject is the output of a **data command**, and selecting one means knowing it is side-effect-free.
-`B5` (machine mode holds on the parser-error path) is a genuine probe and sound at the root, but it
-is gated on `defaultOutput` and reported `unverified` on **all eight** targets of the
-[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) — every one of which is a machine-mode
-tool, so the rule is currently unreachable on the population it was proposed for. Each becomes live
-on a declaration and neither needs new kit machinery: `defaultOutput` for `B5`, and for `B3` a
-command declared read-only whose output the kit is licensed to read.
+**[C?]** `B3` (machine output parses) and `B5` (machine mode holds on the parser-error path).
+Neither is checked today. `B3`'s subject is the output of a **data command**, and selecting one means
+knowing it is side-effect-free. `B5` is a genuine probe and sound at the root, but it is gated on
+`defaultOutput` and came back `unverified` on **all eight** targets of the
+[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) — every one of them a machine-mode tool,
+so the rule is unreachable on the population it was proposed for. Each becomes live on a declaration
+and neither needs new kit machinery: `defaultOutput` for `B5`, and for `B3` a command declared
+read-only whose output the kit is licensed to read.
 
 Also **[C?]**: the precedence order and the two-way override — nothing measures either, and neither
 needs anything the kit does not already have; and "governs every subcommand alike", unreachable both
