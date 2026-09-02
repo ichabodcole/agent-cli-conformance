@@ -794,48 +794,37 @@ flag accepted while the verb runs; a positional silently swallowed; `--flag=valu
 whitespace so the value is dropped and the command runs with defaults; a `--` terminator that fails
 to protect what it is for. Every one is invisible at the point where documentation would be read,
 which is why documentation does not fix this class. All four are measured, repeatedly, in
-[the archaeology](docs/research/2026-08-15-defect-archaeology.md) — including `bounty close --help`,
-which closed the board.
+[the archaeology](docs/research/2026-08-15-defect-archaeology.md).
 
 One clause deserves highlighting because it is counter-intuitive: **never act on a guessed
 correction.** A parser that accepts `--frmat` silently produces no error, so there is no
 just-in-time slice of the schema, so there is nothing for the caller to correct from. Suggesting the
-correction is good; applying it is not. Real tools do apply it: Perl's `Getopt::Long` enables
-`auto_abbrev` by default, and PLINK resolves flag names by exact match, then prefix, then
-Damerau-Levenshtein distance 1 — _guessing and proceeding_, while looking to any checker reading
-exit codes and diagnostics exactly like a tool that rejected
+correction is good; applying it is not. Real tools do apply it — PLINK resolves flag names by exact match, then prefix, then
+Damerau-Levenshtein distance 1 — and a tool that guesses and proceeds looks, to any checker reading
+exit codes and diagnostics, exactly like a tool that rejected
 ([SURV-10](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)).
 
 **Counter-examples worth knowing before you adopt any of this wholesale.** "You can append `--help`
-to any invocation and get help" is false by design for a real population: `ffmpeg` applies options
-to the next file so _"order is important"_, ImageMagick's settings persist as they appear on the
-command line while operators apply immediately, `find`'s arguments are primaries in a boolean
-expression with precedence and there is no `--` role at all, `bazel` startup options must precede
-the command, and PLINK's `--help` _"causes everything before it on the command line to be ignored"_
+to any invocation and get help" is false by design for a real population: `ffmpeg` applies options to
+the next file so _"order is important"_, `find`'s arguments are primaries in a boolean expression
+with precedence and there is no `--` role at all, and PLINK's `--help` _"causes everything before it
+on the command line to be ignored"_
 ([SURV-11](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). If your grammar is
 order-dependent by design, say so in the declaration; the clause is not for you.
 
-Likewise, this page asserts **no flag spelling**. `sqlite3`, `openssl`, `ip`, GROMACS, BLAST+, PLINK
-and GDAL use single-dash long options; `dig +short`, `ps aux`, `tar cfv` and `dd if=/of=` are not
-even the same grammar. None of that falsifies anything above, and none of it is a defect.
+Likewise, this page asserts **no flag spelling**. `sqlite3`, `openssl` and GDAL use single-dash long options;
+`dig +short`, `ps aux` and `dd if=/of=` are not even the same grammar. None of that falsifies anything above, and none of it is a defect.
 
-**[C]** `A1`–`A3` and `A5`–`A7`, at the root only. The
-[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) measured both `A6` and `A7` as
-`unverified` on all eight targets — `A6` because a `bun` launcher swallowed the leading `--` before
-the target saw it, `A7` because its prose extractor found no closed value set to falsify. `A6`'s
-swallow is now compensated at the spawn, so it returns a real verdict on bun-launched targets; `A7`
-still carries its caveat, because its checker still finds no closed value set and has yet to resolve
-on that population. **[—]** `A4` — the silently swallowed positional,
-which is the second item in the shape above — at any depth: its checker declares no probe and
-returns `unverified` unconditionally
-([`unexpected-positionals.ts`](src/acc/kit/checkers/parsing/unexpected-positionals.ts)), because
-testing arity means sending extra positionals to a _real_ verb and running it. It becomes checkable
-in a sandbox, or on a surface an operator recorded by running a generated probe plan — not on
-discovery, and not on anything the tool says about itself. **[C?]** The rest
-of them one level down, which is the largest single block of coverage debt in the catalogue —
-blocked on the tool declaring that the subcommand exists, and, for every one of them whose probe
-would run the subcommand rather than ask it for help, blocked a second time on knowing that command
-is safe to run. `bounty close --help` closed the board.
+**[C]** `A1`–`A3` and `A5`–`A7`, at the root only. `A7` is the exception in practice: its prose
+extractor finds no closed value set to falsify on the population measured so far
+([owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md)), so it has yet to resolve there.
+**[—]** `A4` — the silently swallowed positional, the second item in the shape above — at any depth.
+Testing arity means sending extra positionals to a _real_ verb and running it, so it becomes
+checkable in a sandbox, or on a surface an operator recorded by running a generated probe plan; not
+on discovery, and not on anything the tool says about itself. **[C?]** The rest of them one level
+down, which is the largest single block of coverage debt in the catalogue — blocked on the tool
+declaring that the subcommand exists, and, for every one whose probe would run the subcommand rather
+than ask it for help, blocked a second time on knowing that command is safe to run.
 
 ### A group node that refuses a flag should name its subcommands
 

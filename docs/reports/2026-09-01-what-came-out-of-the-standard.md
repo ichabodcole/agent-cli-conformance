@@ -878,6 +878,51 @@ reader how much weight to give a recommendation whose reasoning is sound and who
 absent, which is the evidentiary discipline `How to read this` promises and one of the few places
 the page marks its own confidence down.
 
+## Part 3 § Parsing
+
+54 non-blank lines to 38, excluding the group-node subsection, which was written lean and is
+untouched.
+
+### R-42 · One incident, three copies
+
+`bounty close --help` **closed the board** appeared at three separate points in the page. It is a
+good line and it earns one appearance; two of the three are gone, and the third is in Part 4, still
+to be reached.
+
+**The shape is worth naming because it is not the usual duplication.** The earlier instances were a
+_claim_ stated twice with material between the copies. This is a single vivid _example_ reused as
+punctuation — it turned up wherever the page wanted emphasis, in three different arguments. A phrase
+that good is load-bearing the first time and decoration afterwards.
+
+### R-43 · Two inventories trimmed under R-39, not cut
+
+The counter-examples paragraph (five tools) and the flag-spelling paragraph (eleven) are both
+population claims — _"false by design for a real population"_ — so by R-39 the inventory is the
+argument rather than decoration, and neither was removed.
+
+**R-39 needed a second half, and this is it: establishing a population takes a few members, not all
+of them.** Three tools show that order-dependent grammars are a real family; eleven show the same
+thing at four times the length. Both were trimmed to three or four and both keep their operative
+closer, which is the part a reader acts on: _if your grammar is order-dependent by design, say so in
+the declaration; the clause is not for you._
+
+### R-44 · Checker internals and fix history inside a checkability mark
+
+> **[—]** `A4` […] its checker declares no probe and returns `unverified` unconditionally
+> ([`unexpected-positionals.ts`]) […]
+> **[C]** […] measured both `A6` and `A7` as `unverified` on all eight targets — `A6` because a `bun`
+> launcher swallowed the leading `--` before the target saw it […] `A6`'s swallow **is now
+> compensated at the spawn**, so it returns a real verdict on bun-launched targets
+
+**R-33's class, and the removal had a side effect worth recording.** A mark should say what is and
+is not established, and why in terms of the world — testing arity means sending extra positionals to
+a real verb and running it — not quote the checker's source or narrate how a defect was fixed.
+
+Removing the history removed a stale exception with it: `A6` was singled out because of a caveat that
+the bun-launcher repair shipped days ago had already made obsolete. It is now simply inside the
+`A1`–`A3`, `A5`–`A7` range, which is what it is. **A passage that narrates a fix goes stale the
+moment the fix lands.**
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,
