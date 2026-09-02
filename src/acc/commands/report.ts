@@ -2,9 +2,10 @@ import { resolve } from "node:path";
 import { emit, type OutputMode } from "../envelope.ts";
 import { usageError } from "../errors.ts";
 import { Outcome } from "../exit-codes.ts";
+import { assertFlagsOnlyOnEnumerated, MalformedSurfaceError } from "../kit/compare.ts";
 import type { Report } from "../kit/report.ts";
 import { renderCheckReportText } from "./check.ts";
-import { loadReport } from "./compare.ts";
+import { loadReport, malformedSurfaceUsageError } from "./compare.ts";
 
 /**
  * `acc report` — render the text report from a JSON a check already wrote.
@@ -58,6 +59,27 @@ export function reportCommand(file: string, mode: OutputMode, startedAt: number)
         reason: "no-verdict",
       },
     });
+  }
+  // THIS COMMAND PUBLISHES, IT DOES NOT ONLY DISPLAY. `--json` re-emits the stored payload
+  // verbatim, so a surface breaking `Surface.flags`'s absent-never-empty contract leaves here
+  // inside a document a downstream reader takes for one acc wrote. `acc compare` refuses exactly
+  // these bytes; without this the same file was turned away by one command and republished by the
+  // other at exit 0. The rule and its classification are both borrowed rather than restated, so
+  // the two boundaries cannot drift apart.
+  //
+  // BEFORE `emit`: a refusal that has already written the payload it is refusing has published it.
+  //
+  // ONLY THE ROOT SURFACE IS CHECKED, because it is the only `Surface` a report carries. The
+  // recorded-path readings are a projection — path, status, key names and a summary — with no
+  // `flags` field to be wrong about.
+  if (data.surface) {
+    try {
+      assertFlagsOnlyOnEnumerated(resolve(file), data.surface);
+    } catch (err) {
+      if (err instanceof MalformedSurfaceError)
+        throw malformedSurfaceUsageError(err, resolve(file));
+      throw err;
+    }
   }
   const prelude = [
     "RENDERED FROM A STORED REPORT — nothing was re-run; the verdict below is as old as the file.",

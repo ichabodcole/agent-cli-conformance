@@ -245,3 +245,57 @@ describe("a status from a kit this build has never heard of", () => {
     rmSync(dirname(file), { recursive: true, force: true });
   });
 });
+
+// THE SECOND PUBLISHING BOUNDARY. `acc compare` refuses a stored surface carrying `flags` on a
+// non-`enumerated` status, because `flags` is absent-never-empty by its own contract and a
+// violation reaching a rendered comparison would pass silently. `acc report` republishes the same
+// artifact — `--json` re-emits the stored payload verbatim, which is the most literal way a
+// malformed surface reaches a published document — and it did so at exit 0. Same input, same
+// fault, same classification: `usage`, not `internal`, because the surface came out of a report
+// FILE the caller named and can edit.
+describe("acc report — a stored report carrying `flags` on a non-enumerated surface", () => {
+  test("is refused as usage, with the same reason `acc compare` gives", () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-malformed-"));
+    const file = join(dir, "flags-on-not-enumerated.json");
+    const envelope = structuredClone(brokenReport());
+    envelope.data.surface = {
+      status: "not-enumerated",
+      evidence: [],
+      probesRead: 7,
+      flags: ["--format"],
+    };
+    writeFileSync(file, JSON.stringify(envelope));
+
+    const r = run(["report", file, "--json"]);
+    // 2 is `ExitCode.Usage`. NOT 1 (`internal`), and not 9 — the stored verdict is never reached.
+    expect(r.code).toBe(2);
+    const error = (JSON.parse(r.stderr) as { error: Record<string, unknown> }).error;
+    expect(error.kind).toBe("usage");
+    expect(error.exit_code).toBe(2);
+    expect((error.details as { reason?: string }).reason).toBe("flags-on-non-enumerated-surface");
+    expect((error.details as { path?: string }).path).toBe(file);
+    expect(String(error.message)).toContain("flags must stay absent, not empty");
+    // The malformed payload must not have been re-emitted on the way to the refusal.
+    expect(r.stdout).not.toContain("--format");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test("the text rendering refuses it too — the surface line is never printed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-malformed-"));
+    const file = join(dir, "flags-on-not-enumerated.json");
+    const envelope = structuredClone(brokenReport());
+    envelope.data.surface = {
+      status: "not-enumerated",
+      evidence: [],
+      probesRead: 7,
+      flags: ["--format"],
+    };
+    writeFileSync(file, JSON.stringify(envelope));
+
+    const r = run(["report", file, "--format", "text"]);
+    expect(r.code).toBe(2);
+    expect(r.stdout).not.toContain("did not enumerate at the root");
+    expect(r.stderr).toContain("flags must stay absent, not empty");
+    rmSync(dir, { recursive: true, force: true });
+  });
+});

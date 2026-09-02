@@ -381,8 +381,16 @@ export class MalformedSurfaceError extends Error {
  * `flags` MUST STAY ABSENT, NOT EMPTY — `Surface.flags`'s own contract, present only for
  * `enumerated`. A truthiness spread (`surface.flags ? … : {}`) lets an empty array through
  * unnoticed, because `[]` is truthy in JS; nothing today MINTS a non-`enumerated` surface with a
- * `flags` field, but that is an invariant held elsewhere, and this boundary is where a violation
+ * `flags` field, but that is an invariant held elsewhere, and a stored report is where a violation
  * would otherwise reach a published artifact silently. Asserted rather than assumed.
+ *
+ * THERE ARE TWO SUCH BOUNDARIES, WHICH IS WHY THIS IS EXPORTED. `acc compare` reads a stored
+ * surface and so does `acc report` — and `acc report --json` re-emits the stored payload verbatim,
+ * which is the most literal way a malformed surface reaches a published document. Guarded only on
+ * the comparison path, the same file was refused by one command and republished by the other at
+ * exit 0. `reportCommand` calls this directly and maps the throw through
+ * `malformedSurfaceUsageError`, so the rule lives here and its classification lives once in
+ * `commands/compare.ts`.
  *
  * WHOSE FAULT IT IS DECIDES THE CLASS, AND THE ANSWER IS NOT THE KIT'S. Every surface reaching
  * here came out of a report FILE the caller named, parsed by `loadReport` and cast without a
@@ -390,10 +398,10 @@ export class MalformedSurfaceError extends Error {
  * `C2` requires stay distinguishable from "I broke". Thrown as a bare `Error` this escaped
  * unclassified and the boundary in `cli.ts` reported it as `internal`, exit 1: acc naming a defect
  * in itself for a document someone else wrote and can edit. `loadReport` classifies every other
- * malformed-artifact case as `usage` with a kebab-case `details.reason`, and `compareCommand` maps
+ * malformed-artifact case as `usage` with a kebab-case `details.reason`, and both commands map
  * this one onto exactly that shape.
  */
-function assertFlagsOnlyOnEnumerated(label: string, surface: Surface): void {
+export function assertFlagsOnlyOnEnumerated(label: string, surface: Surface): void {
   if (surface.status !== "enumerated" && "flags" in surface) {
     throw new MalformedSurfaceError(
       label,

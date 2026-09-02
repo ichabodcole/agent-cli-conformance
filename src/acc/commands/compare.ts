@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { emit, type OutputMode, useColor } from "../envelope.ts";
-import { notFoundError, usageError } from "../errors.ts";
+import { type AccError, notFoundError, usageError } from "../errors.ts";
 import {
   argvFamily,
   argvLabel,
@@ -87,6 +87,40 @@ export function loadReport(path: string): Report {
     });
   }
   return payload as Report;
+}
+
+/**
+ * ONE CLASSIFICATION FOR A MALFORMED STORED SURFACE, SHARED BY THE TWO COMMANDS THAT READ ONE.
+ *
+ * A malformed stored surface is the same kind of fault `loadReport` already reports, so it is
+ * classified the same way: `loadReport` validates the two fields a reader cannot work without, and
+ * a `flags` field on a non-`enumerated` surface is a third thing a stored report can get wrong,
+ * caught deeper in only because that is where the shape is read. Where it is caught does not change
+ * whose mistake it is — the caller named a file, and editing that file is the repair. `usage`
+ * (exit 2), never `internal` (exit 1) — see `C2`.
+ *
+ * EXPORTED BECAUSE THE FAULT HAS TWO DOORS. `acc compare` refuses such a report and `acc report`
+ * must refuse the same bytes, or the artifact is turned away by one command and republished by the
+ * other. A second copy of this envelope would be a rule with two homes; the next rewording would
+ * land in one of them.
+ *
+ * `path` is nullable because the label-to-path lookup can miss; `acc report` reads exactly one
+ * file and always has it.
+ */
+export function malformedSurfaceUsageError(
+  err: MalformedSurfaceError,
+  path: string | null,
+): AccError {
+  return usageError(`${path ?? err.label}: ${err.message}`, {
+    hint: "Rewrite that report with `acc check <target> --json` — `flags` is present only on an `enumerated` surface, and this one carries it on another status.",
+    // Kebab-case, on the `not-json` / `not-a-report` precedent beside it: a wrapper telling
+    // "the artifact is corrupt" from "run acc check first" branches on `reason`, not on prose.
+    details: {
+      path,
+      label: err.label,
+      reason: "flags-on-non-enumerated-surface",
+    },
+  });
 }
 
 /**
@@ -325,17 +359,7 @@ export function compareCommand(reportPaths: string[], mode: OutputMode, startedA
     comparison = compareReports(inputs);
   } catch (err) {
     if (err instanceof MalformedSurfaceError) {
-      const path = reportPaths[labels.indexOf(err.label)];
-      throw usageError(`${path ?? err.label}: ${err.message}`, {
-        hint: "Rewrite that report with `acc check <target> --json` — `flags` is present only on an `enumerated` surface, and this one carries it on another status.",
-        // Kebab-case, on the `not-json` / `not-a-report` precedent beside it: a wrapper telling
-        // "the artifact is corrupt" from "run acc check first" branches on `reason`, not on prose.
-        details: {
-          path: path ?? null,
-          label: err.label,
-          reason: "flags-on-non-enumerated-surface",
-        },
-      });
+      throw malformedSurfaceUsageError(err, reportPaths[labels.indexOf(err.label)] ?? null);
     }
     throw err;
   }
