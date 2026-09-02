@@ -644,6 +644,20 @@ describe("magpie's empty enumeration — the regression enumerated-none exists t
       }
     });
 
+    // THE CHECKABLE KEY HAS TO REACH A MACHINE CONSUMER, which is the whole argument for
+    // `emptySetKeys` existing: "it stated an empty set OF FLAGS" rests on the key's name and on
+    // nothing else, so a consumer must be able to read that name and disagree with the reading.
+    // On a recorded path the key reached the JSON only inside the prose `summary` — the one field
+    // a script cannot check anything against — because the projection dropped it.
+    test("the reading publishes emptySetKeys, not only the prose summary", () => {
+      const r = run(["--recorded-surfaces", magpie, "--declaration", declaration], "json");
+      const readings: Array<{ path: string[]; emptySetKeys?: string[] }> = JSON.parse(r.stdout).data
+        .recordedSurfaces.readings;
+      for (const key of ["sessions", "help"]) {
+        expect(readings.find((x) => x.path[0] === key)?.emptySetKeys).toEqual(["choices"]);
+      }
+    });
+
     // THE ADOPTER'S ACTUAL COMPLAINT: "the fraction moves the wrong way as the tool improves,
     // which is the one direction a measurement must never move." Asserted as a NUMBER, because a
     // prose assertion ("...compared") would stay green while the number underneath it drifted.

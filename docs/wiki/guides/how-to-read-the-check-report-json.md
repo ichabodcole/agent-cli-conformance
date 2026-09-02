@@ -281,10 +281,13 @@ And what came back:
   `not-enumerated`'s and `no-evidence`'s "there was nothing to read": each entry names the key,
   the total count, and up to a sample of the members verbatim, which is what lets the text report
   add a clause naming the key, the count and a sample — "a set of something else, not of flags" —
-  instead of rendering the same sentence it would for silence. The same two fields, on the same
-  terms, appear on a recorded-surfaces reading (see
-  [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md)) and on
-  `acc compare`'s per-target `SurfaceRow`, described below.
+  instead of rendering the same sentence it would for silence. Both fields appear on `acc compare`'s
+  per-target `SurfaceRow` on exactly these terms, described below. **A recorded-surfaces reading**
+  (see [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md)) carries
+  `emptySetKeys` on the same terms, but not `nonFlagCandidates`: in its place it carries
+  **`nonFlagKeys`**, the bare key names with no count and no sample, because the census line it
+  feeds groups and rolls up keys rather than quoting members. The full entries stay on the root
+  `surface`; a reading gives you which keys, not how many members or which.
 
   **A report written before `enumerated-none` existed cannot be reread as one.** The rule this
   kit otherwise holds — a thing missing from an older artifact renders as "not recorded by that

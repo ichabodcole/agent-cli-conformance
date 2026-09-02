@@ -404,6 +404,20 @@ export interface RecordedSurfacesReport {
     status: SurfaceStatus;
     /** Keys of any non-flag list seen at this path — see `Surface.nonFlagCandidates`. */
     nonFlagKeys: string[];
+    /**
+     * The recognised keys this path named and left EMPTY — `Surface.emptySetKeys`, carried
+     * across, and absent on every status but `enumerated-none` exactly as it is there.
+     *
+     * PUBLISHED BECAUSE THE CLAIM RESTS ON IT. "Stated an empty set OF FLAGS" is a reading of the
+     * key's NAME and of nothing else: an empty array has no members for the flag-shape test to
+     * inspect, so the noun in the key is the whole of the evidence (see `SurfaceStatus`'s
+     * `enumerated-none`). A consumer that cannot see the key cannot check that reading or
+     * disagree with it — and until this field existed, a recorded path put the key only inside
+     * `summary`, which is prose and the one field a script cannot check anything against. The
+     * root surface published it from the start; a recorded path is the population the state was
+     * built for, and it was the half without it.
+     */
+    emptySetKeys?: string[];
     summary: string;
   }>;
   recordedBy: string[];
