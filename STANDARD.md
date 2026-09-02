@@ -514,31 +514,17 @@ not the file's.
 
 ### Where they disagreed, and it is not settled here
 
-**Exit-code ownership.** One sketch makes it declarable by anyone — `own` against `delegating`, plus
-a reserved band of codes the tool keeps for itself — and names it, unprompted, as the largest
-unfalsifiable escape hatch in its own design: a tool that owns its codes but declares delegation
-exits the whole exit-code rule family. The other makes it **promise-only**, inexpressible by an
-outside observer at all, with its absence withholding the dependent checks and naming the field as
-a remedy the author could supply and the observer could not.
+**Exit-code ownership: may an outside observer declare it?** **Nothing here decides it.** The
+field switches off a whole family of checks, so the question is who may be trusted with it, and both
+answers are defensible. The honest split is that some tools state ownership plainly — `ssh(1)` says
+it _"exits with the exit status of the remote command or with 255 if an error occurred"_, so a reader
+of the man page is not guessing — while `tar`, `xargs` and `bazel run` do not. It is settleable by
+experiment rather than argument: take the delegators the survey names, have several people who did
+not write them answer ownership from the documentation alone, and see whether they agree and are
+right.
 
-The second sketch flags the sharpest objection to its own position: `ssh(1)` states the answer in
-plain words — _"exits with the exit status of the remote command or with 255 if an error
-occurred"_ — so an observer reading the man page is not guessing. Its lean is to hold the line
-anyway, because `ssh` is unusually explicit and `tar`, `xargs` and `bazel run` are not.
-
-**Nothing here decides it.** Both positions are defensible, and the disagreement is about who may be
-trusted with a field that switches off a whole family of checks. It is settleable by experiment
-rather than argument: take the delegators the survey names, have several people who did not write
-them answer ownership from the documentation alone, and see whether they agree and are right.
-
-**Where the declaration lives.** One sketch splits hard into two files — a declaration that is true
-or false, and a policy file that is neither — and argues the split is what lets one schema serve
-three carriers. The other keeps one file with a distinguished block for the outside observer's
-model, for one loader and one discovery path, and then flags its own doubt: mixing caller policy
-with a model of the target in one file is the same conflation it spent its opening section arguing
-against.
-
-They agree on the semantics and differ on the container. **Follow the semantics** — a declaration
+**Where the declaration lives: one file or two?** The semantics are not in doubt; the container
+is. **Follow the semantics** — a declaration
 and a policy are different speech acts with different lifetimes, and whether they share a file is
 the smaller question. If you are choosing now, choose two files: that is the choice that survives
 somebody wanting to publish a declaration in their own repository.

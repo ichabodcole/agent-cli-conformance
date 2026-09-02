@@ -625,6 +625,56 @@ points at the section and what it points to, and this pointer was _inside_ the s
 **Extension to R-23:** re-read the whole section after cutting, not only its seams. A paragraph can
 reference a figure four paragraphs above it.
 
+## Part 2 § Where they disagreed — and Part 2 closes
+
+34 non-blank lines to 24.
+
+### R-30 · Two open questions narrated as a debate
+
+Both disagreements were presented the same way: one position, then the other, then a self-flagged
+objection — in a section whose own conclusion is _"nothing here decides it."_
+
+> One sketch makes it declarable by anyone — `own` against `delegating`, plus a reserved band of
+> codes the tool keeps for itself — and names it, unprompted, as the largest unfalsifiable escape
+> hatch in its own design […] The other makes it **promise-only** […] The second sketch flags the
+> sharpest objection to its own position […]
+
+**no reason needed; an open question is a scope statement.** A reader needs to know the question is
+open, why it is hard, and what would close it. Who argued which side is deliberation, and the section
+had already said it settles nothing.
+
+What survives is stronger than the debate: the question stated directly, the reason it is hard — the
+field switches off a whole family of checks — the honest split that `ssh(1)` documents ownership
+plainly while `tar`, `xargs` and `bazel run` do not, and the experiment that would settle it. **Naming
+a falsifiable experiment is worth more than the argument that produced the impasse.**
+
+The same shape for where a declaration lives, where the recommendation was already written under the
+deliberation and is untouched: a declaration and a policy are different speech acts with different
+lifetimes, so choose two files.
+
+### R-31 · The sixth stale reference, and the first to cross a section boundary
+
+R-26 removed the passage introducing the two design sketches. Eighty lines downstream — in a section
+this pass had not yet reached — three paragraphs went on saying _"One sketch…"_, _"The second
+sketch…"_, _"One sketch…"_, with nothing left to introduce them. The only surviving mention was a
+bare parenthetical citation.
+
+**R-23 and R-29 were both too narrow.** One said re-read what points at the section and what it
+points to; the other said re-read the whole section, not only its seams. Neither reaches a paragraph
+in a _different_ section that depends on a noun the cut removed.
+
+**Final form of the rule:** after removing a passage that introduces a term, a figure or an actor,
+search the whole document for later uses of it. The gate cannot help — `One sketch` parses, resolves
+to nothing, and reads as competent prose.
+
+The repair and the cut were the same edit here, which is luck rather than method.
+
+### One immediate instance of R-29, caught before committing
+
+Merging the two exit-code paragraphs left _"switches off a whole family of checks"_ twice and a
+dangling _"Both positions are defensible"_ whose antecedent the cut had just removed. Found by
+re-reading the section after editing it, which is the rule working as intended for once.
+
 ## What the second pass has to decide
 
 1. **Does `R-2` get a `decision` page?** It is the only removal carrying guidance for a maintainer,
