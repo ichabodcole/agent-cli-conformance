@@ -182,6 +182,46 @@ So the checker's job is to keep a declaration honest — which is what makes the
 rather than aspirational, since a fleet of declarations nobody falsifies is a fleet of documents
 that have quietly stopped being true. Build the checker first and it measures help text.
 
+## What this does not establish
+
+Two limits on what the instrument can say. Neither is a gap being closed, neither has work behind
+it, and both are here because an adopter could reach the end of a clean run still believing
+otherwise — which is how both were put to us, as a risk to foreclose rather than a mistake anyone
+is reported to have made. Both were asked for by respondents in
+[what three adopters want](docs/reports/2026-08-26-what-three-adopters-want.md) — the first for
+this page by name, the second asked to be stated loudly without a home named for it.
+
+**Consistency between artifacts, not the correctness of either.** What the kit compares is
+artifacts against artifacts: a target's help against its parser, its declared surface against a
+recorded one, and in `acc compare`, one target's observations against another's. What it reports
+is whether they agree. **Two artifacts that are wrong in the same way agree**, and a census of
+them returns `0 disagreements` and is right to. A flag that is documented, accepted by the parser, and does nothing is invisible here, and so
+is a whole interface that is coherent and badly designed. The adopter who asked for this put the
+consequence and the reason together: _"It is not a weakness — it is what makes the kit
+language-agnostic — but it is load-bearing and I did not find it written down."_ Reading artifacts
+against each other is exactly what lets this work on a CLI in any language, without parsing its
+source or knowing its framework. The price of that reach is that nothing here checks either
+artifact against the world.
+
+**The shipped instructions, which on an agent-facing CLI are the larger surface.** A tool that
+drives agents ships prose with it — a `SKILL.md`, a README, the paragraph pasted into a system
+prompt — and that prose is the interface an agent meets before it ever runs the binary. Nothing in
+this project reads it for truth. The evidence is one adopter's highest-value fix of the month,
+which this kit could not have found: instructions that told every seat for two weeks that an
+unknown positional to a subcommand was silently swallowed, when the behaviour had been corrected
+twelve hours after the prose was written. The tool was right and its instructions were lying, and
+nothing in this catalogue looks at the place the lie was.
+
+The reason to state it here rather than leave it where it sits is that the narrower version is
+already written down and is easy to read past. [`STANDARD.md`](STANDARD.md) tells an author to
+settle a flag's scope by reading their own shipped documentation — a flag is global because the
+instructions to callers make it global — and then marks that claim **`[—]`**, saying plainly that
+_"nothing on this page reads a `SKILL.md`"_. That is the same limit, scoped to one declaration
+field. The general form is larger and belongs here: a reader who has been told the standard treats
+shipped instructions as a source of truth can fairly conclude something checks them, and nothing
+does. An adopter who passes every rule has learned nothing about the half of their agent-facing
+contract that most often drifts, because it is the half nothing executes.
+
 ## What is out of scope
 
 **Serving CLIs that never adopted the guidance.** The kit will run against a tool the person
@@ -242,6 +282,36 @@ inconsistent with the decisions taken this week, and that nobody has noticed bec
 only ever read against the code, which has not moved. Settling it is a decision page, not an edit
 to this one.
 
+**Three adopters were asked, separately, and all three said delete it — by three different
+routes.** None of them had ever used the word `L1`. One reached it from the withdrawn warrant (_"a
+ladder promises a climb, and the warrant reversal just demonstrated that rungs get withdrawn"_),
+one from a stack of three reasons led by the levels collapsing two orthogonal axes onto the one
+carrying the safety weight, with disuse last (_"a vocabulary that is unused and wrong is pure
+cost"_), and one because **it misinformed them**: reading `N/A A4 — arity cannot be probed at L0 …
+only safe once the command has declared effects: read_only`, they took it for a roadmap promise
+and briefly waited for the level rather than understanding that nothing does this today. _"A rung
+nothing is holding up is worse than a gap, because a gap is honest."_ That last one is an event
+rather than an opinion, which is a different kind of evidence from the other two.
+
+**And all three, independently, said keep something**, which is what stops this being a mandate to
+cut. The sharpest form the answer has taken, as the survey renders it: **names for boundaries, yes;
+numbered rungs, no.** Another kept `L0` as a name on the grounds that it labels a real bundle the
+code genuinely reasons about; the third kept the **content** rather than the label — the guidance
+on what a probe might set off, which they read before pointing the kit at a target, then checked
+that its bare invocation printed help rather than starting a daemon _because they had read it_.
+
+**One sequencing risk came with it**, and it constrains whoever settles this: `L0` appears in the
+verdict line, which is the most-copied string this kit produces — into CI logs and READMEs. What
+replaces it should be decided before it propagates further, not after.
+
+Two things keep this as evidence rather than a decision. The respondents were three agents, no
+human owner of an adopted tool has answered, and one of them flagged both the sample and their own
+human's absence from it: _"You are
+asking three people who are unusually invested, and we will all tell you to delete things.
+Deleting a ladder nobody uses is safe. Do not read our enthusiasm for pruning as license to cut the
+parts that are load-bearing for readers who never speak to you."_ And what the verdict line says
+instead is not designed anywhere.
+
 The owner's own diagnosis of how the project got here is evidence about the mechanism, not only
 about the outcome:
 
@@ -270,6 +340,13 @@ repositories was a discoverability defect**. That is not proof the rules are wro
 that what the catalogue reports and what actually breaks have, so far, been disjoint. The
 catalogue's own recommended additions — output completeness, closed value sets, machine mode on the
 parser-error path, termination — came out of that mismatch and are not yet a settled answer to it.
+
+An adopter added a second objection to the same number, aimed at the denominator rather than the
+selection: _"`A4` and `B3` declare `probes: []` and return `unverified` unconditionally — they are
+not checks, and counting them in '23 rules' costs you credibility you have otherwise earned."_ The
+general form they drew from it is the part worth keeping whatever happens to those two ids: **never
+mint a rule that cannot discriminate.** A rule that returns the same verdict on every possible
+target measures nothing and still inflates the count that adopters read as reach.
 
 **Whether a hand-authored declaration can be made to hold — which is the risk the whole thesis
 rests on.** This charter says the checker gets its power from the declaration the guidance asks

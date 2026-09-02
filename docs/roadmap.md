@@ -592,6 +592,62 @@ suspected until someone looked.
 **Blocked on** nothing. It is unglamorous reading, and its value is exactly that nobody can
 currently say how much of the Evidence corpus would survive it.
 
+## The first screen is the coverage prose, not the finding
+
+**What it is.** Reorder `acc check`'s text report so the census and the verdict deltas come first
+and `NOT FULLY VERIFIED` sits above the rule table, rather than below twenty-three rows of coverage
+prose.
+
+**Why it matters.** Two adopters asked for the same reordering from opposite ends. One: _"whatever
+the report's first screen says is all they'll read. Make it the census and the three things that
+moved."_ The other, independently: _"put `NOT FULLY VERIFIED` above the fold. It is the most
+valuable part of the report and it is below a 23-line table."_ A third put the pitch the same way —
+lead with the defect class, not the verdict
+([what three adopters want](reports/2026-08-26-what-three-adopters-want.md)).
+
+**Blocked on** nothing. It is a change to `renderText` in `src/acc/commands/check.ts` and a decision
+about ordering, not a report-shape change.
+
+## The ladder, and what replaces `L0` in the verdict line
+
+**What it is.** A decision on whether the `L0`/`L1`/`L2` split survives, and — if it does not —
+what the verdict line says instead.
+
+**Why it matters.** Three adopters were asked separately and all three said delete it, by three
+different routes, none having ever used the word `L1`. One was actively misinformed: reading a
+verdict string that named a level, they took it for a roadmap promise and waited for it. All three
+independently said keep something, and the sharpest form of the answer is **names for boundaries,
+yes; numbered rungs, no**. The evidence is attached to the question in
+[`CHARTER.md`](../CHARTER.md#what-this-calls-into-question), which is where it is settled.
+
+**Why it is not a documentation change.** `L0` appears in the verdict line, the most-copied string
+this kit produces — into CI logs and READMEs. Whatever replaces it should be decided before it
+propagates further, which makes the replacement the gating step rather than the deletion.
+
+## Three findings from reading `STANDARD.md` against the wiki
+
+**What it is.** The open dispositions of
+[`STANDARD.md` against the wiki](reports/2026-08-31-standard-md-against-the-wiki.md), which the
+2026-09-01 pass did not close:
+
+- **`SW-3`** — the narrowing-versus-widening asymmetry has no wiki home while its weaker sibling
+  has one. Wants a `decision` page, with the standard reduced to a pointer.
+- **`SW-4`** — there is no `concepts/declaration.md`, though every other part of the surface has a
+  concept page, and the declaration is what the project bets on.
+- **`SW-9`** — the wiki and the standard hold **different licences to state an obligation**, and
+  what keeps them apart is a page type the wiki does not have rather than a boundary. A
+  `recommendation` type — states obligations, carries its evidence and a checkability mark, mints no
+  id, exempt from the normative lint _because_ it declares its own unenforceability — would let the
+  two documents be one product.
+
+**Why `SW-9` is the one that matters.** It is a decision rather than a task, and it is the only
+thing standing between the guidance and the catalogue being a single shelf. What would settle it is
+not an argument: write the contract, publish one `recommendation` page, and put it in front of a
+reader who has not been briefed. If they take it for spec, the split was load-bearing after all.
+
+**Blocked on** nothing for `SW-3` and `SW-4`, which are writing. `SW-9` is blocked on somebody
+deciding.
+
 ## A reference shelf the page types do not have
 
 **What it is.** A `type: reference` for the tables a reader consults rather than reads: the

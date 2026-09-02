@@ -89,7 +89,21 @@ const TAG_INDEX = "tags.html";
  * and the report itself is a record of that work rather than knowledge to publish. `docs/research/` is
  * rendered too, but separately — see EVIDENCE.
  */
-const SATELLITES = ["../roadmap.md"];
+const SATELLITES = ["../roadmap.md", "../../STANDARD.md", "../../CHARTER.md"];
+
+/**
+ * Where a link leaves the site. Read from `package.json` rather than written twice, because a
+ * second copy of the repository URL is a second thing to keep true.
+ *
+ * The ref is a branch, not the commit being built. Pinning the commit would be exact and would
+ * 404 for every unpushed one, which is the common case while the site is built locally — so a
+ * page built from a feature branch links to `main`'s version of a file and can differ from the
+ * tree that produced it. That is the known cost of the choice.
+ */
+const BLOB_REF = "main";
+const BLOB_BASE = `${JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"))
+  .repository.url.replace(/^git\+/, "")
+  .replace(/\.git$/, "")}/blob/${BLOB_REF}`;
 
 /**
  * Evidence reports: rendered, but not part of the knowledge and not pinned in the primary nav.
@@ -228,8 +242,14 @@ export function brokenLinks(emitted: Map<string, string>, outDir: string): strin
         pathPart === "" ? out : relative(outDir, resolve(dirname(join(outDir, out)), pathPart));
 
       if (target.startsWith("..")) {
-        // A deliberate link out of the site (a checker in `src/`, a report in `research/`).
-        if (!existsSync(resolve(outDir, target))) problems.push(`${out} → ${href}  (no such file)`);
+        // NOTHING RELATIVE MAY LEAVE THE OUTPUT ROOT. A link out of the site is written as an
+        // absolute URL by the resolver and skipped above; a relative one that escapes resolves
+        // only for a reader who happens to hold the repository, and to nothing for everyone else.
+        //
+        // This was a tolerated case until a "Start here" row pointing at `../../STANDARD.md`
+        // shipped in the catalogue's own front door and was found by a reviewer rather than by
+        // the build. Existence was all it checked, and the file existed.
+        problems.push(`${out} → ${href}  (relative link escapes the site; emit an absolute URL)`);
         continue;
       }
       const targetIds = ids.get(target);
@@ -308,13 +328,21 @@ function build(): void {
       const to = bySource.get(abs);
       if (to) return { href: hrefBetween(page.out, to.out) + suffix };
 
-      // A file the site does not render — a checker in `src/`, a report in `research/`. The link
-      // is kept and pointed at the real file relative to the built page, so it still resolves
-      // when the output is read from inside the repo. `research/` is deliberately not rendered:
-      // the wiki's contract says it is evidence, not knowledge.
+      // A file the site does not render — a checker in `src/`, a report in `docs/reports/`. It is
+      // pointed at the repository on GitHub rather than at a filesystem path.
+      //
+      // A relative path was the older answer and it served one reader: someone holding the repo,
+      // reading `docs/dist` from inside it. For anyone handed the built directory on its own, and
+      // that is what "the published site" means, every one of those links left the output root and
+      // resolved to nothing. Measured before this changed: 141 such links across 58 files.
+      //
+      // The existence check is what makes the URL safe to write, and it has to stay here rather
+      // than move downstream: `brokenLinks` skips `https:` targets, so once these are absolute it
+      // can no longer confirm they exist. This branch only fires for a file that is present, so
+      // the guarantee is established before the link is emitted instead of after.
       if (existsSync(abs))
         return {
-          href: relative(dirname(join(OUT_DIR, page.out)), abs) + suffix,
+          href: `${BLOB_BASE}/${relative(REPO_ROOT, abs)}${suffix}`,
           className: "offsite",
         };
       return null; // the lint guarantees this is unreachable
@@ -548,8 +576,12 @@ function build(): void {
 
     const checker = f.get("checker");
     if (checker) {
+      // The SECOND emitter of an out-of-site link, and the reason the escaping check earns its
+      // place: the resolver above was repaired and this one still shipped 22 relative paths out
+      // of the output root, because a frontmatter field is not a Markdown link and nothing looked
+      // at it. Same rule, two homes.
       const abs = join(REPO_ROOT, checker);
-      const href = relative(dirname(join(OUT_DIR, page.out)), abs);
+      const href = `${BLOB_BASE}/${relative(REPO_ROOT, abs)}`;
       row(
         "Checker",
         existsSync(abs)

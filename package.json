@@ -24,7 +24,7 @@
     "format": "biome format --write .",
     "format:md": "prettier --write '**/*.md'",
     "format:md:check": "prettier --check '**/*.md'",
-    "check": "bun run typecheck && biome check --error-on-warnings . && bun run format:md:check && bun run docs:lint && bun run docs:lint:artifacts && bun run test",
+    "check": "bun run typecheck && biome check --error-on-warnings . && bun run format:md:check && bun run docs:lint && bun run docs:lint:artifacts && bun run docs:build && bun run test",
     "acc": "bun src/acc/cli.ts"
   },
   "lint-staged": {

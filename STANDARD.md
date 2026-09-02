@@ -16,7 +16,7 @@ standing supply of defensible tools that decline conventions on this page — `f
 `dd`, `jq`, `ssh` and `psql` are not badly built, they are built for something else. Where a
 recommendation has a known counter-example, this page names it. Declining one is a decision; the
 thing worth avoiding is declining one without noticing — and
-[the decision needs a home](#where-a-declined-recommendation-is-recorded-which-is-not-in-either-of-those-files),
+[the decision needs a home](#where-a-declined-recommendation-is-recorded),
 which is not the declaration and not the caller's config.
 
 **Every recommendation carries its reason.** A bare rule is not this project's voice. If a
@@ -45,12 +45,10 @@ that second axis for the shipped reader.
 `acc check`. It is neither a version of this page nor a version of your tool, and it is the only
 format any reader shipped here can read: it requires the keys
 [Part 2's table](#the-fields-and-why-each-exists) marks `yes`, and refuses every key it does not
-define. The term is defined here rather than where Part 2 first uses it because the first cold
-reader of this page met it in the paragraph above, guessed, and happened to guess right — a wrong
-guess would have carried them through all of Part 1 with nothing to correct it.
+define.
 
 **Every number on this page carries its evidentiary status, in one of four fixed phrases.** This is
-a second axis and not a fourth mark, and the phrases are used verbatim so that a reader meeting one
+a third axis and not a fourth mark, and the phrases are used verbatim so that a reader meeting one
 mid-sentence does not have to look anything up:
 
 | Phrase                                         | What produced the number                                                                               |
@@ -60,22 +58,10 @@ mid-sentence does not have to look anything up:
 | **as reported and not independently verified** | an implementer's figure from a tree this checkout cannot reach                                         |
 | **a judgement, not a measurement**             | somebody classified something and no checker ran                                                       |
 
-**That it is phrases and not a glyph was decided rather than defaulted.** A prior round faced the
-same question on a different axis, declined a new mark, and named the concept _"Evidence, not a
-rule"_ instead — a named phrase is self-teaching where a glyph is one more thing to memorise — while
-recording the objection that a population of two was thin, and that the question reopened if the axis
-grew. It grew: the first cold reader of this page reached Part 4 tracking four evidentiary classes in
-prose and deciding per paragraph how much weight to give a number, and reported that this page has
-"a three-mark legend for checkability and nothing equivalent for evidentiary status, and the second
-is now carrying as much load as the first." The precedent followed is the one that same round cited
-in support: `In v0`. **When the three-mark axis does not cover something, this page has added an axis
-or a column and never a mark**, and the reason holds harder here than it did there. The marks attach
-at one predictable place, the end of a recommendation, one per section. An evidentiary status attaches
-to a figure, mid-sentence, wherever a figure appears — a glyph there is looked up, three words there
-are read. Three of the four phrases were already on the page verbatim before this legend existed,
-which is the strongest evidence available that they teach themselves. **What would reopen it:** a
-figure whose status is genuinely none of these four, or a section where the phrases have to be
-restated so often that they stop reading as prose.
+**Phrases rather than a glyph — a judgement, not a measurement.** A glyph mid-sentence is one
+more thing to look up; three words are read. The reasoning and the condition under which this page
+may add another axis are in
+[what came out of the standard](docs/reports/2026-09-01-what-came-out-of-the-standard.md#r-2--the-glyph-versus-phrases-decision-record--l63-78).
 
 **No new rule ids are minted here.** The catalogue mints an id when a checker design exists, and
 this page is upstream of that. Ids that do appear — `A1`, `B5`, `C2` and the rest — are existing
@@ -86,26 +72,14 @@ binds instead of restating it.
 delivery should be addressed, whether the resource model is right — none of that is here, and a
 tool that gets it wrong is not failing this standard.
 
-That boundary was found by reading a record rather than chosen from taste. A census of 298
-CLI-source commits across two repositories concluded that the axis deciding what any external check
-can reach is **not** defect against missing feature — it is **general against domain-specific**
-([research](docs/research/2026-08-24-missing-capability-or-implementation-defect.md), whose own
-classifications are marked as judgements):
-
-> A kit can catch a **missing general affordance** — `--version`, a machine-mode error envelope, an
-> exit-code taxonomy. It can never catch a **missing domain capability** — `reap`, `roll`,
-> addressed delivery, session rotation — whether or not anything was built wrongly.
-
-Of the 201 of those commits that iterate on something already built, 77 were a capability that had
-never been there. **Thirty-four of the 77 were general affordances** — the ones this page is about.
-Forty-one were domain capabilities, and those are yours.
+The line is **general against domain-specific**: a missing `--version`, error envelope or
+exit-code taxonomy is this page's subject; a capability your domain needs and does not have is
+yours ([research](docs/research/2026-08-24-missing-capability-or-implementation-defect.md)).
 
 Guidance for a human at a terminal is also out of scope — a different document with a different
 reader, and [mixing them produces something that serves neither](CHARTER.md#what-is-out-of-scope).
 
 ### Where to start, if you already have a CLI
-
-**Two readers arrive here and this section is written for the second one.**
 
 - **You have not run `acc check` against your tool yet.** Start at
   [how to reach L0 in your project](docs/wiki/guides/how-to-reach-l0-in-your-project.md) instead —
@@ -113,53 +87,17 @@ reader, and [mixing them produces something that serves neither](CHARTER.md#what
 - **You have a baseline and are going after the gap between what your tool says and what it
   does.** That is this section. Everything below assumes you have already measured.
 
-The distinction was not drawn until a second adopter, briefed to reach L0 and routed here, worked
-through all three steps below before finding that none of them moved their verdict — because the
-census and the emitter are drift work and their brief was not. The quote below is the tell and it
-is three sentences in: its author had _"run the checker twice"_ before reading this page.
-
-**The rest of this page is in reading order, not in dependency order.** That is a defect a reader
-found and this section is the repair, in their ordering rather than in one invented for the fix. The
-adopter behind anthill — the CLI the drift trial below measured — read this page for the first time
-having run the checker twice, and reported:
-
-> I do not know what to do first… the v0 emitter, the census, the envelope work and the exit-code
-> mapping are argued at the same pitch and in reading order rather than in dependency order. A
-> retrofit reader wants a first move, a second, and a "not until X". The Fig post-mortem tells me
-> what happens if I do nothing; it does not tell me what to do on Monday.
-
-They then answered it against their own tool, and their reasons are the ones attached below.
+**The rest of this page is in reading order, not in dependency order.** A retrofit reader wants a
+first move, a second, and a "not until X"; below is that ordering.
 
 1. **First, the census** — [make the tool enumerate its own surface](#the-cheapest-version-of-checked)
    and diff that against what you publish, one inert probe per command path. It is first because it
    is cheap, it needs nothing from this project, and it needs no declaration to exist yet: a shell
-   loop and `jq` will do it. Their reason for putting it first is a measurement of their own tool
-   rather than an argument — the census caught a live defect in anthill that **two full `acc check`
-   runs had missed, because both probed the root and the defect lives below it**. The two runs are
-   theirs: [the first-contact trial](docs/reports/2026-08-21-anthill-first-contact-trial.md), and
-   their re-run against `v0.1.0`, which has no report of its own — it is message 8 of the
-   `acc-trial-anthill` channel, recorded in
-   [the runway plan](docs/plans/2026-08-23-clear-the-runway-then-take-off.md). Neither ran
-   `--declaration`. This attribution was wrong when first published — it named the eight-CLI run,
-   which is not theirs and which they never ran — and was corrected by them; the defect is
-   [DT-2](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-2--eight-refused-flags-published-as-valid),
-   eight flags the same binary publishes and refuses. The drift trial's own record of the kit's
-   contribution says the same thing from the other side: it
-   [found none of the eight findings and could not have](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#what-the-kit-found-and-what-it-structurally-could-not).
+   loop and `jq` will do it. It also reaches further than the kit
+   does: the kit probes the root only, and a census reads every command path.
 
 2. **Second, and contingent on the first, the v0 emitter** — the format described in
-   [Part 2](#the-fields-and-why-each-exists). Contingent, because on their tool the emitter **alone —
-   with nothing recorded below the root** — buys `0 of 25 declared command paths compared`, because
-   the only path that does compare is the root, which their manifest has no slot for
-   ([DT-1](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-1--root---format-is-declared-in-code-absent-from-the-manifest-and-inert-where-it-looks-like-it-works)),
-   and the summary names it on a clause of its own rather than counting it toward the 25.
-   **That `0` is a figure about the kit's root-only probing, not a ceiling on the emitter**: the same
-   tool, with the census's own captures handed back as a
-   [recorded-surface batch](docs/wiki/guides/how-to-record-surfaces-below-the-root.md), compares
-   [`23 of 26`](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three).
-   The qualifier is theirs to ask for and the correction is theirs: they cited the bare number in the
-   cold read this ordering came from, and it was adopted here on their say-so.
-   An emitter written before you have below-root evidence to compare it against buys a report about
+   [Part 2](#the-fields-and-why-each-exists). An emitter written before you have below-root evidence to compare it against buys a report about
    what could not be compared. Written after, every path the census already reads becomes a path the
    emitter is checked at.
 
@@ -189,62 +127,34 @@ and it is what makes the first two worth anything.
 **Recommendation.** Give your CLI one invocation that prints a machine-readable description of its
 own interface: on stdout, exit `0`, needing no configuration and no credentials.
 
-**Why.** The alternative — a description living beside the tool rather than inside it — has been
-tried at every scale and fails the same way each time. The
-[declaration survey](docs/research/2026-08-22-machine-readable-cli-declarations.md) went looking
-for a standard, found none, and found something more useful on the way:
+**Why.** A description that lives beside the tool has nothing binding it to the tool, so it
+drifts — at every scale it has been tried, and none of the hand-authored collections has a drift
+check. Every artifact covering 100% of a real CLI's surface is produced by loading the CLI
+in-process and walking it
+([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md)).
 
-> **Every artifact in that survey covering 100% of a real CLI's surface is produced by loading the
-> CLI in-process and walking it.** `dotnet --cli-schema` walks the live `System.CommandLine` tree;
-> gcloud's `cli_tree.Dump()` walks a live calliope CLI; Azure's `meta-export` loads the CLI
-> in-process; AWS's `ac.index` instantiates the live clidriver at wheel-build time.
->
-> **Every hand-authored one drifts, and none of them has a drift check.** Fig's 735 specs,
-> carapace's 533 completers, Cobra doc trees, `oclif.manifest.json`.
+**A runtime invocation specifically, rather than a build artifact.** A build artifact is a copy,
+and a copy can be stale by the time a caller reads it. An invocation cannot be stale relative to the
+binary that answers it, because it is the binary answering.
 
-Fig is the post-mortem worth reading in full, and every figure in it is **read from a primary
-source** and recorded in
-[the same survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#6-the-fig-post-mortem): 25,218 stars, 735 spec directories, and a CI pipeline
-that ran `build`, `lint`, `typecheck` — **type-checking the documents, and never probing a real
-binary.** The collection is a zombie now, `fig.io` returns 503, and the npm packages still serve
-tens of thousands of downloads a month against specs nobody has touched since May 2025.
+**Practical shape.** A flag or a subcommand; either works, and it is already done both ways
+([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#2-the-three-closest-candidates)).
+Two properties matter more than the spelling.
 
-**A runtime invocation specifically, rather than a build artifact.** A build artifact is a copy, and
-a copy can be stale by the time a caller reads it — `oclif.manifest.json` is generated in `prepack`
-for startup speed and, in [the survey's](docs/research/2026-08-22-machine-readable-cli-declarations.md#41-complete-declarations-are-emitted-never-authored)
-words, _"can and does go stale"_: rename a command, skip the
-regeneration, get `Cannot find module`. An invocation cannot be stale relative to the binary that
-answers it, because it is the binary answering.
+**It must need nothing.** A description you cannot read until you have authenticated is not one
+an agent can bootstrap from. It should survive a sanitised environment.
 
-**Practical shape**, all three read in [the survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#2-the-three-closest-candidates).
-`dotnet --cli-schema` (shipped in .NET 10 GA, on every `dotnet` command) uses a flag;
-[clispec](https://clispec.dev/) mandates a `schema` subcommand; `jdx/usage` documents a hidden
-`--usage-spec` as the integration pattern for both clap and Cobra. Any of the three works. Two
-properties matter more than the spelling.
+**It must be listed in itself.** A caller holding the declaration and nothing else cannot
+rediscover the door it came through. The same applies to `--help`, `-h`, `--version`, `-v`, `--` and
+a negation prefix: **the universal surface is what a generator walking "the commands" walks past**,
+because interceptors are not commands
+([DT-6](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-6--present-but-undeclared-the-entire-universal-surface-including-the-discovery-verb-itself)).
 
-**It must need nothing.** `clispec-cli` sanitises `HOME` before invoking a target's `schema`
-command, specifically to prove the declaration is reachable without config
-([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#22-clispec--closest-on-intent-effectively-pre-adoption)). A description you cannot read
-until you have authenticated is not one an agent can bootstrap from.
-
-**It must be listed in itself.** The one CLI anyone has run this check against — anthill, the
-owner's own team-orchestration tool, and the subject of the drift trial below — omits `help` from
-its manifest, the verb that produces the manifest
-([DT-6](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-6--present-but-undeclared-the-entire-universal-surface-including-the-discovery-verb-itself)),
-while the human help screen ends by telling the reader to run it. A caller holding the declaration
-and nothing else cannot rediscover the door it came through. The same finding covers `--help`, `-h`,
-`--version`, `-v`, `--` and the negation prefix: **the universal surface is what a generator walking
-"the commands" walks past**, because interceptors are not commands.
-
-**And it must not be the only machine surface, if help is one too.** Measured on eight of one
-author's CLIs, the tool that behaves most like this page recommends is the one the kit can say
-least about: anthill answers a piped `--help` with a 109-byte JSON document carrying no `flags`
-key, so help-based discovery finds a parseable document, treats it as a complete declaration, finds
-no value sets in it, and reports two rules `unverified` — **on the one target in the population
-that actually declares a closed set**
-([measurement](docs/reports/2026-08-24-eight-owner-clis.md)). Being machine-first makes a target
-less checkable today, which is an argument for reading a declaration rather than parsing help, and
-also a warning: if your help is a document, make it the same document, or make it complete.
+**And it must not be the only machine surface, if help is one too.** A tool whose piped `--help`
+is a JSON document invites a caller to read that instead — and a document missing the fields the
+caller needs is worse than prose, because it parses. If your help is a document, make it the same
+document, or make it complete
+([measurement](docs/reports/2026-08-24-eight-owner-clis.md)).
 
 **[C]** Of a much narrower claim than this recommendation makes: `D3` establishes that help _names_
 a machine path, and its own coverage gap records that a pass never establishes the flag is accepted.
@@ -261,149 +171,73 @@ also be able to read a description somebody else wrote, and the difference in wh
 
 ## 2. Generate it from what implements the behaviour
 
-**Recommendation.** Produce the description by walking the same structures your parser consumes.
-Not a second document kept in step by discipline, and not a document your CI type-checks.
+**Recommendation.** Produce the description by walking the same structures your parser consumes —
+not a second document, and not one your CI type-checks.
 
-**Why.** This is the failure mode the field already knows about, and the survey's framing of the
-universal mitigation is exact: "regenerate in CI, fail on a dirty tree" is _"weaker than it sounds
-because it only catches divergence someone remembered to regenerate for."_ Two artifacts in the
-survey cannot drift at all, and both are the same move — gcloud's CLI tree is serialised from a live
-calliope CLI, and Azure's AAZ generates the Python from the model rather than the other way round.
-Junos closed the same loop by generating the CLI from a YANG model, which is why the survey records
-that _"conformance is structural and never tested"_
-([§7](docs/research/2026-08-22-machine-readable-cli-declarations.md#7-the-failed-and-dormant-attempts)).
+**Why.** A second document kept in step by discipline drifts, and regenerating it in CI is weaker
+than it sounds: it only catches divergence someone remembered to regenerate for. A schema
+maintained separately from the parser is a document that lies as soon as anyone edits the other.
+The artifacts that cannot drift at all are the ones serialised from the live command structures
+([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#7-the-failed-and-dormant-attempts)).
 
-`acc` — this repository's own kit, and the reference implementation of the spec — states the rule in
-one line of its `schema.ts`, and it is the sentence to steal:
+**Where generation gets you nothing, and you must write it by hand anyway.** Framework extraction
+gets you commands, flags, arity and enums for free. It gets you **nothing** for exit codes, output
+formats, effects or idempotency, because no framework models them.
 
-> A schema maintained separately from the parser is a document that lies as soon as anyone edits
-> the other.
+Declare those by hand, **adjacent to the code that implements them**, with a test that fails when
+a new command has no entry — adding a subcommand is exactly the moment the declarations go stale and
+exactly the moment nobody is thinking about the schema. The tightest version hangs the exit code off
+the error-kind enum and generates the declared `errors` array from that same function, so the
+declared mapping and the process status cannot drift apart.
 
-**Where generation gets you nothing, and you must write it by hand anyway.** The survey's second
-structural finding:
-
-> Framework extraction gets you commands, flags, arity and enums for free. It gets you **nothing**
-> for exit codes, output formats, effects or idempotency — because no framework models them.
-
-clispec and jdx/usage reached the same answer independently: declare those by hand, **adjacent to
-the code that implements them**, with a test that fails when a new command has no entry. clispec's
-Rust guide has the tightest version — hang the exit code off the error-kind enum and generate the
-schema's `errors` array from that same function, _"so the declared mapping and the process status
-cannot drift apart."_ Its implementation guide has a section titled _"The part your framework cannot
-generate"_, and the reason it gives for the test generalises: _"adding a subcommand is exactly the
-moment the declarations go stale, and exactly the moment nobody is thinking about the schema."_
-
-**And one source of truth sits outside the code entirely.** Generation walks the parser, so what it
-reports is the parser's organisation — which is not always the contract the caller is following. The
-first outside application of this page hit that as its opening design question: a CLI whose parser
-held one global flag registry had to decide whether to declare those flags global (honest to the
-parser, useless to the caller) or split them per verb. The implementer settled it by reading their
-own shipped documentation rather than their code
-([SG-7](docs/reports/2026-08-24-first-outside-application-grapevine.md#sg-7--what-the-standard-gained-a-flag-can-be-global-because-the-tools-docs-make-it-global)),
-in their words:
-
-> grapevine's own SKILL.md instructs agents to _pass identity on every verb_ ("a fresh shell per
-> command means the env var doesn't persist, so pass `--as`/`--from` explicitly"). So
-> `--as`/`--from` are contractually global — a caller following our own docs sends them everywhere —
-> and everything else goes per-verb.
-
+**And one source of truth sits outside the code entirely.** Generation walks the parser, so what
+it reports is the parser's organisation — which is not always the contract the caller is following.
 **A flag is global because the tool's own shipped instructions to its callers make it global.** That
 is a source of truth neither the parser nor the command table holds, and a declaration that
-contradicts the shipped SKILL.md, README or agent instructions is wrong even if it matches the code,
-because the caller is following the document and not reading the source. It bites hardest on
-agent-facing CLIs, where the shipped instructions are often _the_ interface an agent meets first.
+contradicts the shipped `SKILL.md`, README or agent instructions is wrong even if it matches the
+code, because the caller is following the document and not reading the source. It bites hardest on
+agent-facing CLIs, where the shipped instructions are often _the_ interface an agent meets first
+([SG-7](docs/reports/2026-08-24-first-outside-application-grapevine.md#sg-7--what-the-standard-gained-a-flag-can-be-global-because-the-tools-docs-make-it-global)).
 
-**The measurement is what makes the split safe to recommend to somebody else**, because moving flags
-per-verb is a breaking change: flags that were accepted-and-ignored become errors. On that CLI, **24
-flags moved per-verb, identity stayed global, and all 107 pre-existing tests passed unmodified** — so
-nothing in its own recorded usage had ever relied on a cross-verb flag. Those numbers are the
-implementer's, recorded in the report **as reported and not independently verified**, because their
-tree is not reachable from this checkout.
+**Moving flags per-verb is a breaking change**, because flags that were accepted-and-ignored become
+errors. Check your own recorded usage before you do it.
+
+**What generation does not prevent.** It kills staleness. It does not kill **incompleteness**, and
+incompleteness is the larger problem. That is the next section.
 
 **[—]** for the claim itself. Nothing on this page reads a SKILL.md: emitting from the parser,
 generating from the command table and checking against the running tool all miss it by construction,
 and the kit has no way to falsify a declaration that contradicts the documentation shipped beside the
 binary.
 
-**What generation does not prevent.** It kills staleness. It does not kill **incompleteness**, and
-incompleteness is the larger problem. That is the next section, and it is a measurement rather than
-a worry.
-
 **[—]** Nothing outside your process can establish that your emitter walks your parser's
 structures. What is visible is the consequence.
 
 ## 3. Check it against the running tool
 
-**This is the finding, and it is argued rather than asserted.**
+**Generation is necessary and not sufficient.** Generating the declaration from the structures that
+implement the behaviour eliminates one failure — a copy that has fallen behind its generator. It
+cannot eliminate a declaration that was never right at generation time, and that class is the
+larger one: **there is no test you can write against a field your type does not have.** From inside
+the process a missing field is an absence, and absences do not fail tests.
 
-`CHARTER.md` bets that a declaration bound to code is different from the declarations that died.
-The [first drift trial](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md) is the first
-test of that bet anywhere — the survey found **nothing that probes a running tool and falsifies
-what it declares**. Its own wording is "almost nothing, and the 'almost' is four months old": the
-single exception, clispec, had 10 stars and a 0-star reference implementation when the survey read
-it
-([§5](docs/research/2026-08-22-machine-readable-cli-declarations.md#5-nothing-checks-a-tool-against-its-own-declaration)).
+So a regenerate-and-compare gate — the strongest thing anyone does today
+([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md)) — answers whether the copy
+is current, never whether it was ever right. Only running the tool and comparing what it does
+against what it says reaches the rest.
 
-**The nearest thing anyone does is real, and it is not this.** Azure's `azdev latest-index verify`
-is what the survey calls
-[the cheapest generalisable drift gate found anywhere](docs/research/2026-08-22-machine-readable-cli-declarations.md#41-complete-declarations-are-emitted-never-authored):
-regenerate from the live command table, byte-compare to the checked-in JSON, exit non-zero naming
-the stale file. That is good practice and it answers a different question — it compares a
-generated artifact against a regenerated one, both from the same in-process source, so it catches
-a copy falling behind its generator. It cannot catch a declaration that was never right at
-generation time, and that is the class the trial below found.
-
-The target was chosen to be the strongest form of the bet. anthill emits its manifest from the same
-`define.ts` structures its parser consumes, regenerated live on every invocation, with no second
-copy to fall out of date. The survey says a document like that should not drift.
-
-**It found eight disagreements. One stale, one wrong, six incomplete.**
-
-The distribution is the argument.
-
-**The one stale finding is the smallest one.** A `0.1.0` scaffold literal in `info show`, while the
-manifest and `--version` both say `2.3.0` — two machine-readable outputs of one process disagreeing
-about what it is
-([DT-7](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-7--the-cli-reports-two-different-versions-of-itself)).
-Staleness is the entire failure mode the prior art knows about, and generation had already reduced
-it to this.
-
-**The finding that endangers a caller is wrong at generation time.**
-[DT-2](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-2--eight-refused-flags-published-as-valid):
-the framework has a `refused` property — a flag the command recognises and deliberately refuses,
-registered with the parser so it does not read as "unknown", and excluded from the advertised valid
-set. The manifest type has no `refused` field, so eight refused flags are emitted as ordinary valid
-ones. **The same binary publishes the flag and refuses it.** Regenerating does not help; the
-manifest has never been right. The refusal machinery is careful, well-reasoned work, and the
-manifest inverts it.
-
-**Six findings share one shape**: the model the generator writes into has no slot for part of the
-surface. Positionals emitted inside the array called `flags`, so a consumer that iterates `flags`
-constructs invalid argv for 7 of 25 commands — including the command every user runs. A `valueHint`
-string that is an enforced closed set on one flag and an ignored label on 21, with no field
-distinguishing them. A `type: "string"` hiding a validated integer, and three flags that are
-mutually exclusive with nowhere to say so. The entire universal surface, present and accepted and
-absent from the document.
-
-The trial's closing sentence is the one to carry:
-
-> Checking against behaviour is what makes a dropped field visible. From inside the tool it is an
-> absence, and **absences do not fail tests.**
-
-**So generation is necessary and not sufficient.** It eliminates the class the field knows about and
-leaves the larger class untouched, and the larger class is invisible from inside the process by
-construction. There is no test you can write against a field your type does not have.
+The first trial of this found eight disagreements in a manifest regenerated live from its parser's
+own structures, with no second copy able to fall out of date: one stale, seven not
+([drift trial](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md)).
 
 ### The cheapest version of "checked"
 
-The trial's highest-yield probe is worth adopting directly. It costs one inert invocation per
-command and needs no cooperation beyond one property most strict parsers already have:
-
-> **Make the tool enumerate its own surface.** anthill's unknown-flag error names the valid set —
-> `Unknown option '--nope'. Valid flags: --format`. That string is the parser's own account of what
-> it accepts, produced by the parser rather than by documentation. Diffing it against the
-> declaration's flag list across every command path is a complete census of the
-> declared-versus-accepted gap: fully inert, no mutation, no guessing, automatable end to end.
+**Make the tool enumerate its own surface.** A strict parser's unknown-flag error already names
+the valid set — `Unknown option '--nope'. Valid flags: --format` — and that string is the parser's
+own account of what it accepts, produced by the parser rather than by documentation. Diff it against
+the declaration's flag list across every command path and you have a complete census of the
+declared-versus-accepted gap: one inert invocation per command, no mutation, no guessing, automatable
+end to end.
 
 **This generalises to any CLI whose parse errors name the valid set**, and it is available today
 with no kit at all — a shell loop and `jq` will do it. If you build one thing from this page before
@@ -412,43 +246,27 @@ anything else, build that.
 **Or have the loop written for you.** `acc probe-plan <target> --paths ./paths.json --out
 ./capture.sh` emits a shell harness that sends one sentinel-bearing rejection per command path,
 keeps both streams verbatim, and writes a batch `acc check --recorded-surfaces` reads —
-[the guide](docs/wiki/guides/how-to-record-surfaces-below-the-root.md). That changes nothing about
-the ordering above: the census is first because it is cheap and needs no declaration, and a loop
-you wrote yourself is the same census.
+[the guide](docs/wiki/guides/how-to-record-surfaces-below-the-root.md). A loop you wrote yourself
+is the same census.
 
-**Note what a spec-to-spec differ is not.** `usage diff` is the closest existing thing to a CLI
-contract differ, and it is genuinely good: it classifies every change as breaking, compatible or
-metadata under one stated rule, with a published edge-case table
-([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#21-jdxusage--closest-on-expressiveness-weakest-on-legitimacy)). But when the left side is emitted
-by the binary it _is_ the implementation, so what it detects is release-over-release regression, not
-a lying declaration. The same gap appears wherever it is looked for. PowerShell's `OutputType`
-attribute is the one place in mainstream tooling where a command declares its output shape, and its
-own documentation, quoted in [the survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#7-the-failed-and-dormant-attempts), says:
-
-> _The OutputType attribute value isn't derived from the function code or compared to the actual
-> function output. As such, the value might be inaccurate._
-
-PSScriptAnalyzer has a rule to catch that — statically, by reading source, never by running the
-command. And MCP's official conformance suite validates protocol compliance and does **not** check
-that a tool annotated `readOnlyHint: true` is actually read-only
-([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#5-nothing-checks-a-tool-against-its-own-declaration)). **The same gap reappears one
-level up.**
+**A spec-to-spec differ does not reach this.** Comparing one document against another — however
+carefully — detects release-over-release regression, never a declaration that was never right. The
+gap reappears at every level it is looked for: nothing in mainstream tooling checks a declared
+output shape, an annotation, or a read-only hint against what the command actually does
+([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#5-nothing-checks-a-tool-against-its-own-declaration)).
 
 ### The ceiling, stated honestly
 
-The trial reached run-time behaviour for **4 of 25 commands**. Everything that spawns a process,
-writes a store, shells out or mutates state was refused and stayed refused, so **every mutating
-command's declaration is unverified**.
+**Every mutating command's declaration is unverified.** Anything that spawns a process, writes a
+store, shells out or changes state is refused and stays refused, so the commands that matter most —
+the ones that change something — are exactly the ones nothing here reaches. That ceiling is general:
+it is the case for any CLI worth checking.
 
-That ceiling is general rather than anthill's. It is the case for any CLI worth checking, because
-the commands that matter most are the ones that change something. This page used to say that passing
-it required the declaration to carry an effects claim and the tool to be trustworthy about it, while
-noting in the same clause that an effects claim nobody falsifies is exactly the kind of document the
-survey found drifting everywhere else. **That objection won.** A subject's account of itself is
-evidence to test, never a licence to execute it, so no claim in any format was ever going to lift
-this ceiling. What lifts it is somebody who already holds the authority doing the running — the
-operator, on their own machine, handing back what came out — or an execution boundary the checker
-owns. Neither is built here, and this page does not pretend it is solved.
+No claim in any format lifts it. **A subject's account of itself is evidence to test, never a licence
+to execute it**, so a declaration promising a command is safe buys nothing — it is the same document
+the survey found drifting everywhere else. What lifts it is somebody who already holds the authority
+doing the running: the operator, on their own machine, handing back what came out — or an execution
+boundary the checker owns. Neither is built here, and this page does not pretend it is solved.
 
 **[C?]** The declared-versus-accepted census, on any target whose parse errors name the valid set —
 and the kit now ships it, at the root, behind `acc check --declaration`. It is not `[C]`, because it
@@ -504,7 +322,7 @@ comparison at all. What to do about that is [below the table](#emit-v0-hold-the-
 | Error-envelope field names              | Unlocks checking that an error names the offending token, in the field it names           | only the implementation    | no                                                                                            |
 | Exit-code meanings                      | `1` is not always failure and `2` is not always usage                                     | only the implementation    | no                                                                                            |
 | Exit-code ownership                     | Whether the code you read was produced by a program this tool did not write               | only the implementation    | no                                                                                            |
-| Effects, per command                    | The only thing that would let a checker run a real verb — **and see the caveat below**    | nobody, confidently        | no — **and see the roadmap cost below**                                                       |
+| Effects, per command                    | The only thing that would let a checker run a real verb — **and see below**               | nobody, confidently        | no — **deliberately, and it costs nothing**                                                   |
 
 Three things about that table are worth stating outright.
 
@@ -518,19 +336,16 @@ modelling it from outside.
 report `unverified` and name the field as the remedy; it must not fall back to a convention. The
 reason is concrete: a template pre-filled with `--help` produces a wrong declaration for `ffmpeg`,
 which documents `-h` and `-help` and not `--help`
-([SURV-5](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)) — and a wrong declaration is worse than no declaration, because it convicts a correct
-tool. This is the repository's own
-[if it is not in the config, it is not inferred](docs/wiki/decisions/not-in-the-config-not-inferred.md)
-applied one level down.
+([SURV-5](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). **A wrong declaration
+is worse than no declaration, because it convicts a correct tool** — the same rule as
+[if it is not in the config, it is not inferred](docs/wiki/decisions/not-in-the-config-not-inferred.md),
+one level down.
 
-**Marked-as-enforced is not a detail.**
-[DT-4](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-4--valuehint-means-two-different-things-and-nothing-says-which)
-is the case: one hint string spelled `bug|friction|idea|docs` is enforced with a refusal, and
-another spelled `text|json` on 21 commands is silently ignored — an out-of-set value falls back to
-a TTY heuristic and exits `0`. Identical declared shape, opposite behaviour, and no field
-distinguishes them, so **that defect cannot be automated against any target**, including that one.
-A value list that does not say whether it binds is a label, and a checker that treats a label as a
-constraint manufactures a failure.
+**Marked-as-enforced is not a detail.** A value list that does not say whether it binds is a label,
+and a checker that treats a label as a constraint manufactures a failure. Two hint strings can have
+an identical declared shape and opposite behaviour — one refusing an out-of-set value, the other
+falling back to a heuristic and exiting `0` — with no field distinguishing them
+([DT-4](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-4--valuehint-means-two-different-things-and-nothing-says-which)).
 
 ### Emit v0, hold the rest
 
@@ -540,8 +355,7 @@ recognises. `parseDeclaration` refuses an unknown key anywhere in the document, 
 `formatVersion` that is not the major it knows rather than reading the fields it does know — so a
 document carrying `exitCodes` or `effects` alongside its commands does not get a partial check, it
 gets no check. That is the reader working as designed: half-applying a document you half-understand
-is how a narrowing statement gets dropped and a widening one gets obeyed. The cost lands on the
-emitter author anyway, so it is stated here rather than discovered in a rejection.
+is how a narrowing statement gets dropped and a widening one gets obeyed.
 
 Concretely, a v0 document is `formatVersion: "0"`, `provenance`, `selfDescription` (an object or an
 explicit `null`), and `commands` — each with `path`, `args` and `positionals`, each argument
@@ -558,21 +372,14 @@ new command has no entry ([Part 1 §2](#2-generate-it-from-what-implements-the-b
 they do not yet have is a slot in `acc.declaration.json`, and an emitter written against them today
 buys a document nothing here can consume.
 
-**What that costs this project — and this passage was wrong once, which is the first thing it owes
-you.** It used to name `effects` as the blocker, twice over: [the ceiling](#the-ceiling-stated-honestly)
-reached runtime for 4 of 25 commands, and [Part 4](#checkable-and-not-built) marked `[—]` on rows
-said to need a declared read-only claim. It then observed that _"probing below the root waits on an
-effects claim"_ was true but unreachable, because v0 had nowhere to put the claim, and that there was
-no plan here for how. **That dependency was asserted on this page and has since been withdrawn.** It
-was never a format problem. What gets anyone below the root is evidence, and evidence need not come
-from the checker's own probe: an operator can run their own tool at the paths they choose and hand
-back the recordings, executing nothing on the checker's authority and reading no claim at all.
-`effects` is not being added, so v0's missing slot costs nothing.
+**`effects` is not being added, and v0 having no slot for it costs nothing.** What gets anyone
+below the root is evidence, and evidence need not come from the checker's own probe — an operator
+can run their own tool at the paths they choose and hand back the recordings, executing nothing on
+the checker's authority and reading no claim at all.
 
-What is genuinely unbuilt is narrower, and naming it exactly is the honest thing this page can do
-today: the kit owns no execution boundary of its own. The two limits that used to stand beside that
-one are gone — `acc check --recorded-surfaces` reads a recorded surface, and `acc probe-plan`
-generates the capture harness that produces one
+What is genuinely unbuilt is narrower: the kit owns no execution boundary of its own.
+`acc check --recorded-surfaces` reads a recorded surface, and `acc probe-plan` generates the
+capture harness that produces one
 ([the guide](docs/wiki/guides/how-to-record-surfaces-below-the-root.md)). The cost that leaves is
 that below-root coverage depends on somebody else doing the running — a limit on convenience, and
 on who can be checked without their cooperation, rather than on what is knowable from outside.
@@ -587,31 +394,21 @@ carriers unchanged: the tool's own emission, a file in the tool's repository, an
 third party's CI config.
 
 **Anything about the run rather than the tool.** Locale, platform, the shell's inherited variables.
-A target declaring "my errors are English" is answering for the caller's shell. The hazard is not
-hypothetical in shape, though nobody here has yet produced the target that exhibits it: one checker
-in this repository decides a verdict by matching an English phrase on stderr, over a locale
-inherited from whoever invoked it, so the same target and the same argv would pass under one
-`LC_ALL` and fail under another with nothing in the report distinguishing the two runs
-([SURV-3](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md), which records that it
-could not find a tool localising its parser errors). Measure the environment, print it beside the
+A target declaring "my errors are English" is answering for the caller's shell. A check that
+matches an English phrase on stderr can pass under one `LC_ALL` and fail under another with nothing
+in the report telling the two runs apart. Measure the environment, print it beside the
 declaration, and label it as measured.
 
-### Where a declined recommendation is recorded, which is not in either of those files
+### Where a declined recommendation is recorded
 
 [How to read this](#how-to-read-this) says declining a recommendation is a decision and the thing
-worth avoiding is declining one without noticing. The noticing then had nowhere to live, and the
-first cold reader of this page found the gap. The case is anthill and `D2`: its bare invocation
-returns the manifest rather than a usage error, deliberately, because bare invocation is how an
-agent gets the declaration. Its maintainer decided that on the merits, wrote the reason down, and
-had two places to put it, neither of which is theirs to keep. **The waiver went in a local
-`acc.config.json` on the machine that ran the check, which they declined to commit** — _"dead config
-carrying a live opinion"_ in a repository that does not otherwise depend on `acc` — **and the
-durable copy of the reason ended up in a report in this repository**
-([first-contact trial](docs/reports/2026-08-21-anthill-first-contact-trial.md)). The maintainer made
-the decision, and either a temporary file or a stranger owns the record.
+worth avoiding is declining one without noticing. The noticing has nowhere durable to live. A waiver
+belongs to whoever runs the check and travels
+in their config; a reason written down in somebody else's report belongs to them. A maintainer who
+declines on the merits ends up with either a temporary file or a stranger owning the record.
 
 **The narrowing-versus-widening asymmetry [in the next section](#where-the-declaration-lives-and-who-may-say-what)
-already says how to split it**, and the split is the answer rather than a new file format:
+says how to split it**, and the split is the answer rather than a new file format:
 
 - **The waiver stays caller policy** and stays out of the declaration, exactly as this section says.
   It binds a gate, it is neither true nor false, and it belongs to whoever is running the check.
@@ -632,36 +429,23 @@ record and a caller's waiver agreeing is a thing a person checks, not a thing th
 
 ## Where the declaration lives, and who may say what
 
-[Two independent design sketches](docs/research/2026-08-24-two-declaration-format-sketches.md) were
-written for this, from opposite starting points — one derived from what the checkers need, one from
-what a person can honestly say. They converged on more than they disagreed about, and the
-convergences are the load-bearing part. Both are filed whole, with what has since overtaken them
-marked rather than corrected; this section is a reading of them and they are the source.
+**A statement that narrows the probe surface may be accepted on anyone's word. A statement that
+widens it must come from the tool.** A wrong "do not probe me" costs coverage. A wrong "you may
+probe me" costs somebody a written file
+([two design sketches](docs/research/2026-08-24-two-declaration-format-sketches.md)).
 
-**They converged on the asymmetry, and it is the most useful rule in this section.** Both reached it
-independently, from different premises:
-
-> **A statement that narrows the probe surface may be accepted on anyone's word. A statement that
-> widens it must come from the tool.**
->
-> A wrong "do not probe me" costs coverage. A wrong "you may probe me" costs somebody a written
-> file.
-
-The concrete case is the file-writing population the
-[grammar survey triage](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md) collected under `SURV-4`. `ffmpeg` documents that _"anything found on
-the command line which cannot be interpreted as an option is considered to be an output url"_;
-`sqlite3`'s first positional is a database path, created if absent; `ogr2ogr` and `cdo` take an
-output file as a positional. An outside observer who declares "my first positional
-selects from a fixed table of verbs" and is wrong has authorised a probe that writes a file. One
-who declares "my first positional is data, do not send sentinels" and is wrong has only lost a
-verdict.
+Positionals are where this bites: `sqlite3`'s first positional is a database path, created if
+absent, and it is not the only tool whose unmatched argument becomes a file
+([SURV-4](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). An outside observer who
+declares "my first positional selects from a fixed table of verbs" and is wrong has authorised a
+probe that writes a file. One who declares "my first positional is data, do not send sentinels" and
+is wrong has only lost a verdict.
 
 So the narrowing direction is admissible from anyone and the widening direction is not, and **an
 unfalsifiable field is admissible exactly when the only thing it can do is remove probes and
 withdraw verdicts. The declarer buys silence, not a pass.**
 
-**They converged on several other things**, briefly, because agreement reached from two directions
-is worth more than either argument alone:
+The rest, briefly:
 
 - An emitted declaration wins over an outside model on every field it speaks to, and a
   disagreement is reported rather than silently resolved.
@@ -679,19 +463,17 @@ is worth more than either argument alone:
 - Refuse to run against a declaration whose format version you do not understand, rather than
   ignoring it and carrying on. The fields unlock probes, and unknown semantics on an unlocking
   field means running an invocation whose justification you cannot read.
-- Say nothing about **effects** — and do not record it as a placeholder either. Both sketches scoped
-  it out, for the reason the drift trial hit its ceiling: there is no sandbox to falsify such a claim
-  in. An earlier version of this page told you to record it and let it gate nothing; **that advice is
-  withdrawn**, and no field is coming for it. An inert field is not a neutral placeholder: it lends
+- Say nothing about **effects** — and do not record it as a placeholder either. There is no sandbox
+  to falsify such a
+  claim in, and no field is coming for it. An inert field is not a neutral placeholder: it lends
   its names apparent authority, invites a consumer to infer safety from them, and fixes a meaning
   before any consumer exists to need one. `read_only` already reads two ways — no mutation of the
   tool's own state, versus no externally visible effect — and a command that writes nothing of its
   own while opening a browser on the operator's machine is exactly where the two come apart. The
   field earns its place when a concrete consumer and a testable contract for it exist, and that
   consumer picks the meaning.
-- Do not add a field for bitmask exit codes. `pylint` ORs fatal `1`, error `2`, warning `4`,
-  convention `8`, refactor `16` and usage `32`, so a run with a fatal and a warning exits `5`;
-  `fsck` documents its status across filesystems as _"the bit-wise OR of the exit statuses"_
+- Do not add a field for bitmask exit codes. Some tools OR their statuses
+  together — `fsck` documents its own as _"the bit-wise OR of the exit statuses"_
   ([SURV-8](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). No declaration
   changes what `2` means in a taxonomy that assumes an enumeration. **The taxonomy grows a position
   on bit fields or it does not**, and adding a field would let a format look like it had answered a
@@ -701,8 +483,8 @@ is worth more than either argument alone:
 
 **The claim above is not weakened: a caller who did not write the tool may author a declaration for
 it**, and the narrowing-versus-widening asymmetry is what makes that safe. What follows is a limit
-on what the **census** can do with one today, and it belongs here because it is invisible from the
-format layer, where a modelled document is as well-formed as an emitted one.
+on what the **census** can do with one today —
+invisible from the format layer, where a modelled document is as well-formed as an emitted one.
 
 The kit probes **the root only** — `captureSurface` in
 [`src/acc/kit/surface.ts`](src/acc/kit/surface.ts) reads a flag set out of root-level rejections,
@@ -711,74 +493,45 @@ the root has to be recorded by somebody who already holds the authority to run t
 to the kit as a [recorded-surface batch](docs/wiki/guides/how-to-record-surfaces-below-the-root.md),
 which it reads — what stops at the root is what the kit will **send**.
 A verb-first tool's declaration is a document about its **verbs**, so every path it declares is a
-path nothing probes, and the one path that is probed is often the one it does not declare. Measured
-on this repository's own CLI, which is verb-first: `acc --nope` answers `unknown option '--nope'`
-and lists its verbs, naming no flag, so the root surface reads `did not enumerate` — and a
-four-command modelled declaration for it reports `THE DIFF DID NOT RUN — 0 of 4 declared command
-paths compared`. anthill v2.3.0 is the better case and still a narrow one: its root rejection does
-name `--format`, so the root does compare — but its manifest has no slot for root flags, so the only
-comparable path is one the document never declares (DT-1), and the summary reads **`0 of 25`
-declared command paths compared**, naming the root beside the fraction instead of inside it. That
-figure is **measured in this tree** against the anthill repo checkout, and it is the build that
-matters: the published `2.3.0`
-launcher answers the same probe `No command specified.`, naming no flag at all, so on that build
-nothing compares and the figure is a property of the build rather than of the version
-([DT-10](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-10--two-builds-of-the-same-declared-version-disagree-about-whether-the-root-enumerates)).
+path nothing probes, and the one path that is probed is often the one it does not declare.
+**Measured in this tree** on
+this repository's own CLI, which is verb-first: `acc --nope` lists its verbs and names no flag, so
+the root surface reads `did not enumerate`, and a four-command modelled declaration for it reports
+**`THE DIFF DID NOT RUN — 0 of 4 declared command paths compared`**.
 
-**Every figure in this section is about what the kit probes for itself, and none of them is a
-ceiling.** Hand the same anthill checkout a batch recorded below the root and the same modelled
-declaration compares
-[`23 of 26` paths](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three)
-rather than `0 of 25`. The limit the rest of this section states is unchanged: it is a limit on
-probing, and the caller who can lift it is the one who may already run the tool.
+**That figure is about what the kit probes for itself, and it is not a ceiling.** Record a batch
+below the root and the same modelled declaration compares the paths the batch covers — on one real
+tool, [`23 of 26`](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#outcome-2026-08-26--run-by-the-adopter-two-of-the-three-numbers-exact-the-path-count-out-by-a-factor-of-three)
+— **as reported and not independently verified**.
+The limit is on probing, and the caller who can lift it is the one who may already run the tool.
 
 So the `[C?]` on this Part, and every `yes` in the [`In v0` column](#the-fields-and-why-each-exists),
 carry a condition already stated in both places and worth stating plainly: **on any target that
-enumerates _at the root_**. The conclusion is not this page's. It was drawn by the implementer in
-[the first outside application of the standard](docs/reports/2026-08-24-first-outside-application-grapevine.md#the-modelled-negative-which-is-the-most-useful-failure-in-the-session),
-and it belongs here in their words rather than in a paraphrase:
+enumerates _at the root_**. For the verb-first population — plausibly most agent-facing CLIs — a
+modelled declaration currently
+buys zero comparison: **"a caller may declare for a tool" is true at the format layer and inert at
+the census layer**
+([the first outside application](docs/reports/2026-08-24-first-outside-application-grapevine.md#the-modelled-negative-which-is-the-most-useful-failure-in-the-session)).
 
-> for the verb-first population — most of this fleet, and I suspect most agent-facing CLIs — a
-> modelled declaration currently buys zero comparison. The standard's "a caller may declare for a
-> tool" is true at the format layer and inert at the census layer.
+It is not wasted: the self-description check runs on it with no probe at all, and the report says
+which paths went uncompared and why. But an author writing one today should expect a report about
+what could not be compared rather than about what agreed, and the fix is the kit's and the tool's,
+not the file's.
 
-**The worked `0 of 4` above is this repository's own CLI, measured in this tree**, and it is not the
-run that produced that sentence: that session modelled a declaration for a different tool, on a tree
-this checkout cannot reach, and the report records its numbers as reported rather than verified. The
-grammar in the sentence is also not the invariant — anthill is verb-first and does enumerate at the
-root — which is why the limit above is stated as the root-slot mismatch rather than as a fact about
-verb-first parsers. It is not wasted: the self-description check runs on it with no probe at all, and the report
-says which paths went uncompared and why. But an author writing one today should expect a report
-about what could not be compared rather than about what agreed, and the fix is the kit's and the
-tool's, not the file's.
+### Two questions this page leaves open
 
-### Where they disagreed, and it is not settled here
+**Exit-code ownership: may an outside observer declare it?** **Nothing here decides it.** The
+field switches off a whole family of checks, so the question is who may be trusted with it, and both
+answers are defensible. The honest split is that some tools state ownership plainly — `ssh(1)` says it
+_"exits with the exit status of the remote command or with 255 if an error occurred"_ — **read from
+a primary source** — so a reader of the man page is not guessing — while `tar`, `xargs` and `bazel
+run` do not. It is settleable by
+experiment rather than argument: take the delegators the survey names, have several people who did
+not write them answer ownership from the documentation alone, and see whether they agree and are
+right.
 
-**Exit-code ownership.** One sketch makes it declarable by anyone — `own` against `delegating`, plus
-a reserved band of codes the tool keeps for itself — and names it, unprompted, as the largest
-unfalsifiable escape hatch in its own design: a tool that owns its codes but declares delegation
-exits the whole exit-code rule family. The other makes it **promise-only**, inexpressible by an
-outside observer at all, with its absence withholding the dependent checks and naming the field as
-a remedy the author could supply and the observer could not.
-
-The second sketch flags the sharpest objection to its own position: `ssh(1)` states the answer in
-plain words — _"exits with the exit status of the remote command or with 255 if an error
-occurred"_ — so an observer reading the man page is not guessing. Its lean is to hold the line
-anyway, because `ssh` is unusually explicit and `tar`, `xargs` and `bazel run` are not.
-
-**Nothing here decides it.** Both positions are defensible, and the disagreement is about who may be
-trusted with a field that switches off a whole family of checks. It is settleable by experiment
-rather than argument: take the delegators the survey names, have several people who did not write
-them answer ownership from the documentation alone, and see whether they agree and are right.
-
-**Where the declaration lives.** One sketch splits hard into two files — a declaration that is true
-or false, and a policy file that is neither — and argues the split is what lets one schema serve
-three carriers. The other keeps one file with a distinguished block for the outside observer's
-model, for one loader and one discovery path, and then flags its own doubt: mixing caller policy
-with a model of the target in one file is the same conflation it spent its opening section arguing
-against.
-
-They agree on the semantics and differ on the container. **Follow the semantics** — a declaration
+**Where the declaration lives: one file or two?** The semantics are not in doubt; the container
+is. **Follow the semantics** — a declaration
 and a policy are different speech acts with different lifetimes, and whether they share a file is
 the smaller question. If you are choosing now, choose two files: that is the choice that survives
 somebody wanting to publish a declaration in their own repository.
@@ -810,57 +563,47 @@ The precedence order:
 2. **An explicit environment variable**, for callers that cannot alter argv.
 3. **Inference** — stdout is not a TTY, or an agent-harness variable is set.
 
-**Why the override, both ways.** Detection is genuinely useful and is also a documented failure
-mode: Vercel's agent-mode envelope was discovered _through a bug report_ caused by its own agent
-detection, which users worked around by faking a PTY
-([machine mode](docs/wiki/concepts/machine-mode.md#the-detection-hazard), which carries the sourcing for this and for `gh` below).
-When behaviour depends solely on inference
-about the caller, a caller that guesses wrong has no recourse. `gh` gets this right in both
-directions, honouring an `AI_AGENT` override and spelling the reverse `GH_FORCE_TTY=1`, both
-verified directly. That page also carries the full contract and the table of what changes between
-the two modes; read it rather than a summary here.
+**Why the override, both ways.** Detection is genuinely useful and it also fails: when behaviour
+depends solely on inference about the caller, a tool that infers wrongly leaves the caller no
+recourse. `gh` gets this right in both directions, honouring an `AI_AGENT` override and spelling the
+reverse `GH_FORCE_TTY=1`. [Machine mode](docs/wiki/concepts/machine-mode.md) carries the full contract and the table of what
+changes between the two modes, and the sourcing for this recommendation; read it rather than a
+summary here.
 
 **Machine mode is a mode, not a flag on one command.** Once selected it should govern success
 output, failure output, and every subcommand alike.
 
-**The place it breaks is the command you would least expect, and the case was found by a reader of
-this page rather than by anything here.** anthill answers every command with `{ok, data, meta}` and
-every failure with `{ok: false, error, meta}` — except `help --json`, which returns the manifest as
-a bare document. The single machine output whose whole job is to be machine-readable is the one that
-does not speak the envelope, so a consumer written against the mode has to special-case the
-declaration ([DT-9](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-9--the-manifest-is-a-bare-document-while-every-other-output-is-enveloped),
-**measured in this tree**). Nothing here caught it: every check that would have runs below the root.
+**The output whose whole job is to be machine-readable is the one most likely to be exempted from
+the envelope, and it must not be.** A tool that answers every command with an envelope and returns
+its own declaration
+as a bare document forces every consumer written against the mode to special-case the one document
+they came for
+([DT-9](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-9--the-manifest-is-a-bare-document-while-every-other-output-is-enveloped)).
 
 **Declare what your machine mode covers, because two different things share the spelling.** `rg
 --json` selects a JSON Lines format for search results; it is not a CLI-wide output mode and does
 not govern help, version or diagnostics. A checker that reads `--json` out of help and concludes
 "this tool has a machine mode" then fails it on the parser-error path for a feature it never claimed
-— measured in the [blind trial](docs/reports/2026-08-23-blind-trial-ripgrep.md), where one misread
-produced three downstream failures. Declaring the scope is what lets an honest tool decline an
+([blind trial](docs/reports/2026-08-23-blind-trial-ripgrep.md)). Declaring the scope is what lets an honest tool decline an
 obligation instead of failing it.
 
-**And do not assume a flag spelling means what you think.** `--output` names a file at least as
-often as a format — `curl`, `ffmpeg`, `ogr2ogr`, every `cp`-shaped tool — and `--format` is `ps`'s
-column layout and `ffprobe`'s writer name
-([SURV-2](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). A `--output <file>`
-spelling produces a **false pass** in this repository's own kit — reproduced against a fixture whose
-help documents it as writing a body to a file — which is the honest reason this page asks for a
-declaration instead of a convention.
+**And do not assume a flag spelling means what you think.** `--output` names a file at least as often as a
+format — `curl` and every `cp`-shaped tool — and `--format` is `ps`'s column layout
+([SURV-2](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). Reading a format mode
+out of a spelling produces a false pass, which is the honest reason this page asks for a declaration
+instead of a convention.
 
 **[C]** `B2` (no ANSI when piped), `B1` (stdout carries only data), `D3` (help advertises it,
 diagnostic).
 
-**[C?]** `B3` (machine output parses) — listed as checked today until this revision, and it is not.
-Its checker declares `probes: []`, every branch returns `unverified`, and its own
-`coverageEstablished` reads _"nothing at L0"_
-([`machine-output-parseable.ts`](src/acc/kit/checkers/streams/machine-output-parseable.ts)). Its
-subject is the output of a **data command**, and selecting one means knowing it is side-effect-free.
-`B5` (machine mode holds on the parser-error path) is a genuine probe and sound at the root, but it
-is gated on `defaultOutput` and reported `unverified` on **all eight** targets of the
-[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) — every one of which is a machine-mode
-tool, so the rule is currently unreachable on the population it was proposed for. Each becomes live
-on a declaration and neither needs new kit machinery: `defaultOutput` for `B5`, and for `B3` a
-command declared read-only whose output the kit is licensed to read.
+**[C?]** `B3` (machine output parses) and `B5` (machine mode holds on the parser-error path).
+Neither is checked today. `B3`'s subject is the output of a **data command**, and selecting one means
+knowing it is side-effect-free. `B5` is a genuine probe and sound at the root, but it is gated on
+`defaultOutput` and came back `unverified` on **all eight** targets of the
+[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) — every one of them a machine-mode tool,
+so the rule is unreachable on the population it was proposed for. Each becomes live on a declaration
+and neither needs new kit machinery: `defaultOutput` for `B5`, and for `B3` a command declared
+read-only whose output the kit is licensed to read.
 
 Also **[C?]**: the precedence order and the two-way override — nothing measures either, and neither
 needs anything the kit does not already have; and "governs every subcommand alike", unreachable both
@@ -876,27 +619,20 @@ terminates. Machine-mode values are never abbreviated, never humanised, never el
 **Why.** This is the sharpest instance of the shape every defect in this project shares — **the tool
 does the wrong thing and reports success.** A payload cut off at a pipe buffer stops mid-string and
 exits `0`, so a caller receives two thirds of an answer with nothing anywhere to say a third is
-missing. The [archaeology](docs/research/2026-08-15-defect-archaeology.md) has the fixture measured
-both ways: **65,536 bytes through the pipe before the fix, 114,101 after**, with the only difference
-being a `process.exit()` on a path that had written to a stream it had not drained. The defective
-binary delivers 57% of its payload at exit `0` — and `acc check` scores it `conformant: true`, zero
-core failures. That is the kit's own headline verdict certifying a CLI that loses more than half its
-output, and it is recorded here rather than hidden because it is the clearest thing anyone has
-measured about the limits of black-box checking.
-
-The class is also the most expensive one in that corpus: ten-plus commits, nine or ten entry-point
-sites, thirty-seven exit sites pinned, and a regression after the first fix.
+missing. It is also expensive once shipped: the sites are every exit path in the program,
+and the first fix for it regressed
+([archaeology](docs/research/2026-08-15-defect-archaeology.md)).
 
 **How to comply** is runtime-specific and measured per runtime — see
 [a command delivers every byte it wrote](docs/wiki/rules/streams/output-is-delivered-whole.md). The
 short form: set the exit code and return from the entry point; do not call `process.exit()`,
 `exit()` or `os.Exit()` after writing.
 
-**And do not assert the buffer size.** Bun 1.4 delivered 131,072 bytes through the same code path
-that had delivered 65,536 — the reason `B4` asserts delivery rather than a number, and why the
-figures live in [a dated note](docs/research/2026-08-19-flush-on-exit-by-runtime.md) rather than on a rule page. A rule written around the number
-would have been wrong within weeks.
-The invariant is "every byte it wrote"; the number belongs in a dated note.
+**And do not assert the buffer size.** Bun 1.4 delivered 131,072 bytes through a code path that
+had previously delivered 65,536 (**measured in this tree**) — the reason `B4` asserts delivery rather than a
+number. A rule written around the number would have been wrong within weeks: the invariant is "every
+byte it wrote", and the figures belong in
+[a dated note](docs/research/2026-08-19-flush-on-exit-by-runtime.md).
 
 **[C?]** `B4` states the rule and its checker is `planned` — the blocker is the runner, because a
 pipe the runner creates cannot exhibit the defect at all. `B4` therefore reports not-applicable on
@@ -922,9 +658,10 @@ to stdout and the error to stderr at exit `1`
 for — sees an empty result set, not a failure. The tool answered a question it could not answer, in
 the shape of a successful answer.
 
-**Why enumerate the alternatives in the envelope.** An error is a just-in-time slice of the schema,
-delivered exactly when the caller has demonstrated it needs that slice and paid for only on failure.
-Both are generated from the same declaration, so the flags an error offers are by construction the
+**Why enumerate the alternatives in the envelope.** Good errors and schema introspection are two
+views of one thing: an error is a just-in-time slice of the schema, delivered exactly when the caller
+has demonstrated it needs that slice and paid for only on failure. Both are generated from the same
+declaration, so the flags an error offers are by construction the
 flags the parser accepts.
 
 The full shape, the `confirmation_required` case and the `next` field's real semantics are in
@@ -942,16 +679,14 @@ consumer can spawn one safely and still not know whether it writes anything.
 state by other means.
 
 **A field must distinguish absent, null and zero.** Three states an envelope routinely collapses:
-"there are none", "I could not tell", and "I did not look". Across two repositories this was the
-largest single cost in the corpus and belongs to none of the usual defect categories — a `0` that
-means "I could not count" is a lie a caller cannot detect, and a field that is absent rather than
+"there are none", "I could not tell", and "I did not look". A `0` that means "I could not count" is
+a lie a caller cannot detect, and a field that is absent rather than
 present-and-null is unreadable, because absence and a null answer are the same bytes.
 
 **[C]** `B1` (stdout carries only data, so it is empty when the command failed), `A3` (an error
 names the offending token), `C2` (usage errors distinguishable from internal faults) — and `B5`
-(machine mode holds on the parser-error path) **only where `defaultOutput` is declared**, which was
-true of none of the eight targets in the
-[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md).
+(machine mode holds on the parser-error path) **only where `defaultOutput` is declared** — see
+[machine mode](#machine-mode) for why no target has declared one so far.
 **[C?]** `kind`, `retryable`, the two-shape discipline and the `choices` list — all checkable the
 moment the envelope's field names are declared, which is exactly what
 [A3's coverage gap asks for](docs/wiki/rules/parsing/errors-name-the-offending-token.md). **[—]**
@@ -964,60 +699,42 @@ range below the reserved band, publish the mapping in your declaration, and neve
 
 The taxonomy this project uses — nine codes, plus a separate band for outcomes that are answers
 rather than failures — is in [exit codes](docs/wiki/concepts/exit-codes.md). It is a house standard
-and says so. Measured against one probe, an unrecognised flag, `git` returns `129`, `docker`
-returns `125`, and `kubectl`, `gh` and `cargo` all return `1`
-([exit codes](docs/wiki/concepts/exit-codes.md#there-is-no-industry-standard)). **None uses `EX_USAGE`.** The value is not
+and says so. Against one probe, an unrecognised flag, `git` returns `129` and `docker`
+returns `125`, while `kubectl`, `gh` and `cargo` all return `1` — **measured in this tree**
+([exit codes](docs/wiki/concepts/exit-codes.md#there-is-no-industry-standard)). **None uses
+`EX_USAGE`.** The value is not
 that it is right in some universal sense; it is that an agent learns it once and it holds across
 every tool that adopts it — which is exactly why a local convention that is not machine-discoverable
 is tribal knowledge.
 
-**Get this right when the CLI is born.** Kubernetes' KEP-2551 proposed normalising kubectl's exit
-codes and has sat alpha-gated behind an environment variable since 2022
-([exit codes](docs/wiki/concepts/exit-codes.md#exit-codes-are-append-only)) — not because the design is bad, but because
-retrofitting exit codes onto a tool with existing consumers is close to impossible.
+**Get this right when the CLI is born.** Retrofitting exit codes onto a tool with existing
+consumers is close to impossible: Kubernetes' attempt has been alpha-gated behind an environment
+variable since 2022
+([exit codes](docs/wiki/concepts/exit-codes.md#exit-codes-are-append-only)).
 
 **Three counter-examples that bite, all three defensible.**
 
-**Non-zero does not always mean failure.** `rg` exits `1` for "no matches", a complete and correct
-and successful run, and `expr 1 = 2` exits `1` the same way
-([SURV-4](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)); `kubectl diff` reuses exit `1` to mean "differences found"
-([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#43-cloud-vendors-rich-api-models-missing-cli-models)). A tool in this family should say so in its declaration, and a
-checker that assumes `1` is a failure reads a correct answer as a broken one.
+**Non-zero does not always mean failure.** `rg` exits `1` for "no matches" — a complete, correct and successful
+run ([SURV-4](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). A tool in this family
+should say so in its declaration, and a checker that assumes `1` is a failure reads a correct answer
+as a broken one.
 
 **Some tools do not own their exit codes.** `ssh` delegates the entire namespace, not just a
-reserved band; `tar` documents that _"if a subprocess exits non-zero, tar assumes that exit code as
-well"_; `timeout`, `xargs` and `env` reserve a small band and pass the rest through verbatim; `jq`'s
-`halt_error(n)` puts the code under the control of the input program, which is a positional the
-caller supplied
-([SURV-9](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). The archetype and its
-hazards are in [delegator](docs/wiki/archetypes/delegator.md) — including the honest admission that
-verbatim passthrough makes the wrapper's own `125` / `126` / `127` indistinguishable from the
-child's, and that a delegator needing the distinction should carry the child's code as a field in
-its envelope.
+reserved band, and `timeout`, `xargs` and `env` reserve a small band and pass the rest through
+verbatim ([SURV-9](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). The archetype
+and its hazards are in [delegator](docs/wiki/archetypes/delegator.md) — including that verbatim
+passthrough makes the wrapper's own `125` / `126` / `127` indistinguishable from the child's, so a
+delegator needing the distinction should carry the child's code as a field in its envelope.
 
 **Some tools compose codes as bit fields.** Covered in Part 2; the taxonomy has no position on them
 and this page does not invent one.
 
-**This is where fleet divergence shows up first, and where nothing reports it.** Across one author's
-eight agent-facing CLIs
-([measurement](docs/reports/2026-08-24-eight-owner-clis.md)):
-
-- seven answer an unknown flag with exit `2`; one answers with exit `1`;
-- `--help` goes to stdout in six, to **stderr at exit 2** in one, and to stdout as **JSON** in one;
-- `--version` exists in exactly one of the eight;
-- machine mode is unconditional and unflagged in seven and TTY-conditional and flagged in one;
-- one repository bans `process.exit()` after a write at every entry point, in a comment ending
-  _"Do not tidy this back into an explicit exit"_, and the other calls it at six sites.
-
-**No rule in the catalogue reports any of it**, for two structural reasons the report states
-plainly: every relevant checker requires only that a code be non-zero, and every run judges one tool
-alone — a divergence is a relation between reports, and a report is the largest object the kit
-produces. On a corpus chosen to expose inconsistency, 15 of 23 rules returned an identical verdict
-on all eight targets, and the six tools sharing a scaffold produced one identical set of verdicts
-six times over.
-
-One author, one toolset, and every one of those questions answered more than once. The only
-instrument that surfaces it is putting the declarations side by side.
+**This is where fleet divergence shows up first.** One author's eight agent-facing CLIs answered
+every one of these questions more than once — unknown-flag code, where `--help` goes, whether
+`--version` exists at all, whether machine mode is conditional
+([measurement](docs/reports/2026-08-24-eight-owner-clis.md)). Nothing in a per-tool verdict can
+report that: a divergence is a relation between reports, and a report is the largest object the kit
+produces. **The only instrument that surfaces it is putting the declarations side by side.**
 
 **[C]** `C1` (help exits zero), `C2` (usage distinguishable from internal), `C3` (deterministic
 codes), `A1` / `A2` (unknown flag, unknown command exit non-zero). **[C?]** Holding a tool to its
@@ -1035,21 +752,19 @@ thousand records into an agent's context has failed even though every byte was v
 selection is the cheaper half — most of the time a caller wants three fields of each record and has
 no way to ask.
 
-**Only declare it where it applies, and only expect it where it was declared.** clispec states the
-rule this page endorses — _"do not probe what the tool did not claim"_
-([survey](docs/research/2026-08-22-machine-readable-cli-declarations.md#22-clispec--closest-on-intent-effectively-pre-adoption)): only a command declared with
-unbounded output owes you pagination, and the limit flag and cursor field come from the document
-rather than from a convention. A command returning one record owes nothing here.
+**Only declare it where it applies, and only expect it where it was declared.** Do not probe what
+the tool did not claim: only a command declared with unbounded output owes you pagination, and the
+limit flag and cursor field come from the document rather than from a convention. A command
+returning one record owes nothing here.
 
 The kinds and cardinality vocabulary are in [output kind](docs/wiki/concepts/output-kind.md#why-it-matters-for-agents), which also
 carries the Docker case: under the same `--format json` flag, `docker version` emits one object,
 `docker ps` emits NDJSON with no enclosing array, and `docker inspect` emits an array. The
-inconsistency is now permanent — asked to fix `docker ps`, a maintainer replied that _"for
-compatibility reason, this can't be fixed"_ — and it is permanent **because it was never declared,
-only observed.**
+inconsistency is now permanent, **because it was never declared, only
+observed.**
 
-**This is the thinnest recommendation on the page, and it is marked as such.** The reasoning is
-sound and the Docker case is real, but no defect in either archaeology corpus is a pagination
+**This is the thinnest recommendation on the page.** The reasoning is sound and the Docker case is
+real, but no defect in either archaeology corpus is a pagination
 defect, and nothing in this repository has measured the cost of its absence. Take it as a design
 argument rather than as a finding.
 
@@ -1069,11 +784,9 @@ stdin as a decline and exits `0`, so an agent invoking it non-interactively gets
 no work done ([E1](docs/wiki/rules/interactivity/never-block-without-a-tty.md#why)). Declining is a decision the caller did not make, and it must not be reported as
 success.
 
-**A bypass flag is consent to skip the prompt, not consent to guess the argument.** `gh` ignores
-`--yes` when the repository would be inferred from the working directory; Vercel applies no default
-scope non-interactively and returns an action-required error naming the flag that resolves it. That
-rule page — [never block on input without a terminal](docs/wiki/rules/interactivity/never-block-without-a-tty.md#how-to-comply) — carries both, along with
-the per-language terminal checks and the naming conventions.
+**A bypass flag is consent to skip the prompt, not consent to guess the argument** — see
+[never block on input without a terminal](docs/wiki/rules/interactivity/never-block-without-a-tty.md#how-to-comply),
+which carries that, the per-language terminal checks and the naming conventions.
 
 **[C]** `E1`, for the hang. **[—]** For the silent EOF answer — the rule page's own coverage gap says
 it: treating EOF or closed stdin as an answer is not detectable from termination alone. That is the
@@ -1082,56 +795,90 @@ more dangerous of the two failures and it is the one nothing sees from outside.
 ## Parsing
 
 The catalogue covers this ground densely and this page will not restate it — read
-[the index](docs/wiki/index.md) for the seven rules. What is worth saying here is the shape they all
-defend against, because it is one shape:
+[the index](docs/wiki/index.md) for the seven rules. What is worth saying here is the shape all seven
+defend against, because it is one shape — and, at the end of the section, a recommendation the
+catalogue does not carry at all:
 
 **A parser that accepts something it does not understand and runs anyway is the defect.** An unknown
 flag accepted while the verb runs; a positional silently swallowed; `--flag=value` split on
 whitespace so the value is dropped and the command runs with defaults; a `--` terminator that fails
 to protect what it is for. Every one is invisible at the point where documentation would be read,
 which is why documentation does not fix this class. All four are measured, repeatedly, in
-[the archaeology](docs/research/2026-08-15-defect-archaeology.md) — including `bounty close --help`,
-which closed the board.
+[the archaeology](docs/research/2026-08-15-defect-archaeology.md).
 
 One clause deserves highlighting because it is counter-intuitive: **never act on a guessed
 correction.** A parser that accepts `--frmat` silently produces no error, so there is no
 just-in-time slice of the schema, so there is nothing for the caller to correct from. Suggesting the
-correction is good; applying it is not. Real tools do apply it: Perl's `Getopt::Long` enables
-`auto_abbrev` by default, and PLINK resolves flag names by exact match, then prefix, then
-Damerau-Levenshtein distance 1 — _guessing and proceeding_, while looking to any checker reading
-exit codes and diagnostics exactly like a tool that rejected
+correction is good; applying it is not. Real tools do apply it — PLINK resolves flag names by exact
+match, then prefix, then
+Damerau-Levenshtein distance 1 — and a tool that guesses and proceeds looks, to any checker reading
+exit codes and diagnostics, exactly like a tool that rejected
 ([SURV-10](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)).
 
 **Counter-examples worth knowing before you adopt any of this wholesale.** "You can append `--help`
-to any invocation and get help" is false by design for a real population: `ffmpeg` applies options
-to the next file so _"order is important"_, ImageMagick's settings persist as they appear on the
-command line while operators apply immediately, `find`'s arguments are primaries in a boolean
-expression with precedence and there is no `--` role at all, `bazel` startup options must precede
-the command, and PLINK's `--help` _"causes everything before it on the command line to be ignored"_
+to any invocation and get help" is false by design for a real population: `ffmpeg` applies options to
+the next file so _"order is important"_, `find`'s arguments are primaries in a boolean expression
+with precedence and there is no `--` role at all, and PLINK's `--help` _"causes everything before it
+on the command line to be ignored"_
 ([SURV-11](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md)). If your grammar is
 order-dependent by design, say so in the declaration; the clause is not for you.
 
-Likewise, this page asserts **no flag spelling**. `sqlite3`, `openssl`, `ip`, GROMACS, BLAST+, PLINK
-and GDAL use single-dash long options; `dig +short`, `ps aux`, `tar cfv` and `dd if=/of=` are not
-even the same grammar. None of that falsifies anything above, and none of it is a defect.
+Likewise, this page asserts **no flag spelling**. `sqlite3`, `openssl` and GDAL use single-dash long options;
+`dig +short`, `ps aux` and `dd if=/of=` are not even the same grammar
+([the grammar survey](docs/reports/2026-08-23-triaging-the-argument-grammar-survey.md#warnings-that-do-not-apply-to-us)). None of that falsifies
+anything above, and none of it is a defect.
 
-**[C]** `A1`–`A3` and `A5`–`A7`, at the root only. The
-[owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md) measured both `A6` and `A7` as
-`unverified` on all eight targets — `A6` because a `bun` launcher swallowed the leading `--` before
-the target saw it, `A7` because its prose extractor found no closed value set to falsify. `A6`'s
-swallow is now compensated at the spawn, so it returns a real verdict on bun-launched targets; `A7`
-still carries its caveat, because its checker still finds no closed value set and has yet to resolve
-on that population. **[—]** `A4` — the silently swallowed positional,
-which is the second item in the shape above — at any depth: its checker declares no probe and
-returns `unverified` unconditionally
-([`unexpected-positionals.ts`](src/acc/kit/checkers/parsing/unexpected-positionals.ts)), because
-testing arity means sending extra positionals to a _real_ verb and running it. It becomes checkable
-in a sandbox, or on a surface an operator recorded by running a generated probe plan — not on
-discovery, and not on anything the tool says about itself. **[C?]** The rest
-of them one level down, which is the largest single block of coverage debt in the catalogue —
-blocked on the tool declaring that the subcommand exists, and, for every one of them whose probe
-would run the subcommand rather than ask it for help, blocked a second time on knowing that command
-is safe to run. `bounty close --help` closed the board.
+**[C]** `A1`–`A3` and `A5`–`A7`, at the root only. `A7` is the exception in practice: its prose
+extractor finds no closed value set to falsify on the population measured so far
+([owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md)), so it has yet to resolve there.
+**[—]** `A4` — the silently swallowed positional, the second item in the shape above — at any depth.
+Testing arity means sending extra positionals to a _real_ verb and running it, so it becomes
+checkable in a sandbox, or on a surface an operator recorded by running a generated probe plan; not
+on discovery, and not on anything the tool says about itself. **[C?]** The rest of them one level
+down, which is the largest single block of coverage debt in the catalogue — blocked on the tool
+declaring that the subcommand exists, and, for every one whose probe would run the subcommand rather
+than ask it for help, blocked a second time on knowing that command is safe to run.
+
+### A group node that refuses a flag should name its subcommands
+
+A **group node** is a command that exists to hold subcommands and has no flags of its own —
+`docker image`, `kubectl config`, `git remote`. Send it a flag and it refuses correctly, by name,
+and then has no valid set to offer. **Name the subcommands inline.** Pointing
+the caller at `<node> --help` is a legitimate design that this page would not choose.
+
+The reason is one sentence: **when a caller makes a mistake, return more information rather than
+less.** A rejection is the moment the tool knows most and the caller knows least, and it is the
+cheapest place in the interaction to close that gap. Three consequences follow, and the format boundary is
+the one that decides it for an agent-facing tool. The tool already holds the list — `docker` has
+just printed the word `Usage:` about that node and is not being asked to compute anything. An agent
+pays for _"go run `--help`"_ in a model round-trip, not a process spawn. And the rejection may be
+JSON while help is prose, so recovery crosses a format boundary for information the tool was
+already holding.
+
+**The bloat objection is the strongest case for the pointer, and the survey refutes it.** Six group
+nodes across five vendors, one sentinel flag each: `git remote`, `git stash` and `gh repo` name a
+set; `docker image`, `kubectl config` and `anthill comms` do not. `gh repo` prints **18**
+subcommands in a rejection and nobody considers that broken, while the two tools that print a
+pointer instead hold 12 and 15 (**measured in this tree** on `gh 2.98.0`, `Docker 29.2.0`
+and `kubectl v1.34.1` — the survey in [the group-command
+candidate](docs/reports/2026-08-26-the-group-command-candidate.md) reported 19 and 16, and both
+were one high).
+
+**This is a design choice, not a defect**, and the tier is what makes it one. Two of the five
+vendors — `docker` and `kubectl` — answer with a pointer to `--help`, which is a route forward and
+a defensible choice this page declines rather than condemns. Naming nothing at all is the third
+answer and it is not a design choice; it leaves a caller with nowhere to go. **No rule id has been
+minted for any of this and none should be cited** — the recommendation is what this page carries;
+the catalogue does not carry it.
+
+**[C?]** Checking it means sending a flag to a node that holds subcommands, which is sending a
+verb — and nothing in this project can select a verb to send without the target saying which of
+its commands are safe to reach. That is the blocker, and it is the only one: the observation
+itself is a parser error rather than an execution, so no sandbox is involved. **Minting a rule
+for it stays banked** with the question of what replaces the current probe-level vocabulary
+([the plan after the ladder](docs/plans/2026-08-26-the-plan-after-the-ladder.md)); the
+recommendation does not wait on that, because a recommendation costs no id, no denominator and no
+checker.
 
 ---
 
@@ -1147,26 +894,19 @@ below it, every one declaring `coverage: partial` over more than 90 named gaps
 ([the catalogue](docs/wiki/index.md)).
 
 **A checker existing is not the same as a check running, and two of the twenty-two do not run one.**
-`B3` and `A4` both declare `probes: []` and return `unverified` from every branch; their own
-`coverageEstablished` fields say so in as many words —
-[_"nothing at L0"_](src/acc/kit/checkers/streams/machine-output-parseable.ts) and
-[_"nothing because no probe is declared"_](src/acc/kit/checkers/parsing/unexpected-positionals.ts).
-A third, `B5`, has a real probe but is gated on `defaultOutput` and reported `unverified` on all
-eight targets of the [owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md). Read the number
-as **twenty-three rules, nineteen of which can return a verdict at all against an undeclared
-target** — and measured rather than reasoned, that run found **only eight rules that discriminated
-between its eight targets**.
+`B3` and `A4` declare no probe and return `unverified` from every branch, and say so in their own
+coverage fields. A third, `B5`, has a real probe but is gated on `defaultOutput` and reported `unverified` on all
+eight targets of the [owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md). Read the number as **twenty-three rules, nineteen of which
+can return a verdict at all against an undeclared target**; that run found **only eight rules that
+discriminated between its eight targets** (**measured in this tree**).
 
 What the ones that do run establish is real and narrow: an unknown flag
 exits non-zero, help succeeds and is deterministic, stdout carries only data, no ANSI reaches a
 pipe, identical invocations produce identical codes, nothing blocks with stdin closed, nothing
 crashes on an inert path.
 
-**Read the limits with the coverage.** Replayed against seven real fixed defects from the
-archaeology corpus, at the pre-fix and post-fix trees, the kit's hit rate was **1 in 7** — and for
-six of the seven, every rule returned exactly the same verdict before the fix as after it. The kit
-could not tell the defective tree from the repaired one on anything. The reason is
-structural, and it is this whole page's argument:
+**Read the limits with the coverage.** What the kit misses, it misses structurally, and the reason
+is this whole page's argument:
 
 > Every miss is a defect that only manifests when a verb runs, when a flag carries a value, when a
 > payload exceeds a pipe buffer, or when machine mode is selected — four conditions `L0` excludes by
@@ -1174,21 +914,10 @@ structural, and it is this whole page's argument:
 
 `L0` is the kit's name for the only probe depth that exists today: help paths, sentinel arguments
 and the bare invocation, sent to the root and nowhere below it. Every one of those four conditions
-sits outside it, and a declaration is what would move the boundary.
-
-**The ceiling, if every one of those conditions were reachable, is about 28%.** The denominator is
-the same 201 commits — the ones iterating on something already built rather than building it the
-first time — and the numerator is the 57 whose rater judged that a mechanical black-box check on argv, streams, exit codes or help output
-could in principle have caught them. **It is a judgement, not a measurement — none of the raters ran
-a checker** — and it is quoted with that caveat attached because a project arguing for evidence
-should not launder its own estimates. The same census puts the catalogue's reach today under 10%,
-and the distance between the two is almost entirely what a declaration would unlock.
-
-So roughly three quarters of that history is out of any external checker's reach by construction.
-Thirty-eight per cent of the 201 — the 77 counted at the top of this page — is capability that was
-never there, and a large slice of the remainder is semantic — a `0` that is a lie, a field whose absence is unreadable. **Both halves hold
-at once and neither cancels the other**: the kit's last four findings in that corpus were real, and
-one of them was a missing capability a rule actually caught.
+sits outside it, and a declaration is what would move the boundary. How much of one real iteration history a
+black-box check could reach — today, and at best if all four conditions were reachable — is measured
+in [the census](docs/research/2026-08-24-missing-capability-or-implementation-defect.md), and it is
+a claim about this project rather than guidance for yours.
 
 ## Checkable, and not built
 
@@ -1204,30 +933,31 @@ safely, which is a different kind of thing to be missing and belongs under a dif
 - **The declared self-description invocation actually runs and parses.** The document half is
   built — the kit reports a declaration that omits the verb it says emits it — and the running half
   is not.
-- **[—] Every declared command answers `--help` rather than "unknown command."** This row read
-  **[C?]** until this revision and the correction comes from this project's own corpus: checking it
-  means _running a subcommand_, and a subcommand's help path is not inert. In the archaeology
+- **[—] Every declared command answers `--help` rather than "unknown command."** Checking it means
+  _running a subcommand_, and a subcommand's help path is not inert: in the archaeology
   `bounty close --help` **closed the board**, `state --help` dumped it, and `tail --help` opened a
   stream that never exited
   ([defect archaeology §6.1](docs/research/2026-08-15-defect-archaeology.md)). So a declaration that
   the command exists does not make this checkable; what would is a real OS sandbox, or an operator
   running a generated probe plan and handing back what came out. Neither is something a declaration
-  can supply — and effects, which an earlier revision named here as a third route, is filed under
-  [nothing outside can check it](#nothing-outside-can-check-it) below — which is why the mark is
-  `[—]` and not `[C?]`. The kit already refuses the shape rather than guessing at it:
-  `classifyInertness` in [`src/acc/kit/inert.ts`](src/acc/kit/inert.ts) grants a `help-path`
-  classification only when _every_ argv token is a help or format token, so `mycli deploy --help`
-  does not classify and will not run. **The recommendation is unchanged**; only the claim about who
-  can verify it is.
+  can supply, which is why the mark is `[—]` and not `[C?]` — and effects is filed under
+  [nothing outside can check it](#nothing-outside-can-check-it) below. The kit refuses the shape
+  rather than guessing at it: a `help-path` classification is granted only when _every_ argv token
+  is a help or format token, so `mycli deploy --help` does not classify and will not run.
 - **Every declared value flag rejects a missing value.** A parser-error probe, sound at the root,
   and a declaration is genuinely all it needs.
-- **[—] Every declared boolean flag is accepted.** These two were one bullet until this revision,
-  and they split because only one half survives the same test as `--help` above. Rejecting a missing
-  value is a parser error, observable before anything runs; an _accepted_ flag is accepted **by
-  running the command**, and there is no observation of acceptance that is not an execution. So this
+- **[—] Every declared boolean flag is accepted.** Only one half of this survives the same test as
+  `--help` above. Rejecting a missing value is a parser error, observable before anything runs; an
+  _accepted_ flag is accepted **by running the command**, and there is no observation of acceptance
+  that is not an execution. So this
   half waits on a sandbox, or on an operator running a generated probe plan, not on a declaration of
   the flag.
 - **Every declared enforced value set rejects an out-of-set value.**
+- **A group node names its subcommands when it refuses a flag.** Blocked on `L1` and on nothing
+  else — the observation is a parser error, not an execution, so no sandbox is involved. The
+  recommendation, its survey and the blocker are in
+  [Parsing](#a-group-node-that-refuses-a-flag-should-name-its-subcommands); no rule id is minted
+  for it.
 - **The declared error-envelope fields carry what they say they carry.**
 - **The declared exit-code mapping holds** — provoke each kind, compare.
 - **The emission does not contradict the tool's own help.** This one is special: it is a
@@ -1246,8 +976,8 @@ Named rather than dressed up.
   every SKILL.md tells agents to pass on every verb is contractually global whatever the parser
   does ([Part 1 §2](#2-generate-it-from-what-implements-the-behaviour)), and no probe over argv,
   streams, exit codes or help output reads a document that ships beside the binary.
-- **Effects.** That a command performs no writes is unobservable from argv and streams alone, which
-  is why the drift trial reached runtime for four commands in twenty-five. A sandbox moves this into
+- **Effects.** That a command performs no writes is unobservable from argv and streams alone. A
+  sandbox moves this into
   the row above; nothing else does.
 - **Exit-code ownership.** You cannot show from outside that `ssh`'s `255` is its own and its `3` is
   the remote's.
@@ -1282,9 +1012,9 @@ is the clearest case — this page says so rather than filling the gap.
 
 **It will lag what it governs.** The one comparable artifact anyone here has measured is the
 house-style document inside one of the archaeology corpora
-([research](docs/research/2026-08-24-missing-capability-or-implementation-defect.md)): it is real, it works, it names `--stdin` and cursor-resume and snapshot/restore —
-and it does **not** name `start`, `restart`, `doctor`, `reap`, `roll`, `--version` or bounded
-catch-up, the exact set the next CLI in that repository had to discover alone. It grew nine commits
+([research](docs/research/2026-08-24-missing-capability-or-implementation-defect.md)): it is real, it works, and it names `--stdin` and cursor-resume — while
+saying nothing about `start`, `doctor` or `--version`, the set the next CLI in that repository had
+to discover alone. It grew nine commits
 against 151 CLI commits, lagging the surface it governs by an order of magnitude. Expect the same of
 this page, and prefer a check that fails to a paragraph that advises.
 
