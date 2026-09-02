@@ -45,12 +45,6 @@ export interface AllowlistEntry {
  */
 export const ALLOWLIST: AllowlistEntry[] = [
   {
-    file: "STANDARD.md",
-    version: "0.1.0",
-    reason:
-      "two preserved records: an adopter's re-run against v0.1.0 (a report that exists only as a channel message), and a measured stale-literal finding in a target",
-  },
-  {
     file: "docs/wiki/guides/how-to-fix-a-broken-install.md",
     version: "0.1.0",
     reason:
