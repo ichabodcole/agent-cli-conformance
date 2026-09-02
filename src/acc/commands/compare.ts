@@ -8,6 +8,7 @@ import {
   type Comparison,
   compareReports,
   type LabelledReport,
+  MalformedSurfaceError,
   type ProbeComparison,
   type SurfaceRow,
 } from "../kit/compare.ts";
@@ -313,7 +314,31 @@ export function compareCommand(reportPaths: string[], mode: OutputMode, startedA
     report: loadReport(p),
   }));
 
-  const comparison = compareReports(inputs);
+  // A MALFORMED STORED SURFACE IS THE SAME KIND OF FAULT `loadReport` ALREADY REPORTS, so it is
+  // classified in the same place and the same way. `loadReport` validates the two fields this
+  // command cannot work without; a `flags` field on a non-`enumerated` surface is a third thing a
+  // stored report can get wrong, caught deeper in only because that is where the shape is read.
+  // Where it is caught does not change whose mistake it is: the caller named a file, and editing
+  // that file is the repair. `usage` (exit 2), never `internal` (exit 1) — see `C2`.
+  let comparison: Comparison;
+  try {
+    comparison = compareReports(inputs);
+  } catch (err) {
+    if (err instanceof MalformedSurfaceError) {
+      const path = reportPaths[labels.indexOf(err.label)];
+      throw usageError(`${path ?? err.label}: ${err.message}`, {
+        hint: "Rewrite that report with `acc check <target> --json` — `flags` is present only on an `enumerated` surface, and this one carries it on another status.",
+        // Kebab-case, on the `not-json` / `not-a-report` precedent beside it: a wrapper telling
+        // "the artifact is corrupt" from "run acc check first" branches on `reason`, not on prose.
+        details: {
+          path: path ?? null,
+          label: err.label,
+          reason: "flags-on-non-enumerated-surface",
+        },
+      });
+    }
+    throw err;
+  }
 
   emit({
     mode,

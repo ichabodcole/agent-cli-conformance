@@ -360,15 +360,43 @@ export function compareReports(inputs: LabelledReport[]): Comparison {
 }
 
 /**
+ * A STORED INPUT REPORT WHOSE SURFACE BREAKS A CONTRACT THIS READER DEPENDS ON.
+ *
+ * A named class rather than a bare `Error`, on `RecordedSurfacesError`'s precedent and for its
+ * reason: the kit does not own the exit taxonomy, and a command layer that had to recognise this
+ * fault by matching its prose would misclassify it the first time the prose was reworded. `label`
+ * is the input the violation was found in, so a caller who passed six files learns which one.
+ */
+export class MalformedSurfaceError extends Error {
+  /** The `SurfaceRow` label — the caller-facing name of the report that carried it. */
+  readonly label: string;
+  constructor(label: string, message: string) {
+    super(message);
+    this.name = "MalformedSurfaceError";
+    this.label = label;
+  }
+}
+
+/**
  * `flags` MUST STAY ABSENT, NOT EMPTY — `Surface.flags`'s own contract, present only for
  * `enumerated`. A truthiness spread (`surface.flags ? … : {}`) lets an empty array through
  * unnoticed, because `[]` is truthy in JS; nothing today MINTS a non-`enumerated` surface with a
  * `flags` field, but that is an invariant held elsewhere, and this boundary is where a violation
  * would otherwise reach a published artifact silently. Asserted rather than assumed.
+ *
+ * WHOSE FAULT IT IS DECIDES THE CLASS, AND THE ANSWER IS NOT THE KIT'S. Every surface reaching
+ * here came out of a report FILE the caller named, parsed by `loadReport` and cast without a
+ * field-by-field validation. So a violation is a MALFORMED INPUT — "you invoked me wrong", which
+ * `C2` requires stay distinguishable from "I broke". Thrown as a bare `Error` this escaped
+ * unclassified and the boundary in `cli.ts` reported it as `internal`, exit 1: acc naming a defect
+ * in itself for a document someone else wrote and can edit. `loadReport` classifies every other
+ * malformed-artifact case as `usage` with a kebab-case `details.reason`, and `compareCommand` maps
+ * this one onto exactly that shape.
  */
-function assertFlagsOnlyOnEnumerated(surface: Surface): void {
+function assertFlagsOnlyOnEnumerated(label: string, surface: Surface): void {
   if (surface.status !== "enumerated" && "flags" in surface) {
-    throw new Error(
+    throw new MalformedSurfaceError(
+      label,
       `surface with status "${surface.status}" carries a "flags" field — flags must stay absent, not empty`,
     );
   }
@@ -377,7 +405,7 @@ function assertFlagsOnlyOnEnumerated(surface: Surface): void {
 /** Tolerant of a report written before the capture existed: `surface` is absent, not empty. */
 export function surfaceRow(label: string, surface: Surface | undefined): SurfaceRow {
   if (!surface) return { label, status: "not-recorded", probesRead: 0 };
-  assertFlagsOnlyOnEnumerated(surface);
+  assertFlagsOnlyOnEnumerated(label, surface);
   return {
     label,
     status: surface.status,

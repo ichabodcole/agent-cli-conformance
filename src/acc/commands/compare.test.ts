@@ -522,3 +522,35 @@ describe("a stored report whose surface status this build has never heard of", (
     expect(line).toContain("not a statement about the tool");
   }, 60_000);
 });
+
+// A MALFORMED STORED INPUT IS THE CALLER'S TO FIX, NOT A KIT FAULT. `assertFlagsOnlyOnEnumerated`
+// is right that a non-`enumerated` surface carrying `flags` must not pass silently — `flags` is
+// absent-never-empty by its own contract, and this boundary is where a violation would otherwise
+// reach a published artifact. What it got wrong is whose fault it named: the surface came out of a
+// report FILE, so `internal` (exit 1, "acc broke") blames the kit for a document the caller can
+// edit. `loadReport` classifies every other malformed-artifact case as `usage`, with a kebab-case
+// `details.reason` a wrapper branches on, and this is one of those.
+describe("a stored report carrying `flags` on a non-enumerated surface", () => {
+  test("is refused as usage, with a reason a wrapper can branch on", async () => {
+    const bad = join(dir, "flags-on-not-enumerated.json");
+    const envelope = JSON.parse(readFileSync(reports[TARGETS.seven] as string, "utf8"));
+    envelope.data.surface = {
+      status: "not-enumerated",
+      evidence: [],
+      probesRead: 7,
+      flags: ["--format"],
+    };
+    writeFileSync(bad, JSON.stringify(envelope));
+
+    const r = await run(["compare", bad, reports[TARGETS.anthill] as string, "--json"]);
+    // 2 is `ExitCode.Usage`. NOT 1 (`internal`): nothing in the kit malfunctioned.
+    expect(r.code).toBe(2);
+    const error = (JSON.parse(r.stderr) as { error: Record<string, unknown> }).error;
+    expect(error.kind).toBe("usage");
+    expect(error.exit_code).toBe(2);
+    expect((error.details as { reason?: string }).reason).toBe("flags-on-non-enumerated-surface");
+    // The path, because the caller passed several files and has to know which one to open.
+    expect((error.details as { path?: string }).path).toBe(bad);
+    expect(String(error.message)).toContain("flags must stay absent, not empty");
+  }, 60_000);
+});
