@@ -262,7 +262,59 @@ And what came back:
 - **`surface`** — whether the root enumerated its flags (`status`, plus the rejection evidence
   read to decide it); the comparison in
   [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md) starts
-  from this.
+  from this. `status` is one of four: `enumerated` (`flags` is present), `not-enumerated` (root
+  rejections were read and none named a set — a statement about the tool's error text, not about
+  what it accepts), `enumerated-none` (a root rejection named a set under a recognised key AND
+  that set was empty — the target answered rather than declined, and `emptySetKeys` names which
+  key held it), or `no-evidence` (nothing readable was recorded at all — a statement about the
+  run, not the tool). **`emptySetKeys` names the key an `enumerated-none` set came from**, so the
+  claim is checkable against the bytes rather than trusted; it carries no members because there
+  were none — the whole content of the observation is which key was empty. The same field, on the
+  same terms, appears on a recorded-surfaces reading (see
+  [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md)) and on
+  `acc compare`'s per-target `SurfaceRow`, described below.
+
+  **A report written before `enumerated-none` existed cannot be reread as one.** The rule this
+  kit otherwise holds — a thing missing from an older artifact renders as "not recorded by that
+  kit", never as an absent thing — is implemented everywhere by keying on a missing field, and this
+  change does not produce a missing field. It produces a present field, `surface.status`, holding
+  a value that has quietly changed meaning: an old report's `not-enumerated` was written back when
+  that was the only way to say "the target named no set", so it is indistinguishable, in the
+  stored JSON, from a target that in fact answered with an explicit empty set. **This cannot be
+  recomputed from an old artifact** — the streams that carried the bytes are dropped at write time
+  by design, so there is nothing left to re-read the distinction out of. There is deliberately no
+  `kitVersion` comparison to paper over this: a version check would be the first of its kind in
+  this code and would need its own contract for what counts as "before", and stating the limit
+  plainly is cheaper and matches how this project handles other things it cannot establish. Treat
+  `not-enumerated` on an artifact you did not just produce as "not-enumerated, or possibly a
+  stale `enumerated-none`" rather than as settled.
+
+  **The reverse direction is a known, unfixable limit of the older kit, not of this one.** A kit
+  built before `enumerated-none` existed reads `surface.status` with an `if`/`else` that recognises
+  only the statuses it shipped with; a status it does not recognise falls through to the branch for
+  `no-evidence` and prints "nothing readable was recorded" — a confident, wrong "we did not look"
+  for the one status that means "we looked and it said none". This is reachable today, because
+  `acc report` and `acc compare` both accept any report file, including one written by a newer
+  kit. It is not repairable from here: the fallthrough shipped in kits that have already gone out,
+  before this state existed for them to handle, and this kit's own exhaustive rendering (see
+  `surfaceSummary` in `src/acc/kit/surface.ts`) cannot reach back into a binary someone else is
+  still running.
+
+  **`acc compare` publishes the same claim about a fleet, not a single tool**, and has no JSON
+  guide of its own — this is that field's documented home. Its `Comparison.surfaces[]` array
+  carries one `SurfaceRow` per input report, each with `label`, `status`, and, only where they
+  apply, `flags`, `consistent`, `emptySetKeys` and `nonFlagCandidates` — carried across from that
+  input's own `Report.surface` on the same terms described above, so `enumerated-none` in a
+  comparison means exactly what it means in a single `check` report, key and all. `status` adds a
+  fifth value that a single report never carries: `not-recorded`, printed when that input report
+  predates the capture entirely — a fact about the FILE being compared, not about the target it
+  describes, and not to be confused with `no-evidence` (a fact about a run that tried and got
+  nothing). `nonFlagCandidates` is the near-miss clause carried the same way: a set the target
+  named that is not flag-shaped, so `not-enumerated` and `enumerated-none` can both explain what
+  else was seen rather than reading as silence. Both fields exist on `SurfaceRow` so that `compare`
+  renders the identical sentence `check` does, through the one `surfaceSummary` function, instead
+  of inventing a second wording for the same fact.
+
 - **`advertisedVerbs`** — the verb set the target names at its own root, against the first token
   of each recorded path. It is the one structure on this list a bullet cannot carry alone, so here
   it is from a run you can reproduce — the kit against its own CLI, which unlike the fixture above
