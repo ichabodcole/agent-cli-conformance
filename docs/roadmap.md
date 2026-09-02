@@ -662,6 +662,21 @@ yes; numbered rungs, no**. The evidence is attached to the question in
 this kit produces — into CI logs and READMEs. Whatever replaces it should be decided before it
 propagates further, which makes the replacement the gating step rather than the deletion.
 
+**What it would cost, measured rather than estimated.** The ratified plan sizes the first half of
+this — the typed `unverified` reason together with retiring `LEVEL_RANK` — at one source file and an
+afternoon. Against the tree it is five source files under the narrowest reading and roughly
+twenty-three under the reading the words support, and it is gated behind a taxonomy that does not
+close over its own corpus: the four-value enum proposed for the reason covers none of about a dozen
+existing sites whose reason is that the probe ran, the evidence is intact, and the rule's subject
+never occurred. Two things travel with it. `LEVEL_RANK`'s ordering buys nothing today — the
+expression is currently equivalent to `probeLevel === "L0"`, no `L2` checker exists, and no test
+distinguishes `<=` from `===`. And `applicable` would change meaning without changing shape, while
+[the report guide](wiki/guides/how-to-read-the-check-report-json.md) instructs consumers to derive
+it the old way, so nothing warns.
+
+**Blocked on** settling the reason taxonomy against every reason the code actually produces, which
+is the same decision as the replacement string above rather than a second one.
+
 ## Three findings from reading `STANDARD.md` against the wiki
 
 **What it is.** The open dispositions of

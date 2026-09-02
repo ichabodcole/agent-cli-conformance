@@ -8,8 +8,8 @@ description:
   tool said it accepts nothing here" from "the tool named no set", which it currently reports as
   the negation of what the target said. Blocks the artifacts-alone trial, because an adopter who
   follows this project's own flag-scoping guidance produces exactly the shape the kit misreads.
-  Carries the blast-radius analysis, the second-order effects, and a demotion of item 2a to a
-  design pass on evidence that its ratified sizing is wrong.
+  Carries the blast-radius analysis and the second-order effects. Scoped to the enumeration state
+  alone: the ratified item's other halves are excluded and say why.
 tags: [declaration, evidence, conformance, adoption, consumer-signal]
 ---
 
@@ -29,9 +29,9 @@ empty answer is a real enumeration of zero flags, so a flag the declaration name
 becomes a `declared-not-accepted` finding — the change **generates** findings where today it
 suppresses them, which is why it needs a new state rather than the removal of a guard.
 
-**Spec:** [the plan after the ladder](./2026-08-26-the-plan-after-the-ladder.md) § 3 item 3, which
-pairs this with the never-pass-on-partial lint. **Only the enumeration half is in scope here**; the
-lint is a separate guard and is not a precondition for this.
+**Spec:** [the plan after the ladder](./2026-08-26-the-plan-after-the-ladder.md) § 3 item 3.
+**Scope is the enumeration state alone** — Appendix A names what the ratified item carries that this
+plan excludes, and why.
 
 **Why now, rather than after the trial.** The artifacts-alone trial
 ([the trial protocol](./2026-08-26-the-trial-protocol-pinned-before-it-runs.md)) will include the
@@ -329,37 +329,19 @@ fabricated honestly. It becomes this change's end-to-end proof.
 
 ---
 
-## Appendix A: item 2a is demoted to a design pass, on evidence
+## Appendix A: what this plan deliberately excludes
 
-[The plan after the ladder](./2026-08-26-the-plan-after-the-ladder.md) sizes item 2a as _"the typed
-`unverified` reason and the `LEVEL_RANK` retirement — one source file and three documents, an
-afternoon"_. **Measured against the tree, that sizing does not hold, and 2a should not be built
-alongside this plan.**
+**Item 2a is not in scope and is not scheduled.** The ratified plan pairs the enumeration fix with
+the typed `unverified` reason and the `LEVEL_RANK` retirement, sized there as an afternoon. Measured
+against the tree that sizing does not hold, and the work is gated behind a taxonomy decision that
+has not been made — the detail, and the numbers behind it, are recorded at
+[the ladder, and what replaces `L0` in the verdict line](../roadmap.md#the-ladder-and-what-replaces-l0-in-the-verdict-line).
 
-- **The code half is understated by 5× to 20×.** The minimal reading is 5 source files and 2 test
-  files. The reading the words support — a typed reason on every `unverified` finding — is roughly
-  23 source files and 40 call sites across 21 checkers.
-- **It is gated behind an unmade design decision.** The bounds report proposes a four-value enum.
-  Ten distinct reasons for `unverified` exist in the code today, and roughly a dozen sites fit none
-  of the four: the class where the probe ran, the evidence is intact, and the rule's subject never
-  occurred. **The taxonomy does not close over its own corpus**, and settling it is the real work.
-- **`LEVEL_RANK`'s ordering buys nothing today.** At HEAD the expression is exactly
-  `probeLevel === "L0"`: no `L2` checker exists, only two checkers declare `L1`, and the only
-  production caller passes the literal `"L0"`. No test asserts that an `L0` rule stays applicable at
-  an `L1` run — the one assertion that would distinguish `<=` from `===`.
-- **`applicable` would change meaning silently** — same name, same type, different derivation — and
-  the JSON report guide currently **instructs consumers to derive it the old way**. Not a schema
-  break, so nothing warns.
-- **A lint's warrant dies and the lint survives it.** `docs/wiki/lint.ts` justifies binding page
-  `probe_level` to checker `probeLevel` on precisely the behaviour 2a deletes. Afterwards the lint
-  still passes while its stated reason is false.
-- **`level` becomes write-only while still feeding the verdict line** — the most-copied string this
-  kit produces. `docs/roadmap.md` already names the replacement string as the gating decision rather
-  than a follow-on.
+Nothing in this plan waits on that decision, and nothing in it makes that decision cheaper or more
+expensive. They were adjacent in the build order rather than dependent.
 
-**Recommendation:** 2a's next artifact is a decision page settling the unverified-reason taxonomy
-against all ten reasons found in the code, taken together with the verdict-line replacement, not an
-implementation task. It is independent of this plan and nothing here waits on it.
+**The never-pass-on-partial lint** is the other half of the ratified item and is also excluded. It
+is a separate guard over a different invariant; this plan neither implements nor blocks it.
 
 ## Appendix B: what the blast-radius analysis found
 
