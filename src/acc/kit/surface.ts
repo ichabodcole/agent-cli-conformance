@@ -67,19 +67,29 @@ export type SurfaceStatus =
   | "enumerated"
   /**
    * Root-level rejections were read and none named a set of flags. A STATEMENT ABOUT THE TOOL'S
-   * ROOT ERROR TEXT, and not about what it accepts: whether the tool has flags is exactly what this does not
-   * settle. A tool with flags it never lists and a tool with none that stays quiet land here alike,
-   * and nothing in the condition that mints this — rejections read, no flag list, no recognised key
-   * left empty — can tell them apart. It says nothing about a subcommand either: a verb-first CLI
-   * that enumerates one level down lands here too, which is why every rendered sentence names the
-   * scope.
+   * ROOT ERROR TEXT, and not about what it accepts: whether the tool has flags is exactly what
+   * this does not settle. A tool with flags it never lists and a tool with none that stays quiet
+   * land here alike, and nothing in the condition that mints this can tell them apart — rejections
+   * read, no flag list, and no recognised key left empty WHOSE EMPTINESS SETTLES ANYTHING WHERE
+   * THE CALLER IS STANDING. That last clause is a real one and not a hedge: at the root a rejection
+   * carrying `choices: []` does leave a recognised key empty and still lands here, because
+   * `ROOT_AMBIGUOUS_WHEN_EMPTY` excludes it — an empty `choices` at the root is as likely to be a
+   * tool announcing no SUBCOMMANDS. See the filter in `surfaceFrom` and the two constants beside
+   * `captureSurface` before reading this status as "nothing was empty".
+   *
+   * It says nothing about a subcommand either: a verb-first CLI that enumerates one level down
+   * lands here too, which is why every rendered sentence names the scope.
    */
   | "not-enumerated"
   /**
-   * A root-level rejection named a set under a key this reads AND THAT SET WAS EMPTY. The target
-   * answered the question rather than declining it, which is the whole difference from
-   * `not-enumerated`: that status says no rejection named a set at all, and one here did. Recording
-   * it as the other publishes a sentence — `none named a set of flags` — that the target's own
+   * A root-level rejection named a set under a key this reads AND THAT SET WAS EMPTY — one whose
+   * emptiness is not excluded where the caller is standing. The target answered the question
+   * rather than declining it, which is the whole difference from `not-enumerated`: that status
+   * says no rejection named a set OF FLAGS, and the rejection here named one — empty, but named
+   * under a key that can mean nothing else. (It is NOT "named no set at all" — `not-enumerated`
+   * renders a near-miss clause for a set the target did name but whose members are not flags, and
+   * an empty `choices` at the root lands there too.) Recording
+   * this as that one publishes a sentence — `none named a set of flags` — that the target's own
    * bytes refute. `emptySetKeys` names the key, so the claim can be checked against those bytes
    * rather than trusted.
    *
@@ -185,10 +195,10 @@ export interface Surface {
   evidence: SurfaceEvidence[];
   /**
    * How many recorded rejections were readable, which is what makes `not-enumerated` AND
-   * `enumerated-none` measurements rather than assumptions: "4 rejections read, none named a set of
-   * flags" and "4 rejections read, and the set the target named held nothing" are both claims with a
-   * denominator. Undenominated, either one degrades into a bare assertion about the tool — the
-   * one thing this capture may never make.
+   * `enumerated-none` measurements rather than assumptions: "4 rejections read, none named a set
+   * of flags" and "4 rejections read, and the set the target named held nothing" are both claims
+   * with a denominator. Undenominated, either one degrades into a bare assertion about the tool —
+   * the one thing this capture may never make.
    */
   probesRead: number;
   /**

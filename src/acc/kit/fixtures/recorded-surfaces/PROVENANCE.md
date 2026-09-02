@@ -132,7 +132,7 @@ third census of a second adopter's tool with nothing changed but the record sele
 | Captured against  | this repository's batch spec, unchanged at `formatVersion: "0"`                   |
 | sha256            | `73e40c606497d22a7e5cb4fba8b0efbcbae726aa3d66b425c8ffbb5eeecb1577`                |
 
-**What it is for.** `magpie`'s author reports that `sessions` and `help` accept no flags, by
+**What it is for.** The adopter reports that `magpie`'s `sessions` and `help` accept no flags, by
 design. Asked with one sentinel flag, each answered with an explicit, present, empty enumeration:
 
 ```json
@@ -147,8 +147,10 @@ said. The clause responsible was `value.length > 0` in `keyedSets`
 ([`surface.ts`](../../surface.ts)), which discarded the empty array before anything could read it.
 
 So the kit did not merely fail to record the answer: the sentence it printed instead said that no
-rejection named a set of flags, about a rejection that demonstrably named one. That is a claim about
-these bytes, and these bytes refute it. The type separated "we did not look" (`no-evidence`) from
+rejection named a set of flags, about a rejection that demonstrably named one. (The render quoted
+above is the one this capture met; `of flags` was added to it the following day, which is why the
+quote and this paraphrase differ by two words. The claim is the same either way.) That is a claim
+about these bytes, and these bytes refute it. The type separated "we did not look" (`no-evidence`) from
 "we looked and found nothing" (`not-enumerated`) — two of the three states
 [Part 3 of `STANDARD.md`](../../../../../STANDARD.md) requires of any field — and had no way to say
 **"we looked and it said none."**
