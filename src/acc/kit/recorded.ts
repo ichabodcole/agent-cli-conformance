@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import type { PathSurface } from "./declaration.ts";
 import {
   isRejectionShape,
+  NO_AMBIGUOUS_KEYS,
   readStream,
   type Surface,
   type SurfaceEvidence,
@@ -403,6 +404,20 @@ export interface RecordedSurfacesReport {
     status: SurfaceStatus;
     /** Keys of any non-flag list seen at this path — see `Surface.nonFlagCandidates`. */
     nonFlagKeys: string[];
+    /**
+     * The recognised keys this path named and left EMPTY — `Surface.emptySetKeys`, carried
+     * across, and absent on every status but `enumerated-none` exactly as it is there.
+     *
+     * PUBLISHED BECAUSE THE CLAIM RESTS ON IT. "Stated an empty set OF FLAGS" is a reading of the
+     * key's NAME and of nothing else: an empty array has no members for the flag-shape test to
+     * inspect, so the noun in the key is the whole of the evidence (see `SurfaceStatus`'s
+     * `enumerated-none`). A consumer that cannot see the key cannot check that reading or
+     * disagree with it — and until this field existed, a recorded path put the key only inside
+     * `summary`, which is prose and the one field a script cannot check anything against. The
+     * root surface published it from the start; a recorded path is the population the state was
+     * built for, and it was the half without it.
+     */
+    emptySetKeys?: string[];
     summary: string;
   }>;
   recordedBy: string[];
@@ -494,7 +509,13 @@ export function readRecordedBatch(batch: RecordedBatch): RecordedReading {
     // BUILT BY THE SAME FUNCTION THE KIT'S OWN CAPTURE USES. This was a second copy of that
     // construction, and the copy is why the non-flag-list field first landed on the kit's probes
     // and not on recorded batches — which is to say, not on the 49-path batch that prompted it.
-    const surface: Surface = surfaceFrom(evidence, read, streamTexts);
+    //
+    // NO KEY'S EMPTINESS IS CONTESTED AT A RECORDED PATH. `advertisedVerbs` is derived in
+    // `captureSurface` and never here, so nothing below the root reads `choices` as a set of
+    // verbs — a verb-first CLI answering an unknown flag at `sessions` with `"choices": []` is
+    // saying what `sessions` accepts. The constant carries the reasoning; passing it is not
+    // optional, so this line is where a reader learns which position the batch is read from.
+    const surface: Surface = surfaceFrom(evidence, read, streamTexts, NO_AMBIGUOUS_KEYS);
     surfaces.push({
       path,
       surface,

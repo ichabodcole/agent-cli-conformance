@@ -176,3 +176,167 @@ describe("the three refusals branch in the envelope, not only in prose", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 });
+
+// A REPORT WRITTEN BY A NEWER KIT, which `how-to-read-the-check-report-json.md` names as a live
+// case: `acc report` and `acc compare` accept any report file, and `surface.status` arrives from
+// `JSON.parse` with nothing on the path validating it against this build's `SurfaceStatus`. The
+// compile-time exhaustiveness in `surfaceSummary` and the `Record<SurfaceStatus, string>` keying
+// of `VERDICT_WORD` are both claims about the TYPE; neither is a claim about a file on disk.
+//
+// The rule this kit holds for a field an older artifact lacks — render it as "not recorded by
+// that kit", never as an absent or garbled thing — is the same rule here, reached from the other
+// direction: a status this build cannot read is not a status it may print raw or drop.
+describe("a status from a kit this build has never heard of", () => {
+  const doctored = (mutate: (data: Record<string, unknown>) => void): string => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-future-"));
+    const envelope = structuredClone(brokenReport());
+    mutate(envelope.data);
+    const file = join(dir, "future.json");
+    writeFileSync(file, JSON.stringify(envelope));
+    return file;
+  };
+
+  test("the surface sentence names the unreadable status; it never prints the bare token alone", () => {
+    const file = doctored((data) => {
+      data.surface = { status: "enumerated-partial", evidence: [], probesRead: 7 };
+    });
+    const r = run(["report", file, "--format", "text"]);
+    expect(r.code).toBe(9);
+    const line = r.stdout
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => l.includes("enumerated-partial"));
+    // Present at all — a status the reader cannot interpret must still reach the reader.
+    expect(line).toBeDefined();
+    // ...and not AS the sentence. `enumerated-partial` alone is what the `never` fallthrough
+    // returned: an enum token with no scope, no qualifier and no statement of the limit.
+    expect(line).not.toBe("enumerated-partial");
+    expect(line).toContain("not recorded by this kit");
+    // The same qualifier every other surface sentence carries: this is a limit of the reader.
+    expect(line).toContain("not a statement about the tool");
+    rmSync(dirname(file), { recursive: true, force: true });
+  });
+
+  test("the census rollup prints a word for it, never `undefined`", () => {
+    // FOLD_AT is 4, so five readings at one status is the shape that reaches `VERDICT_WORD`.
+    const file = doctored((data) => {
+      data.recordedSurfaces = {
+        source: "/tmp/batch.json",
+        records: 5,
+        readings: Array.from({ length: 5 }, (_, i) => ({
+          path: [`p${i}`],
+          status: "enumerated-partial",
+          nonFlagKeys: [],
+          summary: `something at p${i}`,
+        })),
+        recordedBy: ["a-newer-kit"],
+        identity: null,
+      };
+    });
+    const r = run(["report", file, "--format", "text"]);
+    const line = r.stdout
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => l.startsWith("5 paths:"));
+    expect(line).toBeDefined();
+    expect(line).not.toContain("undefined");
+    expect(line).toContain("not recorded by this kit");
+    expect(line).toContain("enumerated-partial");
+    rmSync(dirname(file), { recursive: true, force: true });
+  });
+});
+
+// THE SECOND PUBLISHING BOUNDARY. `acc compare` refuses a stored surface carrying `flags` on a
+// non-`enumerated` status, because `flags` is absent-never-empty by its own contract and a
+// violation reaching a rendered comparison would pass silently. `acc report` republishes the same
+// artifact — `--json` re-emits the stored payload verbatim, which is the most literal way a
+// malformed surface reaches a published document — and it did so at exit 0. Same input, same
+// fault, same classification: `usage`, not `internal`, because the surface came out of a report
+// FILE the caller named and can edit.
+describe("acc report — a stored report carrying `flags` on a non-enumerated surface", () => {
+  test("is refused as usage, with the same reason `acc compare` gives", () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-malformed-"));
+    const file = join(dir, "flags-on-not-enumerated.json");
+    const envelope = structuredClone(brokenReport());
+    envelope.data.surface = {
+      status: "not-enumerated",
+      evidence: [],
+      probesRead: 7,
+      flags: ["--format"],
+    };
+    writeFileSync(file, JSON.stringify(envelope));
+
+    const r = run(["report", file, "--json"]);
+    // 2 is `ExitCode.Usage`. NOT 1 (`internal`), and not 9 — the stored verdict is never reached.
+    expect(r.code).toBe(2);
+    const error = (JSON.parse(r.stderr) as { error: Record<string, unknown> }).error;
+    expect(error.kind).toBe("usage");
+    expect(error.exit_code).toBe(2);
+    expect((error.details as { reason?: string }).reason).toBe("flags-on-non-enumerated-surface");
+    expect((error.details as { path?: string }).path).toBe(file);
+    expect(String(error.message)).toContain("flags must stay absent, not empty");
+    // The malformed payload must not have been re-emitted on the way to the refusal.
+    expect(r.stdout).not.toContain("--format");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test("the text rendering refuses it too — the surface line is never printed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-malformed-"));
+    const file = join(dir, "flags-on-not-enumerated.json");
+    const envelope = structuredClone(brokenReport());
+    envelope.data.surface = {
+      status: "not-enumerated",
+      evidence: [],
+      probesRead: 7,
+      flags: ["--format"],
+    };
+    writeFileSync(file, JSON.stringify(envelope));
+
+    const r = run(["report", file, "--format", "text"]);
+    expect(r.code).toBe(2);
+    expect(r.stdout).not.toContain("did not enumerate at the root");
+    expect(r.stderr).toContain("flags must stay absent, not empty");
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+// THE OTHER HALF OF THE SAME CONTRACT. `SurfaceStatus` says of `enumerated`: "`flags` is present."
+// The guard held one direction only, so a stored report claiming `enumerated` with no `flags`
+// rendered `enumerated 0 flags at the root: ` at exit 0 — the kit publishing "this tool accepts no
+// flags", which is the exact claim `enumerated-none` exists to keep apart from `enumerated`, and
+// the one inference this capture may never make. Unreachable from a live check; reachable from the
+// stored and foreign reports this boundary was added for, which is the population it guards.
+describe("acc report — a stored report claiming `enumerated` with no `flags`", () => {
+  test("is refused as usage, with a reason of its own", () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-malformed-"));
+    const file = join(dir, "enumerated-without-flags.json");
+    const envelope = structuredClone(brokenReport());
+    envelope.data.surface = { status: "enumerated", evidence: [], probesRead: 7 };
+    writeFileSync(file, JSON.stringify(envelope));
+
+    const r = run(["report", file, "--json"]);
+    // 2 is `ExitCode.Usage` — the artifact is the caller's, exactly as in the other direction.
+    expect(r.code).toBe(2);
+    const error = (JSON.parse(r.stderr) as { error: Record<string, unknown> }).error;
+    expect(error.kind).toBe("usage");
+    expect(error.exit_code).toBe(2);
+    // A DIFFERENT reason from the other direction: a wrapper branching on it is told which half
+    // of the contract broke, and they are different edits to the file.
+    expect((error.details as { reason?: string }).reason).toBe("enumerated-surface-without-flags");
+    expect((error.details as { path?: string }).path).toBe(file);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test("the text rendering refuses it too — `enumerated 0 flags` is never printed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-malformed-"));
+    const file = join(dir, "enumerated-without-flags.json");
+    const envelope = structuredClone(brokenReport());
+    envelope.data.surface = { status: "enumerated", evidence: [], probesRead: 7 };
+    writeFileSync(file, JSON.stringify(envelope));
+
+    const r = run(["report", file, "--format", "text"]);
+    expect(r.code).toBe(2);
+    expect(r.stdout).not.toContain("enumerated 0 flags at the root");
+    rmSync(dir, { recursive: true, force: true });
+  });
+});

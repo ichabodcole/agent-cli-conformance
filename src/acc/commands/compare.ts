@@ -1,13 +1,14 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { emit, type OutputMode, useColor } from "../envelope.ts";
-import { notFoundError, usageError } from "../errors.ts";
+import { type AccError, notFoundError, usageError } from "../errors.ts";
 import {
   argvFamily,
   argvLabel,
   type Comparison,
   compareReports,
   type LabelledReport,
+  MalformedSurfaceError,
   type ProbeComparison,
   type SurfaceRow,
 } from "../kit/compare.ts";
@@ -89,6 +90,42 @@ export function loadReport(path: string): Report {
 }
 
 /**
+ * ONE CLASSIFICATION FOR A MALFORMED STORED SURFACE, SHARED BY THE TWO COMMANDS THAT READ ONE.
+ *
+ * A malformed stored surface is the same kind of fault `loadReport` already reports, so it is
+ * classified the same way: `loadReport` validates the two fields a reader cannot work without, and
+ * a `flags` field on a non-`enumerated` surface is a third thing a stored report can get wrong,
+ * caught deeper in only because that is where the shape is read. Where it is caught does not change
+ * whose mistake it is — the caller named a file, and editing that file is the repair. `usage`
+ * (exit 2), never `internal` (exit 1) — see `C2`.
+ *
+ * EXPORTED BECAUSE THE FAULT HAS TWO DOORS. `acc compare` refuses such a report and `acc report`
+ * must refuse the same bytes, or the artifact is turned away by one command and republished by the
+ * other. A second copy of this envelope would be a rule with two homes; the next rewording would
+ * land in one of them.
+ *
+ * `path` is nullable because the label-to-path lookup can miss; `acc report` reads exactly one
+ * file and always has it.
+ */
+export function malformedSurfaceUsageError(
+  err: MalformedSurfaceError,
+  path: string | null,
+): AccError {
+  return usageError(`${path ?? err.label}: ${err.message}`, {
+    hint: "Rewrite that report with `acc check <target> --json` — `flags` is present on an `enumerated` surface and on no other, and this one breaks that in one direction or the other.",
+    // Kebab-case, on the `not-json` / `not-a-report` precedent beside it: a wrapper telling
+    // "the artifact is corrupt" from "run acc check first" branches on `reason`, not on prose.
+    // Carried from the throw rather than fixed here: the two directions of the contract are two
+    // different edits to the file, and `MalformedSurfaceError` is what knows which one broke.
+    details: {
+      path,
+      label: err.label,
+      reason: err.reason,
+    },
+  });
+}
+
+/**
  * The name a reader sees for each report.
  *
  * The FILE's basename rather than the target's, because the file is what the caller typed and
@@ -139,10 +176,12 @@ function rowLabel(probe: ProbeComparison, runs: number): string {
 
 /**
  * A `SurfaceRow` back in the shape `surfaceSummary` reads, so `check` and `compare` render the
- * capture through ONE function. The `not-enumerated` sentence is the one this whole capture exists
- * to get right, and two copies of it are two chances to get it wrong in one place only.
+ * capture through ONE function. The `not-enumerated` and `enumerated-none` sentences are the ones
+ * this whole capture exists to keep apart — a silence attributed to the read against an emptiness
+ * attributed to the target — and two copies of either are two chances to get it wrong in one place
+ * only.
  */
-function rowSurface(row: SurfaceRow): Surface | undefined {
+export function rowSurface(row: SurfaceRow): Surface | undefined {
   if (row.status === "not-recorded") return undefined;
   return {
     status: row.status,
@@ -150,6 +189,14 @@ function rowSurface(row: SurfaceRow): Surface | undefined {
     ...(row.consistent === undefined ? {} : { consistent: row.consistent }),
     evidence: [],
     probesRead: row.probesRead,
+    // CARRIED, NOT DROPPED: `surfaceSummary` reads these for `enumerated-none` (`emptySetKeys`)
+    // and for the near-miss clause both `not-enumerated` and `enumerated-none` render
+    // (`nonFlagCandidates`). `SurfaceRow` never carries `evidence` above and no clause of
+    // `surfaceSummary` reads it, but a field the sentence DOES read has to travel here too, or
+    // `check` and `compare` print two different sentences for one status — the thing the comment
+    // above this function forbids.
+    ...(row.emptySetKeys ? { emptySetKeys: row.emptySetKeys } : {}),
+    ...(row.nonFlagCandidates ? { nonFlagCandidates: row.nonFlagCandidates } : {}),
   };
 }
 
@@ -303,7 +350,21 @@ export function compareCommand(reportPaths: string[], mode: OutputMode, startedA
     report: loadReport(p),
   }));
 
-  const comparison = compareReports(inputs);
+  // A MALFORMED STORED SURFACE IS THE SAME KIND OF FAULT `loadReport` ALREADY REPORTS, so it is
+  // classified in the same place and the same way. `loadReport` validates the two fields this
+  // command cannot work without; a `flags` field on a non-`enumerated` surface is a third thing a
+  // stored report can get wrong, caught deeper in only because that is where the shape is read.
+  // Where it is caught does not change whose mistake it is: the caller named a file, and editing
+  // that file is the repair. `usage` (exit 2), never `internal` (exit 1) — see `C2`.
+  let comparison: Comparison;
+  try {
+    comparison = compareReports(inputs);
+  } catch (err) {
+    if (err instanceof MalformedSurfaceError) {
+      throw malformedSurfaceUsageError(err, reportPaths[labels.indexOf(err.label)] ?? null);
+    }
+    throw err;
+  }
 
   emit({
     mode,

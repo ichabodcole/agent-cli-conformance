@@ -16,10 +16,11 @@
 //   `choices`    — a closed set the target really is declaring, of SUBCOMMANDS. `acc`'s own
 //                  envelope emits exactly this on an unknown flag. Refused on its members.
 //   `flags`      — the caller's own input, echoed. A capture that trusted an unqualified key would
-//                  report the sentinel we just sent as a flag this tool accepts.
-//   `validFlags` — the right key, and empty. Nothing is being declared; an empty array is as
-//                  likely a serializer that dropped the contents as a tool with no flags, and
-//                  "enumerated zero flags" is the one output this whole capture exists to avoid.
+//                  report the sentinel we just sent as a flag this tool accepts. "Enumerated zero
+//                  flags" is the one output this whole capture exists to avoid.
+//
+// The fifth trap, `validFlags: []` — the right key, empty — has its own single-trap fixture,
+// `enumerates-nothing-explicitly.ts`.
 const args = process.argv.slice(2);
 
 if (args.includes("--help")) {
@@ -38,7 +39,6 @@ if (unknown) {
         hint: "valid flags: see the manual",
         choices: ["list", "sync"],
         flags: [unknown],
-        validFlags: [],
       },
     })}\n`,
   );

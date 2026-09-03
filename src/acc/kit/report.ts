@@ -1125,6 +1125,13 @@ export function buildReport(
               // the one thing this census's sentences have done repeatedly.
               status: p.surface.status,
               nonFlagKeys: (p.surface.nonFlagCandidates ?? []).map((c) => c.key),
+              // ABSENT, NOT EMPTY, on the field's own terms upstream: `Surface.emptySetKeys` is
+              // present only where a recognised key was named and held nothing, and an empty
+              // array here would say "a set was named and it had no keys", which is not a thing
+              // that happens. Carried across rather than left to `summary`, because the claim
+              // this status publishes rests on the key's name and a prose sentence is the one
+              // field a machine consumer cannot check it against.
+              ...(p.surface.emptySetKeys ? { emptySetKeys: [...p.surface.emptySetKeys] } : {}),
               summary: recordedPathSummary(p),
             })),
             recordedBy: recorded.reading.recordedBy,

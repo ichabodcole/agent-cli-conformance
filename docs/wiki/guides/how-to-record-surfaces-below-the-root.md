@@ -107,9 +107,24 @@ for.** The root is then not compared at all — there is nothing to compare it a
 reported as a limit rather than as a path:
 
 ```
-17 of 17 declared command paths compared; 289 disagreements (modelled declaration)
-NOT COMPARED: (root) — did not enumerate at the root; 5 rejections read, none named a set
+3 of 4 declared command paths compared; 60 disagreements (modelled declaration)
+NOT COMPARED: (root) — did not enumerate at the root; 7 rejections read, none named a set of flags (NOT a tool with no flags) [probed-by-kit]
 ```
+
+Your three recorded paths compared; the fourth path the declaration names is the root, and the kit
+probed it and got no set back.
+
+**A root that names an empty set is not this case.** `"validFlags": []` is an answer rather than a
+silence, so the root is compared like any other path and gets no `NOT COMPARED` line. Against an
+empty accepted set every flag your declaration marks `valid` there is reported instead:
+
+```
+1 of 4 declared command paths compared; 1 disagreement (modelled declaration)
+NOT COMPARED: state, claim, list — the kit probes the root only, so nothing reached this path
+declared-not-accepted  --help at (root) [probed-by-kit]
+```
+
+That run passed no batch, which is why only the root of the declaration's four paths compared.
 
 **A recorded path is a path you assert exists. Nothing in a batch establishes that it does.**
 
@@ -380,11 +395,28 @@ Three things to check, in this order:
 1. **The path count moved.** `2 of 3 declared command paths compared` — before the batch it was
    `1 of 3`, because the root is all the kit reaches. If it did not move, no record was read.
 2. **Every path you recorded appears with a `[recorded-by-caller]` label.** A path you recorded that
-   is still `NOT COMPARED` was refused, and the line says which of the three argv rules it missed or
-   which `completeness` value excluded it. Those are different fixes: one is a recapture with a
-   different argv, the other a recapture without the `head`. **On a generated batch neither fix is
-   yours** — the harness satisfies all three rules by construction and derives `completeness`, so a
-   refusal there is a defect in the generator and worth reporting as one.
+   is still `NOT COMPARED` gets its reason on the line.
+
+   - `— the caller supplied recorded surfaces and recorded nothing at this path`, with **no label**:
+     nothing in the batch claims that path. The fix is a record for it. A record that breaks one of
+     the three argv rules never lands here; it drops that one path onto the `NOT COMPARED` list,
+     with the rule it missed named on the line.
+   - `— nothing readable was recorded at <path> …`, ending
+     `the caller recorded a truncated capture at this path, so it was not read`: the record was read
+     and excluded on its `completeness`. The fix is a recapture without the `head`.
+   - `— did not enumerate at <path>; N rejections read, none named a set of flags …`: the record was
+     read in full and the rejection you captured named no set. **Nothing in the batch is wrong**;
+     this is the enumeration status, and the fix is in the tool's rejection rather than in your
+     recording — see `A3`.
+
+   **On a generated batch the first two fixes are not yours** — the harness satisfies all three argv
+   rules by construction and derives `completeness`, so a refusal there is a defect in the generator
+   and worth reporting as one.
+
+   **A rejection that named an EMPTY set is not on this list.** `"choices": []` at a recorded path is
+   the target answering, so the path is compared and reported like any other — see the reading fields
+   below.
+
 3. **`conformant`, the exit code and the rule table did not change.** Run once with the flag and
    once without and compare those three. If any of them moved, that is a defect in the kit, not in
    your batch.
@@ -408,12 +440,40 @@ Three things to check, in this order:
    `F2 --version first byte in 15ms (runs: 15, 15, 16ms)` against `(runs: 16, 15, 15ms)` is
    jitter. A mechanical diff of the two reports will flag it; ignore that row.
 
-When the whole batch is refused, the run says so and continues with no recorded surfaces — the
-message names the first thing it could not understand, and a `formatVersion` complaint always comes
+When the whole batch is refused, the run exits 2 and writes nothing to stdout — the message names
+the first thing it could not understand, and a `formatVersion` complaint always comes
 before a key complaint, so fix the version first and re-run rather than hunting keys.
 
 `acc check <target> --json` carries the same material under `.data.recordedSurfaces`, with
 `.data.declaration.paths[].surfaceProvenance` holding the label on each census line.
+
+### What each reading carries
+
+One entry per path in `.data.recordedSurfaces.readings[]`. A path that answered with an empty set
+reads:
+
+```json
+{
+  "path": ["sessions"],
+  "status": "enumerated-none",
+  "nonFlagKeys": [],
+  "emptySetKeys": ["choices"],
+  "summary": "stated an empty set of flags at sessions under `choices`; 1 rejection read, and the set the target named held nothing (the target's own answer, not silence read as one)"
+}
+```
+
+`status` is the enumeration status the census groups and folds on.
+
+**`emptySetKeys` names the key an `enumerated-none` reading came from**, and it is there so the
+claim can be checked rather than trusted. Nothing in an empty array says the set was a set of
+_flags_; the key's name is the whole of that evidence, and the kit publishes the key so you can
+disagree with it. It is **absent, not empty**, on any other status.
+
+**`nonFlagKeys` names the recognised keys that held a set whose members are not flag-shaped** — your
+own verb list, typically, seen and set aside. Bare key names only: the count and at most four of the
+members reach you in `summary` and nowhere else, so on a recorded path a machine consumer can check
+which keys were seen but not what was in them. It is present on every reading, empty where nothing was set
+aside.
 
 The pinned format, and the argument for every choice above, is the discharged plan
 [the recorded-surface batch](../../plans/2026-08-25-the-recorded-surface-batch.md). Read it if you
