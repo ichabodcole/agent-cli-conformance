@@ -13,8 +13,8 @@ description:
 **The guidance is the goal**: the guides this skill routes to say how to build a CLI that agents
 can genuinely use, and following them without ever running the kit still gets you the better
 CLI. The checks are the smallest part of this — they exist to hold what you adopt in place. Each
-thing you adopt — a declared default, an enumerated rejection — converts more of the report from
-`unverified` to checked and kept that way.
+thing you adopt — a declared default — converts more of the report from `unverified` to checked and
+kept that way.
 
 This skill is the order to do things in. Every guide it names is a file in the `acc` repository,
 at the path given. **Once step 1's install has run, read them from
@@ -171,7 +171,7 @@ print at the root:
 ```
 enumerated 5 flags at the root: --format --help --version -V -h
 stated an empty set of flags at the root under `validFlags`; 7 rejections read, and the set the target named held nothing (the target's own answer, not silence read as one)
-did not enumerate at the root; 7 rejections read, none named a set of flags (NOT a tool with no flags)
+did not enumerate at the root; 7 rejections read, none named a set of flags (NOT a tool with no flags); a `choices` list of 10 was present and its members are not flag-shaped ("rules", "show", "path", "tags", …) — a set of something else, not of flags
 nothing readable was recorded at the root, so nothing was read (not a statement about the tool)
 ```
 
@@ -200,9 +200,8 @@ accept. That listing is what the comparison reads, so you already get some cover
 anything.
 
 **`stated an empty set of flags`** means your tool named a set and left it empty. The report records
-that it said so, and stops there: an empty array is as easily a serializer that dropped its contents
-as a tool with nothing to declare, so nothing here concludes that your tool accepts no flags at that
-path. It is what a verb-first CLI whose flags all live under its verbs says at a path you recorded.
+that it said so: an empty array is as easily a serializer that dropped its contents as a tool with
+nothing to declare, so nothing here concludes that your tool accepts no flags at that path. It is what a verb-first CLI whose flags all live under its verbs says at a path you recorded.
 The answer counts as a comparison exactly as a non-empty list does, so the path enters the census the
 way `enumerated` does — with the opposite outcome: against an empty accepted set, every flag your
 declaration marks `valid` there comes back as a `declared-not-accepted` finding. The line names the

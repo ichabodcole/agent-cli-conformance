@@ -295,7 +295,7 @@ So, two minutes of checking rather than a rule:
 lives at the root; the kit probes the root but reads no flag set from a root that names none, and
 a [recorded-surface batch](./how-to-record-surfaces-below-the-root.md) refuses a root record by
 construction. The report says so — the declared-path fraction falls short and a `NOT COMPARED:
-(root)` line names why — so it is a reach limit rather than a silent failure. It is still a limit,
+(root) — did not enumerate at the root` line names why — so it is a reach limit rather than a silent failure. It is still a limit,
 and it sits exactly where this page's advice lands.
 
 ## Verification

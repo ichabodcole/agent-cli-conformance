@@ -107,7 +107,7 @@ for.** The root is then not compared at all — there is nothing to compare it a
 reported as a limit rather than as a path:
 
 ```
-3 of 4 declared command paths compared; 3 disagreements (modelled declaration)
+3 of 4 declared command paths compared; 60 disagreements (modelled declaration)
 NOT COMPARED: (root) — did not enumerate at the root; 7 rejections read, none named a set of flags (NOT a tool with no flags) [probed-by-kit]
 ```
 
@@ -120,6 +120,7 @@ empty accepted set every flag your declaration marks `valid` there is reported i
 
 ```
 1 of 4 declared command paths compared; 1 disagreement (modelled declaration)
+NOT COMPARED: state, claim, list — the kit probes the root only, so nothing reached this path
 declared-not-accepted  --help at (root) [probed-by-kit]
 ```
 
@@ -394,13 +395,12 @@ Three things to check, in this order:
 1. **The path count moved.** `2 of 3 declared command paths compared` — before the batch it was
    `1 of 3`, because the root is all the kit reaches. If it did not move, no record was read.
 2. **Every path you recorded appears with a `[recorded-by-caller]` label.** A path you recorded that
-   is still `NOT COMPARED` gets its reason on the line, and the reason says which of three things
-   happened — they have three different fixes, and only two of them are in your batch.
+   is still `NOT COMPARED` gets its reason on the line.
 
    - `— the caller supplied recorded surfaces and recorded nothing at this path`, with **no label**:
      nothing in the batch claims that path. The fix is a record for it. A record that breaks one of
-     the three argv rules never lands here, because that refuses the whole batch at exit 2 rather
-     than dropping one path quietly.
+     the three argv rules never lands here; it drops that one path onto the `NOT COMPARED` list,
+     with the rule it missed named on the line.
    - `— nothing readable was recorded at <path> …`, ending
      `the caller recorded a truncated capture at this path, so it was not read`: the record was read
      and excluded on its `completeness`. The fix is a recapture without the `head`.
@@ -440,8 +440,8 @@ Three things to check, in this order:
    `F2 --version first byte in 15ms (runs: 15, 15, 16ms)` against `(runs: 16, 15, 15ms)` is
    jitter. A mechanical diff of the two reports will flag it; ignore that row.
 
-When the whole batch is refused, the run says so and continues with no recorded surfaces — the
-message names the first thing it could not understand, and a `formatVersion` complaint always comes
+When the whole batch is refused, the run exits 2 and writes nothing to stdout — the message names
+the first thing it could not understand, and a `formatVersion` complaint always comes
 before a key complaint, so fix the version first and re-run rather than hunting keys.
 
 `acc check <target> --json` carries the same material under `.data.recordedSurfaces`, with
@@ -462,8 +462,7 @@ reads:
 }
 ```
 
-`status` is the enumeration status the census groups and folds on, and `summary` is the sentence the
-text report prints — the same string, so the two documents cannot disagree.
+`status` is the enumeration status the census groups and folds on.
 
 **`emptySetKeys` names the key an `enumerated-none` reading came from**, and it is there so the
 claim can be checked rather than trusted. Nothing in an empty array says the set was a set of
@@ -471,9 +470,9 @@ _flags_; the key's name is the whole of that evidence, and the kit publishes the
 disagree with it. It is **absent, not empty**, on any other status.
 
 **`nonFlagKeys` names the recognised keys that held a set whose members are not flag-shaped** — your
-own verb list, typically, seen and set aside. Bare key names only: the count and the members reach
-you in `summary` and nowhere else, so on a recorded path a machine consumer can check which keys
-were seen but not what was in them. It is present on every reading, empty where nothing was set
+own verb list, typically, seen and set aside. Bare key names only: the count and at most four of the
+members reach you in `summary` and nowhere else, so on a recorded path a machine consumer can check
+which keys were seen but not what was in them. It is present on every reading, empty where nothing was set
 aside.
 
 The pinned format, and the argument for every choice above, is the discharged plan

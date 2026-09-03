@@ -50,9 +50,8 @@ export function reportCommand(file: string, mode: OutputMode, startedAt: number)
   ) {
     throw usageError(`${file} carries observations but not a verdict this command can render`, {
       hint: "Pass the full JSON `acc check <target> --json` writes — `.data.conformant`, `.data.counts` and `.data.findings[]` are what the text report is made of.",
-      // "no-verdict" is the one refusal whose next step is a DIFFERENT command (`acc check`,
-      // typically over a batch), so a wrapper must be able to tell it from the corrupt-file
-      // reasons loadReport throws — same exit, different branch.
+      // A wrapper must be able to tell "no-verdict" from the corrupt-file reasons loadReport
+      // throws — same exit, different branch.
       details: {
         path: resolve(file),
         kitVersion: partial.kitVersion ?? "unknown",

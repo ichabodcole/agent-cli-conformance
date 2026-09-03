@@ -288,8 +288,9 @@ And what came back:
   **`nonFlagKeys`**, the bare key names with no count and no sample, because the census line it
   feeds groups and rolls up keys rather than quoting members. The full entries are nowhere else to
   be found for that path: the root `surface` is the root's OWN capture and never carries a recorded
-  path's `nonFlagCandidates`. The count and the members do reach you, but only inside the reading's
-  `summary` — the prose field — which quotes them exactly as the text report's clause does. So on a
+  path's `nonFlagCandidates`. The count and at most four of the members do reach you, but only
+  inside the reading's `summary` — the prose field — which quotes them exactly as the text report's
+  clause does. So on a
   recorded path this is the one place a machine consumer is left reading a sentence: `nonFlagKeys`
   is what can be checked, and the members behind it cannot.
 
@@ -321,9 +322,9 @@ And what came back:
 
   **`acc compare` publishes the same claim about a fleet, not a single tool**, and has no JSON
   guide of its own — this is that field's documented home. Its `Comparison.surfaces[]` array
-  carries one `SurfaceRow` per input report, each with `label`, `status`, and, only where they
-  apply, `flags`, `consistent`, `emptySetKeys` and `nonFlagCandidates` — carried across from that
-  input's own `Report.surface` on the same terms described above, so `enumerated-none` in a
+  carries one `SurfaceRow` per input report, each with `label`, `status`, `probesRead`, and, only
+  where they apply, `flags`, `consistent`, `emptySetKeys` and `nonFlagCandidates` — carried across
+  from that input's own `Report.surface` on the same terms described above, so `enumerated-none` in a
   comparison means exactly what it means in a single `check` report, key and all. `status` adds a
   fifth value that a single report never carries: `not-recorded`, printed when that input report
   predates the capture entirely — a fact about the FILE being compared, not about the target it

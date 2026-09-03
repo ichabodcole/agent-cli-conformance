@@ -136,9 +136,11 @@ constrains `choices` to flags, and nothing below changes that: it is the valid a
 whatever the caller got wrong, and `acc`'s own envelope uses it for subcommand names. But the kit's
 flag-surface capture ([how to record surfaces below the root](../guides/how-to-record-surfaces-below-the-root.md))
 does read a present-but-empty `choices` on a rejection you recorded **below the root** as your tool
-saying it accepts no flags at that path, and at the root it reads the same bytes as saying nothing
-at all. The asymmetry is about where the kit is standing, not about what the key means: the root is
-the one place the kit ALSO reads `choices` as a list of subcommands, so an empty one there is as
+naming a set of flags and leaving it empty — ``stated an empty set of flags at sessions under
+`choices`; 1 rejection read, and the set the target named held nothing (the target's own answer,
+not silence read as one)`` — and at the root it reads the same bytes as saying nothing at all. The
+asymmetry is about where the kit is standing, not about what the key means: the root is the one
+place the kit ALSO reads `choices` as a list of subcommands, so an empty one there is as
 likely to be "I have no subcommands" as "I accept no flags" and is left alone; below the root
 nothing in the kit reads `choices` as verbs, so there is no second reading to confuse it with. A
 non-empty list is not affected either way — its members are inspected, and a list of verbs is
