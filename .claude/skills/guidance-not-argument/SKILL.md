@@ -106,6 +106,13 @@ Each of these turned up repeatedly. Worked instances are in
   the rule.
 - **A stated policy the document breaks.** Where a page states a rule about itself, check the page
   against it. A stated policy is a test the document already wrote and left unrun.
+- **A trailing clause that calibrates instead of stating a consequence.** A clause saying what
+  happens earns its place: the tree stays runnable, the commit goes missing, the step is a detector
+  rather than a remedy. One saying how true, how frequent or how important the preceding claim is
+  does not — that is a measurement, and it needs one. Watch for it where a bare instruction feels
+  abrupt and the clause supplies cadence: it arrives feeling like finishing a sentence rather than
+  adding a claim. **Test by promotion** — stand it alone as its own sentence and see whether it still
+  says anything.
 
 ## Duplication
 
