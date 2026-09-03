@@ -370,10 +370,18 @@ export function compareReports(inputs: LabelledReport[]): Comparison {
 export class MalformedSurfaceError extends Error {
   /** The `SurfaceRow` label — the caller-facing name of the report that carried it. */
   readonly label: string;
-  constructor(label: string, message: string) {
+  /**
+   * The kebab-case `details.reason` a wrapper branches on, carried from the throw rather than
+   * fixed at the command layer: the two directions of the `flags` contract are two different
+   * edits to the file, and one `reason` for both would tell a caller a violation occurred
+   * without saying which half broke.
+   */
+  readonly reason: string;
+  constructor(label: string, reason: string, message: string) {
     super(message);
     this.name = "MalformedSurfaceError";
     this.label = label;
+    this.reason = reason;
   }
 }
 
@@ -383,6 +391,14 @@ export class MalformedSurfaceError extends Error {
  * unnoticed, because `[]` is truthy in JS; nothing today MINTS a non-`enumerated` surface with a
  * `flags` field, but that is an invariant held elsewhere, and a stored report is where a violation
  * would otherwise reach a published artifact silently. Asserted rather than assumed.
+ *
+ * AND IT MUST BE PRESENT ON `enumerated`, which is the same contract read the other way round —
+ * `SurfaceStatus` says of `enumerated`: "`flags` is present." Guarded in one direction only, a
+ * stored `{"status":"enumerated","evidence":[],"probesRead":7}` with no `flags` published
+ * `enumerated 0 flags at the root: ` at exit 0: the kit asserting a tool accepts no flags, which
+ * is the one inference this capture may never make and the exact claim `enumerated-none` exists
+ * to keep apart from `enumerated`. Same population as the direction above — a stored or foreign
+ * report, never a live check — and so the same boundary.
  *
  * THERE ARE TWO SUCH BOUNDARIES, WHICH IS WHY THIS IS EXPORTED. `acc compare` reads a stored
  * surface and so does `acc report` — and `acc report --json` re-emits the stored payload verbatim,
@@ -405,7 +421,15 @@ export function assertFlagsOnlyOnEnumerated(label: string, surface: Surface): vo
   if (surface.status !== "enumerated" && "flags" in surface) {
     throw new MalformedSurfaceError(
       label,
+      "flags-on-non-enumerated-surface",
       `surface with status "${surface.status}" carries a "flags" field — flags must stay absent, not empty`,
+    );
+  }
+  if (surface.status === "enumerated" && !("flags" in surface)) {
+    throw new MalformedSurfaceError(
+      label,
+      "enumerated-surface-without-flags",
+      'surface with status "enumerated" carries no "flags" field — flags is present on an enumerated surface, and a missing one renders as a tool that accepts none',
     );
   }
 }

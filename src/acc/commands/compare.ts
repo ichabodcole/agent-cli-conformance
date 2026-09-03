@@ -112,13 +112,15 @@ export function malformedSurfaceUsageError(
   path: string | null,
 ): AccError {
   return usageError(`${path ?? err.label}: ${err.message}`, {
-    hint: "Rewrite that report with `acc check <target> --json` — `flags` is present only on an `enumerated` surface, and this one carries it on another status.",
+    hint: "Rewrite that report with `acc check <target> --json` — `flags` is present on an `enumerated` surface and on no other, and this one breaks that in one direction or the other.",
     // Kebab-case, on the `not-json` / `not-a-report` precedent beside it: a wrapper telling
     // "the artifact is corrupt" from "run acc check first" branches on `reason`, not on prose.
+    // Carried from the throw rather than fixed here: the two directions of the contract are two
+    // different edits to the file, and `MalformedSurfaceError` is what knows which one broke.
     details: {
       path,
       label: err.label,
-      reason: "flags-on-non-enumerated-surface",
+      reason: err.reason,
     },
   });
 }
