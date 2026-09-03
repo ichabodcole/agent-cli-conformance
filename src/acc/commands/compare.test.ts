@@ -18,7 +18,15 @@ import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Comparison, ProbeComparison } from "../kit/compare.ts";
+import {
+  type Comparison,
+  type ProbeComparison,
+  type SurfaceRow,
+  surfaceRow,
+} from "../kit/compare.ts";
+import type { Surface } from "../kit/surface.ts";
+import { surfaceSummary } from "../kit/surface.ts";
+import { rowSurface } from "./compare.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = join(HERE, "../cli.ts");
@@ -289,6 +297,67 @@ describe("self-declared flags across the population", () => {
   }, 60_000);
 });
 
+// `rowSurface` (this command) rebuilds a `Surface` from `surfaceRow`'s compact `SurfaceRow` so
+// `acc check` and `acc compare` render the flag-surface capture through ONE function,
+// `surfaceSummary`. A row that dropped a state-specific field the sentence reads would make that
+// round trip lossy — two different sentences for one status, which `surface.ts`'s own comment
+// forbids. This exercises the round trip directly rather than through a fixture: the point is
+// that `surfaceRow → SurfaceRow → rowSurface → surfaceSummary` renders IDENTICALLY to
+// `surfaceSummary` on the original `Surface`, for every status this capture can produce.
+describe("the compare row renders the same sentence as `acc check`", () => {
+  const roundTrip = (surface: Surface): string =>
+    surfaceSummary(rowSurface(surfaceRow("t", surface)));
+
+  test("`enumerated` — flags and consistency survive the round trip", () => {
+    const s: Surface = {
+      status: "enumerated",
+      flags: ["--format", "--help"],
+      consistent: true,
+      evidence: [],
+      probesRead: 2,
+    };
+    expect(roundTrip(s)).toBe(surfaceSummary(s));
+  });
+
+  test("`not-enumerated` — including its near-miss clause", () => {
+    const s: Surface = {
+      status: "not-enumerated",
+      evidence: [],
+      probesRead: 3,
+      nonFlagCandidates: [{ key: "choices", sample: ["rules", "show"], count: 2 }],
+    };
+    const rendered = roundTrip(s);
+    expect(rendered).toBe(surfaceSummary(s));
+    expect(rendered).toContain("choices");
+  });
+
+  // THE SHAPE THE BRIEF NAMED: a target answering both a verb-shaped `choices` list and an empty
+  // `validFlags` — `enumerated-none`, carrying both `emptySetKeys` and `nonFlagCandidates`. Before
+  // this fix, `rowSurface` hardcoded these fields away and the compare-path sentence silently
+  // dropped the near-miss clause the check-path sentence still carried.
+  test("`enumerated-none` — including the near-miss clause that named this task", () => {
+    const s: Surface = {
+      status: "enumerated-none",
+      evidence: [],
+      probesRead: 1,
+      emptySetKeys: ["validFlags"],
+      nonFlagCandidates: [{ key: "choices", sample: ["run", "build"], count: 2 }],
+    };
+    const rendered = roundTrip(s);
+    expect(rendered).toBe(surfaceSummary(s));
+    expect(rendered).toContain("stated an empty set of flags");
+    expect(rendered).toContain("choices");
+    expect(rendered).toContain("not flag-shaped");
+  });
+
+  test("`no-evidence` and `not-recorded`", () => {
+    const s: Surface = { status: "no-evidence", evidence: [], probesRead: 0 };
+    expect(roundTrip(s)).toBe(surfaceSummary(s));
+    const row: SurfaceRow = { label: "t", status: "not-recorded", probesRead: 0 };
+    expect(surfaceSummary(rowSurface(row))).toBe(surfaceSummary(undefined));
+  });
+});
+
 describe("bad input", () => {
   test("one report is a usage error, not an empty comparison", async () => {
     const r = await run(["compare", reports[TARGETS.seven] as string, "--json"]);
@@ -424,4 +493,64 @@ describe("the NOTE about targets that call themselves the same thing", () => {
     },
     60_000,
   );
+});
+
+// THE SAME UNVALIDATED FIELD, AT THE SECOND COMMAND THAT READS IT. `acc compare` renders every
+// input report's surface through `surfaceSummary` (see `rowSurface`), so the guard that keeps a
+// status this build cannot read from printing as a bare enum token has to hold here too — and
+// this is the entry point the sweep measured it at.
+describe("a stored report whose surface status this build has never heard of", () => {
+  test("the SELF-DECLARED FLAGS row renders a sentence, not the raw token", async () => {
+    const future = join(dir, "future-status.json");
+    const envelope = JSON.parse(readFileSync(reports[TARGETS.seven] as string, "utf8"));
+    envelope.data.surface = { status: "enumerated-partial", evidence: [], probesRead: 7 };
+    writeFileSync(future, JSON.stringify(envelope));
+
+    const r = await run([
+      "compare",
+      future,
+      reports[TARGETS.anthill] as string,
+      "--format",
+      "text",
+    ]);
+    expect(r.code).toBe(0);
+    const line = r.stdout
+      .split("\n")
+      .find((l) => l.includes("future-status") && l.includes("enumerated-partial"));
+    expect(line).toBeDefined();
+    expect(line).toContain("not recorded by this kit");
+    expect(line).toContain("not a statement about the tool");
+  }, 60_000);
+});
+
+// A MALFORMED STORED INPUT IS THE CALLER'S TO FIX, NOT A KIT FAULT. `assertFlagsOnlyOnEnumerated`
+// is right that a non-`enumerated` surface carrying `flags` must not pass silently — `flags` is
+// absent-never-empty by its own contract, and this boundary is where a violation would otherwise
+// reach a published artifact. What it got wrong is whose fault it named: the surface came out of a
+// report FILE, so `internal` (exit 1, "acc broke") blames the kit for a document the caller can
+// edit. `loadReport` classifies every other malformed-artifact case as `usage`, with a kebab-case
+// `details.reason` a wrapper branches on, and this is one of those.
+describe("a stored report carrying `flags` on a non-enumerated surface", () => {
+  test("is refused as usage, with a reason a wrapper can branch on", async () => {
+    const bad = join(dir, "flags-on-not-enumerated.json");
+    const envelope = JSON.parse(readFileSync(reports[TARGETS.seven] as string, "utf8"));
+    envelope.data.surface = {
+      status: "not-enumerated",
+      evidence: [],
+      probesRead: 7,
+      flags: ["--format"],
+    };
+    writeFileSync(bad, JSON.stringify(envelope));
+
+    const r = await run(["compare", bad, reports[TARGETS.anthill] as string, "--json"]);
+    // 2 is `ExitCode.Usage`. NOT 1 (`internal`): nothing in the kit malfunctioned.
+    expect(r.code).toBe(2);
+    const error = (JSON.parse(r.stderr) as { error: Record<string, unknown> }).error;
+    expect(error.kind).toBe("usage");
+    expect(error.exit_code).toBe(2);
+    expect((error.details as { reason?: string }).reason).toBe("flags-on-non-enumerated-surface");
+    // The path, because the caller passed several files and has to know which one to open.
+    expect((error.details as { path?: string }).path).toBe(bad);
+    expect(String(error.message)).toContain("flags must stay absent, not empty");
+  }, 60_000);
 });

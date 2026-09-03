@@ -383,6 +383,83 @@ describe("the honesty case: a target that did not enumerate", () => {
   });
 });
 
+// ---------------------------------------------------------------------------------------------
+// THE OTHER SIDE OF THE HONESTY CASE. A target that STATED an empty set answered the question,
+// and the difference between it and one that said nothing is the whole reason `enumerated-none`
+// exists. Above, an empty finding list must not read as agreement. Here it must: the set
+// difference really did run, against a set that really is empty.
+// ---------------------------------------------------------------------------------------------
+describe("an explicit empty set is a comparison, not a silence", () => {
+  /** The target NAMED the key and left it empty. `flags` stays absent — see `SurfaceStatus`. */
+  const statedNone: Surface = {
+    status: "enumerated-none",
+    emptySetKeys: ["validFlags"],
+    evidence: [],
+    probesRead: 4,
+  };
+
+  const declaring = (args: Declaration["commands"][number]["args"]) =>
+    declaration({ commands: [{ path: [], args, positionals: [] }] });
+
+  const against = (d: Declaration, surface: Surface = statedNone) =>
+    diffDeclaration(d, [{ path: [], surface, surfaceProvenance: "probed-by-kit" }]);
+
+  test("the state carries no `flags`, so the guard's emptiness test is pinned, not relied upon", () => {
+    // `![]` is `false`, so a guard resting on `!flags` would admit an empty ARRAY by accident.
+    // This status is admitted by its STATUS and carries no array at all; the two are independent
+    // and this is the assertion that keeps them so.
+    expect(statedNone.flags).toBeUndefined();
+    expect("flags" in statedNone).toBe(false);
+  });
+
+  test("an `enumerated` surface with no `flags` is still not compared — the other half of the guard", () => {
+    const d = against(declaring([{ name: "--nonsense", type: "boolean", status: "valid" }]), {
+      status: "enumerated",
+      evidence: [],
+      probesRead: 1,
+    });
+    expect(d.status).toBe("not-checked");
+    expect(d.findings).toEqual([]);
+  });
+
+  test("every declared valid arg is declared-not-accepted, and the path counts as compared", () => {
+    const d = against(declaring([{ name: "--nonsense", type: "boolean", status: "valid" }]));
+    expect(d.status).toBe("checked");
+    expect(d.paths[0]?.checked).toBe(true);
+    expect(d.checkedCommands).toBe(1);
+    expect(d.checkedUndeclared).toBe(0);
+    expect(d.findings.map((f) => [f.kind, f.subject])).toEqual([
+      ["declared-not-accepted", "--nonsense"],
+    ]);
+    const line = declarationSummary(d);
+    expect(line).not.toMatch(/THE DIFF DID NOT RUN/);
+    expect(line).not.toMatch(/not agreement/);
+    expect(line).toContain("1 of 1 declared command path compared; 1 disagreement");
+  });
+
+  test("refused-but-enumerated cannot fire, because nothing is in the accepted set", () => {
+    const d = against(declaring([{ name: "--verbose", type: "boolean", status: "refused" }]));
+    expect(d.status).toBe("checked");
+    expect(d.findings).toEqual([]);
+    // And THIS empty list is agreement: the diff ran, and a flag declared refused was not
+    // advertised. The sentence the honesty case forbids is the one this case requires.
+    expect(declarationSummary(d)).toContain("0 disagreements");
+  });
+
+  test("accepted-not-declared cannot fire, because the surface names no flags", () => {
+    // An undeclared path with an explicit empty set is compared and produces nothing: there is no
+    // flag to be undeclared. It still counts, under `checkedUndeclared`.
+    const d = diffDeclaration(
+      declaration({ commands: [{ path: ["info"], args: [], positionals: [] }] }),
+      [{ path: [], surface: statedNone, surfaceProvenance: "probed-by-kit" }],
+    );
+    expect(d.status).toBe("checked");
+    expect(d.checkedCommands).toBe(0);
+    expect(d.checkedUndeclared).toBe(1);
+    expect(d.findings).toEqual([]);
+  });
+});
+
 describe("provenance decides what a disagreement means", () => {
   const disagreeing = (provenance: "emitted" | "modelled") =>
     diffDeclaration(
@@ -779,24 +856,24 @@ describe("acc check --declaration, against a program", () => {
     expect(runCheck(["--declaration", path]).stdout.split("\n")[0] ?? "").not.toContain("but see");
   }, 120_000);
 
+  /** The same wrong declaration, run against whichever fixture a case is about. */
+  const againstFixture = (declarationPath: string, name: string) =>
+    spawnSync(
+      "bun",
+      [acc, "check", fixture(name), "--declaration", declarationPath, "--format", "text"],
+      { encoding: "utf8" },
+    );
+
   test("THE HONESTY CASE: a target that never enumerated says the diff did not run", () => {
     const path = write(
       "against-a-silent-target.json",
       rootDeclaration([{ name: "--nonsense", type: "boolean", status: "valid" }]),
     );
-    const run = spawnSync(
-      "bun",
-      [
-        acc,
-        "check",
-        fixture("mentions-flags-without-enumerating.ts"),
-        "--declaration",
-        path,
-        "--format",
-        "text",
-      ],
-      { encoding: "utf8" },
-    );
+    // THIS fixture is the one that still means "talks about flags without naming any" — its
+    // rejection carries a signpost, a hint, a verb set and the caller's own echoed input, and not
+    // one of them is a declared accepted set. The empty-set trap moved to its own fixture, and the
+    // inverse of this test lives below it.
+    const run = againstFixture(path, "mentions-flags-without-enumerating.ts");
     expect(run.stdout).toContain("THE DIFF DID NOT RUN");
     expect(run.stdout).toContain("this is not agreement: nothing was compared");
     // The flag the declaration got wrong is NOT reported, because nothing looked at it — and
@@ -804,6 +881,49 @@ describe("acc check --declaration, against a program", () => {
     expect(run.stdout).not.toContain("--nonsense");
     expect(run.stdout).not.toContain("0 disagreements");
   }, 120_000);
+
+  test("ITS INVERSE: a target that stated an empty set IS compared, and the diff ran", () => {
+    const path = write(
+      "against-an-explicitly-empty-target.json",
+      rootDeclaration([{ name: "--nonsense", type: "boolean", status: "valid" }]),
+    );
+    const run = againstFixture(path, "enumerates-nothing-explicitly.ts");
+    // Every assertion above, inverted — and inverted on a DIFFERENT fixture, so both cases still
+    // have a target that exercises them.
+    expect(run.stdout).not.toContain("THE DIFF DID NOT RUN");
+    expect(run.stdout).not.toContain("this is not agreement: nothing was compared");
+    // The remedy line goes with the sentence it remedies.
+    expect(run.stdout).not.toContain("nothing you can write in this file");
+    expect(run.stdout).toContain("1 of 1 declared command path compared; 1 disagreement");
+    expect(run.stdout).toContain("declared-not-accepted  --nonsense at (root)");
+    // The surface block still says what the target said, in the target's own terms — the diff
+    // running does not license the report to call an empty set an enumeration.
+    expect(run.stdout).toContain("stated an empty set of flags at the root under `validFlags`");
+  }, 120_000);
+
+  test("and it moves no number and no exit code — the guard, on the empty-set target", () => {
+    const path = write(
+      "empty-set-guard.json",
+      rootDeclaration([{ name: "--nonsense", type: "boolean", status: "valid" }]),
+    );
+    const bare = spawnSync(
+      "bun",
+      [acc, "check", fixture("enumerates-nothing-explicitly.ts"), "--format", "text"],
+      { encoding: "utf8" },
+    );
+    const withDeclaration = againstFixture(path, "enumerates-nothing-explicitly.ts");
+    expect(withDeclaration.status).toBe(bare.status);
+    const head = (out: string) => out.split("\n")[0] ?? "";
+    // The headline of a target that printed no `but see` clause before now carries one, and
+    // NOTHING else on the line moves: same verdict, same level, same three counts.
+    expect(head(bare.stdout)).not.toContain("but see");
+    expect(head(withDeclaration.stdout)).toContain("but see 1 declaration disagreement (modelled)");
+    expect(head(withDeclaration.stdout).replace(/ · but see [^·]*?\(modelled\)/, "")).toBe(
+      head(bare.stdout),
+    );
+    const summary = (out: string) => out.split("\n").find((l) => l.startsWith("  core ")) ?? "";
+    expect(summary(withDeclaration.stdout)).toBe(summary(bare.stdout));
+  }, 240_000);
 
   test("an unknown format major refuses the run before the target is executed", () => {
     const path = write("future.json", { ...rootDeclaration([]), formatVersion: "9" });

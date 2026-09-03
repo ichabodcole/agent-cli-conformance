@@ -65,7 +65,7 @@ in between, and **blocked on** last.
    corpus stops changing shape, and not a day later.
 9. [**Adoption surfaces**](#9-adoption-surfaces) — last, deliberately.
 
-The [coverage debt](#the-coverage-debt) is not a step. Those 89 gaps close as their blockers
+The [coverage debt](#the-coverage-debt) is not a step. Those 96 gaps close as their blockers
 land, which is why they are grouped below by what blocks them rather than sequenced.
 
 ---
@@ -592,6 +592,78 @@ suspected until someone looked.
 **Blocked on** nothing. It is unglamorous reading, and its value is exactly that nobody can
 currently say how much of the Evidence corpus would survive it.
 
+## Figures about this repository that nothing re-derives
+
+**What it is.** One command that derives the repository's own countable facts — rules, checkers,
+tests, wiki pages, section lengths — and checks them against the places the documentation states
+them, reporting which are out of sync. A touch point in whatever process changes those quantities
+would then run it, so a document and the tree it describes cannot drift apart silently.
+
+**Why it matters.** These figures are unlike the ones
+[the evidence audit](#an-evidence-audit-nobody-has-run) covers: those are claims about other
+people's tools and need a probe and a reader, whereas every figure here is derived from this
+checkout and can be recomputed exactly. That makes them the cheapest claims in the corpus to verify
+and the only ones nothing verifies. `docs/roadmap.md` carried `185 lines on conformance.md` while
+the section held 286 — correct when written, and the sibling figure in the same sentence was still
+right, which is what makes the drift invisible to a reader. The full gate ran over that file and saw
+nothing, because a stale count is well-formed prose.
+
+The failure is not only in the figure. That sentence also called the section _"the largest in the
+wiki"_, which stopped being true as other pages grew: a number and the claim it supports go stale
+together, and repairing the number alone leaves the conclusion standing on nothing.
+
+A second instance shows what currently survives and why. This page said `89 gaps` in one place and
+_"over 90 named gaps"_ in another, of an actual 96. The hedged figure stayed true because it was
+hedged, which is the only defence available today and costs the reader the precision they came for.
+A checked figure would not have to choose.
+
+**The hard part is the citation sites, not the derivation.** Counting rules is trivial; knowing that
+a given sentence in `README.md` is asserting that count is not. Either documents mark a figure as
+derived and name its source, which costs a convention and an edit everywhere a figure appears, or
+the tool matches numbers against prose and pays in false positives. That choice is the design
+question, and it decides whether this can be a gate that fails a build or only a report someone
+reads.
+
+**Why this project in particular.** The kit exists to measure whether a tool's self-description
+matches its behaviour. A standard about verifiable claims whose own documents carry unverified
+counts about itself is the same defect it was built to find, one level up.
+
+**Blocked on** the marking convention above. Nothing else.
+
+## Claims about the code that nothing re-derives
+
+**What it is.** The other half of the entry above, and the same instrument. A check that takes each
+render, output shape or count quoted in prose — in a document, a skill, or a code comment — and
+asserts the emitting function can actually produce it.
+
+**Why it matters.** Adding a fourth enumeration status produced **nine** instances of one defect: a
+sentence asserting something the code does not establish. Every one was caught by a person reading
+prose against code; **none** was caught by `bun run check`, which typechecks, lints, formats,
+resolves links, builds the site and runs the suite without ever comparing a claim to its subject.
+Three of the nine were introduced _by the repair for another one_, which is what shows the writing
+act reproduces the defect rather than any individual writer being careless.
+
+The sharpest specimen: the consumer skill quoted `stated an empty set of flags at the root under
+`choices`` — a sentence the kit cannot emit, because the root excludes that key, the key reaches
+the field only through a reader that refuses root records, and the word "root" appears only when the
+path is empty. Three independent reasons, none visible to a reader who has not just read those
+three functions. An adopter matching their output against it concludes their tool misbehaved.
+
+**Why it is one instrument, not two.** A stale figure and an impossible render are the same shape:
+a claim about this repository that was true when written, is mechanically checkable, and is checked
+by nobody. `185 lines` described a file; `stated an empty set of flags…` describes a function. Both
+went false in silence.
+
+**The hard part, as before, is the citation site.** A fenced block is findable; a render quoted
+inline in a comment is not, and neither announces which function it came from. The same marking
+convention that entry is blocked on would serve here — which is the argument for doing them
+together rather than in sequence.
+
+**Blocked on** nothing beyond that shared convention. The cheap first move is narrower than the
+general check: pin the specific renders the consumer skill quotes with a test asserting they equal
+what the renderer emits, which converts the highest-cost instances from unverifiable prose into a
+gate failure.
+
 ## The first screen is the coverage prose, not the finding
 
 **What it is.** Reorder `acc check`'s text report so the census and the verdict deltas come first
@@ -624,6 +696,21 @@ yes; numbered rungs, no**. The evidence is attached to the question in
 this kit produces — into CI logs and READMEs. Whatever replaces it should be decided before it
 propagates further, which makes the replacement the gating step rather than the deletion.
 
+**What it would cost, measured rather than estimated.** The ratified plan sizes the first half of
+this — the typed `unverified` reason together with retiring `LEVEL_RANK` — at one source file and an
+afternoon. Against the tree it is five source files under the narrowest reading and roughly
+twenty-three under the reading the words support, and it is gated behind a taxonomy that does not
+close over its own corpus: the four-value enum proposed for the reason covers none of about a dozen
+existing sites whose reason is that the probe ran, the evidence is intact, and the rule's subject
+never occurred. Two things travel with it. `LEVEL_RANK`'s ordering buys nothing today — the
+expression is currently equivalent to `probeLevel === "L0"`, no `L2` checker exists, and no test
+distinguishes `<=` from `===`. And `applicable` would change meaning without changing shape, while
+[the report guide](wiki/guides/how-to-read-the-check-report-json.md) instructs consumers to derive
+it the old way, so nothing warns.
+
+**Blocked on** settling the reason taxonomy against every reason the code actually produces, which
+is the same decision as the replacement string above rather than a second one.
+
 ## Three findings from reading `STANDARD.md` against the wiki
 
 **What it is.** The open dispositions of
@@ -654,8 +741,8 @@ deciding.
 exit-code taxonomy, the error-envelope shape, the output kinds, the probe levels and inertness
 classes. Concept pages would explain and link them instead of containing them.
 
-**Why it matters.** `## The details` is the largest section in the wiki — 185 lines on
-`conformance.md`, 157 on `exit-codes.md` — and on several pages it holds three kinds of content
+**Why it matters.** `## The details` is the largest section on the pages that have one — 286 lines
+on `conformance.md`, 157 on `exit-codes.md` — and on several pages it holds three kinds of content
 at once. `exit-codes.md` is the clearest: `The taxonomy` is reference, `Exit codes are
 append-only` is a policy, and `There is no industry standard` is explanation, all under one
 heading (review DTX-5). The canonical exit-code table, plausibly the most looked-up artifact

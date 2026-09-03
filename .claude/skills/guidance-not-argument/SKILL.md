@@ -106,6 +106,13 @@ Each of these turned up repeatedly. Worked instances are in
   the rule.
 - **A stated policy the document breaks.** Where a page states a rule about itself, check the page
   against it. A stated policy is a test the document already wrote and left unrun.
+- **A trailing clause that calibrates instead of stating a consequence.** A clause saying what
+  happens earns its place: the tree stays runnable, the commit goes missing, the step is a detector
+  rather than a remedy. One saying how true, how frequent or how important the preceding claim is
+  does not — that is a measurement, and it needs one. Watch for it where a bare instruction feels
+  abrupt and the clause supplies cadence: it arrives feeling like finishing a sentence rather than
+  adding a claim. **Test by promotion** — stand it alone as its own sentence and see whether it still
+  says anything.
 
 ## Duplication
 
@@ -134,6 +141,17 @@ a stale pointer resolves, a dangling antecedent parses, an orphaned pronoun read
   goes stale when that section changes, and its bytes never move.
 - **Links, broken badly enough to stop being links.** Text inserted between a label and its URL
   leaves neither, and a link checker looking for `](` no longer sees it at all.
+- **Quantifiers the compression manufactures.** Everything above is something the method destroys.
+  This is something it asserts. Turning a set of cases into one sentence produces a count or a scope
+  — _the four sentences_, _which of three things_, _never_, _nowhere else_, _nothing else_ — that
+  nobody enumerated, because enumerating means finding the exceptions and the exceptions are what
+  the summary exists to omit. Measured across one change set: nine of ten false statements were
+  spanning claims, and each sat exactly on top of a threshold or an exclusion. Sentences about a
+  single instantiated case were almost all true.
+- **Reasons, which are inferences and not observations.** A _because_ clause explains why the system
+  does something, and it can follow perfectly from the design while being false about the code. One
+  repair replaced a true sentence with a false one this way, reasoning that a serious violation must
+  reject the whole input when it in fact drops one record.
 
 ## Verifying
 
@@ -148,14 +166,24 @@ Then, in order of what has actually caught things:
    "It belongs in X" is a rule about where things should live, not evidence about where this one is.
 2. **Search the whole document for every term, figure or actor a cut removed.** Not the section —
    the document.
-3. **Re-read what points at the section, and what it pointed to.** Including a document's own
+3. **Read each sentence against the thing it describes, not just the section it sits in.** These are
+   two instruments and they catch different defects: reading the whole section finds the dangling
+   antecedent and the stale count; only holding a sentence beside the code, output or data it is
+   about finds the one that asserts more than its subject establishes. A document can survive the
+   first and fail the second, and the failures are fluent.
+4. **Treat every quantifier as a claim that has to be run.** A number, a threshold, a key name, an
+   _only_, a _never_, an _always_, a definite article standing for a closed set. Produce the case
+   first and write the sentence over it; composing the sentence and then an example to fit it is how
+   two separately true halves become one impossible whole. Where the run cannot be made, delete the
+   sentence rather than hedge it — a missing sentence is honest, an unverified one is the defect.
+5. **Re-read what points at the section, and what it pointed to.** Including a document's own
    policies about itself.
-4. **Check every id and label you write.** An id is a label, and labels are not checked by anything:
+6. **Check every id and label you write.** An id is a label, and labels are not checked by anything:
    a link to a real file with an invented finding id passes every gate.
-5. **Look at over-long lines.** Where the formatter preserves author line breaks, a line running
+7. **Look at over-long lines.** Where the formatter preserves author line breaks, a line running
    past the document's usual width marks a passage edited without being reread. It finds no defect
    by itself and it aims a read very well.
-6. **Run the repository gate**, last, knowing it cannot see the interesting failures.
+8. **Run the repository gate**, last, knowing it cannot see the interesting failures.
 
 **Get a cold reader for anything substantial.** The person who made the edits is the worst reader of
 them: they hold the context the sentence no longer supplies. See

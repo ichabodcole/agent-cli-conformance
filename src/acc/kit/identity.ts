@@ -60,9 +60,16 @@ import type { Observation } from "./types.ts";
  * Whether the target said anything about itself, and — this is the whole point of the type — the
  * DIFFERENCE between "it said nothing" and "nothing readable was recorded".
  *
- * The same three-way split `SurfaceStatus` makes, for the same reason: a middle value that
- * collapsed into the absent one would report a run that never happened as a tool that stayed
- * silent.
+ * The same split `SurfaceStatus` draws between `not-enumerated` and `no-evidence`, for the same
+ * reason: a middle value that collapsed into the absent one would report a run that never happened
+ * as a tool that stayed silent.
+ *
+ * THREE VALUES HERE AND FOUR THERE, and the fourth is not missing from this type. `SurfaceStatus`
+ * separates `enumerated-none` because a flag capture can be handed a key the target named and left
+ * empty — an explicit "none" spoken in the target's own document. A `--version` stream offers no
+ * such shape: empty stdout is the only "nothing" there is, it carries no key and no marker, and
+ * reading it as an assertion would be this capture deciding what a silence MEANS. `not-stated`
+ * already says what can honestly be said about it — the probe ran, and stdout was empty.
  */
 export type IdentityStatus =
   /** The probe ran to completion and the target wrote to stdout. `said` is present. */

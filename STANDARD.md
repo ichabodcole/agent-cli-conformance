@@ -505,19 +505,6 @@ tool, [`23 of 26`](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md
 — **as reported and not independently verified**.
 The limit is on probing, and the caller who can lift it is the one who may already run the tool.
 
-So the `[C?]` on this Part, and every `yes` in the [`In v0` column](#the-fields-and-why-each-exists),
-carry a condition already stated in both places and worth stating plainly: **on any target that
-enumerates _at the root_**. For the verb-first population — plausibly most agent-facing CLIs — a
-modelled declaration currently
-buys zero comparison: **"a caller may declare for a tool" is true at the format layer and inert at
-the census layer**
-([the first outside application](docs/reports/2026-08-24-first-outside-application-grapevine.md#the-modelled-negative-which-is-the-most-useful-failure-in-the-session)).
-
-It is not wasted: the self-description check runs on it with no probe at all, and the report says
-which paths went uncompared and why. But an author writing one today should expect a report about
-what could not be compared rather than about what agreed, and the fix is the kit's and the tool's,
-not the file's.
-
 ### Two questions this page leaves open
 
 **Exit-code ownership: may an outside observer declare it?** **Nothing here decides it.** The

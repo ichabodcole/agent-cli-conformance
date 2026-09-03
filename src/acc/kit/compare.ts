@@ -174,6 +174,20 @@ export interface SurfaceRow {
   /** Carried across rather than assumed: see `Surface.consistent`. */
   consistent?: boolean;
   probesRead: number;
+  /**
+   * Carried across on the same terms as `Surface.emptySetKeys` — present only for
+   * `enumerated-none`, which is minted from it. `rowSurface` in `commands/compare.ts` rebuilds a
+   * `Surface` from this row so `check` and `compare` render the `enumerated-none` sentence
+   * through the one `surfaceSummary` function; dropping this field here would make that rebuild
+   * lossy and produce two different sentences for one status.
+   */
+  emptySetKeys?: string[];
+  /**
+   * Carried across on the same terms as `Surface.nonFlagCandidates` — the near-miss clause both
+   * `not-enumerated` and `enumerated-none` render. Same reason as `emptySetKeys`: the compare
+   * path renders through `surfaceSummary` too, and that clause reads this field.
+   */
+  nonFlagCandidates?: Surface["nonFlagCandidates"];
 }
 
 export interface Comparison {
@@ -345,15 +359,93 @@ export function compareReports(inputs: LabelledReport[]): Comparison {
   };
 }
 
+/**
+ * A STORED INPUT REPORT WHOSE SURFACE BREAKS A CONTRACT THIS READER DEPENDS ON.
+ *
+ * A named class rather than a bare `Error`, on `RecordedSurfacesError`'s precedent and for its
+ * reason: the kit does not own the exit taxonomy, and a command layer that had to recognise this
+ * fault by matching its prose would misclassify it the first time the prose was reworded. `label`
+ * is the input the violation was found in, so a caller who passed six files learns which one.
+ */
+export class MalformedSurfaceError extends Error {
+  /** The `SurfaceRow` label — the caller-facing name of the report that carried it. */
+  readonly label: string;
+  /**
+   * The kebab-case `details.reason` a wrapper branches on, carried from the throw rather than
+   * fixed at the command layer: the two directions of the `flags` contract are two different
+   * edits to the file, and one `reason` for both would tell a caller a violation occurred
+   * without saying which half broke.
+   */
+  readonly reason: string;
+  constructor(label: string, reason: string, message: string) {
+    super(message);
+    this.name = "MalformedSurfaceError";
+    this.label = label;
+    this.reason = reason;
+  }
+}
+
+/**
+ * `flags` MUST STAY ABSENT, NOT EMPTY — `Surface.flags`'s own contract, present only for
+ * `enumerated`. A truthiness spread (`surface.flags ? … : {}`) lets an empty array through
+ * unnoticed, because `[]` is truthy in JS; nothing today MINTS a non-`enumerated` surface with a
+ * `flags` field, but that is an invariant held elsewhere, and a stored report is where a violation
+ * would otherwise reach a published artifact silently. Asserted rather than assumed.
+ *
+ * AND IT MUST BE PRESENT ON `enumerated`, which is the same contract read the other way round —
+ * `SurfaceStatus` says of `enumerated`: "`flags` is present." Guarded in one direction only, a
+ * stored `{"status":"enumerated","evidence":[],"probesRead":7}` with no `flags` published
+ * `enumerated 0 flags at the root: ` at exit 0: the kit asserting a tool accepts no flags, which
+ * is the one inference this capture may never make and the exact claim `enumerated-none` exists
+ * to keep apart from `enumerated`. Same population as the direction above — a stored or foreign
+ * report, never a live check — and so the same boundary.
+ *
+ * THERE ARE TWO SUCH BOUNDARIES, WHICH IS WHY THIS IS EXPORTED. `acc compare` reads a stored
+ * surface and so does `acc report` — and `acc report --json` re-emits the stored payload verbatim,
+ * which is the most literal way a malformed surface reaches a published document. Guarded only on
+ * the comparison path, the same file was refused by one command and republished by the other at
+ * exit 0. `reportCommand` calls this directly and maps the throw through
+ * `malformedSurfaceUsageError`, so the rule lives here and its classification lives once in
+ * `commands/compare.ts`.
+ *
+ * WHOSE FAULT IT IS DECIDES THE CLASS, AND THE ANSWER IS NOT THE KIT'S. Every surface reaching
+ * here came out of a report FILE the caller named, parsed by `loadReport` and cast without a
+ * field-by-field validation. So a violation is a MALFORMED INPUT — "you invoked me wrong", which
+ * `C2` requires stay distinguishable from "I broke". Thrown as a bare `Error` this escaped
+ * unclassified and the boundary in `cli.ts` reported it as `internal`, exit 1: acc naming a defect
+ * in itself for a document someone else wrote and can edit. `loadReport` classifies every other
+ * malformed-artifact case as `usage` with a kebab-case `details.reason`, and both commands map
+ * this one onto exactly that shape.
+ */
+export function assertFlagsOnlyOnEnumerated(label: string, surface: Surface): void {
+  if (surface.status !== "enumerated" && "flags" in surface) {
+    throw new MalformedSurfaceError(
+      label,
+      "flags-on-non-enumerated-surface",
+      `surface with status "${surface.status}" carries a "flags" field — flags must stay absent, not empty`,
+    );
+  }
+  if (surface.status === "enumerated" && !("flags" in surface)) {
+    throw new MalformedSurfaceError(
+      label,
+      "enumerated-surface-without-flags",
+      'surface with status "enumerated" carries no "flags" field — flags is present on an enumerated surface, and a missing one renders as a tool that accepts none',
+    );
+  }
+}
+
 /** Tolerant of a report written before the capture existed: `surface` is absent, not empty. */
-function surfaceRow(label: string, surface: Surface | undefined): SurfaceRow {
+export function surfaceRow(label: string, surface: Surface | undefined): SurfaceRow {
   if (!surface) return { label, status: "not-recorded", probesRead: 0 };
+  assertFlagsOnlyOnEnumerated(label, surface);
   return {
     label,
     status: surface.status,
     ...(surface.flags ? { flags: [...surface.flags] } : {}),
     ...(surface.consistent === undefined ? {} : { consistent: surface.consistent }),
     probesRead: surface.probesRead,
+    ...(surface.emptySetKeys ? { emptySetKeys: [...surface.emptySetKeys] } : {}),
+    ...(surface.nonFlagCandidates ? { nonFlagCandidates: [...surface.nonFlagCandidates] } : {}),
   };
 }
 

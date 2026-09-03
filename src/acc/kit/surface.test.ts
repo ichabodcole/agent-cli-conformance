@@ -13,6 +13,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Declaration, diffDeclaration } from "./declaration.ts";
 import { record } from "./record.ts";
+import { parseRecordedBatch, readRecordedBatch } from "./recorded.ts";
 import { CHECKERS } from "./registry.ts";
 import { digestOfText } from "./runner.ts";
 import {
@@ -196,12 +197,14 @@ describe("what the capture refuses, which is the half that keeps it honest", () 
     expect(s.status).toBe("not-enumerated");
   });
 
-  test("an empty set declares nothing", () => {
+  test("an empty set never becomes a set of flags", () => {
     const s = captureSurface([rejection(`{"error":{"validFlags":[]}}`)]);
-    // "Enumerated zero flags" is the one output this capture must never produce: it is
-    // indistinguishable from a tool with no flags, and from a serializer that dropped the list.
-    expect(s.status).toBe("not-enumerated");
+    // `flags: []` is the one output this capture must never produce: an empty array published as
+    // a list is indistinguishable from a list, and a consumer reading `.flags` would take it for
+    // one. What the target said is carried by the STATUS, where a reader has to look at it.
+    expect(s.status).not.toBe("enumerated");
     expect(s.flags).toBeUndefined();
+    expect("flags" in s).toBe(false);
   });
 
   test("a truncated capture, whose list may be short by an unknowable number of flags", () => {
@@ -242,6 +245,132 @@ describe("what the capture refuses, which is the half that keeps it honest", () 
       rejection("valid flags: --a", { args: ["--", "--acc-probe-xyzzy-value"], id: "dd" }),
     ]);
     expect(s.status).toBe("no-evidence");
+  });
+});
+
+/**
+ * THE TARGET ANSWERED, AND THE ANSWER WAS NONE.
+ *
+ * `not-enumerated` renders `none named a set of flags`, so recording it for a target whose
+ * rejection carried the right key EMPTY published a sentence that target's own bytes refute — it
+ * named one. The two sentences have to be unmistakably different from each other, because the
+ * statuses are not: one is a fact about the tool's error text going quiet, the other is a fact
+ * about the tool's error text speaking.
+ */
+describe("a target that named an empty set", () => {
+  test("`enumerated-none` is minted, and carries no flags field", () => {
+    const s = captureSurface([rejection(`{"error":{"validFlags":[]}}`)]);
+    expect(s.status).toBe("enumerated-none");
+    expect(s.probesRead).toBe(1);
+    // The invariant `flags` exists to hold: absent, never empty, on every non-`enumerated` status.
+    expect("flags" in s).toBe(false);
+    expect(s.consistent).toBeUndefined();
+  });
+
+  test("it names WHICH key was empty, so the claim can be checked against the bytes", () => {
+    // An UNAMBIGUOUS key, and the SENTENCE and not just the status: an earlier draft asserted the
+    // status alone on `choices`, which is how a target saying it has no SUBCOMMANDS came to render
+    // as one stating it accepts no flags. The rendered line is where that shows.
+    const s = captureSurface([rejection(`{"error":{"acceptedOptions":[]}}`)]);
+    expect(s.status).toBe("enumerated-none");
+    expect(s.emptySetKeys).toEqual(["acceptedOptions"]);
+    expect(surfaceSummary(s)).toContain("stated an empty set of flags at the root");
+    expect(surfaceSummary(s)).toContain("under `acceptedOptions`");
+  });
+
+  test("AT THE ROOT an empty `choices` alone is NOT this state, because there it settles nothing", () => {
+    // `choices` is the one recognised key ambiguous between flags and verbs. For a non-empty array
+    // the flag-shape test resolves it by inspecting the members; an empty array has none to
+    // inspect. AT THE ROOT that ambiguity is real, because the root is the one place this kit
+    // reads `choices` as a set of SUBCOMMANDS — `advertisedVerbsFrom` runs on the root capture and
+    // nowhere else. "I have no subcommands" and "I accept no flags" are the same two bytes there,
+    // so the status stays where it was rather than picking one of the readings.
+    const s = captureSurface([rejection(`{"error":{"choices":[]}}`)]);
+    expect(s.status).toBe("not-enumerated");
+    expect(s.emptySetKeys).toBeUndefined();
+    expect(surfaceSummary(s)).not.toContain("empty set");
+  });
+
+  test("...and AT THE ROOT it cannot be laundered by a probe that read nothing either", () => {
+    // The same key, on a run with no readable rejection at all: still the status it already had.
+    const s = captureSurface([rejection(`{"error":{"choices":[]}}`, { truncated: true })]);
+    expect(s.status).toBe("no-evidence");
+    expect(s.emptySetKeys).toBeUndefined();
+  });
+
+  test("AT THE ROOT an unambiguous empty key still mints the state beside an empty `choices`", () => {
+    // The exclusion is about what `choices` alone can establish, not a veto on the document.
+    const s = captureSurface([rejection(`{"error":{"choices":[],"validFlags":[]}}`)]);
+    expect(s.status).toBe("enumerated-none");
+    expect(s.emptySetKeys).toEqual(["validFlags"]);
+  });
+
+  test("BELOW THE ROOT an empty `choices` DOES mint it, because there it is unambiguous", () => {
+    // THE MIRROR OF THE ROOT PINS ABOVE, and the reason the exclusion is a position rather than a
+    // property of the key. Nothing below the root reads `choices` as verbs: `advertisedVerbs` is
+    // derived in `captureSurface` alone and `readRecordedBatch` calls `surfaceFrom` directly. A
+    // verb-first CLI whose verbs scope their own flags answers `sessions --nope` with an empty
+    // `choices` and is saying what `sessions` accepts — the adopter report this state exists for.
+    const reading = readRecordedBatch(
+      parseRecordedBatch("<test>", {
+        formatVersion: "0",
+        records: [
+          {
+            path: ["sessions"],
+            argv: ["sessions", "--acc-not-a-flag"],
+            exitCode: 2,
+            streams: "separated",
+            stdout: "",
+            stderr: `{"ok":false,"error":{"kind":"usage","choices":[]}}\n`,
+            completeness: "complete",
+            recordedBy: "ci@test",
+            recordedAt: "2026-08-25T09:14:02Z",
+          },
+        ],
+      }),
+    );
+    const s = reading.surfaces[0]?.surface;
+    expect(s?.status).toBe("enumerated-none");
+    expect(s?.emptySetKeys).toEqual(["choices"]);
+    expect("flags" in (s ?? {})).toBe(false);
+    expect(surfaceSummary(s, ["sessions"])).toContain("stated an empty set of flags at sessions");
+  });
+
+  test("the sentence says the target stated an empty set, and cannot be read as silence", () => {
+    const text = surfaceSummary(captureSurface([rejection(`{"error":{"validFlags":[]}}`)]));
+    expect(text).toContain("empty set");
+    expect(text).toContain("at the root");
+    expect(text).toContain("`validFlags`");
+    // The two sentences the renderer used to reach instead, both of which say the opposite of
+    // what this target said. The fallthrough one is the sharper failure: it claims we never looked.
+    expect(text).not.toContain("NOT a tool with no flags");
+    expect(text).not.toContain("did not enumerate");
+    expect(text).not.toContain("nothing readable was recorded");
+  });
+
+  test("the sentence names the path, exactly as the other three do", () => {
+    const s = captureSurface([rejection(`{"error":{"validFlags":[]}}`)]);
+    expect(surfaceSummary(s, ["sessions"])).toContain("at sessions");
+  });
+
+  test("a real enumeration still wins over an empty key elsewhere in the document", () => {
+    // The early return on evidence is untouched: a target that named a set HAS enumerated, and
+    // an empty second key cannot demote it.
+    const s = captureSurface([rejection(`{"error":{"validFlags":["--a"],"choices":[]}}`)]);
+    expect(s.status).toBe("enumerated");
+    expect(s.flags).toEqual(["--a"]);
+  });
+
+  test("an empty key on an UNQUALIFIED name declares nothing, exactly as a full one does not", () => {
+    // `flags: []` is a field, not a declaration — the same reason `flags: ["--a"]` is not read.
+    const s = captureSurface([rejection(`{"error":{"flags":[]}}`)]);
+    expect(s.status).toBe("not-enumerated");
+  });
+
+  test("nothing readable was recorded is still its own claim", () => {
+    // The status means the target ANSWERED. A run that read no rejection at all cannot reach it,
+    // however many empty arrays are lying around in streams nobody read.
+    expect(captureSurface([]).status).toBe("no-evidence");
   });
 });
 
@@ -410,18 +539,23 @@ describe("against real fixtures", () => {
     expect(s.evidence.every((e) => e.shape === "json-field")).toBe(true);
   }, 60_000);
 
-  test("a target that talks about flags without naming any", async () => {
+  test("a target whose rejection carries the right key, empty", async () => {
     const h = await record(
       {
-        path: fixture("mentions-flags-without-enumerating.ts"),
-        argv0: ["bun", fixture("mentions-flags-without-enumerating.ts")],
+        path: fixture("enumerates-nothing-explicitly.ts"),
+        argv0: ["bun", fixture("enumerates-nothing-explicitly.ts")],
       },
       CHECKERS,
     );
     const s = captureSurface(h.observations);
-    // Five separate traps in one error document, and the honest answer to all of them is silence.
-    expect(s.status).toBe("not-enumerated");
+    // The target named the key this reads and put nothing in it. That is an answer, and reporting
+    // it as `not-enumerated` — which asserts the tool HAS flags it declined to list — published
+    // the negation of what the target said.
+    expect(s.status).toBe("enumerated-none");
     expect(s.probesRead).toBeGreaterThan(0);
+    expect(s.emptySetKeys).toEqual(["validFlags"]);
+    // Still no fabricated list: an empty array is not an enumeration OF anything.
+    expect("flags" in s).toBe(false);
   }, 60_000);
 
   test("`acc check` prints the capture, folding the repeated rejections", async () => {
@@ -439,15 +573,19 @@ describe("against real fixtures", () => {
     expect(run.stdout).toContain("identical rejections");
   }, 120_000);
 
-  test("...and says plainly when a target named nothing", async () => {
+  test("...and says plainly when a target named an EMPTY set", async () => {
     const acc = join(HERE, "..", "cli.ts");
     const run = spawnSync(
       "bun",
-      [acc, "check", fixture("mentions-flags-without-enumerating.ts"), "--format", "text"],
+      [acc, "check", fixture("enumerates-nothing-explicitly.ts"), "--format", "text"],
       { encoding: "utf8" },
     );
-    expect(run.stdout).toContain("did not enumerate");
-    expect(run.stdout).toContain("NOT a tool with no flags");
+    expect(run.stdout).toContain("empty set");
+    expect(run.stdout).toContain("`validFlags`");
+    // Neither of the two sentences the renderer used to reach for this target, both of which
+    // contradict what it actually said.
+    expect(run.stdout).not.toContain("NOT a tool with no flags");
+    expect(run.stdout).not.toContain("nothing readable was recorded");
   }, 120_000);
 
   test("the kit's own reference implementation, which enumerates its COMMANDS", async () => {
@@ -522,6 +660,26 @@ describe("a list that is not a flag list", () => {
     const line = surfaceSummary(captureSurface([json({ error: { message: "no" } })]), []);
     expect(line).toContain("set of flags");
     expect(line).not.toContain("choices");
+  });
+
+  test("`enumerated-none` still names a non-flag list seen alongside the empty set", () => {
+    // The DATA already survives this shape — `surfaceFrom` computes `nonFlagCandidates` in the
+    // same non-evidence branch that mints `enumerated-none`, and attaches it right beside
+    // `emptySetKeys` on the returned object. What was missing is the SENTENCE: `surfaceSummary`'s
+    // `enumerated-none` case did not read `nonFlagCandidates` the way `not-enumerated`'s does, so
+    // a target answering both a verb-shaped `choices` list and an empty `validFlags` kept the
+    // near-miss data in the JSON while the rendered line silently dropped it.
+    const s = captureSurface([json({ error: { choices: ["run", "build"], validFlags: [] } })]);
+    expect(s.status).toBe("enumerated-none");
+    expect(s.emptySetKeys).toEqual(["validFlags"]);
+    expect(s.nonFlagCandidates?.map((c) => c.key)).toEqual(["choices"]);
+
+    const line = surfaceSummary(s);
+    expect(line).toContain("stated an empty set of flags at the root");
+    expect(line).toContain("`choices`");
+    expect(line).toContain("run");
+    expect(line).toContain("build");
+    expect(line).toContain("not flag-shaped");
   });
 });
 
