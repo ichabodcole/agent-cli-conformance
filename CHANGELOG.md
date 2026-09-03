@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.1.11](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.10...v0.1.11) (2026-09-03)
+
+
+### Features
+
+* **acc:** the declaration diff admits the set the target named and left empty ([6a8e425](https://github.com/ichabodcole/agent-cli-conformance/commit/6a8e42529c6c0f6a97ac5563931707d6349f142e))
+* **acc:** the third enumeration state, and a renderer that cannot fall through ([05419c9](https://github.com/ichabodcole/agent-cli-conformance/commit/05419c92ab978b2db3a37dd401502b9075be14ed))
+* **kit:** a recorded reading publishes emptySetKeys, and the guide says what it carries ([ca0a84f](https://github.com/ichabodcole/agent-cli-conformance/commit/ca0a84f06ff20bb3a014ebad2deb2e0262e32f38))
+
+
+### Bug Fixes
+
+* **acc:** an empty `choices` settles nothing, and the exhaustiveness error names its member ([c4b2782](https://github.com/ichabodcole/agent-cli-conformance/commit/c4b278248174392cab85e00388e8b7e6be3ffd56))
+* **acc:** carry the enumerated-none near-miss clause across check and compare ([af69a27](https://github.com/ichabodcole/agent-cli-conformance/commit/af69a27ad72ad02c5a7e765d9da2b448585513af))
+* **acc:** the empty-`choices` exclusion is a position, not a property of the key ([8ec16f6](https://github.com/ichabodcole/agent-cli-conformance/commit/8ec16f691ba2c860bb12683e278576f66528c51d))
+* **check:** re-type VERDICT_WORD as Record&lt;SurfaceStatus, string&gt; ([3738419](https://github.com/ichabodcole/agent-cli-conformance/commit/37384193789b9a30f5246f1d02fe041f41298326))
+* **compare:** a malformed stored report is a usage error, not an internal one ([0ab567c](https://github.com/ichabodcole/agent-cli-conformance/commit/0ab567c128ec594233eb7f3a08c39d84284fbc35))
+* **kit:** a stored status this build cannot read renders a sentence, not a token ([5722d23](https://github.com/ichabodcole/agent-cli-conformance/commit/5722d232410939f5db0ead4d53f06a0c050543ab))
+* **kit:** the half of the flags contract the guard left open ([8656c49](https://github.com/ichabodcole/agent-cli-conformance/commit/8656c493c54744f97781ba74f716ac79e3c88547))
+* **lint:** the version check read git-ignored scratch, and its skip list was hand-kept ([2d623cf](https://github.com/ichabodcole/agent-cli-conformance/commit/2d623cfb1b6abe8b24988c7ea228118160f21569))
+* **report:** the second boundary that published a malformed surface ([9a6319e](https://github.com/ichabodcole/agent-cli-conformance/commit/9a6319e189333a2c8f261f16db5f6afc2f9c9e4d))
+* **skills:** the anchor check read a number that diagnoses nothing ([ae1c21d](https://github.com/ichabodcole/agent-cli-conformance/commit/ae1c21d837f8f5126415e85770de8aaf6b648710))
+
 ## [0.1.10](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.9...v0.1.10) (2026-09-02)
 
 
