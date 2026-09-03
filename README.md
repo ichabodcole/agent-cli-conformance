@@ -231,6 +231,24 @@ by terminating the target's whole **process group**, which is POSIX-only, so on 
 descendant the target spawned may outlive the run. The deadline still resolves the probe either
 way. Details in [probing](docs/wiki/concepts/probing.md#a-probe-the-kit-killed-is-not-a-probe-the-target-failed).
 
+### Or let an agent walk you through it
+
+The [`acc` skill](skills/acc/SKILL.md) packages the whole sequence — derive the current tag, run
+the pinned install above, run the check, read the verdict, and open the guide that fixes what it
+found. Install it into your project with the [`skills`](https://github.com/vercel-labs/skills) CLI:
+
+```bash
+bunx skills add ichabodcole/agent-cli-conformance --skill acc
+```
+
+`npx` works in place of `bunx`. The command asks which agent directories to write to, then copies
+the skill there — for Claude Code that is `.claude/skills/acc/` — and records where it came from in
+`skills-lock.json`. **Keep `--skill acc`.** Without it the listing shows every skill in this
+repository, and the others are for working on the kit, not for using it.
+
+Then ask your agent to check your CLI. The skill's first step is the install line at the top of
+this section, so you do not need to run both.
+
 Where to go next:
 
 - **[Check your first CLI](docs/wiki/guides/check-your-first-cli.md)** — ten minutes, learning
@@ -255,8 +273,8 @@ be mechanically checked does not get to be a rule.
 Records a structured _observation_ per probe — argv, stdout, stderr, exit code, the terminating
 signal, timing, and whether the capture was cut short — then runs rule-checkers over the
 recorded observations.
-(Filesystem hashes belong in that list and are _planned_; nothing hashes anything today.) Two
-consequences:
+(Each observation also carries a SHA-256 digest of its stdout and stderr bytes; filesystem
+hashes belong in that list and are _planned_.) Two consequences:
 
 - **A new rule is a new checker over data already collected** — not a new test in every
   project. _Planned:_ retroactive re-checking is a property of the architecture rather than a
@@ -401,7 +419,7 @@ acc version --check        # is the installed kit the current release? (see the 
 acc rules --tier core      # the rules a conforming CLI must satisfy
 acc show A1                # one rule, with its links in and out
 acc show exit-codes --body # ...and the full text
-acc path A6 delegator      # shortest path of OUTBOUND links; reversed, this is a valid exit 5
+acc path A6 delegator      # shortest path of OUTBOUND links between two pages
 acc tags
 acc report report.json     # render a saved check report back as the text report
 acc schema                 # the machine-readable interface description
@@ -482,20 +500,29 @@ branches.
 ### Layout
 
 ```
-docs/wiki/     the spec and its rationale — see docs/wiki/SCHEMA.md before editing
-src/acc/       the reference implementation; spec.ts is its single source of truth
-docs/research/ the evidence trail: reports on case studies, frameworks, CLI-vs-MCP,
-               testing methodology, defect archaeology and prose. Cited by decision and
-               rule pages; dated and not maintained.
+STANDARD.md      the guidance itself — the primary product, and what an adopter reads
+CHARTER.md       what the project is for; a proposal that does not serve it is rejected
+docs/wiki/       the spec and its rationale — see docs/wiki/SCHEMA.md before editing
+docs/research/   the evidence trail: reports on case studies, frameworks, CLI-vs-MCP,
+                 testing methodology, defect archaeology and prose. Cited by decision and
+                 rule pages; dated and not maintained.
+docs/reports/    findings someone is expected to act on; each one completes
+docs/plans/      work not yet done
+docs/roadmap.md  what is missing and why, with each gap's evidence
+docs/techniques.md
+                 verification techniques that have each caught a real defect here
+src/acc/         the reference implementation; spec.ts is its single source of truth
+  kit/           the runner, the checkers, the report algebra
+skills/acc/      the skill adopters install — see "Or let an agent walk you through it"
 scripts/
-  docs-lint/   portable, zero-dependency wiki linter (lift it into other repos as-is)
+  docs-lint/     portable, zero-dependency wiki linter (lift it into other repos as-is)
 ```
 
 ### Commands
 
 ```bash
 bun run hooks                  # install the git hooks — once per clone, see below
-bun run check                  # THE gate: typecheck, lint, wiki lint, tests
+bun run check                  # THE gate: typecheck, Biome, Prettier, both docs lints, docs build, tests
 bun docs/wiki/lint.ts          # link, anchor, frontmatter, orphan and rule checks
 bun docs/wiki/lint.ts --json   # emit the knowledge graph
 bun run docs:sync              # regenerate the generated blocks in docs/wiki/index.md
