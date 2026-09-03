@@ -37,8 +37,8 @@ Any of these, in a sentence you are writing:
 - a claim that two things are the same string, the same shape, or the same behaviour
 - a claim that something is the sole instance of anything
 
-**Give quantifiers the most attention.** They assert over cases, and a claim over cases is only true
-if someone enumerated them — including the exceptions, which are exactly what a summary leaves out.
+A quantifier asserts over cases, so it is true only if the cases were enumerated — the exceptions
+included.
 
 ## Claims you cannot run
 
@@ -47,21 +47,20 @@ Some sentences have no case to produce. They need a different discipline, not an
 - **A `because` is an inference, not an observation.** It can follow perfectly from the design and
   still be false about the code. Cite the line that implements it, or drop the clause and keep the
   description.
-- **Do not repair a false claim by negating it.** The negation of a false claim is a different false
-  claim. State what is true, which is usually neither.
+- **Do not repair a false claim by negating it.** Negating the wording answers a different question
+  from the one the reader has. Produce the case and write what it shows.
 - **Scope the claim to what the evidence establishes.** What a tool _said_ is not what is _true_ of
   the tool; what one run _showed_ is not what the code _guarantees_.
 
 ## When the case cannot be produced
 
 **Delete the sentence.** Do not hedge it or write a weaker version that survives by saying less. A
-missing sentence is visibly missing. An unverified one reads exactly like a verified one, which is
-the whole problem.
+missing sentence is visibly missing. An unverified one reads exactly like a verified one.
 
 ## What this does not catch
 
-- **A claim that is true when written and goes stale later.** This makes a sentence true once;
-  keeping it true needs a gate.
+- **A claim that is true when written and goes stale later.** This makes a sentence true once.
+  Keeping it true is a separate problem.
 - **A claim about what the code should do.** Producing the case tells you what it does.
 - **A true sentence that is in the wrong place or that a reader cannot act on** — see
   [`prose-cold-read`](../prose-cold-read/SKILL.md).
