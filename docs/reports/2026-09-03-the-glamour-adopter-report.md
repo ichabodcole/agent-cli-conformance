@@ -23,11 +23,13 @@ An agent brought Spellbook's `glamour` CLI to L0 in one sitting, then ran the ce
 one-registry derivation, and filed the friction as
 [issue #37](https://github.com/ichabodcole/agent-cli-conformance/issues/37), bucketed the way
 [`REPORTING.md`](../../skills/acc/REPORTING.md) asks. This report records those six points
-against the tree, so each has a disposition rather than an open discussion. It is the fourth run in the
-trials record — [what three adopters want](./2026-08-26-what-three-adopters-want.md) covers
-the first two, [the third trial](./2026-08-27-the-third-trial.md) the third — and the first
-where the adopter followed the published `skills/acc/SKILL.md` rather than a protocol run over
-a chat channel with a coordinator.
+against the tree, so each has a disposition rather than an open discussion. It is the fourth
+run in the trials record — [the claims from two trials](./2026-08-27-the-claims-from-two-trials.md)
+holds rounds one and two, [the third trial](./2026-08-27-the-third-trial.md) round three — and
+the first where the adopter followed the published `skills/acc/SKILL.md` rather than a protocol
+run over a chat channel with a coordinator. [What three adopters
+want](./2026-08-26-what-three-adopters-want.md) is the survey those adopters answered; GL-6
+below lands on a question it already raised, whether `unverified` is free.
 
 Register, as in the earlier trial reports: **reported** is the adopter's own account, quoted;
 **observed** is a command run for this report, with its output; **inferred** is marked ours.
@@ -53,8 +55,9 @@ Reported: the adopter's first instinct was to put the verb roster in the root re
 > … a `choices` list of 19 was present and its members are not flag-shaped …
 
 The diff's message told them precisely what it saw and not what a root with no flags of its own
-should say. They found the answer in the one-registry guide's interceptor array — `--help -h --version
--V`, the same array the declaration publishes at `path: []` — and the diff then compared 20 of 20.
+should say. They found the answer in the one-registry guide's interceptor array — `--help -h
+--version -V`, the same array the declaration publishes at `path: []` — and the diff then
+compared 20 of 20.
 
 Observed: the word "interceptor" occurs in
 [how to derive your surface from one registry](../wiki/guides/how-to-derive-your-surface-from-one-registry.md)
@@ -97,8 +100,8 @@ finding is promoted as an open question rather than answered here.
 ## GL-4 · Bun strips one `--`, and neither the skill nor the L0 guide says so
 
 Reported: the adopter smoke-tested an A6 fix by hand; `bun scripts/cli.ts -- --nope` reached the
-script without the `--`, and read as "the fix did not work" for several minutes. `bun scripts/cli.ts --
--- --nope` is what the kit sends. They cite an earlier fresh-agent run in the same repository
+script without the `--`, and read as "the fix did not work" for several minutes. What the kit
+sends is `bun scripts/cli.ts -- -- --nope`. They cite an earlier fresh-agent run in the same repository
 hitting the same stripping from the other side.
 
 Observed: neither `skills/acc/SKILL.md` nor the reach-L0 guide mentions the double terminator.
@@ -139,8 +142,8 @@ CONFORMANT (L0) — 0 core violated, 1 core unverified, 16 core partially covere
 and the checker's schema-row pattern, applied directly to glamour's `--help` text, matches the
 row `  schema    emit this CLI's acc declaration …`.
 
-Inferred, ours: not a matcher gap. The quoted `UNVR` comes from a run before the schema row
-landed, or from the other Spellbook tool the issue says sits in the same state.
+Inferred, ours: not a matcher gap. The quoted `UNVR` most likely comes from a run before the
+schema row landed, or from the other Spellbook tool the issue says sits in the same state.
 
 What survives is the first part. The
 [D3 page](../wiki/rules/discoverability/help-advertises-machine-mode.md) already reasons that a
@@ -148,9 +151,9 @@ caller sees help and not `acc.config.json`; it does not say in so many words tha
 is the intended terminal state for a JSON-by-default tool with no schema command, so adopters
 keep trying to clear it.
 
-**A design question for the rule page.** Whether to state the terminal state plainly. The run
-above already answers the other half: a visible `schema` command is a way out for a tool in
-that shape.
+**A design question for the rule page:** whether to say plainly that `unverified` is the
+terminal state for that shape. Whether a visible `schema` command is the way out is not a
+question; the run above shows that it is.
 
 ## What this did not establish
 
