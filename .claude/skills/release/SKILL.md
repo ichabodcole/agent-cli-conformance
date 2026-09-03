@@ -118,6 +118,11 @@ the artifacts.**
 has to act on.** It is not marketing and not an install guide — the README, the wiki and the
 skill hold those.
 
+**Say what to leave out, too.** The reader already has the release, so the note owes them what is
+different — not why it was done, not evidence that it works, and not an account of how the work
+went. **A reader who skipped a line should be no worse off unless that line named
+something they will meet.**
+
 Ask it to return, kept separate from the prose:
 
 1. what it could **not** determine from the tree;
@@ -168,10 +173,20 @@ A note documenting a machine-readable surface should be diffed against that surf
 A second fresh agent, given **only the note text**, forbidden from looking anything up. If it wants
 to go check something, that is the finding.
 
-Ask for terms it could not confidently interpret — separating _"I don't know this word"_ from _"I
-know it but it might mean something specific here"_ — and what it takes away in two sentences.
+Ask for four things: what it could not act on, what it could have skipped, terms it could not
+confidently interpret — separating _"I don't know this word"_ from _"I know it but it might mean
+something specific here"_ — and what it takes away in two sentences.
 
-> **The second category is the dangerous one.** An unknown word sends a reader to look it up; a
+**Name the first two, or a read will not return them.**
+
+- **Blocked** — anything the note asks or implies where the reader could not do it, could not tell
+  whether they had succeeded, or would have to go and find something the note does not supply.
+- **Wasted** — anything read that did not change what the reader would do, quoted.
+
+Both earn another read under the cycle below. A line the reader could not act on, or did not need,
+is something to check rather than a matter of taste.
+
+> **The half-recognised term is the dangerous one.** An unknown word sends a reader to look it up; a
 > half-recognised one lets them carry on with the wrong reading.
 
 Wrong facts are defects: **fix them in the tree and commit**, do not paper over them in the note.
