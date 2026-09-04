@@ -1,6 +1,6 @@
 {
   "name": "agent-cli-conformance",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "private": true,
   "type": "module",
   "description": "A specification and conformance kit for agent-first command-line tools.",

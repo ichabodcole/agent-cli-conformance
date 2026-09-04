@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.12](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.11...v0.1.12) (2026-09-04)
+
+
+### Bug Fixes
+
+* **docs-lint:** walk directories in sorted order, so CI's ext4 readdir order cannot flip a verdict ([f5fb4e1](https://github.com/ichabodcole/agent-cli-conformance/commit/f5fb4e1877b09c238db7fe635ef2389bd518d778))
+
+
+### Miscellaneous Chores
+
+* pin v0.1.12 so the adopter guide sentences reach a tag ([eaa8438](https://github.com/ichabodcole/agent-cli-conformance/commit/eaa8438e13790af06abb0a483f8ba12b1b00af8d))
+
 ## [0.1.11](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.10...v0.1.11) (2026-09-03)
 
 
