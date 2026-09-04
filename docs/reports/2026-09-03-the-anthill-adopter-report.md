@@ -181,8 +181,9 @@ adopters hit it in one day, at four paths: glamour's root and anthill's three gr
   adopter can confirm `27 of 27` on the real tool.
 - **The reader theory was not prototyped.** Its cost and its interaction with the root, where
   `choices` is already read for verbs, are not measured.
-- **The `docker` and `kubectl` entries in the standard's survey sentence were not re-measured**;
-  only the anthill entry is shown false.
+- **The `docker` and `kubectl` entries in the standard's survey sentence were not re-measured for
+  this report**; only the anthill entry is shown false. (The branch that rewrote the sentence
+  re-measured all six nodes on 2026-09-03; the vendor figures held.)
 
 ## Dispositions
 

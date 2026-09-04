@@ -64,8 +64,11 @@ Observed: the word "interceptor" occurs in
 as code and a quoted source comment, and nowhere in
 [how to record surfaces below the root](../wiki/guides/how-to-record-surfaces-below-the-root.md)
 or [how to reach L0](../wiki/guides/how-to-reach-l0-in-your-project.md). Nowhere is the
-connecting sentence written: at the root, `choices` is the root's own flags, and the verb roster
-belongs in `hint`, because a non-flag-shaped `choices` makes the root un-diffable.
+connecting sentence written: at the root, the unknown-flag rejection's `choices` is the root's own
+flags, because a non-flag-shaped `choices` there makes the root un-diffable. (This report first
+proposed putting the verb roster in `hint`; measuring the fix showed the kit reads the
+unknown-verb rejection's `choices` for the advertised verbs, so the sentence that landed in the
+guide says to answer each rejection with the set the caller got wrong.)
 
 **A guide gap.** One sentence in the surfaces guide, which is the page a census reader opens
 first.
@@ -165,14 +168,14 @@ question; the run above shows that it is.
 
 ## Dispositions
 
-| Id     | Kind              | Proposed disposition                                                                                  |
-| ------ | ----------------- | ----------------------------------------------------------------------------------------------------- |
-| `GL-1` | guide gap         | one sentence in the surfaces guide: root `choices` are the interceptors, verbs go in `hint`           |
-| `GL-2` | guide gap         | name `variadic` beside `name` and `required` in the census guide's example                            |
-| `GL-3` | stable-column ask | promote to an open question: what, if anything, of the declaration diff is promised                   |
-| `GL-4` | guide gap         | one line where the `.ts`-target advice lives: a hand test through `bun` needs two `--`                |
-| `GL-5` | nit               | one sentence in `report`'s notes: piped, it emits JSON like every other command                       |
-| `GL-6` | design question   | say on the D3 page what the terminal state is for a JSON-by-default tool; the matcher is not at fault |
+| Id     | Kind              | Proposed disposition                                                                                    |
+| ------ | ----------------- | ------------------------------------------------------------------------------------------------------- |
+| `GL-1` | guide gap         | one sentence in the surfaces guide: flags answer the unknown-flag rejection, verbs the unknown-verb one |
+| `GL-2` | guide gap         | name `variadic` beside `name` and `required` in the census guide's example                              |
+| `GL-3` | stable-column ask | promote to an open question: what, if anything, of the declaration diff is promised                     |
+| `GL-4` | guide gap         | one line where the `.ts`-target advice lives: a hand test through `bun` needs two `--`                  |
+| `GL-5` | nit               | one sentence in `report`'s notes: piped, it emits JSON like every other command                         |
+| `GL-6` | design question   | say on the D3 page what the terminal state is for a JSON-by-default tool; the matcher is not at fault   |
 
 None of these is actioned by this report. The three guide gaps share one property: in each,
 the fact was already known somewhere — in another guide, in the parser's source, in the rule
