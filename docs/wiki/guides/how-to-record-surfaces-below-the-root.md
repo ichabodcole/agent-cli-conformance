@@ -92,6 +92,15 @@ root; the census counts **declared command paths**, and a declaration normally d
 too. Recording all 25 paths below the root, against a 26-path declaration, reads `26 of 26 declared
 command paths compared` — 25 of them on your records, the twenty-sixth on the kit's own root probe.
 
+**"Omit the root" is about a batch handed to `acc`.** If you build your own census from this
+page with no kit involved — the shell loop [`STANDARD.md`](../../../STANDARD.md) recommends
+building before anything else — probe the root too. Nothing else observes the root there, and the
+root is where undeclared flags collect: `--help`, `--version` and a global `--format` belong to the
+root, which a generator that walks the subcommands never reads, so they go undeclared, and a census
+that skips the root never reads the one rejection that would show it
+([the first drift trial](../../reports/2026-08-24-first-drift-trial-anthill-manifest.md) found a
+root `--format` the parser accepted and the manifest omitted).
+
 If your declaration does **not** declare a root, the root is still compared, against nothing
 declared — which is exactly what turns the flags it accepts into `accepted-not-declared`. It is
 **not** counted in the `N of M declared command paths compared` line, whose two counts cover only
@@ -141,6 +150,19 @@ declared-not-accepted  --help at (root) [probed-by-kit]
 ```
 
 That run passed no batch, which is why only the root of the declaration's four paths compared.
+
+**A group node below the root that names its subcommands should name its empty flag set too.**
+A path that holds subcommands and no flags of its own is asked, when it refuses a flag, to name
+the subcommands
+([`STANDARD.md`](../../../STANDARD.md#a-group-node-that-refuses-a-flag-should-name-its-subcommands)).
+Put them in the rejection's `choices` and stop there, and the kit reads a list whose members are
+not flag-shaped,
+reports the path as not enumerated — `a choices list of 5 was present and its members are not
+flag-shaped … a set of something else, not of flags` — and does not compare it. Add an empty flag
+key beside them, `"validFlags": []`, and the same rejection reads
+`stated an empty set of flags at comms under validFlags`; the path is compared, and every flag your
+declaration marks `valid` there is reported. Measured on a fixture with two group nodes: 3 of 5
+declared paths compared without the key, 5 of 5 with it.
 
 **A recorded path is a path you assert exists. Nothing in a batch establishes that it does.**
 
