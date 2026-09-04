@@ -7,7 +7,7 @@ description:
 tags: [guide, adoption, evidence, declarations, acc-check]
 related: [concept/probing, concept/conformance, guide/how-to-reach-l0-in-your-project]
 status: stable
-generated: { by: claude-opus-5, at: 2026-08-26 }
+generated: { by: claude-fable-5-1, at: 2026-09-03 }
 ---
 
 # How to record surfaces below the root
@@ -66,6 +66,8 @@ a level you can write one from.** Here is the minimum:
   the file rather than defaulting.
 - **`path`** is the argv tokens before the flags, as an array. `[]` is the root.
 - **`status`** is `"valid"` or `"refused"` — what the document claims about that flag AT THAT PATH.
+- **`positionals`** entries carry exactly three keys: `name` (a string), `required` (a boolean,
+  always present) and `variadic` (a boolean, optional). Any other key is refused.
 - **Unknown keys are refused anywhere in the file**, and the version is checked before the sweep,
   so fix a version complaint first and re-run rather than hunting keys.
 
@@ -113,6 +115,20 @@ NOT COMPARED: (root) — did not enumerate at the root; 7 rejections read, none 
 
 Your three recorded paths compared; the fourth path the declaration names is the root, and the kit
 probed it and got no set back.
+
+**At the root of a verb-first tool, answer an unknown-flag rejection with the root's flag set and
+an unknown-verb rejection with its verb set.** The kit reads the root's rejections for two
+different sets, separately. Every rejection the kit can read for flags has its `choices` read as
+the root's own flags; several probes each produce one, and that is the `N rejections read` count
+above. The unknown-verb rejection and the bare invocation are both read for the verbs the tool
+advertises. If the root accepts only the flags it answers before any verb — `--help`, `-h`,
+`--version`, `-V` — then its flag set is that array: the same one the declaration publishes at
+`path: []`, and the one
+[the one-registry guide](./how-to-derive-your-surface-from-one-registry.md) derives. If the
+rejections the kit reads for flags contain verbs, the root is left not enumerated and not
+compared; in a run with no batch the root is the only path the kit reaches, so the diff does not
+run. Flags in the unknown-verb rejection's `choices` are not read as verbs, and the verb set then
+comes from whatever else the two captures advertise.
 
 **A root that names an empty set is not this case.** `"validFlags": []` is an answer rather than a
 silence, so the root is compared like any other path and gets no `NOT COMPARED` line. Against an

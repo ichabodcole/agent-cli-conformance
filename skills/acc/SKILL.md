@@ -85,6 +85,9 @@ command your kit recognises, the rejection lists the commands it does have: you 
 older kit, and `docs/wiki/guides/how-to-fix-a-broken-install.md` again has the remedy.
 
 The target is the path to your executable or script, the same thing you would type to run it.
+If it is a `.ts` file and you smoke-test a `--` fix by hand through `bun`, pass two `--` — bun
+strips the first before your tool sees argv; `docs/wiki/rules/parsing/double-dash-terminator.md`
+has the measurement.
 
 **`acc check` executes your tool**, with a bounded set of probes — risk-reduced, not a sandbox.
 Before you run `acc check`, `docs/wiki/guides/how-to-establish-your-target-is-safe-to-check.md`
