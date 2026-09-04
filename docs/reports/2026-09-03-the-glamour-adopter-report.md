@@ -199,9 +199,12 @@ says so.
 - **`GL-4` actioned** in the same commit: the double `--` in the README and the `acc` skill.
 - **`GL-5` actioned** in the same commit: the `report` command's notes.
 - **`GL-6` split.** The matcher half is **declined** — it did not reproduce, as the section above
-  shows. The design half, a sentence on the D3 page naming `unverified` as the terminal state for a
-  JSON-by-default tool, is open and not yet promoted.
+  shows. The design half is **actioned** on 2026-09-04: the D3 page's "How to comply" now says
+  that for a JSON-by-default tool with no flag, help that states the JSON default reaches
+  `unverified` and stops there, and that a `schema` command row or `--schema` flag is what passes.
+  The page's first coverage gap, which had said no pass was reachable by any route, was corrected
+  in the same change.
 
-Not discharged: `GL-3` and the design half of `GL-6` are waiting on a decision, which is what the
+Not discharged: `GL-3` is waiting on a decision. The
 [status comment on issue #37](https://github.com/ichabodcole/agent-cli-conformance/issues/37)
-says.
+predates the `GL-6` action.
