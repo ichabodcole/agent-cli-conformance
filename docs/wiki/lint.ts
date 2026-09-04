@@ -742,7 +742,12 @@ function writeMatrix(): void {
 
 function walk(dir: string): string[] {
   const out: string[] = [];
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
+  // Sorted: readdir order is the filesystem's, and ext4 on the CI runner does not return
+  // entries alphabetically the way APFS does.
+  const entries = readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
+    a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+  );
+  for (const e of entries) {
     const p = join(dir, e.name);
     if (e.isDirectory()) out.push(...walk(p));
     else if (p.endsWith(".ts") && !p.endsWith(".test.ts")) out.push(p);
