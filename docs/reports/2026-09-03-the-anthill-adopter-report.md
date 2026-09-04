@@ -2,7 +2,7 @@
 type: report
 generated: { by: claude-fable-5-1, at: 2026-09-03 }
 status: stable
-lifecycle: live
+lifecycle: discharged
 description:
   Three friction points anthill — a bun CLI with three group nodes and one flag registry — hit
   while running kit v0.1.11's census and one-registry derivation, filed as issues #38–#40 and each
@@ -207,9 +207,9 @@ says so.
 
 - **`AN-1` guide gap actioned** in `6216b93`, released as v0.1.12: the paragraph beside the
   interceptor array in the one-registry guide. Its warrant is the enumeration alone, not the
-  probe set — the round that established that is in the commit history. **The alias field is
-  open**: recorded here as a question about what v0 promises, not yet in the roadmap and not
-  declined.
+  probe set — the round that established that is in the commit history. **The alias field is promoted** on 2026-09-04 into
+  [the roadmap](../roadmap.md#2-version-the-contract-not-only-the-rules), beside the glamour
+  stable-column question, as an ask against the promised surface.
 - **`AN-2` actioned** in the same commit: the surfaces guide's step 1 and the standard's census
   paragraph. Two sentences in the standard that said the kit could not yet accept below-root
   evidence were found stale on the way and corrected in the same commit.
@@ -221,4 +221,5 @@ says so.
 - Issues #38, #39 and #40 are closed on the guide fixes; #40's reply asks anthill to confirm
   `27 of 27` with the key.
 
-Not discharged: the alias-field question under `AN-1` is waiting on a decision.
+With that promotion this report is **discharged**: every finding is actioned, promoted, or
+declined.

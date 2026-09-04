@@ -137,6 +137,18 @@ and will become one. A versioning discipline that cannot absorb a new coordinate
 versioning discipline, so the profile coordinate arriving at step 5 is this step's first real
 test rather than an argument for delaying it.
 
+**Two adopter asks against the promised surface, parked here until that decision is made.** Both
+came from the 2026-09-03 trials and both are about what a consumer may bind to, which is this
+step's question. From [the glamour report](reports/2026-09-03-the-glamour-adopter-report.md#gl-3--a-promised-signal-for-the-diff-ran-and-found-n-disagreements):
+a promised signal for the declaration diff — either a `--fail-on-disagreement` flag that moves the
+exit code into the outcome band, or a documented stable subset of `data.declaration` — because
+today every field a CI ratchet would read from the diff is on the README's unstable side. From
+[the anthill report](reports/2026-09-03-the-anthill-adopter-report.md#an-1--a-declared-alias-reads-declared-not-accepted-unless-the-rejection-names-it):
+an alias field in the declaration, so `-h` need not be a row of its own that the rejection must
+name separately. Neither is answered; the first is a charter-level call about the stable column,
+the second a v0 format change, and both wait on the coordinate set above so that whatever is
+promised has a version to be promised under.
+
 ## 3. Control the observation environment, which is also the L0 safety work
 
 **What it is.** A hermetic environment policy: locale, TTY state, terminal width, `HOME` and the

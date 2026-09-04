@@ -2,9 +2,10 @@
 name: acc
 description:
   Check a command-line tool against the acc conformance standard. Use when someone wants to know
-  whether their CLI is usable by agents and scripts, when they have run `acc check` and do not
-  know what to do with the result, or when they want to cover the command paths a root-only probe
-  cannot reach.
+  whether their CLI is usable by agents and scripts; when they have run `acc check` and do not
+  know what to do with the result; or when they have done a first check and want to go on — cover
+  their subcommands, record surfaces below the root, or restructure so the surface comes from one
+  registry.
 ---
 
 # Checking a CLI with `acc`
@@ -16,8 +17,11 @@ CLI. The checks are the smallest part of this — they exist to hold what you ad
 thing you adopt — a declared default — converts more of the report from `unverified` to checked and
 kept that way.
 
-This skill is the order to do things in. Every guide it names is a file in the `acc` repository,
-at the path given. **Once step 1's install has run, read them from
+This skill is the order to do things in. Steps 1 to 4 run without asking. After step 4 you
+stop, report and wait: steps 5 and 6 are the tool owner's call. If you were told to continue,
+start at whichever of them you were told to; an instruction given at the outset counts, and the
+step 4 report still goes out first. Every guide it names is a file in the `acc` repository, at
+the path given. **Once step 1's install has run, read them from
 `node_modules/agent-cli-conformance/` + that path** — that copy is the kit you pinned, so the
 guide and the `acc` you are running are the same version. A clone or the GitHub web view is a
 fallback and only that: either can be a different version than the one installed, which is the
@@ -155,9 +159,18 @@ machine-mode check on parser errors (`B5`) from `unverified` into a hard check o
 enumerated rejections are exactly what step 5's comparison reads — so drift in what you adopted
 fails a build instead of surviving quietly.
 
-Steps 5 and 6 are optional, and for many tools they honestly stay that way.
+## Stop: report, and ask before going on
 
-## 5. Optional: cover your subcommands
+**Do not start step 5 or step 6 without being told to.** Report first: the verdict, what you
+fixed, what you waived or wrote down as debt, and which of the two adoptions above you did not
+make and why. Then ask whether to continue. The two gated steps reach past the root the check
+covers. Step 5 records what your subcommands already say so the census can compare them, and
+what it finds is a disagreement between your tool and your declaration, resolved by changing one
+of them. Step 6 is a restructure that removes the drift at its source. For many tools they stay
+undone, and that is a decision for the person who owns the tool. Step 7 applies whether or not
+you continue: send what happened, and where you stopped.
+
+## 5. Cover your subcommands
 
 `acc check` only probes your tool at the **top level** — no subcommand is ever run. So a flag that
 `mytool deploy` accepts is not looked at, and neither is anything below it.
@@ -224,12 +237,13 @@ it.
 
 None of the four is a failure, and whichever you are in the guide is the same one.
 
-## 6. Optional: stop the drift instead of finding it
+## 6. Stop the drift instead of finding it
 
-If you are restructuring anyway, `docs/wiki/guides/how-to-derive-your-surface-from-one-registry.md`
-shows how to make one table in your code drive your parser, your help text, your error messages and
-your published interface. Tools built that way cannot disagree with themselves, and the comparison
-in step 5 becomes a check that stays passed.
+`docs/wiki/guides/how-to-derive-your-surface-from-one-registry.md` shows how to make one table in
+your code drive your parser, your help text, your error messages and your published interface. It
+is a restructure, which is why it waits for the owner's call; once made, a parser, help text, error
+messages and published interface that all come from one table cannot differ from each other, and
+the comparison in step 5 becomes a check that stays passed.
 
 ## 7. Tell us what happened
 
