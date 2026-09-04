@@ -2,7 +2,7 @@
 type: report
 generated: { by: claude-fable-5-1, at: 2026-09-03 }
 status: stable
-lifecycle: live
+lifecycle: discharged
 description:
   Six friction points from the fourth adopter run, each checked against the tree. The adopter is
   Spellbook's glamour, a bun tool with nineteen verbs and one flag registry; the agent running
@@ -194,8 +194,10 @@ says so.
   with its verbs, because measuring the `hint` proposal showed the kit reads the unknown-verb
   rejection's `choices` for advertised verbs. The GL-1 section and the table record that.
 - **`GL-2` actioned** in the same commit: the three positional keys, in the surfaces guide.
-- **`GL-3` open.** The stable-column question is recorded here and nowhere else; it is not yet in
-  the roadmap and not declined.
+- **`GL-3` promoted** on 2026-09-04 into
+  [the roadmap](../roadmap.md#2-version-the-contract-not-only-the-rules), beside the anthill
+  alias-field question, as an ask against the promised surface that waits on the contract's
+  versioning decision.
 - **`GL-4` actioned** in the same commit: the double `--` in the README and the `acc` skill.
 - **`GL-5` actioned** in the same commit: the `report` command's notes.
 - **`GL-6` split.** The matcher half is **declined** — it did not reproduce, as the section above
@@ -205,6 +207,5 @@ says so.
   The page's first coverage gap, which had said no pass was reachable by any route, was corrected
   in the same change.
 
-Not discharged: `GL-3` is waiting on a decision. The
-[status comment on issue #37](https://github.com/ichabodcole/agent-cli-conformance/issues/37)
-predates the `GL-6` action.
+With that promotion this report is **discharged**: every finding is actioned, promoted, or
+declined. Issue #37 is closed on it.
