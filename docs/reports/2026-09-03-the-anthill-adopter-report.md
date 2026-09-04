@@ -199,3 +199,26 @@ about the root, in the flag reader's source — and not stated in the page the a
 `AN-3` adds a second property: the standard recommends a shape for the rejection, and the kit
 cannot compare a path that answers in that shape unless the tool also does something no page tells
 it to do.
+
+## Disposition, verified 2026-09-04
+
+Written after the fixes shipped; the finding text above is unmodified except where a sentence
+says so.
+
+- **`AN-1` guide gap actioned** in `6216b93`, released as v0.1.12: the paragraph beside the
+  interceptor array in the one-registry guide. Its warrant is the enumeration alone, not the
+  probe set — the round that established that is in the commit history. **The alias field is
+  open**: recorded here as a question about what v0 promises, not yet in the roadmap and not
+  declined.
+- **`AN-2` actioned** in the same commit: the surfaces guide's step 1 and the standard's census
+  paragraph. Two sentences in the standard that said the kit could not yet accept below-root
+  evidence were found stale on the way and corrected in the same commit.
+- **`AN-3` guide gap actioned** in the same commit: the empty-flag-key sentence in the surfaces
+  guide and the standard's group-node section. **The kit question is promoted** into
+  [the census learns to read a verb list](../plans/2026-09-03-the-census-learns-to-read-a-verb-list.md),
+  a sketch of the reader change with its costs and open questions; nothing in it is built. **The
+  stale survey sentence is actioned**: re-measured on all six nodes on 2026-09-03.
+- Issues #38, #39 and #40 are closed on the guide fixes; #40's reply asks anthill to confirm
+  `27 of 27` with the key.
+
+Not discharged: the alias-field question under `AN-1` is waiting on a decision.

@@ -182,3 +182,29 @@ the fact was already known somewhere — in another guide, in the parser's sourc
 page and the runner — and not in the page the adopter had open. The earlier trials found the
 same shape, and the remedy is the same: put the sentence in the guide the reader opens first,
 not in the document where the fact was first written down.
+
+## Disposition, verified 2026-09-04
+
+Written after the fixes shipped; the finding text above is unmodified except where a sentence
+says so.
+
+- **`GL-1` actioned** in `16bb76a`, released as v0.1.12: the surfaces guide's paragraph on the root
+  of a verb-first tool. The sentence that landed differs from the disposition proposed above — it
+  says to answer the unknown-flag rejection with the root's flags and the unknown-verb rejection
+  with its verbs, because measuring the `hint` proposal showed the kit reads the unknown-verb
+  rejection's `choices` for advertised verbs. The GL-1 section and the table record that.
+- **`GL-2` actioned** in the same commit: the three positional keys, in the surfaces guide.
+- **`GL-3` open.** The stable-column question is recorded here and nowhere else; it is not yet in
+  the roadmap and not declined.
+- **`GL-4` actioned** in the same commit: the double `--` in the README and the `acc` skill.
+- **`GL-5` actioned** in the same commit: the `report` command's notes.
+- **`GL-6` split.** The matcher half is **declined** — it did not reproduce, as the section above
+  shows. The design half is **actioned** on 2026-09-04: the D3 page's "How to comply" now says
+  that for a JSON-by-default tool with no flag, help that states the JSON default reaches
+  `unverified` and stops there, and that a `schema` command row or `--schema` flag is what passes.
+  The page's first coverage gap, which had said no pass was reachable by any route, was corrected
+  in the same change.
+
+Not discharged: `GL-3` is waiting on a decision. The
+[status comment on issue #37](https://github.com/ichabodcole/agent-cli-conformance/issues/37)
+predates the `GL-6` action.

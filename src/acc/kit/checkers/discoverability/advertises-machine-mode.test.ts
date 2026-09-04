@@ -43,16 +43,17 @@ function observation(id: string, args: string[], purpose: string, text: string, 
 }
 
 /**
- * A History whose help text is exactly `text` and whose discovery found no machine-mode flag,
- * so the checker's fallback scan for a `schema` command is the only thing that can pass it.
+ * A History whose help text is exactly `text`. Discovery found no machine-mode flag, and only
+ * the `subcommands` and `flags` a test passes in — so unless a test supplies a `schema` token
+ * there, the checker's text scan for a `schema` command row is the only thing that can pass it.
  */
-function historyWithHelp(text: string, subcommands: string[] = []): History {
+function historyWithHelp(text: string, subcommands: string[] = [], flags: string[] = []): History {
   const o = observation("fake-help", ["--help"], "D3: help mentions machine mode", text);
   return {
     target: { path: "x", argv0: ["x"] },
     discovery: {
       subcommands,
-      flags: [],
+      flags,
       machineModeFlag: null,
       machineModeDefault: false,
       valueSets: {},
@@ -265,6 +266,18 @@ describe("D3 — help advertises the machine-readable path", () => {
       "usage: t <command>\n\nCommands:\n  schema\n",
     ])("PASSES when `schema` is a command-table row: %j", (help) => {
       const f = advertisesMachineModeChecker.check(historyWithHelp(help));
+      expect(f.verdict).toBe("pass");
+      expect(f.detail).toContain("schema");
+    });
+
+    // The flag spelling of the same token. On plain human help the checker reads flags from the
+    // run's discovery pass (`surface = h.discovery`), not from the text, so the witness supplies
+    // the flag the way discovery's options-block scan would. The page documents both forms, so
+    // both need a witness here — without this case the `--schema` branch was warranted by
+    // nothing in-tree.
+    test("PASSES when discovery found a `--schema` flag in the options block", () => {
+      const help = "usage: t <command>\n\nOptions:\n  --schema   Emit the interface description.\n";
+      const f = advertisesMachineModeChecker.check(historyWithHelp(help, [], ["--schema"]));
       expect(f.verdict).toBe("pass");
       expect(f.detail).toContain("schema");
     });

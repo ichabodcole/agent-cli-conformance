@@ -76,14 +76,14 @@ export const advertisesMachineModeChecker: Checker = {
   // implement passes D3 and takes B3 down with it.
   coverage: "partial",
   coverageGaps: [
-    "a flagless machine-first tool cannot reach a pass by any route because a flag is the only token this rule accepts and a prose claim only downgrades the verdict so for that shape the best available outcome is unverified",
+    "a flagless machine-first tool that adds no schema command or --schema flag cannot reach a pass because a flag or a schema token is all this rule accepts and a prose claim only downgrades the verdict so for that shape the best available outcome is unverified",
     "a machine-first tool with no flag is recognised only by matching a claim in help prose which is a heuristic that misreads contrastive and scoped statements and cannot see a non-English one",
     "help is only required to advertise either the machine-mode flag or a schema command and never both",
     "the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it",
     "a pass establishes only that help names the flag and never that the flag is accepted",
   ],
   coverageEstablished: [
-    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row — a claim ABOUT the help text rather than a claim that the flag selects anything",
+    "the human root help surface names one of the flags --json or --format or --output or carries a schema command row or a --schema flag — a claim ABOUT the help text rather than a claim that the flag selects anything",
   ],
 
   probes: (d): Invocation[] => [
@@ -160,7 +160,7 @@ export const advertisesMachineModeChecker: Checker = {
     //
     // "A CLI SHOULD make its structured surface discoverable from the surface a caller reaches
     // first — which is `--help`, not documentation." A machine-first tool has no flag to name
-    // and no schema command, so the first clause exempts it ("where one exists") and the second
+    // and no schema token, so the first clause exempts it ("where one exists") and the second
     // is the whole of what it owes. Saying so in help satisfies the rule; the checker was only
     // ever looking for a token.
     //
@@ -171,7 +171,7 @@ export const advertisesMachineModeChecker: Checker = {
     //
     // Prose matching, and it is defensible HERE for reasons that would not hold elsewhere. D3 is
     // `diagnostic`, so a false positive costs a reported line and never a build; the fallback is
-    // reached only when no flag and no schema command were found, so a tool that advertises
+    // reached only when no flag and no schema token were found, so a tool that advertises
     // normally never touches it; and this rule already declares a loose-scan gap. In a core rule
     // none of that would be enough.
     const advertisesMachineDefault = helpStatesMachineDefault(help);

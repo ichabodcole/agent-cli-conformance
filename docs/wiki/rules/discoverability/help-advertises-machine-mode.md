@@ -7,7 +7,7 @@ description:
 tags: [discoverability, machine-mode, diagnostic]
 related: [concept/machine-mode, rule/machine-output-is-parseable]
 status: stable
-generated: { by: claude-opus-5, at: 2026-08-14 }
+generated: { by: claude-fable-5-1, at: 2026-09-04 }
 rule_id: D3
 tier: diagnostic
 deviation: design-choice
@@ -16,13 +16,13 @@ checker: src/acc/kit/checkers/discoverability/advertises-machine-mode.ts
 checker_status: implemented
 coverage: partial
 coverage_gaps:
-  - a flagless machine-first tool cannot reach a pass by any route because a flag is the only token this rule accepts and a prose claim only downgrades the verdict so for that shape the best available outcome is unverified
+  - a flagless machine-first tool that adds no schema command or --schema flag cannot reach a pass because a flag or a schema token is all this rule accepts and a prose claim only downgrades the verdict so for that shape the best available outcome is unverified
   - a machine-first tool with no flag is recognised only by matching a claim in help prose which is a heuristic that misreads contrastive and scoped statements and cannot see a non-English one
   - help is only required to advertise either the machine-mode flag or a schema command and never both
   - the flag scan falls back to the whole help text when no options block is recognised so a flag named only in an example can satisfy it
   - a pass establishes only that help names the flag and never that the flag is accepted
 coverage_established:
-  - the human root help surface names one of the flags --json or --format or --output or carries a schema command row — a claim ABOUT the help text rather than a claim that the flag selects anything
+  - the human root help surface names one of the flags --json or --format or --output or carries a schema command row or a --schema flag — a claim ABOUT the help text rather than a claim that the flag selects anything
 ---
 
 # Help advertises the machine-readable path
@@ -55,8 +55,9 @@ first — which is `--help`, not documentation.
 
 ## How to comply
 
-One row in the root help — `--json  Output JSON`, or a command row
-`schema  Print this CLI's command schema as JSON`. What varies is why the row is missing.
+One row in the root help — `--json  Output JSON`, a command row
+`schema  Print this CLI's command schema as JSON`, or a `--schema` flag. What varies is why the
+row is missing.
 
 **If your parser derives help from declarations, declaring the flag is the whole job.** Every
 framework in the
@@ -75,12 +76,27 @@ registers the flag; the published `oclif.manifest.json` for `@oclif/plugin-plugi
 described, grouped as global, and with no `hidden` marker (the same manifest marks its `jit` flag
 `"hidden": true`). That manifest is what was read; the rendered help screen was not.
 
+**If your tool prints JSON by default and has no flag to flip, say so in help; the best verdict
+this rule can then give you is `unverified`.** With no machine-mode flag to name, help that says
+nothing about its output reports `fail`. A sentence saying the output is JSON is read as a claim,
+not a token, so the verdict moves to `unverified` and the finding's line says it matched a claim. That is
+the intended terminal state for this shape, recorded as the first gap below, and an `unverified`
+here is not a reason to add a `--json` flag your tool does not need.
+
+**The exception is a `schema` token, which passes.** A command or a flag is something the checker
+can match: the same help with a line `schema   emit this CLI's declaration as JSON` in its command
+table, or a `--schema` flag in its options block, reads `PASS+ D3 help advertises a schema
+command`. Both forms are asserted in
+[`advertises-machine-mode.test.ts`](../../../../src/acc/kit/checkers/discoverability/advertises-machine-mode.test.ts),
+and the row form is what cleared the verdict on an adopter's tool in
+[the glamour report](../../../reports/2026-09-03-the-glamour-adopter-report.md#gl-6--d3-unverified-as-a-terminal-state-and-a-schema-command-that-did-not-clear-it).
+
 **If your machine path is a hidden command, help advertises nothing.** cobra's `__complete` is
 hidden by construction, and it is exactly the endpoint kubectl's machine-readable introspection
 rides on — real, useful, and invisible to this rule and to any reader of `--help`. Every schema
 format surveyed carries a hidden bit (oclif's `hidden`, clap's dump, Click's `to_info_dict()`,
 urfave's `json:` tags), so the check is mechanical: whatever declares your machine path, make sure
-it is not marked hidden, or add a visible `schema` command alongside the hidden one.
+it is not marked hidden, or add a visible `schema` command or `--schema` flag alongside the hidden one.
 
 **A curated root help drops whatever you did not curate.** `docker --help` lists 64 commands and
 36 with `DOCKER_HIDE_LEGACY_COMMANDS` set — the hidden ones still run — and Docker 23.0
@@ -92,7 +108,8 @@ block is the safer home, because no shortlist decides what appears there.
 `Flags:` block. The probe scopes its flag scan to a recognised options block and falls back to the
 whole help text only when it recognises none, so a `--json` that appears solely inside a piped
 example can satisfy the checker while telling a reader nothing. The schema alternative is read as
-a command-table row: an indented line whose first token is `schema`.
+a command-table row — an indented line whose first token is `schema` — or as a `--schema` flag in
+the options block.
 
 **Make the flag teach its own vocabulary.** `gh --json` with no field list exits 1 and prints the
 full set of available fields — discovery delivered at the moment of need, paid for only on the
@@ -132,7 +149,8 @@ Inert (`L0`).
 ```
 
 **Passes** when the captured **human** help names a machine-mode flag — `--json`, `--format` or
-`--output` — or carries a schema command row. The finding reports which of them it found.
+`--output` — or carries a schema command row or a `--schema` flag. The finding names the machine-mode flag it found, or says
+`a schema command` for either schema form.
 
 **The human surface is what gets scanned, not whatever `--help` happened to print.** The runner
 always gives the target a pipe for stdout, so a CLI that switches to machine mode when stdout is
@@ -170,8 +188,8 @@ prose cannot produce one. And **deleting an honest sentence makes a target's rep
 `unverified` becomes `fail` — so the kit never pays anyone to remove true documentation, which a
 warning message alone could not achieve.
 
-The scan is **a fallback**, reached only when no machine-mode flag and no `schema` command row were
-found. A tool that advertises normally never touches it.
+The scan is **a fallback**, reached only when no machine-mode flag and no `schema` token — command row or `--schema`
+flag — were found. A tool that advertises normally never touches it.
 
 **The statement does not unlock [B5](../streams/machine-mode-holds-on-parser-errors.md)**, and it
 briefly did. The argument for coupling them was that a promise made where callers can read it is
@@ -205,7 +223,7 @@ the rest of this page, unexamined.
 
 **Established**
 
-- the human root help surface names one of the flags --json or --format or --output or carries a schema command row — a claim ABOUT the help text rather than a claim that the flag selects anything
+- the human root help surface names one of the flags --json or --format or --output or carries a schema command row or a --schema flag — a claim ABOUT the help text rather than a claim that the flag selects anything
 
 Plain root help that answers with a machine document is not what gets scanned: the checker falls
 back to a forced-text form, and reports `unverified` when the human surface cannot be observed at
@@ -213,9 +231,9 @@ all.
 
 **Gaps**
 
-- a flagless machine-first tool cannot reach a pass by any route because a flag is the only token
-  this rule accepts and a prose claim only downgrades the verdict so for that shape the best
-  available outcome is unverified
+- a flagless machine-first tool that adds no schema command or --schema flag cannot reach a pass
+  because a flag or a schema token is all this rule accepts and a prose claim only downgrades the
+  verdict so for that shape the best available outcome is unverified
 - a machine-first tool with no flag is recognised only by matching a claim in help prose which is a heuristic that misreads contrastive and scoped statements and cannot see a non-English one
 - help is only required to advertise either the machine-mode flag or a schema command and never both
 - the flag scan falls back to the whole help text when no options block is recognised so a flag

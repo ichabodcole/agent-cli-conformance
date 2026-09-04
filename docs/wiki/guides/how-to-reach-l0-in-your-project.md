@@ -64,11 +64,11 @@ D3 is only `diagnostic`, so it never blocks the gate — fix it first anyway. Th
 machine mode by reading your help text, and what help names decides what two other rules can
 probe at all. The three do not accept the same spellings:
 
-| Rule                                                           | Satisfied by                                          |
-| -------------------------------------------------------------- | ----------------------------------------------------- |
-| [D3](../rules/discoverability/help-advertises-machine-mode.md) | `--json`, `--format`, `--output`, or a schema command |
-| [B5](../rules/streams/machine-mode-holds-on-parser-errors.md)  | `--json` or `--format` — never `--output`             |
-| [B3](../rules/streams/machine-output-is-parseable.md)          | `--json` only                                         |
+| Rule                                                           | Satisfied by                                                      |
+| -------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [D3](../rules/discoverability/help-advertises-machine-mode.md) | `--json`, `--format`, `--output`, a schema command, or `--schema` |
+| [B5](../rules/streams/machine-mode-holds-on-parser-errors.md)  | `--json` or `--format` — never `--output`                         |
+| [B3](../rules/streams/machine-output-is-parseable.md)          | `--json` only                                                     |
 
 So **`--json` is the one spelling that moves all three**; anything else leaves at least one of
 them with nothing to select, reporting `unverified`.
@@ -119,12 +119,13 @@ buys a better-looking result by keeping the kit ignorant of the path your caller
 
 **Say it in your help as well.** `acc.config.json` is the kit's file, and D3 asks what a caller of
 _your_ CLI can find out — so the key does not answer it. A sentence in help does, as far as
-anything can: D3 moves from `fail` to `unverified` and tells you it matched a claim rather than
+prose can: D3 moves from `fail` to `unverified` and tells you it matched a claim rather than
 observed a flag. It will not pass, because the kit cannot check what a sentence means.
 
-They do different jobs and you want both. The sentence is the best D3 can be given; the key lets
-B5 go and test your error path. Unlocking a core check stays deliberate, because a sentence read
-wrongly should never cost anyone a build.
+They do different jobs and you want both. The sentence is the best D3 can be given without a
+`schema` token — a visible `schema` command row or `--schema` flag in help is something the
+checker can match, and passes. The key lets B5 go and test your error path. Unlocking a core
+check stays deliberate, because a sentence read wrongly should never cost anyone a build.
 
 What B5 requires is concrete: provoke a parser error and **one of your two streams must be exactly
 one JSON document**.
