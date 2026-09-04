@@ -247,7 +247,12 @@ anything else, build that.
 ./capture.sh` emits a shell harness that sends one sentinel-bearing rejection per command path,
 keeps both streams verbatim, and writes a batch `acc check --recorded-surfaces` reads —
 [the guide](docs/wiki/guides/how-to-record-surfaces-below-the-root.md). A loop you wrote yourself
-is the same census.
+is the same census, with one difference: the harness leaves the root out because `acc check`
+probes it, and a loop that runs without the kit has to probe the root itself. Nothing else observes
+the root there, and the root is where undeclared flags collect — the interceptors because they are not
+commands ([the universal surface](#1-emit-it-at-runtime)), and the root's own flags because a walk over
+the subcommands never reads them
+([DT-1](docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md#dt-1--root---format-is-declared-in-code-absent-from-the-manifest-and-inert-where-it-looks-like-it-works)).
 
 **A spec-to-spec differ does not reach this.** Comparing one document against another — however
 carefully — detects release-over-release regression, never a declaration that was never right. The
@@ -271,8 +276,9 @@ boundary the checker owns. Neither is built here, and this page does not pretend
 **[C?]** The declared-versus-accepted census, on any target whose parse errors name the valid set —
 and the kit now ships it, at the root, behind `acc check --declaration`. It is not `[C]`, because it
 is not a rule: it mints no id, feeds no verdict, and reports a disagreement as two readings rather
-than as a failure, since nothing here can tell which side is wrong. Below the root it stays
-unbuilt.
+than as a failure, since nothing here can tell which side is wrong. Below the root it runs only on
+evidence the caller records and hands back with `acc check --recorded-surfaces`; the kit itself
+probes nothing there.
 **[—]** Anything behind a command that changes state, until there is a sandbox to run it in.
 
 ---
@@ -831,7 +837,13 @@ than ask it for help, blocked a second time on knowing that command is safe to r
 A **group node** is a command that exists to hold subcommands and has no flags of its own —
 `docker image`, `kubectl config`, `git remote`. Send it a flag and it refuses correctly, by name,
 and then has no valid set to offer. **Name the subcommands inline.** Pointing
-the caller at `<node> --help` is a legitimate design that this page would not choose.
+the caller at `<node> --help` is a legitimate design that this page would not choose. **And name
+the empty flag set beside them:** the census reads the rejection for the flags it names, and a
+list of subcommands under the rejection's `choices` is a list of something else, so a node that
+names only its subcommands is reported as not enumerated and is never compared. `"validFlags": []`
+in the same rejection, beside `choices`, is the node's own answer to the flag question, and the
+path compares like any other
+([the guide](docs/wiki/guides/how-to-record-surfaces-below-the-root.md)).
 
 The reason is one sentence: **when a caller makes a mistake, return more information rather than
 less.** A rejection is the moment the tool knows most and the caller knows least, and it is the
@@ -843,13 +855,16 @@ JSON while help is prose, so recovery crosses a format boundary for information 
 already holding.
 
 **The bloat objection is the strongest case for the pointer, and the survey refutes it.** Six group
-nodes across five vendors, one sentinel flag each: `git remote`, `git stash` and `gh repo` name a
-set; `docker image`, `kubectl config` and `anthill comms` do not. `gh repo` prints **18**
+nodes across five vendors, one sentinel flag each: `git remote`, `git stash`, `gh repo` and
+`anthill comms` name a set; `docker image` and `kubectl config` do not. `gh repo` prints **18**
 subcommands in a rejection and nobody considers that broken, while the two tools that print a
-pointer instead hold 12 and 15 (**measured in this tree** on `gh 2.98.0`, `Docker 29.2.0`
-and `kubectl v1.34.1` — the survey in [the group-command
-candidate](docs/reports/2026-08-26-the-group-command-candidate.md) reported 19 and 16, and both
-were one high).
+pointer instead hold 12 and 15 (**measured in this tree** on 2026-09-03, on `gh 2.98.0`,
+`Docker 29.2.0`, `kubectl v1.34.1` and anthill at `6730a54` on its `feat/anthill-evolution`
+branch — the survey in [the group-command
+candidate](docs/reports/2026-08-26-the-group-command-candidate.md) reported 19 and 16, both one
+high, and found `anthill comms` naming nothing). At `6730a54`, `anthill comms` names its five
+subcommands in `choices` and does not state its empty flag set, which is the first half of what
+this recommendation asks for.
 
 **This is a design choice, not a defect**, and the tier is what makes it one. Two of the five
 vendors — `docker` and `kubectl` — answer with a pointer to `--help`, which is a route forward and
@@ -914,9 +929,9 @@ safely, which is a different kind of thing to be missing and belongs under a dif
 
 - **Declared against accepted, per command** — the valid-flag census. Available today against any
   target whose parse errors name the valid set, and it needs no kit. **Built at the root**, in
-  `acc check --declaration`; _per command_ is the half still missing, and it is missing because the
-  kit probes the root only. The differ is already per-path; what it lacks is below-root evidence to
-  feed it — which a caller running their own tool can record, and the kit cannot yet accept.
+  `acc check --declaration`, and _per command_ from a batch the caller records with their own tool
+  and hands to `acc check --recorded-surfaces`. The kit itself still probes the root only, so below
+  the root the evidence is the caller's, never the kit's.
 - **The declared self-description invocation actually runs and parses.** The document half is
   built — the kit reports a declaration that omits the verb it says emits it — and the running half
   is not.

@@ -455,6 +455,9 @@ export const COMMANDS: CommandSpec[] = [
       "Both renderings of one run carry the same `sweep` mark; a text report and a JSON with one",
       "sweep id describe one run. An artifact from an older kit renders with each missing field",
       "named against that kit's version rather than silently omitted.",
+      "PIPED OR REDIRECTED, THIS EMITS JSON — the same contract as every other command here, and",
+      "the one a rendering command is least expected to keep. `--format text` gets the text",
+      "rendering onto a non-terminal stdout.",
     ],
   },
   {

@@ -7,7 +7,7 @@ description:
 tags: [guide, adoption, evidence, declarations, acc-check]
 related: [concept/probing, concept/conformance, guide/how-to-reach-l0-in-your-project]
 status: stable
-generated: { by: claude-opus-5, at: 2026-08-26 }
+generated: { by: claude-fable-5-1, at: 2026-09-03 }
 ---
 
 # How to record surfaces below the root
@@ -66,6 +66,8 @@ a level you can write one from.** Here is the minimum:
   the file rather than defaulting.
 - **`path`** is the argv tokens before the flags, as an array. `[]` is the root.
 - **`status`** is `"valid"` or `"refused"` — what the document claims about that flag AT THAT PATH.
+- **`positionals`** entries carry exactly three keys: `name` (a string), `required` (a boolean,
+  always present) and `variadic` (a boolean, optional). Any other key is refused.
 - **Unknown keys are refused anywhere in the file**, and the version is checked before the sweep,
   so fix a version complaint first and re-run rather than hunting keys.
 
@@ -89,6 +91,15 @@ right shape rather than a mis-built batch. Your batch counts **records**, all of
 root; the census counts **declared command paths**, and a declaration normally declares the root
 too. Recording all 25 paths below the root, against a 26-path declaration, reads `26 of 26 declared
 command paths compared` — 25 of them on your records, the twenty-sixth on the kit's own root probe.
+
+**"Omit the root" is about a batch handed to `acc`.** If you build your own census from this
+page with no kit involved — the shell loop [`STANDARD.md`](../../../STANDARD.md) recommends
+building before anything else — probe the root too. Nothing else observes the root there, and the
+root is where undeclared flags collect: `--help`, `--version` and a global `--format` belong to the
+root, which a generator that walks the subcommands never reads, so they go undeclared, and a census
+that skips the root never reads the one rejection that would show it
+([the first drift trial](../../reports/2026-08-24-first-drift-trial-anthill-manifest.md) found a
+root `--format` the parser accepted and the manifest omitted).
 
 If your declaration does **not** declare a root, the root is still compared, against nothing
 declared — which is exactly what turns the flags it accepts into `accepted-not-declared`. It is
@@ -114,6 +125,20 @@ NOT COMPARED: (root) — did not enumerate at the root; 7 rejections read, none 
 Your three recorded paths compared; the fourth path the declaration names is the root, and the kit
 probed it and got no set back.
 
+**At the root of a verb-first tool, answer an unknown-flag rejection with the root's flag set and
+an unknown-verb rejection with its verb set.** The kit reads the root's rejections for two
+different sets, separately. Every rejection the kit can read for flags has its `choices` read as
+the root's own flags; several probes each produce one, and that is the `N rejections read` count
+above. The unknown-verb rejection and the bare invocation are both read for the verbs the tool
+advertises. If the root accepts only the flags it answers before any verb — `--help`, `-h`,
+`--version`, `-V` — then its flag set is that array: the same one the declaration publishes at
+`path: []`, and the one
+[the one-registry guide](./how-to-derive-your-surface-from-one-registry.md) derives. If the
+rejections the kit reads for flags contain verbs, the root is left not enumerated and not
+compared; in a run with no batch the root is the only path the kit reaches, so the diff does not
+run. Flags in the unknown-verb rejection's `choices` are not read as verbs, and the verb set then
+comes from whatever else the two captures advertise.
+
 **A root that names an empty set is not this case.** `"validFlags": []` is an answer rather than a
 silence, so the root is compared like any other path and gets no `NOT COMPARED` line. Against an
 empty accepted set every flag your declaration marks `valid` there is reported instead:
@@ -125,6 +150,19 @@ declared-not-accepted  --help at (root) [probed-by-kit]
 ```
 
 That run passed no batch, which is why only the root of the declaration's four paths compared.
+
+**A group node below the root that names its subcommands should name its empty flag set too.**
+A path that holds subcommands and no flags of its own is asked, when it refuses a flag, to name
+the subcommands
+([`STANDARD.md`](../../../STANDARD.md#a-group-node-that-refuses-a-flag-should-name-its-subcommands)).
+Put them in the rejection's `choices` and stop there, and the kit reads a list whose members are
+not flag-shaped,
+reports the path as not enumerated — `a choices list of 5 was present and its members are not
+flag-shaped … a set of something else, not of flags` — and does not compare it. Add an empty flag
+key beside them, `"validFlags": []`, and the same rejection reads
+`stated an empty set of flags at comms under validFlags`; the path is compared, and every flag your
+declaration marks `valid` there is reported. Measured on a fixture with two group nodes: 3 of 5
+declared paths compared without the key, 5 of 5 with it.
 
 **A recorded path is a path you assert exists. Nothing in a batch establishes that it does.**
 

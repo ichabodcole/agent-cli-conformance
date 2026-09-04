@@ -8,7 +8,7 @@ description:
 tags: [guide, adoption, declarations, parsing, drift]
 related: [guide/how-to-reach-l0-in-your-project, guide/how-to-record-surfaces-below-the-root, concept/conformance]
 status: stable
-generated: { by: claude-opus-5, at: 2026-08-26 }
+generated: { by: claude-fable-5-1, at: 2026-09-03 }
 ---
 
 # How to derive your surface from one registry
@@ -234,6 +234,15 @@ const ROOT_INTERCEPTORS = [
 The `path: []` row's `args` map from it, and the root's unknown-flag rejection enumerates the same
 array. One list, declared and enforced. That is what makes the root diffable at all — and the root
 is where every prior generator failed.
+
+**Every spelling in that array has to appear in the rejection, the short ones included.** The
+declaration has no alias field ([below](#aliases-cost-evidence-not-just-rows)), so `-h` is a row
+of its own, and the only evidence that can confirm any declared row is the rejection naming it.
+The census takes the accepted set from the enumeration alone, never from a probe the tool
+honoured; the `-h` the kit sends as a help probe confirms nothing here. Against this array, a
+root rejection that lists `--help` and `--version` alone makes the census report
+`declared-not-accepted -h at (root)` and the same for `-V` — two disagreements for flags the
+parser accepts. Name both spellings, or declare neither short one.
 
 ### 6. The runtime enforces the declared shape
 

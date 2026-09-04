@@ -119,7 +119,10 @@ the three ordinary cases:
 build step, and passing the source directly is the case `acc` handles best — it recognises Bun as
 the launcher and compensates for the bare `--` Bun strips before your tool can see it, so
 [A6](docs/wiki/rules/parsing/double-dash-terminator.md) reports a real `pass`/`fail` instead of
-guessing at an argv your tool never received.
+guessing at an argv your tool never received. If you then smoke-test a `--` fix by hand through
+`bun`, pass two: bun strips the first, so `bun cli.ts -- --nope` reaches your tool as `--nope`
+alone, and `bun cli.ts -- -- --nope` as `-- --nope`, which is what the kit sends when it launches
+a `.ts` target itself.
 
 **Only if none of those fit** — an npm script, `python -m`, a CLI behind a launcher — write a
 one-line wrapper and point `acc` at that:
@@ -421,7 +424,7 @@ acc show A1                # one rule, with its links in and out
 acc show exit-codes --body # ...and the full text
 acc path A6 delegator      # shortest path of OUTBOUND links between two pages
 acc tags
-acc report report.json     # render a saved check report back as the text report
+acc report report.json     # render a saved check report back — text in a terminal, JSON piped
 acc schema                 # the machine-readable interface description
 acc schema | jq '.data.commands[].name'
 ```

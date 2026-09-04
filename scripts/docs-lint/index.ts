@@ -58,7 +58,10 @@ export interface DocsLintConfig {
 /** Collect `.md` files under `dir`, skipping any directory named in `skipDirs`. */
 export function walkMarkdown(dir: string, skipDirs: Set<string> = new Set()): string[] {
   const out: string[] = [];
-  for (const e of readdirSync(dir)) {
+  // Sorted, because readdir order is the filesystem's: alphabetical on APFS, hash order on
+  // ext4. Every "already used by" and every ordered list downstream would otherwise name
+  // pages in whichever order the CI runner's disk happened to return them.
+  for (const e of readdirSync(dir).sort()) {
     if (skipDirs.has(e)) continue;
     const p = join(dir, e);
     if (statSync(p).isDirectory()) out.push(...walkMarkdown(p, skipDirs));
