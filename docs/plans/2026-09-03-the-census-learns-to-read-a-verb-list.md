@@ -96,7 +96,10 @@ flags and compare it. Optionally, compare the verb set itself against the declar
   declaration omits (`accepted-not-declared`, at the verb level), and a declared subcommand the
   tool's rejection does not name (`declared-not-accepted`, likewise). That is a kind of drift
   the census is blind to now, and the first drift trial's eight disagreements were flag-level
-  only because that is all it could see.
+  only because that is all it could see. A root-answered `help` verb with no declared row is the
+  case an adopter met on 2026-09-05
+  ([issue #45](https://github.com/ichabodcole/agent-cli-conformance/issues/45)): today only
+  `selfDescription` can name it, and only when `help` is the emitting invocation.
 
 The second is the real value. The first is a paper cut, and §3 removes it on its own.
 

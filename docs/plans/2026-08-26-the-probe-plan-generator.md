@@ -105,6 +105,13 @@ So:
   accepts while your declaration omits it was not probed and will not appear as a disagreement.
 - **The batch carries nothing about this, and `acc check` is not told.**
 
+> Note, 2026-09-06: the shipped `LIMIT:` line says "cannot appear as a disagreement". And the
+> mitigation above assumes two sources exist. Once a tool emits its declaration from the same
+> table its dispatcher reads, a `--paths` list from that table is the same source, and the census
+> becomes a ratchet rather than a detector; the one-registry guide's
+> [Verification](../wiki/guides/how-to-derive-your-surface-from-one-registry.md#verification)
+> section says what it establishes from then on.
+
 **That last point reverses an earlier draft of this plan**, which required the emitted batch to
 record which artifact its paths came from. The requirement was wrong, and the review that caught
 it was right that the format has no room: the envelope takes `formatVersion`, `records` and

@@ -7,7 +7,7 @@ description:
 tags: [guide, adoption, evidence, declarations, acc-check]
 related: [concept/probing, concept/conformance, guide/how-to-reach-l0-in-your-project]
 status: stable
-generated: { by: claude-fable-5-1, at: 2026-09-03 }
+generated: { by: claude-fable-5-1, at: 2026-09-06 }
 ---
 
 # How to record surfaces below the root
@@ -63,8 +63,15 @@ a level you can write one from.** Here is the minimum:
   something you cannot fix.
 - **`selfDescription`** names the invocation that emits this document, as `{ "args": [...] }`. It
   is required, and `null` is the answer that says your tool emits none — omitting the key refuses
-  the file rather than defaulting.
-- **`path`** is the argv tokens before the flags, as an array. `[]` is the root.
+  the file rather than defaulting. **An invocation that starts with a verb must also be declared
+  as a command.** The diff reads its first non-flag token and reports
+  `self-description-not-declared` when no `commands[].path` starts with it, so a `schema` your
+  root answers before the command tree is consulted still needs a `["schema"]` row. An invocation
+  made of flags alone is not checked.
+- **`path`** is the argv tokens before the flags, as an array. `[]` is the root, and a declaration
+  normally declares it. The diff is per path, so a `--help` declared under a subcommand says
+  nothing about the root; when the root enumerates and no root row exists, each flag it names
+  comes back `accepted-not-declared`.
 - **`status`** is `"valid"` or `"refused"` — what the document claims about that flag AT THAT PATH.
 - **`positionals`** entries carry exactly three keys: `name` (a string), `required` (a boolean,
   always present) and `variadic` (a boolean, optional). Any other key is refused.
@@ -194,7 +201,9 @@ hope for is not there, because there is only one source.
 **What you can do about it.** Derive the path list and the declaration from _different_ artifacts
 where you can — the dispatch table for one, help for the other — so a disagreement between them is
 visible instead of averaged away. That is the same argument this page makes for a
-caller-supplied path list, arriving from the other end.
+caller-supplied path list, arriving from the other end. It holds while there are two artifacts.
+After [the one-registry guide](./how-to-derive-your-surface-from-one-registry.md#verification)
+there is one by design, and that page says what the census can and cannot find from then on.
 
 ### 2. Generate the harness, unless you have a reason not to
 
@@ -215,7 +224,9 @@ line.** A declaration-derived plan probes the paths your declaration already nam
 parser accepts and your declaration omits is not a disagreement in the census — it is absent from
 it, and nothing in the batch or the report records that it is missing. A list taken from wherever
 you actually enumerate verbs — the dispatch table, the command registry — is the source that can
-catch that one.
+catch that one. Once the declaration is emitted from that same table, the two sources are one, and
+[the one-registry guide](./how-to-derive-your-surface-from-one-registry.md#verification) says what
+the census then can and cannot find.
 
 **`--out` is how you get the script, and `>` is not a substitute.** Stdout carries the report, as
 it does for every other `acc` command, so `acc probe-plan ./mycli --paths ./paths.json >

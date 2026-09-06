@@ -7,7 +7,7 @@ description:
 tags: [parsing, silent-failure, machine-mode, core]
 related: [rule/unknown-flag-exits-nonzero, rule/errors-name-the-offending-token, concept/error-envelope]
 status: stable
-generated: { by: claude-opus-5, at: 2026-08-16 }
+generated: { by: claude-fable-5-1, at: 2026-09-06 }
 rule_id: A7
 tier: core
 deviation: defect
@@ -70,6 +70,15 @@ screen is the half that lies. `acc`'s own instance of this rule was exactly that
 When you reject, say what would have been right. A rejection naming only what was wrong costs the
 caller a round trip to `--help`; one carrying the set costs it nothing.
 
+**On a verb-first tool, when a flag is misplaced and its value is also outside the set, name the
+value.** A root that answers `--format=xyzzy` with only "`--format` must follow a command" does not
+reveal whether it read the value at all, and the checker reports `unverified` for exactly that
+reason. The value being outside the set is true wherever the flag sits, so report that error when
+it applies, and the placement error only when the value is fine. The checker reads presence, not
+order: a refusal that carries the placement message alone reports `unverified`, and one that names
+the value anywhere in it reports `pass`
+([issue #46](https://github.com/ichabodcole/agent-cli-conformance/issues/46) has both runs).
+
 ## Why
 
 Every other parsing rule in this family asks whether the tool honours the **catalogue's**
@@ -127,7 +136,8 @@ here, not a pass.
 verb-dispatching CLI can answer both on its missing-verb path — a non-zero exit and an empty
 stdout that have nothing to do with the value. The sentinel reaching the diagnostic is the cheapest
 available evidence that the target read the token at all, and one spelling suffices, because a
-parser only has to understand one of them.
+parser only has to understand one of them. What clears it is a refusal that names the value even
+when the verb is also missing; [how to comply](#how-to-comply) says what the refusal has to carry.
 
 **What a pass does not establish** is _which_ check refused the value. A rejection naming it proves
 the target read the token; the set validation, an unparsable spelling and a stray positional

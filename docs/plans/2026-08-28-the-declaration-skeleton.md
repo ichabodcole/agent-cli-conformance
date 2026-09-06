@@ -123,6 +123,10 @@ Found in the second review round, and it reorders the document:
 
 > **Do you regenerate your path list from dispatch on every run, or write it once and commit it?**
 
+> Note, 2026-09-06: answered in the `acc` skill's step 5 and the one-registry guide. Regenerate
+> it; a committed list is a third parallel document. A hand-written list or a modelled
+> declaration at step 5 is scaffolding that the emitted declaration replaces.
+
 Nobody here knows, and it decides more than the skeleton. `paths.json` is a hand-derivation
 frozen the moment it is written; the recorded batch descends from it; a declaration built on it
 descends from it too. So a verb added to dispatch after the list was frozen is in no document —

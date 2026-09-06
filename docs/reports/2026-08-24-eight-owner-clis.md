@@ -356,6 +356,10 @@ first case comes from _no command specified_, not from the format. With a comman
 value is re-read as a positional subcommand, so the diagnostic misattributes the fault. `A7` exists
 precisely for this.
 
+> Note, 2026-09-06: the misattribution shape has a documented remedy now. A refusal that names the
+> value even when the verb is also missing moves `A7` from `unverified` to `pass`; the ordering is
+> in [the rule page](../wiki/rules/parsing/advertised-value-set-is-enforced.md#how-to-comply).
+
 **anthill's manifest omits its own root flag.** `--format` is the flag anthill's entire
 dual-audience contract rests on, and neither `--help` nor the full manifest names it:
 

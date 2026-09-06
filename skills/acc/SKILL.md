@@ -179,6 +179,12 @@ To cover those paths you record your tool's own error messages and hand them bac
 `docs/wiki/guides/how-to-record-surfaces-below-the-root.md` walks through it; `acc probe-plan`
 generates a script that does the recording for you.
 
+**`probe-plan` needs a source for the paths, `--paths` or `--declaration`, and at this step you
+have no emitted declaration yet.** Write a modelled declaration from your help — the guide shows
+the minimum — or list the paths from your dispatch table. Both are scaffolding that step 6
+replaces with a declaration your tool emits, so do not commit either as a document of its own: a
+path list kept beside the code is one more thing that has to agree with it.
+
 **Four situations, and your report tells you which you are in.** They are read at two places and
 printed in two blocks: the kit's own root reading opens `SELF-DECLARED FLAGS`, and the paths you
 recorded are read further down under `RECORDED SURFACES`. These are the four sentences as they
@@ -243,7 +249,9 @@ None of the four is a failure, and whichever you are in the guide is the same on
 your code drive your parser, your help text, your error messages and your published interface. It
 is a restructure, which is why it waits for the owner's call; once made, a parser, help text, error
 messages and published interface that all come from one table cannot differ from each other, and
-the comparison in step 5 becomes a check that stays passed.
+the comparison in step 5 becomes a check that stays passed. From then on it says only that no
+flag was added outside the table; the guide's Verification section says what that does and does
+not establish.
 
 ## 7. Tell us what happened
 
