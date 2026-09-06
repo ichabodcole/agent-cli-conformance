@@ -1340,7 +1340,7 @@ export function compareAdvertisedVerbs(
 }
 
 /** The verb list as a line prints it — capped, and never silently. See `VERB_LINE_CAP`. */
-function verbLine(verbs: readonly string[]): string {
+export function verbLine(verbs: readonly string[]): string {
   return verbs.length <= VERB_LINE_CAP
     ? verbs.join(" ")
     : `${verbs.slice(0, VERB_LINE_CAP).join(" ")} … (${verbs.length} in all; the full list is in the JSON)`;

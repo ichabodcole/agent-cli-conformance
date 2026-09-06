@@ -115,7 +115,12 @@ negative — `9` is `NOT CONFORMANT`, a finding about your tool, and the report 
 data. `0` is conformant. (`10` is `version --check`'s stale answer, above.) The band argument is
 `docs/wiki/concepts/exit-codes.md#outcomes-are-not-errors`.
 
-Below the verdict line, one line per rule.
+Under the verdict, the `config:` line says what frame the run used and the `scope:` line says
+what the run reached: the root only, with the count of verbs it advertised and never probed, or
+the root plus the paths you recorded. A green verdict over "3 verbs … none of them was probed"
+says nothing about those three; step 5 is what does.
+
+Below that, one line per rule.
 
 If your own test suite is green and the report still found something, that is the expected shape
 rather than a contradiction: these are interface-contract properties — what your tool owes a

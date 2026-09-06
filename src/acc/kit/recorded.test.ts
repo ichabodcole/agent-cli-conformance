@@ -677,6 +677,12 @@ describe("magpie's empty enumeration — the regression enumerated-none exists t
       expect(r.stdout).toMatch(/2 of 2 declared command paths compared/);
       expect(r.stdout).not.toMatch(/did not enumerate/);
     });
+
+    test("the scope line under the headline counts the recorded paths instead of the root-only limit", () => {
+      const r = run(["--recorded-surfaces", magpie, "--declaration", declaration]);
+      expect(r.stdout).toContain("scope: the root, probed by the kit, plus 2 recorded paths from ");
+      expect(r.stdout).not.toContain("scope: the root only");
+    });
   });
 });
 

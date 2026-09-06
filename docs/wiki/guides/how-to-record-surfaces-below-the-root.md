@@ -24,7 +24,8 @@ somebody's subcommand. You own your tool, so you can run it and keep what came b
 recording, handed over.
 
 **What it buys, exactly.** Every census line names who observed it — `probed-by-kit` or
-`recorded-by-caller` — and the paths you recorded stop coming back "the kit probes the root only".
+`recorded-by-caller` — the paths you recorded stop coming back "the kit probes the root only", and
+the `scope:` line under the verdict counts them instead of the verbs the root advertised.
 **Nothing here reaches a verdict.** No rule reads a batch, no finding from one feeds `conformant`,
 and no exit code moves.
 
@@ -482,8 +483,9 @@ Three things to check, in this order:
    one-byte channel a CI gate is branching on at the same time.**
 
    **The verdict LINE does change**, and that is correct — it grows a
-   `· but see N declaration disagreements (modelled)` clause. Compare the three things named
-   above, not the line.
+   `· but see N declaration disagreements (modelled)` clause, and the `scope:` line under it counts
+   your recorded paths instead of the root's advertised verbs. Compare the three things named
+   above, not those lines.
 
    **Timing rows differ between runs and are not a change.**
    `F2 --version first byte in 15ms (runs: 15, 15, 16ms)` against `(runs: 16, 15, 15ms)` is

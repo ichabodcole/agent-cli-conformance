@@ -149,6 +149,15 @@ name separately. Neither is answered; the first is a charter-level call about th
 the second a v0 format change, and both wait on the coordinate set above so that whatever is
 promised has a version to be promised under.
 
+**A third ask, from the 2026-09-05 round, sits beside them.** From
+[the citty and media-buffet report](reports/2026-09-06-the-citty-and-media-buffet-reports.md#mb-4--the-census-could-print-the-pair-count-the-magpie-case-is-built-on):
+when every compared path enumerates the same flag set, print the flag/path pair count the
+one-registry guide's `magpie` case is built on. The census can print the shape — thirteen paths
+all enumerating the same fourteen flags — from what it already reads. The number the adopter
+wanted counts flags accepted at verbs that do not own them, and which verb owns a flag is what a
+declaration supplies; once one exists, that count is the `accepted-not-declared` total. Whether
+the shape line alone is worth printing is the open question.
+
 ## 3. Control the observation environment, which is also the L0 safety work
 
 **What it is.** A hermetic environment policy: locale, TTY state, terminal width, `HOME` and the
@@ -690,7 +699,11 @@ lead with the defect class, not the verdict
 ([what three adopters want](reports/2026-08-26-what-three-adopters-want.md)).
 
 **Blocked on** nothing. It is a change to `renderText` in `src/acc/commands/check.ts` and a decision
-about ordering, not a report-shape change.
+about ordering, not a report-shape change. The first slice landed on 2026-09-06: a `scope:` line
+under `config:` saying what the run reached, after an adopter took two CLIs to `CONFORMANT` with
+every subcommand accepting every flag
+([the citty and media-buffet report](reports/2026-09-06-the-citty-and-media-buffet-reports.md#mf-1--a-verdict-that-says-nothing-about-what-it-did-not-reach)).
+The reordering itself is still open.
 
 ## The ladder, and what replaces `L0` in the verdict line
 

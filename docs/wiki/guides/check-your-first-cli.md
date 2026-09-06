@@ -7,7 +7,7 @@ description:
 tags: [tutorial, getting-started, conformance, acc-check]
 related: [concept/conformance, rule/unknown-flag-exits-nonzero]
 status: stable
-generated: { by: claude-opus-5, at: 2026-08-17 }
+generated: { by: claude-fable-5-1, at: 2026-09-06 }
 ---
 
 # Check your first CLI
@@ -57,6 +57,13 @@ echo $?
 
 (The counts will grow as rules are added to the catalogue. `16` today, more later — the shape
 of the line is what matters, not the number.)
+
+Two lines under it frame the verdict: `config:` says which `acc.config.json` the run used, if any,
+and `scope:` says what the run reached. The kit probes the root and nothing below it. On a tool
+with subcommands, the `scope:` line counts the verbs the root advertised and says none was probed:
+the verdict is about the root, and
+[recording surfaces below the root](./how-to-record-surfaces-below-the-root.md) is how the rest
+gets covered.
 
 Now look further down that report, at the last line before the gaps:
 

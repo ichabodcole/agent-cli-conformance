@@ -153,7 +153,7 @@ export const advertisedValueSetChecker: Checker = {
     if (named.length === 0) {
       return finding(
         "unverified",
-        `both spellings exited non-zero without naming the offending value, so neither refusal can be attributed to the value rather than to the missing verb`,
+        `both spellings exited non-zero without naming the offending value, so neither refusal can be attributed to the value rather than to the missing verb; a refusal that names the value clears this even where the verb is also missing, so if this root checks placement before values, check the value before the placement`,
         evidence,
       );
     }
