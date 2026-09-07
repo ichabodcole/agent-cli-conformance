@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.13](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.12...v0.1.13) (2026-09-07)
+
+
+### Features
+
+* **check:** the text report says what the run reached, and A7 says what clears it ([6f5c6a0](https://github.com/ichabodcole/agent-cli-conformance/commit/6f5c6a0b2940c14f6d37c64167389110f3d88d89))
+* **check:** the verdict says what the run did not reach, and A7 says what would clear it ([3270aa0](https://github.com/ichabodcole/agent-cli-conformance/commit/3270aa058220a4108a47d9cf29848734c5964808))
+
+
+### Bug Fixes
+
+* **declaration:** the modelled remedy names the route that exists ([c7b76e3](https://github.com/ichabodcole/agent-cli-conformance/commit/c7b76e3ca3a6aa286b424c13f01b0ad2ee0844de))
+* **docs:** what the cold reads found on the pages the adopter round touched ([8aaf93c](https://github.com/ichabodcole/agent-cli-conformance/commit/8aaf93cbdff95698e0400605bfd763aa42b783a7))
+
 ## [0.1.12](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.11...v0.1.12) (2026-09-04)
 
 
