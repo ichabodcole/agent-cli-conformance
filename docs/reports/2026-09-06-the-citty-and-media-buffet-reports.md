@@ -230,7 +230,7 @@ working as documented.
 
 ## Disposition, verified 2026-09-06
 
-Written after the fixes landed on develop; none is in a release yet.
+Written after the fixes landed on develop. All of them shipped in v0.1.13 on 2026-09-07.
 
 - **`MF-1` actioned** in the commit that adds this report: the `scope:` line, with tests for three
   of its four shapes.
