@@ -51,7 +51,7 @@ export const advertisedValueSetChecker: Checker = {
   coverage: "partial",
   coverageGaps: [
     "a rejection naming the value is not shown to come from the set validation rather than from an unparsable spelling or the value being read as a positional",
-    "only the first flag whose set help advertises is probed so a target declaring several sets is checked on one of them",
+    "only the first flag whose set the help advertises is probed so a target declaring several sets is checked on one of them",
     "the value is sent at the root so a set advertised only for a subcommand flag is probed where that flag may be unknown",
     "the SHOULD to enumerate the valid set alongside the rejection is not exercised",
     "the exit code is only required to be non-zero here and not the declared 2",

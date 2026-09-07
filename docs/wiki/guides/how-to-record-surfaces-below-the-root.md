@@ -63,8 +63,8 @@ a level you can write one from.** Here is the minimum:
   chosen by this field, and claiming `emitted` for a file you transcribed will tell you to fix
   something you cannot fix.
 - **`selfDescription`** names the invocation that emits this document, as `{ "args": [...] }`. It
-  is required, and `null` is the answer that says your tool emits none — omitting the key refuses
-  the file rather than defaulting. **An invocation that starts with a verb must also be declared
+  is required, and `null` is the answer that says your tool emits none — a file that omits the key
+  is refused rather than defaulted. **An invocation that starts with a verb must also be declared
   as a command.** The diff reads its first non-flag token and reports
   `self-description-not-declared` when no `commands[].path` starts with it, so a `schema` your
   root answers before the command tree is consulted still needs a `["schema"]` row. An invocation
@@ -121,9 +121,8 @@ rootless 25-path declaration read:
 
 In `N of M declared command paths compared`, `N` never exceeds `M`, whatever your batch reaches.
 
-**If your root does not enumerate, you get neither line, and that is the case this page is most
-for.** The root is then not compared at all — there is nothing to compare it against — so it is
-reported as a limit rather than as a path:
+**If your root does not enumerate, the root is not compared at all** — there is nothing to compare
+it against — so it is reported as a limit rather than as a path:
 
 ```
 3 of 4 declared command paths compared; 60 disagreements (modelled declaration)
@@ -201,8 +200,7 @@ hope for is not there, because there is only one source.
 
 **What you can do about it.** Derive the path list and the declaration from _different_ artifacts
 where you can — the dispatch table for one, help for the other — so a disagreement between them is
-visible instead of averaged away. That is the same argument this page makes for a
-caller-supplied path list, arriving from the other end. It holds while there are two artifacts.
+visible instead of averaged away. It holds while there are two artifacts.
 After [the one-registry guide](./how-to-derive-your-surface-from-one-registry.md#verification)
 there is one by design, and that page says what the census can and cannot find from then on.
 
@@ -379,8 +377,8 @@ caller with two sessions runs `acc check` twice.
 
 **An unknown key anywhere, a missing required key, or a `formatVersion` that is not `"0"` rejects
 the whole batch**, and the run continues with no recorded surfaces rather than with some. Keys the kit computes or judges for itself — observation
-ids, digests, `inertness`, `truncated`, timings — are unknown keys here, and sending one refuses the
-batch: you attest to what the tool **did**, never to what it means.
+ids, digests, `inertness`, `truncated`, timings — are unknown keys here, and a batch carrying one is
+refused: you attest to what the tool **did**, never to what it means.
 
 ### 7. Optionally, say what the tool is
 
@@ -476,11 +474,8 @@ Three things to check, in this order:
    failed. **Which code inside `1`–`8` a given input produces is not promised and may change**,
    so a batch that moves a run from `2` to `5` is not a defect and is not worth reporting.
 
-   This step used to ask you to treat any change in the exit code as our defect, which promised
-   more than the README does and more than we intend to keep. Three adopters told us they branch
-   on nothing finer than zero versus non-zero, and one gave the reason we adopted: **diagnostic
-   detail belongs in the JSON, where `kind` can grow without breaking a gate, rather than in a
-   one-byte channel a CI gate is branching on at the same time.**
+   Diagnostic detail belongs in the JSON, where `kind` can grow without breaking a gate, rather
+   than in a one-byte channel a CI gate is branching on at the same time.
 
    **The verdict LINE does change**, and that is correct — it grows a
    `· but see N declaration disagreements (modelled)` clause, and the `scope:` line under it counts
@@ -491,7 +486,8 @@ Three things to check, in this order:
    `F2 --version first byte in 15ms (runs: 15, 15, 16ms)` against `(runs: 16, 15, 15ms)` is
    jitter. A mechanical diff of the two reports will flag it; ignore that row.
 
-When the whole batch is refused, the run exits 2 and writes nothing to stdout — the message names
+When the whole batch is refused, the run exits in `1`–`8`, the codes that say the invocation
+failed (`2` today), and writes nothing to stdout — the message names
 the first thing it could not understand, and a `formatVersion` complaint always comes
 before a key complaint, so fix the version first and re-run rather than hunting keys.
 

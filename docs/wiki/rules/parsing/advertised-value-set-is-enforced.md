@@ -17,7 +17,7 @@ checker_status: implemented
 coverage: partial
 coverage_gaps:
   - a rejection naming the value is not shown to come from the set validation rather than from an unparsable spelling or the value being read as a positional
-  - only the first flag whose set help advertises is probed so a target declaring several sets is checked on one of them
+  - only the first flag whose set the help advertises is probed so a target declaring several sets is checked on one of them
   - the value is sent at the root so a set advertised only for a subcommand flag is probed where that flag may be unknown
   - the SHOULD to enumerate the valid set alongside the rejection is not exercised
   - the exit code is only required to be non-zero here and not the declared 2
@@ -65,7 +65,7 @@ the parser accepts anything because nobody wired the two together.
 
 `commander` is the trap worth naming: `--format <text|json>` renders that alternation into help
 and enforces nothing, so the declaration and the behaviour disagree by default and the help
-screen is the half that lies. `acc`'s own instance of this rule was exactly that shape.
+screen is the half that lies. `acc`'s own instance of this defect was exactly that shape.
 
 When you reject, say what would have been right. A rejection naming only what was wrong costs the
 caller a round trip to `--help`; one carrying the set costs it nothing.
@@ -164,7 +164,7 @@ are the rest of this page, unexamined.
 
 - a rejection naming the value is not shown to come from the set validation rather than from an
   unparsable spelling or the value being read as a positional
-- only the first flag whose set help advertises is probed so a target declaring several sets is
+- only the first flag whose set the help advertises is probed so a target declaring several sets is
   checked on one of them
 - the value is sent at the root so a set advertised only for a subcommand flag is probed where
   that flag may be unknown
@@ -183,8 +183,8 @@ exit=2   stdout empty
 stderr   {"ok":false,"error":{"kind":"usage","message":"invalid value for --format: \"acc-probe-xyzzy\"","choices":["text","json"]}}
 ```
 
-The defect population behind the rule — two fixed instances, one open at HEAD, plus the one in
-`acc` — is catalogued as class 11 in
+The defect population behind the rule, the instances above among them, is catalogued as class 11
+in
 [`research/2026-08-15-defect-archaeology.md`](../../../research/2026-08-15-defect-archaeology.md),
 which also ranks it as the lowest-cost of the missing rules to build and the only one reachable
 without leaving `L0`.

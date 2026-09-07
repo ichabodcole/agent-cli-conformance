@@ -163,7 +163,7 @@ path, and the section closes with what that leaves unanswered for a tool whose c
 
 ### 1. It is a refactor of dispatch, not a new artifact
 
-This is the step adopters skip. The registry replaced a bare `switch`, and its own header says why:
+This is the part adopters skip. The registry replaced a bare `switch`, and its own header says why:
 
 > the parser, the dispatcher, the schema emitter and the root rejection all walk THIS. It replaced
 > a bare `switch`, which only the dispatcher could walk: **a schema emitted from anything other
@@ -356,7 +356,7 @@ building anything else:
 > "keep it in step" is a comment, not a binding, and comments are what the 289 are made of.
 
 **Drive the switch from the table instead.** If that is a large change, it is the change — and it
-is the same one that makes step 4 free.
+is the same one that makes emitting the declaration (Steps, §4) a walk over the table.
 
 ## Verification
 

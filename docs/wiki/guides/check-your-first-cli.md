@@ -46,7 +46,7 @@ The first line is the verdict:
 CONFORMANT (L0) — 0 core violated, 1 core unverified, 16 core partially covered
 ```
 
-Three claims, and the first is the headline: no core rule was **violated**. Check what the
+Three counts, and the verdict word depends only on the first: no core rule was **violated**. Check what the
 process returned:
 
 ```
@@ -109,8 +109,8 @@ verdict, and the specific thing that was seen.
 
 ## Step 3 — read the four verdicts
 
-Scroll back through either report. Four markers appear in the left column, and only one of them
-means "broken":
+Scroll back through the two reports. Four markers appear in the left column across them, and
+only one means "broken":
 
 ```
 PASS+ A2  root verb rejected with exit 2; nested case not probed at L0; this verdict assumes ...
@@ -130,17 +130,15 @@ help text alone. That is the instrument reporting its own limit rather than blam
 and it is the distinction the whole report is built around — see
 [conformance](../concepts/conformance.md) when you want the full treatment.
 
-> **A6 is worth a closer look, because it is launched through Bun here.** The fixture is a `.ts`
+> **A6 is worth a closer look, because the fixture is launched through Bun here.** The fixture is a `.ts`
 > file with no shebang, so `bun run acc check` launches it under Bun — and Bun strips a bare `--`
 > immediately after the script path before the fixture ever sees it. The kit knows this and
 > compensates at the spawn (see [the rule page](../rules/parsing/double-dash-terminator.md)), so
-> `A6` in your own report reads `PASS+`, not a refusal. **This detection has a hole, and it is why
-> you should pass a `.ts` path directly.** The kit recognises a Bun launcher from the target's own
-> path and shebang. Point it at a **wrapper script** that `exec`s bun instead and the wrapper's
-> shebang is a shell, so the compensation misses and A6 reports a `FAIL` your tool did not earn —
-> measured: the same CLI reports `PASS+` passed directly and `FAIL` behind a wrapper. A6 is
-> `diagnostic` and
-> never affects the exit code.
+> `A6` in your own report reads `PASS+`. **Pass the `.ts` file itself, not a wrapper around it.**
+> The kit recognises a Bun launcher from the target's own path and shebang. Point it at a wrapper
+> script that `exec`s bun instead and the wrapper's shebang is a shell, so the compensation misses
+> and A6 reports a `FAIL` against an argv your tool never received. A6 is `diagnostic` and never
+> affects the exit code.
 
 Now the sentence from Step 1 should land. Our conforming fixture violated nothing — and still
 not one rule came back a plain `PASS`. Every rule it established is a `PASS+`; one core rule
