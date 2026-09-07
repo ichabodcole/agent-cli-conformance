@@ -68,7 +68,7 @@ a batch was handed back.
 shapes. On the kit's own fixture that advertises three verbs:
 
 ```
-CONFORMANT … [acc 0.1.12]
+NOT CONFORMANT (L0) — 2 core violated, 3 core unverified, 12 core partially covered … [acc 0.1.12]
   config: none — no acc.config.json in …
   scope: the root only — the root advertises 3 verbs (open state tail) and none of them was probed; a batch handed back with --recorded-surfaces covers them
 ```
