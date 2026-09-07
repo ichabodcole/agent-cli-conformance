@@ -145,6 +145,9 @@ describe("A7 — an advertised value set is enforced", () => {
     );
     expect(f.verdict).toBe("unverified");
     expect(f.detail).toContain("can be attributed");
+    // The line says what would establish it, not only what did not. An adopter whose verb-first
+    // root reported placement before the value found the remedy by diffing two reports (#46).
+    expect(f.detail).toContain("check the value before the placement");
   });
 
   test("PASSES when the rejection names the value it refused", () => {

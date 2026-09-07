@@ -37,7 +37,12 @@ import {
   type ReportedFinding,
   runCheckers,
 } from "../kit/report.ts";
-import { advertisedVerbsSummary, type SurfaceStatus, surfaceSummary } from "../kit/surface.ts";
+import {
+  advertisedVerbsSummary,
+  type SurfaceStatus,
+  surfaceSummary,
+  verbLine,
+} from "../kit/surface.ts";
 import type { History, TargetInfo } from "../kit/types.ts";
 import { VERSION } from "../version.ts";
 
@@ -507,6 +512,37 @@ export function renderCheckReportText(r: Report, prelude: string[] = []): string
     if (c.origin === "flag") return `  config: ${c.path}  (--config-dir)`;
     return `  config: ${c.path}  (DISCOVERED in the working directory, not named on the command line — the same command run from elsewhere can reach a different verdict)`;
   })(r.configSource);
+  // WHAT THE RUN REACHED, on every run, directly under the frame it ran inside. The kit probes
+  // the root and nothing below it, and the A1 gap line already says so — as the fourth clause of a
+  // gaps paragraph, twenty rows down. An adopter took two CLIs to CONFORMANT while every
+  // subcommand accepted every flag, and said the word CONFORMANT is where a reader stops. So the
+  // limit sits in a fixed shape beside the headline: how many verbs the root advertised, that none
+  // of them was probed, and what covers them. When a batch was handed back the line says that
+  // instead, and when no verb set could be asserted it says the count is unknown rather than
+  // printing nothing — a missing line would render an unknown as an absence.
+  const scopeLine = ((a, batch) => {
+    if (batch) {
+      const n = batch.readings.length;
+      return `  scope: the root, probed by the kit, plus ${n} recorded path${n === 1 ? "" : "s"} from ${batch.source}; nothing below the root was run by the kit`;
+    }
+    if (!a) {
+      return `  scope: the root only — the advertised-verb comparison was not recorded by acc ${r.kitVersion}, so how many paths sit below the root is not known`;
+    }
+    const verbs = a.union;
+    if (a.status === "not-asserted") {
+      // A HEDGE RENDERS AS A HEDGE. Two verbs in a usage line is the shape no rule separates from a
+      // type union, so it is seen and not asserted; saying "not known" alone would drop the seeing.
+      const seen = a.hedged.length
+        ? ` (a list of ${a.hedged[0]?.verbs.length} was seen and not confirmed)`
+        : "";
+      return `  scope: the root only — no verb set could be asserted at the root${seen}, so how many paths sit below it is not known; a batch handed back with --recorded-surfaces covers them`;
+    }
+    if (verbs) {
+      const n = verbs.length;
+      return `  scope: the root only — the root advertises ${n} verb${n === 1 ? "" : "s"} (${verbLine(verbs)}) and none of them was probed; a batch handed back with --recorded-surfaces covers them`;
+    }
+    return "  scope: the root only — no verb set could be asserted at the root, so how many paths sit below it is not known; a batch handed back with --recorded-surfaces covers them";
+  })(r.advertisedVerbs, r.recordedSurfaces);
   // Both claims, on one line, always. The verdict answers "did anything VIOLATE a core
   // rule"; the counts beside it answer "and was everything actually established". Naming
   // the level is part of the claim, not decoration — A4 is core and silently excluded as
@@ -561,6 +597,7 @@ export function renderCheckReportText(r: Report, prelude: string[] = []): string
     // certainly sees — the alternative was `acc --version`, which nobody thinks to check.
     `${bold}${verdict} (${r.level})${reset} — ${r.counts.coreFailures} core violated, ${r.counts.coreUnverified} core unverified, ${r.counts.corePartial} core partially covered${waiverNote}${declarationNote}  ${r.target}  [acc ${r.kitVersion}]`,
     configLine,
+    scopeLine,
     "",
     // THE LEGEND COMES BEFORE THE TABLE IT EXPLAINS. It sat at the foot until an adopter met
     // `PASS+` twenty lines before its explanation and read the `+` as "pass, plus something

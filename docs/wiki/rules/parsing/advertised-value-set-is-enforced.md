@@ -7,7 +7,7 @@ description:
 tags: [parsing, silent-failure, machine-mode, core]
 related: [rule/unknown-flag-exits-nonzero, rule/errors-name-the-offending-token, concept/error-envelope]
 status: stable
-generated: { by: claude-opus-5, at: 2026-08-16 }
+generated: { by: claude-fable-5-1, at: 2026-09-06 }
 rule_id: A7
 tier: core
 deviation: defect
@@ -17,7 +17,7 @@ checker_status: implemented
 coverage: partial
 coverage_gaps:
   - a rejection naming the value is not shown to come from the set validation rather than from an unparsable spelling or the value being read as a positional
-  - only the first flag whose set help advertises is probed so a target declaring several sets is checked on one of them
+  - only the first flag whose set the help advertises is probed so a target declaring several sets is checked on one of them
   - the value is sent at the root so a set advertised only for a subcommand flag is probed where that flag may be unknown
   - the SHOULD to enumerate the valid set alongside the rejection is not exercised
   - the exit code is only required to be non-zero here and not the declared 2
@@ -65,10 +65,19 @@ the parser accepts anything because nobody wired the two together.
 
 `commander` is the trap worth naming: `--format <text|json>` renders that alternation into help
 and enforces nothing, so the declaration and the behaviour disagree by default and the help
-screen is the half that lies. `acc`'s own instance of this rule was exactly that shape.
+screen is the half that lies. `acc`'s own instance of this defect was exactly that shape.
 
 When you reject, say what would have been right. A rejection naming only what was wrong costs the
 caller a round trip to `--help`; one carrying the set costs it nothing.
+
+**On a verb-first tool, when a flag is misplaced and its value is also outside the set, name the
+value.** A root that answers `--format=xyzzy` with only "`--format` must follow a command" does not
+reveal whether it read the value at all, and the checker reports `unverified` for exactly that
+reason. The value being outside the set is true wherever the flag sits, so report that error when
+it applies, and the placement error only when the value is fine. The checker reads presence, not
+order: a refusal that carries the placement message alone reports `unverified`, and one that names
+the value anywhere in it reports `pass`
+([issue #46](https://github.com/ichabodcole/agent-cli-conformance/issues/46) has both runs).
 
 ## Why
 
@@ -127,7 +136,8 @@ here, not a pass.
 verb-dispatching CLI can answer both on its missing-verb path — a non-zero exit and an empty
 stdout that have nothing to do with the value. The sentinel reaching the diagnostic is the cheapest
 available evidence that the target read the token at all, and one spelling suffices, because a
-parser only has to understand one of them.
+parser only has to understand one of them. What clears it is a refusal that names the value even
+when the verb is also missing; [how to comply](#how-to-comply) says what the refusal has to carry.
 
 **What a pass does not establish** is _which_ check refused the value. A rejection naming it proves
 the target read the token; the set validation, an unparsable spelling and a stray positional
@@ -154,7 +164,7 @@ are the rest of this page, unexamined.
 
 - a rejection naming the value is not shown to come from the set validation rather than from an
   unparsable spelling or the value being read as a positional
-- only the first flag whose set help advertises is probed so a target declaring several sets is
+- only the first flag whose set the help advertises is probed so a target declaring several sets is
   checked on one of them
 - the value is sent at the root so a set advertised only for a subcommand flag is probed where
   that flag may be unknown
@@ -173,8 +183,8 @@ exit=2   stdout empty
 stderr   {"ok":false,"error":{"kind":"usage","message":"invalid value for --format: \"acc-probe-xyzzy\"","choices":["text","json"]}}
 ```
 
-The defect population behind the rule — two fixed instances, one open at HEAD, plus the one in
-`acc` — is catalogued as class 11 in
+The defect population behind the rule, the instances above among them, is catalogued as class 11
+in
 [`research/2026-08-15-defect-archaeology.md`](../../../research/2026-08-15-defect-archaeology.md),
 which also ranks it as the lowest-cost of the missing rules to build and the only one reachable
 without leaving `L0`.

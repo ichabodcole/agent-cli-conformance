@@ -823,7 +823,10 @@ anything above, and none of it is a defect.
 
 **[C]** `A1`–`A3` and `A5`–`A7`, at the root only. `A7` is the exception in practice: its prose
 extractor finds no closed value set to falsify on the population measured so far
-([owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md)), so it has yet to resolve there.
+([owner-CLI run](docs/reports/2026-08-24-eight-owner-clis.md)), so it did not resolve there. On a
+verb-first tool that does advertise a set, it passes when the refusal names the value and stays
+`unverified` when the refusal names only the missing verb
+([the rule page](docs/wiki/rules/parsing/advertised-value-set-is-enforced.md#how-to-comply)).
 **[—]** `A4` — the silently swallowed positional, the second item in the shape above — at any depth.
 Testing arity means sending extra positionals to a _real_ verb and running it, so it becomes
 checkable in a sandbox, or on a surface an operator recorded by running a generated probe plan; not

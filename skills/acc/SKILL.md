@@ -14,13 +14,13 @@ description:
 **The guidance is the goal**: the guides this skill routes to say how to build a CLI that agents
 can genuinely use, and following them without ever running the kit still gets you the better
 CLI. The checks are the smallest part of this — they exist to hold what you adopt in place. Each
-thing you adopt — a declared default — converts more of the report from `unverified` to checked and
-kept that way.
+thing you adopt — a declared default — converts more of the report from `unverified` to a check that
+runs every time.
 
 This skill is the order to do things in. Steps 1 to 4 run without asking. After step 4 you
 stop, report and wait: steps 5 and 6 are the tool owner's call. If you were told to continue,
 start at whichever of them you were told to; an instruction given at the outset counts, and the
-step 4 report still goes out first. Every guide it names is a file in the `acc` repository, at
+step 4 report still goes out first. Every guide this skill names is a file in the `acc` repository, at
 the path given. **Once step 1's install has run, read them from
 `node_modules/agent-cli-conformance/` + that path** — that copy is the kit you pinned, so the
 guide and the `acc` you are running are the same version. A clone or the GitHub web view is a
@@ -66,8 +66,8 @@ bunx acc version --check
 
 `bun remove` goes first because `bun add` over an existing entry does not replace it: it appends a
 second entry under the same key, resolves the old one, and writes that `package.json` for your CI
-to install from — at exit `0`, and on bun 1.4.0 with no warning printed. It is a no-op when there
-is nothing to remove. This is the same sequence `acc version --check` prints on exit `10`.
+to install from — at exit `0`, and on bun 1.4.0 with no warning printed. `bun remove` is a no-op when
+there is nothing to remove. This is the same sequence `acc version --check` prints on exit `10`.
 
 **Installing over `git+ssh://` instead?** Add `bun pm cache rm` before the `add`. That transport
 keeps a bare clone bun does not re-fetch, so a pinned `add` there can fail with `no commit
@@ -79,8 +79,8 @@ writes no bare clone, so that command would wipe the cache to clear nothing.
 reaches, and their remedies.
 
 **The `version --check` line is part of the install.** A git install can silently hand you an
-older kit than the newest release — exit `0`, nothing visible — so it confirms the `add` did
-what you asked. Its three answers: **up to date** (exit `0`); **a newer release exists** (exit
+older kit than the newest release — exit `0`, nothing visible — so `version --check` confirms the
+`add` did what you asked. Its three answers: **up to date** (exit `0`); **a newer release exists** (exit
 `10` — the remove-then-pinned-add sequence above, in that order, and the exit-`10` output prints
 those same commands with the newest release already filled in); **could not check** (exit
 `0`, said plainly, naming which of the two it is — the remote was unreachable, or this build's
@@ -115,7 +115,12 @@ negative — `9` is `NOT CONFORMANT`, a finding about your tool, and the report 
 data. `0` is conformant. (`10` is `version --check`'s stale answer, above.) The band argument is
 `docs/wiki/concepts/exit-codes.md#outcomes-are-not-errors`.
 
-Below the verdict line, one line per rule.
+Under the verdict, the `config:` line says what frame the run used and the `scope:` line says
+what the run reached: the root only, with the count of verbs it advertised and never probed, or
+the root plus the paths you recorded. A green verdict over "3 verbs … none of them was probed"
+says nothing about those three; step 5 is what does.
+
+Below that, one line per rule.
 
 If your own test suite is green and the report still found something, that is the expected shape
 rather than a contradiction: these are interface-contract properties — what your tool owes a
@@ -151,8 +156,9 @@ that drives it, kit or no kit:
   If you have ever mistyped an `acc` command, the `choices` list in the rejection you got back is
   this practice, working on you.
 - **A machine-readable default, declared.** If your tool's plain output is one parseable
-  document, say so: `"defaultOutput": "json"` in `acc.config.json`. If it is not, that is the
-  most consequential piece of the guidance to read next.
+  document, say so: `"defaultOutput": "json"` in `acc.config.json`. If it is not, read
+  `docs/wiki/guides/how-to-reach-l0-in-your-project.md` next; it is the most consequential piece of
+  the guidance.
 
 What `acc` adds once you adopt them is that they stay adopted: the declared default turns the
 machine-mode check on parser errors (`B5`) from `unverified` into a hard check on every run, and
@@ -178,6 +184,12 @@ you continue: send what happened, and where you stopped.
 To cover those paths you record your tool's own error messages and hand them back.
 `docs/wiki/guides/how-to-record-surfaces-below-the-root.md` walks through it; `acc probe-plan`
 generates a script that does the recording for you.
+
+**`probe-plan` needs a source for the paths, `--paths` or `--declaration`, and at this step you
+have no emitted declaration yet.** Write a modelled declaration from your help — the guide shows
+the minimum — or list the paths from your dispatch table. Both are scaffolding that step 6
+replaces with a declaration your tool emits, so do not commit either as a document of its own: a
+path list kept beside the code is one more thing that has to agree with it.
 
 **Four situations, and your report tells you which you are in.** They are read at two places and
 printed in two blocks: the kit's own root reading opens `SELF-DECLARED FLAGS`, and the paths you
@@ -235,7 +247,8 @@ legible to the agents that drive it, **and the census is how it sticks.**
 survived to be read. Check the records you handed back for that path before reading anything into
 it.
 
-None of the four is a failure, and whichever you are in the guide is the same one.
+None of the four is a failure, and whichever you are in, the guide is the same one:
+`docs/wiki/guides/how-to-record-surfaces-below-the-root.md`.
 
 ## 6. Stop the drift instead of finding it
 
@@ -243,7 +256,9 @@ None of the four is a failure, and whichever you are in the guide is the same on
 your code drive your parser, your help text, your error messages and your published interface. It
 is a restructure, which is why it waits for the owner's call; once made, a parser, help text, error
 messages and published interface that all come from one table cannot differ from each other, and
-the comparison in step 5 becomes a check that stays passed.
+the comparison in step 5 becomes a check that stays passed. From then on it says only that no
+flag was added outside the table; the guide's Verification section says what that does and does
+not establish.
 
 ## 7. Tell us what happened
 

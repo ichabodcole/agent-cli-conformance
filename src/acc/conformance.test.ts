@@ -1176,6 +1176,25 @@ describe("acc check — the outcome exit code", () => {
       }
     }, 60_000);
 
+    // THE SCOPE LINE, in its three shapes, always present. An adopter took two CLIs to CONFORMANT
+    // while every subcommand accepted every flag (#45): the root-only limit was true, documented,
+    // and twenty rows below the word a reader stops at.
+    test("the text report names what the run reached, under the config line", async () => {
+      const none = await run(["check", CONFORMING, "--format", "text"]);
+      expect(none.stdout).toMatch(
+        /\n {2}config: .*\n {2}scope: the root only — no verb set could be asserted at the root/,
+      );
+      const verbs = await run([
+        "check",
+        join(dirname(CLI), "kit/fixtures/advertises-its-verbs.ts"),
+        "--format",
+        "text",
+      ]);
+      expect(verbs.stdout).toContain(
+        "scope: the root only — the root advertises 3 verbs (open state tail) and none of them was probed",
+      );
+    }, 120_000);
+
     test("the text report says so when no config was found, and where it looked", async () => {
       const dir = realpathSync(mkdtempSync(join(tmpdir(), "acc-config-none-")));
       try {

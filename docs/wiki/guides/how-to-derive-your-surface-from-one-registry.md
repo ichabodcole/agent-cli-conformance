@@ -8,7 +8,7 @@ description:
 tags: [guide, adoption, declarations, parsing, drift]
 related: [guide/how-to-reach-l0-in-your-project, guide/how-to-record-surfaces-below-the-root, concept/conformance]
 status: stable
-generated: { by: claude-fable-5-1, at: 2026-09-03 }
+generated: { by: claude-fable-5-1, at: 2026-09-06 }
 ---
 
 # How to derive your surface from one registry
@@ -150,6 +150,10 @@ A function over `COMMANDS` producing `{ formatVersion, provenance: "emitted", co
 **`provenance` is `emitted` and that is not a formality** — it is the strongest claim the format
 has, and it is true here because nothing was transcribed.
 
+**Emit the root too.** `path: []` is a row, and a walk over `COMMANDS` does not produce it —
+[the trap below](#the-trap-that-eats-generators-the-root-is-not-a-command) says why, and what
+else that walk leaves out.
+
 ## A worked example, from a tool that does this
 
 The steps above argue for the pattern. This section shows one, working. Every excerpt is quoted
@@ -159,7 +163,7 @@ path, and the section closes with what that leaves unanswered for a tool whose c
 
 ### 1. It is a refactor of dispatch, not a new artifact
 
-This is the step adopters skip. The registry replaced a bare `switch`, and its own header says why:
+This is the part adopters skip. The registry replaced a bare `switch`, and its own header says why:
 
 > the parser, the dispatcher, the schema emitter and the root rejection all walk THIS. It replaced
 > a bare `switch`, which only the dispatcher could walk: **a schema emitted from anything other
@@ -328,6 +332,18 @@ interceptors explicitly, and says why in its own source:
 **Declare `path: []` and put them there.** A declaration with no root is a declaration whose
 denominator excludes the one path a checker can always reach.
 
+**The same walk misses the verbs the root answers itself.** If your root handles a verb such as
+`help` or `schema` before it consults the command tree, that verb is not in the table, so it goes
+undeclared for the reason the flags do — and every flag it accepts, a `--json` on `help` say, goes
+with it. Declare each as a `[name]` row, or dispatch it through the table. The census catches the
+`schema` case, because `selfDescription` names it and `self-description-not-declared` fires when
+no row's first token matches. No census finding names `help` unless `help` is the invocation your `selfDescription`
+names, because a declaration-derived batch never probes it. The advertised-verbs block can name
+it, as `not covered by this batch` when the root asserts a verb set that includes it, or as a
+disagreement between the root's two captures when only one of them advertises it; both are notes
+about coverage, and neither is a disagreement with the declaration. Reading your own dispatcher is
+what finds that one.
+
 ## The trap on the other side: a `switch` cannot be enumerated
 
 If your dispatcher is a `switch`, there is nothing to walk, and the tempting fix is an array of
@@ -340,7 +356,7 @@ building anything else:
 > "keep it in step" is a comment, not a binding, and comments are what the 289 are made of.
 
 **Drive the switch from the table instead.** If that is a large change, it is the change — and it
-is the same one that makes step 4 free.
+is the same one that makes emitting the declaration (Steps, §4) a walk over the table.
 
 ## Verification
 
@@ -355,3 +371,17 @@ is the same one that makes step 4 free.
 **That third check is a ratchet.** It is cheap, it runs in CI, and once it passes it stays passing
 unless someone adds a second source of truth — which is exactly the event worth failing a build
 over.
+
+**A ratchet, and no longer a detector.** The
+[surfaces guide](./how-to-record-surfaces-below-the-root.md) asks you to derive the path list and
+the declaration from different artifacts, so that a path present in one and absent from the other
+shows as a disagreement. Once the table exists there is one artifact: the registry emits the
+declaration, and `probe-plan --declaration` takes its path list from that emission. `probe-plan`
+prints a `LIMIT:` line, "a path your parser accepts and your declaration omits was not probed".
+That condition cannot arise for a verb that dispatches through the table; the verbs handled before
+the table is consulted are [the trap above](#the-trap-that-eats-generators-the-root-is-not-a-command),
+and the line still describes those. So `N of M declared command paths compared; 0 disagreements`
+no longer establishes that no path is missing. On a two-source tool the same fraction establishes
+that as well; here it establishes only that no flag has been added outside the table, at the
+root or at a path the table dispatches, since the check last passed. That smaller claim is the one
+the build fails on, and a verb added before the table is outside it.
