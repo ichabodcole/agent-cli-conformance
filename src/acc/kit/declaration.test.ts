@@ -340,7 +340,9 @@ describe("the honesty case: a target that did not enumerate", () => {
     );
     const line = declarationSummary(d);
     expect(line).toMatch(/nothing you can write in this file changes this/);
-    expect(line).toMatch(/when the target enumerates at the root, or when the kit probes below it/);
+    expect(line).toMatch(
+      /when the target enumerates at the root, or when you record its rejections below the root/,
+    );
   });
 
   test("an emitted declaration's author is pointed at the tool, which is theirs to change", () => {

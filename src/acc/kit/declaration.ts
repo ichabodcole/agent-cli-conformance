@@ -768,7 +768,7 @@ const NOT_CHECKED_REMEDY: Record<Provenance, string> = {
   emitted:
     "Remedy: have the target's rejections enumerate the flags it accepts — this document is the tool's own, so that is a change its author can make",
   modelled:
-    "Remedy: nothing you can write in this file changes this — it becomes checkable when the target enumerates at the root, or when the kit probes below it",
+    "Remedy: nothing you can write in this file changes this — it becomes checkable when the target enumerates at the root, or when you record its rejections below the root and hand them back with --recorded-surfaces",
 };
 
 /**
