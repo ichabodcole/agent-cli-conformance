@@ -123,6 +123,24 @@ describe("acc report — a rendering of a stored sweep", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  test("`-` reads the report from stdin, and the source line says so", () => {
+    const r = Bun.spawnSync(["bun", CLI, "report", "-", "--format", "text"], {
+      stdin: new TextEncoder().encode(JSON.stringify(brokenReport())),
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    expect(r.exitCode).toBe(9);
+    expect(new TextDecoder().decode(r.stdout)).toContain("source: /dev/stdin");
+  });
+
+  test('a /dev/fd path that never arrived gets the descriptor hint, not "create that file"', () => {
+    const r = run(["report", "/dev/fd/199", "--json"]);
+    expect(r.code).toBe(5);
+    const err = JSON.parse(r.stderr).error;
+    expect(err.hint).toContain("descriptor this process never received");
+    expect(err.hint).toContain("pass `-`");
+  });
+
   test("a missing file is not_found, same as everywhere else", () => {
     expect(run(["report", "/no/such/report.json", "--format", "text"]).code).toBe(5);
   });

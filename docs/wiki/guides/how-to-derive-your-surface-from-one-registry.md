@@ -8,7 +8,7 @@ description:
 tags: [guide, adoption, declarations, parsing, drift]
 related: [guide/how-to-reach-l0-in-your-project, guide/how-to-record-surfaces-below-the-root, concept/conformance]
 status: stable
-generated: { by: claude-fable-5-1, at: 2026-09-07 }
+generated: { by: claude-fable-5-1, at: 2026-09-08 }
 ---
 
 # How to derive your surface from one registry
@@ -264,14 +264,16 @@ publishes, so the two cannot diverge even under a bug.
 Feed the emitted declaration back to the check:
 
 ```bash
-your-cli schema | acc check ./your-cli --declaration /dev/stdin
+your-cli schema | acc check ./your-cli --declaration -
 ```
 
-Process substitution, `--declaration <(your-cli schema)`, is the same round trip and works with
-the installed bin, `./node_modules/.bin/acc`. Under `bunx` it fails with `no such file:
-/dev/fd/N`, because the descriptor that process substitution opens does not reach the process
-`bunx` starts; `--recorded-surfaces <(…)` fails the same way, and `acc report <(…)` with
-`no such report`. Stdin does reach it, which is why the line above pipes. The failure reproduces
+`-` reads stdin on `--declaration`, `--recorded-surfaces`, `probe-plan`'s `--declaration` and
+`--paths`, and `acc report`'s file, one of them per invocation. Process substitution,
+`--declaration <(your-cli schema)`, is the same round trip and works with the installed bin,
+`./node_modules/.bin/acc`. Under `bunx` it fails with `no such file: /dev/fd/N`, because the
+descriptor that process substitution opens does not reach the process `bunx` starts;
+`--recorded-surfaces <(…)` fails the same way, and `acc report <(…)` with `no such report`. The
+error's hint says so and names `-`. Stdin does reach it, which is why the line above pipes. The failure reproduces
 with bun 1.4.0 on macOS, with and without `--bun`; other platforms were not checked.
 
 The emitter above measures as `formatVersion 0`, `provenance emitted`, **33 command rows**,
@@ -376,7 +378,7 @@ is the same one that makes emitting the declaration (Steps, §4) a walk over the
 1. **Every verb's rejection names a different set**, unless two verbs genuinely accept the same
    flags. One global list printed everywhere is the shape you started with.
 2. **A flag from verb A, sent to verb B, is refused** — with B's set named.
-3. **`<your-cli> schema | acc check <your-cli> --declaration /dev/stdin`** compares your emitted declaration
+3. **`<your-cli> schema | acc check <your-cli> --declaration -`** compares your emitted declaration
    against your running parser. **Zero disagreements is the expected result**, because both sides
    now come from one place — and if it is not zero, the census has found a path where something
    still reads from somewhere else.

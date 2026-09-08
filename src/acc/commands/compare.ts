@@ -15,6 +15,7 @@ import {
 import { identitySummaryLines } from "../kit/identity.ts";
 import { REPORT_FORMAT_MAJOR, type Report } from "../kit/report.ts";
 import { type Surface, surfaceSummary } from "../kit/surface.ts";
+import { missingFileHint } from "./file-args.ts";
 
 /**
  * `acc compare` — where several targets answer the same probe differently.
@@ -56,7 +57,7 @@ export function loadReport(path: string): Report {
   const abs = resolve(path);
   if (!existsSync(abs)) {
     throw notFoundError(`no such report: ${path}`, {
-      hint: "Pass a file written by `acc check <target> --json`.",
+      hint: missingFileHint(abs, "Pass a file written by `acc check <target> --json`."),
       details: { path: abs },
     });
   }

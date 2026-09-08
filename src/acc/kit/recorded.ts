@@ -390,7 +390,7 @@ function exclusionFor(record: RecordedRecord): string | null {
 export interface RecordedSurfacesReport {
   /** The batch's own `formatVersion`, echoed so the report says which format it read. */
   formatVersion: string;
-  /** The batch file, as the caller named it. */
+  /** The path that was read, resolved absolute; `/dev/stdin` when the caller passed `-`. */
   source: string;
   /** How many records the batch carried, read or not. */
   records: number;

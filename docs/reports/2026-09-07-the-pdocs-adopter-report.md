@@ -241,3 +241,12 @@ named the skill's count sentence as step 3, and it is in step 1.
 
 With that this report is **discharged**: every finding is actioned or promoted. Issue #49 is
 closed on it.
+
+## Addendum, 2026-09-08
+
+The two questions left open above, the hint and `-`, have been decided and implemented. A
+`/dev/fd/N` path that does not exist now gets a hint saying the descriptor never reached the
+process and naming `-`, on `--declaration`, `--recorded-surfaces`, `probe-plan`'s `--declaration`
+and `--paths`, `acc report` and `acc compare`. And `-` reads stdin on each of those except
+`compare`, refused when stdin is a terminal, and on `acc check` refused when both options name it.
+The one-registry guide's round trip reads `--declaration -`.
