@@ -474,7 +474,8 @@ export const COMMANDS: CommandSpec[] = [
     positionals: [
       {
         name: "reports",
-        description: "Two or more JSON reports written by `acc check <target> --json`.",
+        description:
+          "Two or more JSON reports written by `acc check <target> --json`; `-` reads one of them from stdin.",
         required: true,
         variadic: true,
       },

@@ -15,7 +15,7 @@ import {
 import { identitySummaryLines } from "../kit/identity.ts";
 import { REPORT_FORMAT_MAJOR, type Report } from "../kit/report.ts";
 import { type Surface, surfaceSummary } from "../kit/surface.ts";
-import { missingFileHint } from "./file-args.ts";
+import { fileArg, missingFileHint, refuseTwoStdinArgs } from "./file-args.ts";
 
 /**
  * `acc compare` — where several targets answer the same probe differently.
@@ -354,7 +354,11 @@ function renderText(c: Comparison): string {
   ].join("\n");
 }
 
-export function compareCommand(reportPaths: string[], mode: OutputMode, startedAt: number): void {
+export function compareCommand(named: string[], mode: OutputMode, startedAt: number): void {
+  // `-` is stdin, and stdin is one document: a second `-` is refused before anything is read. The
+  // label a `-` gets is `stdin`, the basename of the path that was read.
+  refuseTwoStdinArgs(named.map((p, i) => [`report ${i + 1}`, p]));
+  const reportPaths = named.map((p) => fileArg(p, "compare <reports>"));
   // TWO IS THE FLOOR, and it is a usage error rather than a degenerate answer. A one-report
   // "comparison" would emit a document whose every probe is unaligned and whose divergence count
   // is zero — a confident-looking answer to a question that was never asked.

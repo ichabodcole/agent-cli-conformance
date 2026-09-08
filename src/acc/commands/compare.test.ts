@@ -383,6 +383,20 @@ describe("bad input", () => {
     expect(JSON.parse(r.stderr).error.message).toContain("not an acc check report");
   });
 
+  test("`-` reads one report from stdin, labelled stdin; two of them are refused", async () => {
+    const r = Bun.spawnSync(
+      ["bun", CLI, "compare", "-", reports[TARGETS.anthill] as string, "--json"],
+      { stdin: readFileSync(reports[TARGETS.seven] as string), stdout: "pipe", stderr: "pipe" },
+    );
+    expect(r.exitCode).toBe(0);
+    const c = JSON.parse(new TextDecoder().decode(r.stdout)).data;
+    expect(c.targets.map((t: { label: string }) => t.label)).toContain("stdin");
+
+    const twice = await run(["compare", "-", "-", "--json"]);
+    expect(twice.code).toBe(2);
+    expect(JSON.parse(twice.stderr).error.details.reason).toBe("stdin-named-twice");
+  });
+
   test("a report in a format major this reader does not know is refused", async () => {
     const future = join(dir, "future.json");
     const enveloped = JSON.parse(readFileSync(reports[TARGETS.seven] as string, "utf8"));
