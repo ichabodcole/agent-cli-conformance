@@ -158,6 +158,15 @@ wanted counts flags accepted at verbs that do not own them, and which verb owns 
 declaration supplies; once one exists, that count is the `accepted-not-declared` total. Whether
 the shape line alone is worth printing is the open question.
 
+**A fourth, from the 2026-09-07 round.** From
+[the pdocs report](reports/2026-09-07-the-pdocs-adopter-report.md#pd-2--a-positional-cannot-declare-its-closed-set):
+a `values` key on positionals, so `new <type>` can declare its eighteen types the way a flag
+declares its set. The declaration parser accepts `values` on flags today and nothing compares it,
+so the append alone would publish a field the census ignores on both containers. The ask is
+really for the comparison: a declared closed set, on either container, checked against the set
+the target's rejection names. That is a format change and a census change together, and it
+waits here with the other three.
+
 ## 3. Control the observation environment, which is also the L0 safety work
 
 **What it is.** A hermetic environment policy: locale, TTY state, terminal width, `HOME` and the

@@ -30,7 +30,7 @@ you are **doing**, which is usually the faster way in.
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | an install that gave you the wrong bytes | [How to fix a broken install](./guides/how-to-fix-a-broken-install.md) — three failures, two silent at exit `0`, and which you can hit depends on your install line             |
 | meeting the kit for the first time       | [Check your first CLI](./guides/check-your-first-cli.md) — run it against a target, read a real verdict                                                                         |
-| about to point `acc check` at a binary   | [How to establish your target is safe to check](./guides/how-to-establish-your-target-is-safe-to-check.md) — three questions, answerable from the target's own documentation    |
+| about to point `acc check` at a binary   | [How to establish your target is safe to check](./guides/how-to-establish-your-target-is-safe-to-check.md) — four questions, answerable from the target's own documentation     |
 | making your own CLI pass                 | [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — triage each failure into a fix, a waiver, or named debt                                        |
 | holding a failing rule id                | `acc show <id>`, or find it in [the rules table](#coverage-at-a-glance) below                                                                                                   |
 | parsing the report's JSON                | [How to read the check report JSON](./guides/how-to-read-the-check-report-json.md) — the envelope, the verdict block, and a finding field by field, from a real run             |
@@ -230,7 +230,7 @@ How to actually do things.
   report rather than to fix anything.
 
 - [How to establish your target is safe to check](./guides/how-to-establish-your-target-is-safe-to-check.md)
-  — The decision method for pointing `acc check` at a binary — three questions, each answerable
+  — The decision method for pointing `acc check` at a binary — four questions, each answerable
   from the target's own documentation, and what to do when one of them cannot be answered.
 
 - [How to read the check report JSON](./guides/how-to-read-the-check-report-json.md) — The shape

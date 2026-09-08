@@ -7,7 +7,7 @@ description:
 tags: [tutorial, getting-started, conformance, acc-check]
 related: [concept/conformance, rule/unknown-flag-exits-nonzero]
 status: stable
-generated: { by: claude-fable-5-1, at: 2026-09-06 }
+generated: { by: claude-fable-5-1, at: 2026-09-07 }
 ---
 
 # Check your first CLI
@@ -192,7 +192,7 @@ anything else on your `PATH` and run it. Most tools fail something.
 > risk-reduced — only help paths, bare invocations, and arguments carrying a nonsense sentinel
 > token — but it is not a sandbox.
 > [How to establish your target is safe to check](./how-to-establish-your-target-is-safe-to-check.md)
-> is the three-question decision method, answerable from the target's own documentation;
+> is the four-question decision method, answerable from the target's own documentation;
 > `bun run acc check --help` carries the full list of what the gate does not prevent.
 
 ## What we learned

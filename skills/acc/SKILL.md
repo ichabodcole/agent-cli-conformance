@@ -95,7 +95,7 @@ has the measurement.
 
 **`acc check` executes your tool**, with a bounded set of probes — risk-reduced, not a sandbox.
 Before you run `acc check`, `docs/wiki/guides/how-to-establish-your-target-is-safe-to-check.md`
-is one page with the three questions that establish a target is safe to point it at — each
+is one page with the four questions that establish a target is safe to point it at — each
 answerable from the target's own documentation, no source audit needed. The first is decisive on
 its own: if your tool treats its first argument as free-form input — a prompt, a pattern, a
 filename — the probes are input to it, and you should not run the check.

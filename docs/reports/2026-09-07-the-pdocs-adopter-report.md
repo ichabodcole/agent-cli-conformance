@@ -2,7 +2,7 @@
 type: report
 generated: { by: claude-fable-5-1, at: 2026-09-07 }
 status: stable
-lifecycle: live
+lifecycle: discharged
 description:
   Four points from the sixth adopter run, pdocs, filed as issue #49 against kit v0.1.13 and
   each checked against the repository. One is a launcher failure the one-registry guide's step 7
@@ -154,7 +154,7 @@ guide's Verification section has no step of that kind; it restates the three ans
 tool find the tree it operates on, and is that location moved by the working directory at all.
 Where the answer is the tool's own location, the temporary directory is not containment, and
 the hand run against a tree you can diff is the check. The page's description, its Goal, its
-Verification paragraph, the wiki index and the skill's step 3 all count the questions as three,
+Verification paragraph, the wiki index and the skill's step 1 all count the questions as three,
 and each would move to four with it.
 
 ## PD-4 · Step 6 found a defect by a route the guide does not mention
@@ -214,3 +214,30 @@ produced: the fact was already written somewhere, but not in the sentence the re
 on. For PD-3 it was in the closing paragraph of the same page; for PD-4, in the skill's step 5.
 PD-1 is the other shape: the guide's own line walks into a property of the launcher that no page
 recorded at all.
+
+## Disposition, verified 2026-09-07
+
+Written after the fixes landed on develop; the finding text above is unmodified except that PD-3
+named the skill's count sentence as step 3, and it is in step 1.
+
+- **`PD-1` actioned**: step 7 of the one-registry guide says what `bunx` does with the
+  substituted descriptor, names the two other options it affects, and gives the pipe and the
+  direct bin as the two lines that work. The `hint` on the error is unchanged.
+- **`PD-2` promoted** into
+  [the roadmap](../roadmap.md#2-version-the-contract-not-only-the-rules) as the fourth parked ask,
+  worded as the comparison rather than the key.
+- **`PD-3` actioned**: the safety guide has a fourth question, where the tool finds the tree it
+  works on, with the hand run against a diffable tree as its check; question 3's closing
+  paragraph points at it; the Verification paragraph, the page description, the wiki index, the
+  first-CLI tutorial and the skill's step 1 count four. The hand run names one invocation per
+  probe shape and says where the kit's full argv list is, because part of that list is derived
+  from the target's help and cannot be written down in advance.
+- **`PD-4` actioned**: the trap paragraph in the one-registry guide says that writing the row
+  asks the question, and what the census prints for a row declared and left permissive.
+- **Found in review, outside the issue**: the one-registry guide's Verification told the reader
+  to write `--declaration -`, and the kit reads no such spelling; it resolves `-` as a file named
+  `-` and reports `not_found`. The line now says `/dev/stdin`, which the kit reads under every
+  launcher measured. Whether the kit should accept `-` is not decided here.
+
+With that this report is **discharged**: every finding is actioned or promoted. Issue #49 is
+closed on it.
