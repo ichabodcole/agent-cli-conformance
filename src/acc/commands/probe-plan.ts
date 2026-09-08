@@ -5,6 +5,7 @@ import { conflictError, notFoundError, permissionError, usageError } from "../er
 import { DeclarationError, loadDeclaration } from "../kit/declaration.ts";
 import { buildHarness, HarnessError, type PathSource } from "../kit/harness.ts";
 import { isExecutable, toTarget } from "./check.ts";
+import { fileArg, missingFileHint } from "./file-args.ts";
 
 /**
  * EMIT A CAPTURE HARNESS for the command paths below the root.
@@ -63,7 +64,10 @@ function loadPathList(file: string): string[][] {
   const abs = resolve(file);
   if (!existsSync(abs))
     throw notFoundError(`no such file: ${file}`, {
-      hint: '--paths takes a JSON file holding an array of command paths, e.g. [["state"], ["send", "note"]].',
+      hint: missingFileHint(
+        abs,
+        '--paths takes a JSON file holding an array of command paths, e.g. [["state"], ["send", "note"]].',
+      ),
     });
   let raw: unknown;
   try {
@@ -126,14 +130,14 @@ export function probePlanCommand(
   let paths: string[][];
   let pathSource: PathSource;
   if (opts.paths) {
-    paths = loadPathList(opts.paths);
+    paths = loadPathList(fileArg(opts.paths, "--paths"));
     pathSource = "caller-supplied";
   } else {
     try {
       // The root is dropped rather than refused: a declaration normally declares it, the kit
       // probes it for itself, and a batch carrying a root record is refused wholesale. Silently
       // omitting the one path the caller could not have used is the right reading of their file.
-      paths = loadDeclaration(opts.declaration as string)
+      paths = loadDeclaration(fileArg(opts.declaration as string, "--declaration"))
         .commands.map((c) => c.path)
         .filter((p) => p.length > 0);
     } catch (err) {
@@ -145,7 +149,10 @@ export function probePlanCommand(
       if (err instanceof DeclarationError)
         throw err.missing
           ? notFoundError(`no such file: ${opts.declaration}`, {
-              hint: "--declaration takes a declaration file; its commands[].path entries become the paths to probe.",
+              hint: missingFileHint(
+                err.path,
+                "--declaration takes a declaration file; its commands[].path entries become the paths to probe.",
+              ),
             })
           : usageError(`${err.path} ${err.message}`);
       throw err;
@@ -168,8 +175,11 @@ export function probePlanCommand(
       out: "batch.json",
       // The file the caller was told to create. It sits untracked in their repo beside the
       // harness and the batch, so it has to be excluded from the harness's own dirt check for
-      // the same reason those two are.
-      sourceFiles: [resolve((opts.paths ?? opts.declaration) as string)],
+      // the same reason those two are. A source read from stdin is not in the tree, so there is
+      // nothing to exclude.
+      ...((opts.paths ?? opts.declaration) === "-"
+        ? {}
+        : { sourceFiles: [resolve((opts.paths ?? opts.declaration) as string)] }),
     });
   } catch (err) {
     if (err instanceof HarnessError) throw usageError(err.message);

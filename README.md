@@ -23,14 +23,16 @@ also runs it, it is in scope.
 > **This is a pre-1.0 line, and the version number means it.** While the major is `0`, a breaking
 > change bumps the minor and a feature bumps the patch. What is promised and what is not:
 >
-> | stable — a change here is breaking                                                                            | unstable — a change here is not                    |
-> | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-> | rule ids (`A1`, `D2`, …), append-only                                                                         | the report's JSON shape, and every field in it     |
-> | exit codes: `0` conformant, `9` not, `1`–`8` the kit failing, `10` a newer release exists (`version --check`) | `fullyVerified` and what costs it                  |
-> | `conformant` — what it means and when it is true                                                              | `acc.config.json` keys, CLI flags, the text layout |
+> | stable — a change here is breaking                                                                                                     | unstable — a change here is not                                                       |
+> | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+> | rule ids (`A1`, `D2`, …), append-only                                                                                                  | the report's JSON shape within a major: fields are appended, never renamed or removed |
+> | exit codes: `0` conformant, `9` not, `1`–`8` the kit failing, `10` a newer release exists (`version --check`)                          | `fullyVerified` and what costs it                                                     |
+> | `conformant` — what it means and when it is true                                                                                       | `acc.config.json` keys, CLI flags, the text layout                                    |
+> | `formatVersion` on the report, the declaration and a recorded batch; a reader refuses a major it does not know; a new major is a break |                                                                                       |
 >
 > Everything a CI gate binds to is on the left. Everything still being designed is on the right —
-> and pin a commit SHA rather than a tag if you parse the JSON.
+> and pin a commit SHA rather than a tag if you parse the JSON, because fields are added within a
+> major and a parser that refuses an unknown key breaks on an addition.
 > [Why](docs/wiki/decisions/pre-1-0-while-the-design-moves.md).
 
 ## The problem

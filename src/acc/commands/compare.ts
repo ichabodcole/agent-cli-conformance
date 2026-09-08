@@ -13,8 +13,9 @@ import {
   type SurfaceRow,
 } from "../kit/compare.ts";
 import { identitySummaryLines } from "../kit/identity.ts";
-import type { Report } from "../kit/report.ts";
+import { REPORT_FORMAT_MAJOR, type Report } from "../kit/report.ts";
 import { type Surface, surfaceSummary } from "../kit/surface.ts";
+import { fileArg, missingFileHint, refuseTwoStdinArgs } from "./file-args.ts";
 
 /**
  * `acc compare` — where several targets answer the same probe differently.
@@ -56,7 +57,7 @@ export function loadReport(path: string): Report {
   const abs = resolve(path);
   if (!existsSync(abs)) {
     throw notFoundError(`no such report: ${path}`, {
-      hint: "Pass a file written by `acc check <target> --json`.",
+      hint: missingFileHint(abs, "Pass a file written by `acc check <target> --json`."),
       details: { path: abs },
     });
   }
@@ -85,6 +86,24 @@ export function loadReport(path: string): Report {
       hint: "It must carry `.data.target` and `.data.observations[]` — write one with `acc check <target> --json`.",
       details: { path: abs, reason: "not-a-report" },
     });
+  }
+  // A MAJOR THIS READER DOES NOT KNOW IS REFUSED, on the declaration reader's rule: a field it
+  // cannot name may be the one the verdict rests on, so reading the fields it recognises would
+  // publish a rendering of a document it half-understands. An ABSENT major is accepted, because
+  // every report that lacks the field was written under the only major there has been.
+  if (report.formatVersion !== undefined && report.formatVersion !== REPORT_FORMAT_MAJOR) {
+    throw usageError(
+      `${abs} is written in report format ${JSON.stringify(report.formatVersion)}, and this reader understands major ${JSON.stringify(REPORT_FORMAT_MAJOR)}`,
+      {
+        hint: "Render it with the acc that wrote it, or write a new one with this acc: `acc check <target> --json`.",
+        details: {
+          path: abs,
+          reason: "unknown-format-major",
+          formatVersion: report.formatVersion,
+          understood: REPORT_FORMAT_MAJOR,
+        },
+      },
+    );
   }
   return payload as Report;
 }
@@ -335,7 +354,11 @@ function renderText(c: Comparison): string {
   ].join("\n");
 }
 
-export function compareCommand(reportPaths: string[], mode: OutputMode, startedAt: number): void {
+export function compareCommand(named: string[], mode: OutputMode, startedAt: number): void {
+  // `-` is stdin, and stdin is one document: a second `-` is refused before anything is read. The
+  // label a `-` gets is `stdin`, the basename of the path that was read.
+  refuseTwoStdinArgs(named.map((p, i) => [`report ${i + 1}`, p]));
+  const reportPaths = named.map((p) => fileArg(p, "compare <reports>"));
   // TWO IS THE FLOOR, and it is a usage error rather than a degenerate answer. A one-report
   // "comparison" would emit a document whose every probe is unaligned and whose divergence count
   // is zero — a confident-looking answer to a question that was never asked.

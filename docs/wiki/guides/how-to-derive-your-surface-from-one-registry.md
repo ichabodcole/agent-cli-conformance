@@ -8,7 +8,7 @@ description:
 tags: [guide, adoption, declarations, parsing, drift]
 related: [guide/how-to-reach-l0-in-your-project, guide/how-to-record-surfaces-below-the-root, concept/conformance]
 status: stable
-generated: { by: claude-fable-5-1, at: 2026-09-06 }
+generated: { by: claude-fable-5-1, at: 2026-09-08 }
 ---
 
 # How to derive your surface from one registry
@@ -261,12 +261,23 @@ publishes, so the two cannot diverge even under a bug.
 
 ### 7. The round trip
 
+Feed the emitted declaration back to the check:
+
 ```bash
-acc check ./your-cli --declaration <(your-cli schema)
+your-cli schema | acc check ./your-cli --declaration -
 ```
 
-Measured on the emitter above: `formatVersion 0`, `provenance emitted`, **33 command rows**, parsed
-by this kit's own reader.
+`-` reads stdin on `--declaration`, `--recorded-surfaces`, `probe-plan`'s `--declaration` and
+`--paths`, and `acc report`'s file, one of them per invocation. Process substitution,
+`--declaration <(your-cli schema)`, is the same round trip and works with the installed bin,
+`./node_modules/.bin/acc`. Under `bunx` it fails with `no such file: /dev/fd/N`, because the
+descriptor that process substitution opens does not reach the process `bunx` starts;
+`--recorded-surfaces <(…)` fails the same way, and `acc report <(…)` with `no such report`. The
+error's hint says so and names `-`. Stdin does reach it, which is why the line above pipes. The failure reproduces
+with bun 1.4.0 on macOS, with and without `--bun`; other platforms were not checked.
+
+The emitter above measures as `formatVersion 0`, `provenance emitted`, **33 command rows**,
+parsed by this kit's own reader.
 
 ### What this example does NOT derive — read this before copying it
 
@@ -338,11 +349,15 @@ undeclared for the reason the flags do — and every flag it accepts, a `--json`
 with it. Declare each as a `[name]` row, or dispatch it through the table. The census catches the
 `schema` case, because `selfDescription` names it and `self-description-not-declared` fires when
 no row's first token matches. No census finding names `help` unless `help` is the invocation your `selfDescription`
-names, because a declaration-derived batch never probes it. The advertised-verbs block can name
+names, because a declaration-derived batch probes only the rows you declared. The advertised-verbs block can name
 it, as `not covered by this batch` when the root asserts a verb set that includes it, or as a
 disagreement between the root's two captures when only one of them advertises it; both are notes
-about coverage, and neither is a disagreement with the declaration. Reading your own dispatcher is
-what finds that one.
+about coverage, and neither is a disagreement with the declaration. Reading your own dispatcher
+finds that one. So does writing its row: a row cannot be written without deciding what the path
+accepts, and a `help` that accepts every flag at exit `0` shows up at that decision
+([one adopter's report](../../reports/2026-09-07-the-pdocs-adopter-report.md#pd-4--step-6-found-a-defect-by-a-route-the-guide-does-not-mention)).
+A `help` row declared and left permissive is listed as `NOT COMPARED` while the count of
+disagreements stays `0`, so the fix goes in the tool, not the declaration.
 
 ## The trap on the other side: a `switch` cannot be enumerated
 

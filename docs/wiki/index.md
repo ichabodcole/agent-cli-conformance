@@ -30,7 +30,7 @@ you are **doing**, which is usually the faster way in.
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | an install that gave you the wrong bytes | [How to fix a broken install](./guides/how-to-fix-a-broken-install.md) — three failures, two silent at exit `0`, and which you can hit depends on your install line             |
 | meeting the kit for the first time       | [Check your first CLI](./guides/check-your-first-cli.md) — run it against a target, read a real verdict                                                                         |
-| about to point `acc check` at a binary   | [How to establish your target is safe to check](./guides/how-to-establish-your-target-is-safe-to-check.md) — three questions, answerable from the target's own documentation    |
+| about to point `acc check` at a binary   | [How to establish your target is safe to check](./guides/how-to-establish-your-target-is-safe-to-check.md) — four questions, answerable from the target's own documentation     |
 | making your own CLI pass                 | [How to reach L0 in your project](./guides/how-to-reach-l0-in-your-project.md) — triage each failure into a fix, a waiver, or named debt                                        |
 | holding a failing rule id                | `acc show <id>`, or find it in [the rules table](#coverage-at-a-glance) below                                                                                                   |
 | parsing the report's JSON                | [How to read the check report JSON](./guides/how-to-read-the-check-report-json.md) — the envelope, the verdict block, and a finding field by field, from a real run             |
@@ -214,6 +214,7 @@ cancellation, bounded shutdown, `SIGPIPE`, resumability.
 
 Why we chose what we chose, citing the research.
 
+- [Every artifact names its format, and nothing before 1.0 reads across a major](./decisions/every-artifact-names-its-format.md) — Every document the kit writes or reads carries a `formatVersion` major; within a major, fields and rule ids are only added, never renamed or removed; a reader refuses a document whose major it does not know. The report gains `formatVersion`; the wiki, spec and checkers are not versioned separately.
 - [Stay pre-1.0 while the design is still moving](./decisions/pre-1-0-while-the-design-moves.md) — A version number is a claim about stability, and this project was making one it could not keep — so the 1.x line was withdrawn, the tags deleted, and the promised surface narrowed to what is actually settled.
 - [Require a config, and never raise who owns the target](./decisions/require-a-config-never-raise-ownership.md) — Where a rule needs a declaration, requiring the caller to write one is the answer — and who owns the target is not a distinction this documentation makes, because both branches cost a second explanation for a use nobody has.
 - [If it is not in the config, the kit does not infer it](./decisions/not-in-the-config-not-inferred.md) — What a config must minimally declare resolves to one principle — a choice the kit makes for a caller is stated in the file or is not made at all — which rules out an empty object, an `acc init` that derives values by probing the target, and optional keys with defaults behind them.
@@ -230,7 +231,7 @@ How to actually do things.
   report rather than to fix anything.
 
 - [How to establish your target is safe to check](./guides/how-to-establish-your-target-is-safe-to-check.md)
-  — The decision method for pointing `acc check` at a binary — three questions, each answerable
+  — The decision method for pointing `acc check` at a binary — four questions, each answerable
   from the target's own documentation, and what to do when one of them cannot be answered.
 
 - [How to read the check report JSON](./guides/how-to-read-the-check-report-json.md) — The shape

@@ -6,6 +6,7 @@ import { assertFlagsOnlyOnEnumerated, MalformedSurfaceError } from "../kit/compa
 import type { Report } from "../kit/report.ts";
 import { renderCheckReportText } from "./check.ts";
 import { loadReport, malformedSurfaceUsageError } from "./compare.ts";
+import { fileArg } from "./file-args.ts";
 
 /**
  * `acc report` — render the text report from a JSON a check already wrote.
@@ -36,7 +37,9 @@ import { loadReport, malformedSurfaceUsageError } from "./compare.ts";
  * predate: the report shape became an INPUT format the day this command landed, and a missing
  * thing must render as "not recorded by that kit", never as an absent thing.
  */
-export function reportCommand(file: string, mode: OutputMode, startedAt: number): void {
+export function reportCommand(named: string, mode: OutputMode, startedAt: number): void {
+  // `-` is stdin, resolved here so the source line below names the path that was read.
+  const file = fileArg(named, "report <file>");
   const data = loadReport(file);
   // `loadReport` (one home, shared with `compare`) establishes target + observations. Rendering
   // a VERDICT needs the verdict skeleton on top, checked by hand for the same reason: a file
@@ -83,6 +86,9 @@ export function reportCommand(file: string, mode: OutputMode, startedAt: number)
   const prelude = [
     "RENDERED FROM A STORED REPORT — nothing was re-run; the verdict below is as old as the file.",
     `  source: ${resolve(file)}`,
+    data.formatVersion
+      ? `  format: ${data.formatVersion} (report format major; the kit that wrote it is on the verdict line)`
+      : `  format: not recorded — this artifact was written by acc ${data.kitVersion}, before reports carried a format version`,
     data.capturedAt
       ? `  captured ${data.capturedAt}`
       : `  captured: not recorded — this artifact was written by acc ${data.kitVersion}, before reports carried a time`,

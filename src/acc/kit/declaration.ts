@@ -302,6 +302,8 @@ export interface DeclarationPathResult {
 }
 
 export interface DeclarationDiff {
+  /** The declaration's own `formatVersion`, echoed so the report says which format it compared. */
+  formatVersion: string;
   provenance: Provenance;
   /**
    * WHETHER THE SET DIFFERENCE HAPPENED AT ALL — the field to read before `findings`.
@@ -735,6 +737,7 @@ export function diffDeclaration(
   const checkedUndeclared = results.filter((r) => r.checked && r.undeclared).length;
   const checkedTotal = checkedCommands + checkedUndeclared;
   return {
+    formatVersion: declaration.formatVersion,
     provenance: declaration.provenance,
     status: checkedTotal > 0 ? "checked" : "not-checked",
     ...(checkedTotal === 0

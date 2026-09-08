@@ -7,7 +7,7 @@ description:
 tags: [guide, adoption, evidence, declarations, acc-check]
 related: [concept/probing, concept/conformance, guide/how-to-reach-l0-in-your-project]
 status: stable
-generated: { by: claude-fable-5-1, at: 2026-09-06 }
+generated: { by: claude-fable-5-1, at: 2026-09-08 }
 ---
 
 # How to record surfaces below the root
@@ -413,7 +413,7 @@ with no `--version` should record the failure rather than fabricate a reading.
 acc check ./mycli --format text --recorded-surfaces ./batch.json --declaration ./declaration.json
 ```
 
-A file path, not stdin. `--declaration` is optional: without it you get the batch's own block and
+A file path, or `-` for stdin on at most one of the two, since stdin is read once. `--declaration` is optional: without it you get the batch's own block and
 no comparison. The harness writes `batch.json` into the directory you ran it from by default, and
 `-o PATH` sends it anywhere else — either way, where you run the harness decides only where the
 file lands, never what the batch records: the build provenance comes from the target's tree.

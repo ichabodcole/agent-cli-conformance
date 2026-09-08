@@ -250,7 +250,27 @@ export function sweepId(observations: ReportedObservation[]): string {
   return createHash("sha256").update(material).digest("hex").slice(0, 12);
 }
 
+/**
+ * THE MAJOR OF THE REPORT DOCUMENT'S SHAPE — the coordinate a stored report carries so that a
+ * reader can tell which shape it is holding instead of inferring it from which fields are present.
+ *
+ * Same discipline as `DECLARATION_FORMAT_MAJOR` and `RECORDED_SURFACES_FORMAT_MAJOR`: a major
+ * only, appended to within it, and refused by a reader that does not know it. The decision that
+ * fixed this is `docs/wiki/decisions/every-artifact-names-its-format.md`.
+ */
+export const REPORT_FORMAT_MAJOR = "0";
+
 export interface Report {
+  /**
+   * The report format's major, `REPORT_FORMAT_MAJOR` on every report this kit writes.
+   *
+   * OPTIONAL FOR THE REASON `targetIdentity` IS: stored reports outlive the field. A report
+   * written before it existed has no value here, and `acc report` renders that absence as "before
+   * reports carried a format version", a fact about the artifact. `loadReport` refuses a major it
+   * does not know and accepts an absent one, because the artifacts that lack it are exactly the
+   * ones written under the only major there has been.
+   */
+  formatVersion?: string;
   target: string;
   /**
    * How the target was actually launched, including any interpreter the kit resolved from its
@@ -268,7 +288,7 @@ export interface Report {
    * field is exactly where they diverge: two builds of anthill, same declared `2.3.0`, two argv0s,
    * two behaviours (`docs/reports/2026-08-24-first-drift-trial-anthill-manifest.md` § `DT-10`).
    * Until this existed, `Report.kitVersion` was the only version coordinate a stored report
-   * carried, and it is ours.
+   * carried, and it is ours; `formatVersion` came later and is ours too.
    *
    * EVIDENCE, exactly as `surface` is: no rule reads it, no count moves on it, and it touches
    * neither `conformant` nor `fullyVerified`. Read `status` before `said`, and read `identity.ts`
@@ -301,9 +321,10 @@ export interface Report {
    * repo to read the README before installing. Putting it in every report makes the comparison
    * available to someone who has not accidentally armed themselves.
    *
-   * It is also the first version coordinate a stored report carries, which roadmap step 2 wants
-   * five more of. This one is not that design — it is the cheapest half of it, and the half whose
-   * absence was measured.
+   * It was the first version coordinate a stored report carried, and it names the INSTRUMENT.
+   * `formatVersion` came later and names the DOCUMENT'S SHAPE; the two move independently. Which
+   * further coordinates roadmap step 2 still wants, and why they wait, is decided in
+   * `docs/wiki/decisions/every-artifact-names-its-format.md`.
    */
   kitVersion: string;
   /**
@@ -658,6 +679,7 @@ const documented =
  */
 export const DOCUMENTED_REPORT_FIELDS = {
   Report: documented<Report>()({
+    formatVersion: FIELD,
     target: FIELD,
     targetArgv0: FIELD,
     targetIdentity: FIELD,
@@ -1050,6 +1072,7 @@ export function buildReport(
   const targetIdentity = captureIdentity(h.observations);
 
   return {
+    formatVersion: REPORT_FORMAT_MAJOR,
     target: h.target.path,
     kitVersion,
     // A config assembled in memory rather than read from a file reports `none`, which is what
@@ -1115,6 +1138,7 @@ export function buildReport(
     ...(recorded
       ? {
           recordedSurfaces: {
+            formatVersion: recorded.reading.formatVersion,
             source: recorded.source,
             records: recorded.reading.records,
             readings: recorded.reading.surfaces.map((p) => ({

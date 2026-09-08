@@ -623,9 +623,50 @@ describe("magpie's empty enumeration — the regression enumerated-none exists t
       ],
     });
 
+    test("`-` reads the declaration from stdin, and the report names /dev/stdin", () => {
+      const r = spawnSync(
+        "bun",
+        [
+          acc,
+          "check",
+          target,
+          "--format",
+          "json",
+          "--recorded-surfaces",
+          magpie,
+          "--declaration",
+          "-",
+        ],
+        { encoding: "utf8", input: readFileSync(declaration, "utf8") },
+      );
+      const data = JSON.parse(r.stdout).data;
+      expect(data.declaration.formatVersion).toBe("0");
+      expect(data.declaration.declaredCommands).toBe(2);
+    });
+
+    test("two options both naming `-` are refused before either is read", () => {
+      const r = run(["--recorded-surfaces", "-", "--declaration", "-"], "json");
+      expect(r.status).toBe(2);
+      const err = JSON.parse(r.stderr).error;
+      expect(err.message).toContain("both read stdin");
+      expect(err.details.reason).toBe("stdin-named-twice");
+    });
+
+    test("a /dev/fd path that never arrived gets the descriptor hint on both options", () => {
+      for (const flag of ["--declaration", "--recorded-surfaces"]) {
+        const r = run([flag, "/dev/fd/199"], "json");
+        expect(r.status).toBe(5);
+        expect(JSON.parse(r.stderr).error.hint).toContain("descriptor this process never received");
+      }
+    });
+
     test("both paths report enumerated-none, with no near-miss clause", () => {
       const r = run(["--recorded-surfaces", magpie, "--declaration", declaration], "json");
       const data = JSON.parse(r.stdout).data;
+      // Every artifact names its format, and the report echoes the formats of the two it read.
+      expect(data.formatVersion).toBe("0");
+      expect(data.recordedSurfaces.formatVersion).toBe("0");
+      expect(data.declaration.formatVersion).toBe("0");
       const readings: Array<{
         path: string[];
         status: string;

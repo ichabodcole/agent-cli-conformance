@@ -45,6 +45,7 @@ import {
 } from "../kit/surface.ts";
 import type { History, TargetInfo } from "../kit/types.ts";
 import { VERSION } from "../version.ts";
+import { fileArg, missingFileHint, refuseTwoStdinArgs } from "./file-args.ts";
 
 export interface CheckOptions {
   configDir?: string;
@@ -155,7 +156,8 @@ const VERDICT_WORD: Record<SurfaceStatus, string> = {
  * The `Record<SurfaceStatus, string>` above is total over the TYPE, and that is worth keeping: a
  * fifth status is a `tsc` failure at the literal rather than a missing word at runtime. It is not
  * total over the VALUE. `p.status` is annotated `SurfaceStatus` but arrives from `JSON.parse` of a
- * stored report — `acc report` renders any report file, including one a newer kit wrote — and
+ * stored report — `acc report` renders any report file under the format major it knows, including
+ * one a newer kit wrote under it — and
  * nothing on that path validates it. Read without this guard the lookup printed `5 paths: 5
  * undefined`, which is the census reporting a count of nothing at all.
  *
@@ -242,9 +244,13 @@ export async function checkCommand(
   // report whose declaration block is absent — indistinguishable from a run where nobody asked
   // for one — over a caller who did.
   let declaration: Declaration | null = null;
+  refuseTwoStdinArgs([
+    ["--declaration", opts.declaration],
+    ["--recorded-surfaces", opts.recordedSurfaces],
+  ]);
   if (opts.declaration !== undefined) {
     try {
-      declaration = loadDeclaration(opts.declaration);
+      declaration = loadDeclaration(fileArg(opts.declaration, "--declaration"));
     } catch (err) {
       if (err instanceof DeclarationError) {
         // A FILE THAT IS NOT THERE IS `not_found`; A FILE THAT IS THERE AND WRONG IS `usage`.
@@ -254,7 +260,10 @@ export async function checkCommand(
         // differently depending on which flag or which command met it.
         const opts = {
           hint: err.missing
-            ? "Create that file, or drop --declaration — a run without one is a full report with no comparison in it."
+            ? missingFileHint(
+                err.path,
+                "Create that file, or drop --declaration — a run without one is a full report with no comparison in it.",
+              )
             : "Fix that file, or drop --declaration — a run without one is a full report with no comparison in it.",
           details: { path: err.path },
         };
@@ -274,15 +283,21 @@ export async function checkCommand(
   let recorded: { source: string; reading: RecordedReading } | null = null;
   if (opts.recordedSurfaces !== undefined) {
     try {
+      const batchPath = fileArg(opts.recordedSurfaces, "--recorded-surfaces");
       recorded = {
-        source: resolve(opts.recordedSurfaces),
-        reading: readRecordedBatch(loadRecordedBatch(opts.recordedSurfaces)),
+        source: resolve(batchPath),
+        reading: readRecordedBatch(loadRecordedBatch(batchPath)),
       };
     } catch (err) {
       if (err instanceof RecordedSurfacesError) {
         // Same rule as `--declaration` above, and stated there.
         const opts = {
-          hint: `${err.missing ? "Create" : "Fix"} that file, or drop --recorded-surfaces — a run without one reports the root the kit probes and says every other path was not reached.`,
+          hint: err.missing
+            ? missingFileHint(
+                err.path,
+                "Create that file, or drop --recorded-surfaces — a run without one reports the root the kit probes and says every other path was not reached.",
+              )
+            : "Fix that file, or drop --recorded-surfaces — a run without one reports the root the kit probes and says every other path was not reached.",
           details: { path: err.path },
         };
         throw err.missing

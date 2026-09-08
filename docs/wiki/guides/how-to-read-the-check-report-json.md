@@ -303,9 +303,11 @@ And what came back:
   stored JSON, from a target that in fact answered with an explicit empty set. **This cannot be
   recomputed from an old artifact** — the streams that carried the bytes are dropped at write time
   by design, so there is nothing left to re-read the distinction out of. There is deliberately no
-  `kitVersion` comparison to paper over this: a version check would be the first of its kind in
-  this code and would need its own contract for what counts as "before", and stating the limit
-  plainly is cheaper and matches how this project handles other things it cannot establish. Treat
+  `kitVersion` comparison to paper over this. The one kind of version check this kit performs is on a
+  document's `formatVersion`, and it refuses a major it does not know; a `kitVersion` comparison would be a
+  different instrument, one that needs its own contract for what counts as "before", and stating
+  the limit plainly is cheaper and matches how this project handles other things it cannot
+  establish. Treat
   `not-enumerated` on an artifact you did not just produce as "not-enumerated, or possibly a
   stale `enumerated-none`" rather than as settled.
 
@@ -314,8 +316,8 @@ And what came back:
   only the statuses it shipped with; a status it does not recognise falls through to the branch for
   `no-evidence` and prints "nothing readable was recorded" — a confident, wrong "we did not look"
   for the one status that means "we looked and it said none". This is reachable today, because
-  `acc report` and `acc compare` both accept any report file, including one written by a newer
-  kit. It is not repairable from here: the fallthrough shipped in kits that have already gone out,
+  `acc report` and `acc compare` both accept any report file under the format major they know,
+  including one a newer kit wrote under it. It is not repairable from here: the fallthrough shipped in kits that have already gone out,
   before this state existed for them to handle, and this kit's own exhaustive rendering (see
   `surfaceSummary` in `src/acc/kit/surface.ts`) cannot reach back into a binary someone else is
   still running.
@@ -408,6 +410,12 @@ And what came back:
   moving to a deeper probe level is what silently turns the second kind from a live suppression
   into a line that suppresses nothing.
 - **`kitVersion`** — the kit that produced the report; the verdict line quotes it in text mode.
+- **`formatVersion`** — the major of the report's own shape, `"0"`, distinct from `kitVersion`:
+  the kit names the instrument, this names the document. `acc report` and `acc compare` refuse a
+  major they do not know rather than reading the fields they recognise, and accept a report with
+  no `formatVersion` as one written before the field existed. `declaration.formatVersion` and
+  `recordedSurfaces.formatVersion` echo the majors of the two documents the run read. The rule is
+  [every artifact names its format](../decisions/every-artifact-names-its-format.md).
 
 ## Verification
 

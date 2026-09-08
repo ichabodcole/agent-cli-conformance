@@ -2,12 +2,12 @@
 type: guide
 title: How to establish your target is safe to check
 description:
-  The decision method for pointing `acc check` at a binary — three questions, each answerable
+  The decision method for pointing `acc check` at a binary — four questions, each answerable
   from the target's own documentation, and what to do when one of them cannot be answered.
 tags: [guide, safety, conformance, acc-check]
 related: [tutorial/check-your-first-cli, rule/unknown-command-exits-nonzero, rule/double-dash-terminator]
 status: stable
-generated: { by: claude-fable-5, at: 2026-08-27 }
+generated: { by: claude-fable-5-1, at: 2026-09-07 }
 ---
 
 # How to establish your target is safe to check
@@ -16,11 +16,13 @@ generated: { by: claude-fable-5, at: 2026-08-27 }
 
 `acc check` executes the target. Its probes are risk-reduced, not inert — and "risk-reduced" is
 a claim about the arguments the kit sends, never about what your binary does when it receives
-them. Only you can establish that, and this page is the method: three questions, in the order
+them. Only you can establish that, and this page is the method: four questions, in the order
 that eliminates targets fastest. Each is answerable from the target's own documentation —
-reading a README, a man page, or a usage line executes nothing.
+reading a README, a man page, or a usage line executes nothing. One answer to the fourth, a tool
+that finds its tree from its own location, leads to running the target by hand; that is the only
+step on this page that runs the target before the check does.
 
-Reading the target's source also answers all three questions, but only for a tool you wrote.
+Reading the target's source also answers all four questions, but only for a tool you wrote.
 For a tool you did not write — the target
 [the recording workflow](./how-to-record-surfaces-below-the-root.md) exists for — answer them
 from its documentation.
@@ -137,13 +139,55 @@ the target derives from its own variable rather than from `HOME`, credentials el
 environment, and the network are all still reachable. If what the
 scratch `HOME` does not contain is exactly the behaviour you cannot afford — the target is
 known to talk to a live service on startup — then the answer is **no**: do not run the check,
-and record that as a limit of your report rather than running it anyway.
+and record that as a limit of your report rather than running it anyway. The first item on that
+list, absolute paths, is the next question.
+
+### 4. Ask where it finds the tree it works on
+
+The probes run in a fresh temporary working directory, and that moves only the paths the target
+resolves against `cwd`. It does not move a tool that derives its working root some other way:
+from its own install location (`import.meta.dir`, `__dirname`, the path of its own executable),
+from a marker file it searches upward for, or from a path fixed at build time. For such a tool every
+probe reaches the real tree, wherever you run the check from, and question 3's scratch `HOME` does
+not reach it either, because the root is not a config location.
+
+How to answer it: what the documentation says the tool operates on, and from where. A tool that
+says to run it from inside the project resolves from `cwd`. A tool that is installed into the
+repository it manages and works from any directory is resolving from somewhere else. For a tool
+you wrote, the source answers directly: find where the root path is built.
+
+When the root comes from the tool's own location, the temporary directory is not containment, and
+what a probe can touch is decided by what the tool does with that root. This is the one answer
+that leads to running the target by hand: before the check, run each shape under Goal that can be
+written in advance, against the real tree, and confirm that no file in it is newer than a stamp
+taken before the first one. The stamp catches writes into ignored paths, which `git status` does
+not list.
+
+```
+stamp=$(mktemp)
+./your-tool                              # bare
+./your-tool --help                       # help-path
+./your-tool --acc-probe-xyzzy-flag       # sentinel, as a flag
+./your-tool acc-probe-xyzzy-verb         # sentinel, as a verb
+./your-tool -- --acc-probe-xyzzy-value   # sentinel, after the terminator
+find /path/to/tree -type f -newer "$stamp"   # empty means nothing was written
+```
+
+That is one invocation per shape, and none for the no-verb shape: the kit derives that one from
+your help screen, a misspelling of one of your own flags, as it derives a value outside a set your
+help advertises, so neither can be written down before a run. Every argv the kit sent is in the
+report under `.data.observations`; a second `find` after the check confirms the run against the
+full list.
+
+A tool that writes on one of these invocations will write when the check sends the same one. Decide whether that is
+acceptable, as in question 2, or record it as a limit and do not run.
 
 ## Verification
 
-When all three answers are acceptable, you have established: the probes name nothing your
-target declares, its bare invocation is work you accepted, and nothing runs before parsing that
-you have not contained. That is the whole claim — facts you established, not a safety property
+When all four answers are acceptable, you have established: the probes name nothing your
+target declares, its bare invocation is work you accepted, nothing runs before parsing that you
+have not contained, and the tree the tool works on is one the probes cannot change, or one you
+have watched them leave unchanged. That is the whole claim — facts you established, not a safety property
 the kit granted. A target you cannot answer these questions for is a target this kit does not
 yet support checking safely, and saying so in your report is worth more than results from a run
 you could not justify.

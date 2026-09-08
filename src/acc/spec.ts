@@ -294,7 +294,7 @@ export const COMMANDS: CommandSpec[] = [
         name: "--declaration",
         type: "string",
         description:
-          "Path to a declaration file to diff against what the target says it accepts. Omitted, no comparison is made and the report says so; nothing here passes or fails, because the kit cannot tell which side of a disagreement is wrong.",
+          "Path to a declaration file to diff against what the target says it accepts; `-` reads it from stdin. Omitted, no comparison is made and the report says so; nothing here passes or fails, because the kit cannot tell which side of a disagreement is wrong.",
         valueHint: "file",
       },
       // A FILE, on the `--declaration` precedent above and for that flag's own stated reason: a
@@ -311,7 +311,7 @@ export const COMMANDS: CommandSpec[] = [
         name: "--recorded-surfaces",
         type: "string",
         description:
-          "Path to a batch of surfaces you recorded yourself, below the root the kit probes. Give it at most once — one batch is one session assertion, and a second is refused rather than merged. Every census line says who observed it; nothing here passes or fails. For the format: acc show how-to-record-surfaces-below-the-root",
+          "Path to a batch of surfaces you recorded yourself, below the root the kit probes; `-` reads it from stdin. Give it at most once — one batch is one session assertion, and a second is refused rather than merged. Every census line says who observed it; nothing here passes or fails. For the format: acc show how-to-record-surfaces-below-the-root",
         valueHint: "file",
       },
     ],
@@ -386,14 +386,14 @@ export const COMMANDS: CommandSpec[] = [
         name: "--declaration",
         type: "string",
         description:
-          "Derive the command paths from this declaration's commands[].path. The convenient source, and the one that can only ever probe paths you have already named.",
+          "Derive the command paths from this declaration's commands[].path; `-` reads it from stdin. The convenient source, and the one that can only ever probe paths you have already named.",
         valueHint: "file",
       },
       {
         name: "--paths",
         type: "string",
         description:
-          'Command paths as a JSON array of arrays, e.g. [["state"], ["send", "note"]]. The source that can find a verb your declaration does not name, because it comes from wherever you actually enumerate them.',
+          'Command paths as a JSON array of arrays, e.g. [["state"], ["send", "note"]]; `-` reads it from stdin. The source that can find a verb your declaration does not name, because it comes from wherever you actually enumerate them.',
         valueHint: "file",
       },
       {
@@ -438,7 +438,7 @@ export const COMMANDS: CommandSpec[] = [
     positionals: [
       {
         name: "file",
-        description: "A report written by `acc check <target> --json`.",
+        description: "A report written by `acc check <target> --json`; `-` reads it from stdin.",
         required: true,
       },
     ],
@@ -474,7 +474,8 @@ export const COMMANDS: CommandSpec[] = [
     positionals: [
       {
         name: "reports",
-        description: "Two or more JSON reports written by `acc check <target> --json`.",
+        description:
+          "Two or more JSON reports written by `acc check <target> --json`; `-` reads one of them from stdin.",
         required: true,
         variadic: true,
       },
