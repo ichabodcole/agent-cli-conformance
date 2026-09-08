@@ -388,6 +388,8 @@ function exclusionFor(record: RecordedRecord): string | null {
  * an id and could not.
  */
 export interface RecordedSurfacesReport {
+  /** The batch's own `formatVersion`, echoed so the report says which format it read. */
+  formatVersion: string;
   /** The batch file, as the caller named it. */
   source: string;
   /** How many records the batch carried, read or not. */
@@ -426,6 +428,8 @@ export interface RecordedSurfacesReport {
 
 /** Everything one supplied batch contributes to a run. */
 export interface RecordedReading {
+  /** The batch's `formatVersion`, carried so the report can echo it. */
+  formatVersion: string;
   /** One entry per distinct path in the batch, in the order the paths first appear. */
   surfaces: PathSurface[];
   /** How many records the batch carried, read or not. Named in the census. */
@@ -525,6 +529,7 @@ export function readRecordedBatch(batch: RecordedBatch): RecordedReading {
   }
 
   return {
+    formatVersion: batch.formatVersion,
     surfaces,
     records: batch.records.length,
     recordedBy: [...new Set(batch.records.map((r) => r.recordedBy))],

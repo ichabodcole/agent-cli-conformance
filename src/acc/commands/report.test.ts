@@ -65,6 +65,7 @@ describe("acc report — a rendering of a stored sweep", () => {
     const old = structuredClone(brokenReport()) as {
       data: Record<string, unknown> & { findings: Record<string, unknown>[] };
     };
+    delete old.data.formatVersion;
     delete old.data.capturedAt;
     delete old.data.sweep;
     delete old.data.targetIdentity;
@@ -77,9 +78,38 @@ describe("acc report — a rendering of a stored sweep", () => {
     const r = run(["report", file, "--format", "text"]);
     expect(r.code).toBe(9); // the stored verdict still mirrors
     expect(r.stdout).toContain("written by acc 0.1.3, before reports carried a time");
+    expect(r.stdout).toContain("written by acc 0.1.3, before reports carried a format version");
     expect(r.stdout).toContain("this artifact predates the surface census (written by acc 0.1.3)");
     expect(r.stdout).toContain("this artifact predates sweep and capture marks");
     expect(r.stdout).toContain("this artifact carries no identity capture");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test("every report this kit writes names its format major, and the rendering repeats it", () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-"));
+    expect(brokenReport().data.formatVersion).toBe("0");
+    const file = join(dir, "r.json");
+    writeFileSync(file, JSON.stringify(brokenReport()));
+    expect(run(["report", file, "--format", "text"]).stdout).toContain(
+      "  format: 0 (report format major",
+    );
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test("a report in a format major this reader does not know is refused, not half-read", () => {
+    const dir = mkdtempSync(join(tmpdir(), "acc-report-"));
+    const future = structuredClone(brokenReport()) as { data: Record<string, unknown> };
+    future.data.formatVersion = "7";
+    const file = join(dir, "future.json");
+    writeFileSync(file, JSON.stringify(future));
+    const r = run(["report", file, "--json"]);
+    expect(r.code).toBe(2);
+    const err = JSON.parse(r.stderr).error;
+    expect(err.message).toContain('report format "7"');
+    expect(err.message).toContain('understands major "0"');
+    expect(err.details.reason).toBe("unknown-format-major");
+    // Nothing of the refused document reached stdout.
+    expect(r.stdout).toBe("");
     rmSync(dir, { recursive: true, force: true });
   });
 

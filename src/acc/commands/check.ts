@@ -155,7 +155,8 @@ const VERDICT_WORD: Record<SurfaceStatus, string> = {
  * The `Record<SurfaceStatus, string>` above is total over the TYPE, and that is worth keeping: a
  * fifth status is a `tsc` failure at the literal rather than a missing word at runtime. It is not
  * total over the VALUE. `p.status` is annotated `SurfaceStatus` but arrives from `JSON.parse` of a
- * stored report — `acc report` renders any report file, including one a newer kit wrote — and
+ * stored report — `acc report` renders any report file under the format major it knows, including
+ * one a newer kit wrote under it — and
  * nothing on that path validates it. Read without this guard the lookup printed `5 paths: 5
  * undefined`, which is the census reporting a count of nothing at all.
  *

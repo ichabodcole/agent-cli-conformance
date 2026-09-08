@@ -115,10 +115,10 @@ coordinates instead of presenting `conformant` as an unqualified boolean.
 
 **Why it matters.** Rule IDs are append-only and exit codes are append-only, which the wiki
 argues for at length, but neither discipline says anything about the shape of the documents
-those IDs travel in. A report stored today says `{ target, level, findings, counts, … }` — the
-probe level is its only coordinate. It does not record which spec it was judged against, which
-checker corpus produced it, which version of the report shape it is written in, or which version
-of `acc` produced it. A report that outlives a release without those fields cannot be
+those IDs travel in. A report stored today opens `{ formatVersion, target, kitVersion, … level, … }`: it names the
+shape it is written in and the kit that wrote it, and nothing else. It does not record which spec
+it was judged against or which checker corpus produced it, because both travel with the kit until
+something makes them move apart. A report that outlives a release without those fields cannot be
 re-interpreted later; a report format that ships without them acquires a compatibility promise
 by accident, which is the worst way to acquire one.
 
@@ -137,7 +137,16 @@ and will become one. A versioning discipline that cannot absorb a new coordinate
 versioning discipline, so the profile coordinate arriving at step 5 is this step's first real
 test rather than an argument for delaying it.
 
-**Two adopter asks against the promised surface, parked here until that decision is made.** Both
+**The decision was made on 2026-09-08**:
+[every artifact names its format](wiki/decisions/every-artifact-names-its-format.md). Three lines:
+every document carries a format major, a shape only grows within a major, and no reader promises
+to read a major it does not know. The report gained `formatVersion` and echoes the declaration's
+and the batch's; `acc report` and `acc compare` refuse an unknown major. What this step still
+wants and does not have: a coordinate for the spec and the checker corpus separate from
+`kitVersion`, which waits until they move apart, and the profile coordinate, which waits for
+profiles. The four asks below are unblocked on the format side and stay open on their merits.
+
+**Two adopter asks against the promised surface, parked here until that decision was made.** Both
 came from the 2026-09-03 trials and both are about what a consumer may bind to, which is this
 step's question. From [the glamour report](reports/2026-09-03-the-glamour-adopter-report.md#gl-3--a-promised-signal-for-the-diff-ran-and-found-n-disagreements):
 a promised signal for the declaration diff — either a `--fail-on-disagreement` flag that moves the
@@ -145,9 +154,9 @@ exit code into the outcome band, or a documented stable subset of `data.declarat
 today every field a CI ratchet would read from the diff is on the README's unstable side. From
 [the anthill report](reports/2026-09-03-the-anthill-adopter-report.md#an-1--a-declared-alias-reads-declared-not-accepted-unless-the-rejection-names-it):
 an alias field in the declaration, so `-h` need not be a row of its own that the rejection must
-name separately. Neither is answered; the first is a charter-level call about the stable column,
-the second a v0 format change, and both wait on the coordinate set above so that whatever is
-promised has a version to be promised under.
+name separately. Neither is answered. The first is a charter-level call about the stable column, and the format
+decision does not make it: a flag or a promise about existing fields is not an append. The
+second is an append under format major `0`, to be decided on its merits.
 
 **A third ask, from the 2026-09-05 round, sits beside them.** From
 [the citty and media-buffet report](reports/2026-09-06-the-citty-and-media-buffet-reports.md#mb-4--the-census-could-print-the-pair-count-the-magpie-case-is-built-on):

@@ -83,6 +83,9 @@ export function reportCommand(file: string, mode: OutputMode, startedAt: number)
   const prelude = [
     "RENDERED FROM A STORED REPORT — nothing was re-run; the verdict below is as old as the file.",
     `  source: ${resolve(file)}`,
+    data.formatVersion
+      ? `  format: ${data.formatVersion} (report format major; the kit that wrote it is on the verdict line)`
+      : `  format: not recorded — this artifact was written by acc ${data.kitVersion}, before reports carried a format version`,
     data.capturedAt
       ? `  captured ${data.capturedAt}`
       : `  captured: not recorded — this artifact was written by acc ${data.kitVersion}, before reports carried a time`,

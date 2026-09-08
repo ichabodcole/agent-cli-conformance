@@ -383,6 +383,18 @@ describe("bad input", () => {
     expect(JSON.parse(r.stderr).error.message).toContain("not an acc check report");
   });
 
+  test("a report in a format major this reader does not know is refused", async () => {
+    const future = join(dir, "future.json");
+    const enveloped = JSON.parse(readFileSync(reports[TARGETS.seven] as string, "utf8"));
+    enveloped.data.formatVersion = "7";
+    writeFileSync(future, JSON.stringify(enveloped));
+    const r = await run(["compare", reports[TARGETS.anthill] as string, future, "--json"]);
+    expect(r.code).toBe(2);
+    const err = JSON.parse(r.stderr).error;
+    expect(err.message).toContain('understands major "0"');
+    expect(err.details.reason).toBe("unknown-format-major");
+  });
+
   test("a bare report payload (jq '.data') is accepted as well as the envelope", async () => {
     const bare = join(dir, "bare.json");
     const enveloped = JSON.parse(readFileSync(reports[TARGETS.seven] as string, "utf8"));

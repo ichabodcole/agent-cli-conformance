@@ -959,8 +959,8 @@ export function surfaceSummary(s: Surface | undefined, path: readonly string[] =
   const unhandled: never = s.status;
   // WHAT IS NOT UNREACHABLE IS THIS LINE. The exhaustiveness above is a compile-time property of
   // `SurfaceStatus`; `s` on this path came from `JSON.parse` of a stored report, and `acc report`
-  // and `acc compare` accept any report file — including one a NEWER kit wrote, which the JSON
-  // guide names as a live case. So the type says `never` and the value can be a string this build
+  // and `acc compare` accept any report file under the format major they know — including one a
+  // NEWER kit wrote under it, which the JSON guide names as a live case. So the type says `never` and the value can be a string this build
   // has never heard of. Returning it published the bare enum token AS the surface sentence: no
   // scope, no qualifier, and no statement that the reader could not read it.
   //

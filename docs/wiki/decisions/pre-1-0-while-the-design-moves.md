@@ -62,6 +62,12 @@ deliberately, because a wide promise made now would be broken within the week.
 | `conformant` — what it means and when it is `true`                                  | `acc.config.json` keys and their vocabularies  |
 |                                                                                     | CLI flags, and the text renderer's layout      |
 
+Extended on 2026-09-08 by
+[every artifact names its format](./every-artifact-names-its-format.md): `formatVersion` on the
+report, the declaration and a recorded batch, and a reader's refusal of a major it does not know,
+join the left column; the right column's "every field" is bounded to a major, within which fields
+are appended and never renamed or removed. The README's table carries both.
+
 **`conformant` and the exit code are on the stable side on purpose.** They are what a CI gate
 binds to, and moving them silently would turn a green build red for reasons nobody could read out
 of a changelog. Everything an adopter automates against is in the left column; everything the

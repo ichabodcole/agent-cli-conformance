@@ -13,7 +13,7 @@ import {
   type SurfaceRow,
 } from "../kit/compare.ts";
 import { identitySummaryLines } from "../kit/identity.ts";
-import type { Report } from "../kit/report.ts";
+import { REPORT_FORMAT_MAJOR, type Report } from "../kit/report.ts";
 import { type Surface, surfaceSummary } from "../kit/surface.ts";
 
 /**
@@ -85,6 +85,24 @@ export function loadReport(path: string): Report {
       hint: "It must carry `.data.target` and `.data.observations[]` — write one with `acc check <target> --json`.",
       details: { path: abs, reason: "not-a-report" },
     });
+  }
+  // A MAJOR THIS READER DOES NOT KNOW IS REFUSED, on the declaration reader's rule: a field it
+  // cannot name may be the one the verdict rests on, so reading the fields it recognises would
+  // publish a rendering of a document it half-understands. An ABSENT major is accepted, because
+  // every report that lacks the field was written under the only major there has been.
+  if (report.formatVersion !== undefined && report.formatVersion !== REPORT_FORMAT_MAJOR) {
+    throw usageError(
+      `${abs} is written in report format ${JSON.stringify(report.formatVersion)}, and this reader understands major ${JSON.stringify(REPORT_FORMAT_MAJOR)}`,
+      {
+        hint: "Render it with the acc that wrote it, or write a new one with this acc: `acc check <target> --json`.",
+        details: {
+          path: abs,
+          reason: "unknown-format-major",
+          formatVersion: report.formatVersion,
+          understood: REPORT_FORMAT_MAJOR,
+        },
+      },
+    );
   }
   return payload as Report;
 }

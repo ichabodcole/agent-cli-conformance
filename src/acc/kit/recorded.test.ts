@@ -626,6 +626,10 @@ describe("magpie's empty enumeration — the regression enumerated-none exists t
     test("both paths report enumerated-none, with no near-miss clause", () => {
       const r = run(["--recorded-surfaces", magpie, "--declaration", declaration], "json");
       const data = JSON.parse(r.stdout).data;
+      // Every artifact names its format, and the report echoes the formats of the two it read.
+      expect(data.formatVersion).toBe("0");
+      expect(data.recordedSurfaces.formatVersion).toBe("0");
+      expect(data.declaration.formatVersion).toBe("0");
       const readings: Array<{
         path: string[];
         status: string;
