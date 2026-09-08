@@ -218,7 +218,8 @@ recorded at all.
 ## Disposition, verified 2026-09-07
 
 Written after the fixes landed on develop; the finding text above is unmodified except that PD-3
-named the skill's count sentence as step 3, and it is in step 1.
+named the skill's count sentence as step 3, and it is in step 1. All of them, and the two
+slices in the addendum below, shipped in v0.1.14 on 2026-09-08.
 
 - **`PD-1` actioned**: step 7 of the one-registry guide says what `bunx` does with the
   substituted descriptor, names the two other options it affects, and gives the pipe and the
