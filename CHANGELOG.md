@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.14](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.13...v0.1.14) (2026-09-08)
+
+
+### Features
+
+* **report:** every artifact names its format, and a reader refuses a major it does not know ([b478a4e](https://github.com/ichabodcole/agent-cli-conformance/commit/b478a4ea4d7c18581526da3e0779936d49127ad0))
+* **report:** every artifact the kit writes names its format, and `-` reads a document from stdin ([139b561](https://github.com/ichabodcole/agent-cli-conformance/commit/139b5619aa3116f555b7e2309e0b68dcdee67fc2))
+
+
+### Bug Fixes
+
+* **cli:** a descriptor that never arrived is named as one, and - reads stdin ([cdd138d](https://github.com/ichabodcole/agent-cli-conformance/commit/cdd138db7488fe256d60edc1c5743c90286b3f5a))
+* **compare:** compare reads - from stdin too, so the descriptor hint is true everywhere ([d05b455](https://github.com/ichabodcole/agent-cli-conformance/commit/d05b45520cf72ab8bbeae9f5326a62520224263a))
+
 ## [0.1.13](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.12...v0.1.13) (2026-09-07)
 
 
