@@ -54,7 +54,8 @@ in between, and **blocked on** last.
 3. [**Control the observation environment**](#3-control-the-observation-environment-which-is-also-the-l0-safety-work)
    — and with it the L0 safety capability deferred out of Phase 4.
 4. [**Durable observation and replay**](#4-durable-observation-and-replay) — the artifact, once
-   there are coordinates to stamp on it and an environment worth describing.
+   there is a controlled environment worth recording; its `formatVersion` is settled by step 2,
+   the rest of its schema is not.
 5. [**Profiles and the outcome algebra**](#5-profiles-and-the-outcome-algebra) — declared
    archetypes, together with the rules that say what a partial stream or batch result means.
 6. [**The portable declaration IR**](#6-the-portable-declaration-ir) — the largest single
@@ -63,7 +64,8 @@ in between, and **blocked on** last.
    the registry, and the rest waits on an evidence record that can carry what it measures.
 8. [**Checker assurance at scale**](#8-test-the-checker-as-a-measurement-instrument) — after the
    corpus stops changing shape, and not a day later.
-9. [**Adoption surfaces**](#9-adoption-surfaces) — last, deliberately.
+9. [**Adoption surfaces**](#9-adoption-surfaces) — last, because nothing above depends on it
+   and nothing yet asks for it.
 
 The [coverage debt](#the-coverage-debt) is not a step. Those 96 gaps close as their blockers
 land, which is why they are grouped below by what blocks them rather than sequenced.
@@ -129,7 +131,8 @@ only one whose absence silently damages the others.
 **Why before the artifact specifically.** The artifact's own required-field list opens with
 "spec, checker, report, and artifact format versions", so the coordinate set has to exist before
 the artifact schema can embed it. Designing the two together means designing the fields twice,
-once provisionally.
+once provisionally. The format coordinate is settled; the spec and checker versions are
+`kitVersion` until either is released on its own schedule.
 
 **Blocked on.** Nothing technical. It needs one decision made deliberately: what a version
 _covers_, and what happens when a coordinate is added later — because profiles do not exist yet
@@ -265,8 +268,10 @@ What it lacks is the target digest, every version coordinate, platform and envir
 the sandbox policy, cancellation state, and any filesystem or network observation. This is a
 schema-and-persistence job over a data model that is substantially there — not a rewrite.
 
-**Blocked on.** Step 2, for coordinates worth stamping on it. Step 3, for an environment worth
-describing: an artifact that faithfully records an _uncontrolled_ environment cannot back the
+**Blocked on.** Step 3. The format coordinate is settled: under
+[the format decision](wiki/decisions/every-artifact-names-its-format.md) an artifact is one more
+document that carries its own `formatVersion`, and the spec and checker slots hold `kitVersion`
+as the report's do. Step 3 is the dependency: an artifact that faithfully records an _uncontrolled_ environment cannot back the
 reproducibility claim that is its entire purpose.
 
 ## 5. Profiles and the outcome algebra
@@ -317,11 +322,12 @@ not need to predict the archetypes — it needs to keep collecting reasons until
 Until then a waiver is the correct answer and the honest one: a project declaring the rule does
 not apply, rather than a spec pretending the rule was never about anyone.
 
-**Blocked on.** Step 2 — the profile is a version coordinate, and adding it to the report is
-exactly the migration the versioning discipline was designed for. Falsifiability is the harder
-dependency and resolves in sequence rather than in a circle: a profile claim starts as something
-the caller asserts to `acc check`, and becomes something the target declares — and can therefore
-be caught lying about — when step 6 lands.
+**Blocked on.** Not step 2: the profile is a version coordinate, and under
+[the format decision](wiki/decisions/every-artifact-names-its-format.md) adding it to the report is
+a field appended within major `0`, which is the test that decision set itself. Falsifiability
+waits on step 6. Until a target can declare its profile, a profile claim is something the caller
+asserts to `acc check`; once it can, the claim is the target's and the kit can test it. That is a
+sequence, not a circle.
 
 ## 6. The portable declaration IR
 
@@ -367,8 +373,9 @@ inert as the root's**, and this project's own corpus is what falsifies the claim
 exists does not license running it — see the [coverage debt](#the-coverage-debt) for what the second
 blocker is and which gaps carry it.
 
-**Blocked on.** Step 5, so a declaration can state which profile it claims, and step 2, since
-this is the most pinned-to artifact of the lot.
+**Blocked on.** Step 5, so a declaration can state which profile it claims. Nothing from step 2:
+the declaration carries `formatVersion`, its reader refuses a major it does not know, and no other
+artifact is pinned to more.
 
 ## 7. The lifecycle rule family
 
@@ -526,11 +533,14 @@ report exports. The adoption guide this group used to name is written —
 [how to reach L0](./wiki/guides/how-to-reach-l0-in-your-project.md), with a first-run tutorial and
 a checker guide beside it — so what remains here is tooling rather than navigation.
 
-**Why last.** An export format is a consumer, and it pins to the report shape. Shipping SARIF
-before step 2 creates precisely the accidental compatibility promise that step exists to prevent.
+**Why last.** An export format is a consumer: it would pin to report format major `0` and refuse
+a major it does not know, under
+[the format decision](wiki/decisions/every-artifact-names-its-format.md), and that is the whole of
+what it depends on. It is last because nothing on this page has to land before it and nothing yet
+asks for it; `acc init` and the CI integration are in the same position.
 
-**Blocked on.** Step 2, for the export formats. The one item lifted out of this group is the
-probe-plan dry run, which belongs with step 3 — it is a safety mitigation, not an ergonomic one.
+**Blocked on.** Nothing. The probe-plan dry run is not an adoption surface — it is a safety
+mitigation, not an ergonomic one — and sits with step 3.
 
 ---
 
@@ -572,9 +582,10 @@ That is precisely the audience the README names — "framework and scaffold main
 them **the shared row is the finding**. Running seven times to discover one is backwards, and the
 second run's entire value was establishing that it was a duplicate.
 
-**Blocked on** nothing, though it wants [step 2](#2-version-the-contract-not-only-the-rules)
-first if the multi-target result is ever stored: a report about several targets is a different
-document shape from a report about one.
+**Blocked on** nothing. A stored multi-target result is a different document from a report about
+one target, and under
+[the format decision](wiki/decisions/every-artifact-names-its-format.md) a new document carries
+its own `formatVersion` from its first release.
 
 ## The report says everything twice
 
@@ -586,10 +597,12 @@ same arrays wholesale under a top-level `evidenceGaps`. The first outside adopte
 `fullyVerified` false" in one place, per rule, rather than making a reader assemble it — but
 nobody checked what it costs the consumer of the document, and the answer came from outside.
 
-**Why it is not just a trim.** Whichever copy goes, something that reads reports today breaks, so
-this wants the report-shape versioning in
-[step 2](#2-version-the-contract-not-only-the-rules) to land first. Dropping a field from an
-unversioned document is how a format acquires a compatibility promise by accident.
+**Why it is not just a trim.** Whichever copy goes, something that reads reports today breaks.
+Under [the format decision](wiki/decisions/every-artifact-names-its-format.md), removing a field
+is a new report format major, a breaking change in the commit that makes it; the kit's own readers
+of major `0` refuse the new documents, and no other reader has promised to read them.
+
+**Blocked on** a report format major being worth cutting.
 
 ## A ratchet the tool does not turn
 
