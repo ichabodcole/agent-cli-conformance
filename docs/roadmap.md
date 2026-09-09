@@ -161,8 +161,13 @@ an alias field in the declaration, so `-h` need not be a row of its own that the
 name separately. The first was answered in part on 2026-09-08: `declaration.status`, `checkedCommands` and
 `findings[].{kind,path,subject}` are promised by name in the README's stable column, which is what
 a ratchet needs. The flag, an exit code that moves on the census, is the expensive half and waits
-for a second adopter to ask for it. The second is an append under format major `0`, to be decided
-on its merits.
+for a second adopter to ask for it. The second was decided on 2026-09-08: not built unless a modelled-declaration adopter asks. The
+rejection's enumeration is the only evidence the kit has for a declared short spelling, so an
+alias field would let a declaration say what the rejection does not, and that silence is what the
+census exists to surface. An adopter who owns the tool fixes it by naming both spellings in the
+rejection, which is what the standard asks of a rejection anyway. The case the field would serve
+is a declaration modelled for a tool whose rejection its author cannot change; nobody has filed
+it, and the field is an append under format major `0` if someone does.
 
 **A third ask, from the 2026-09-05 round, sits beside them.** From
 [the citty and media-buffet report](reports/2026-09-06-the-citty-and-media-buffet-reports.md#mb-4--the-census-could-print-the-pair-count-the-magpie-case-is-built-on):

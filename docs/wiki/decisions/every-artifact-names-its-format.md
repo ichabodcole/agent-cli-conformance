@@ -93,7 +93,8 @@ of an unknown major, move to the stable side. Which fields the shape carries ins
 on the unstable side, with the append-only rule stated beside it; a field moves left when an
 adopter automates against it, as the census fields did on the same day.
 
-**The four parked asks are unblocked on the format side.** An alias field, closed sets on
+**The four parked asks are unblocked on the format side.** An alias field (since declined unless a
+modelled-declaration adopter asks), closed sets on
 positionals, and the census pair count each become an append to a `formatVersion 0` document, decided on
 its own merits. The stable signal from the declaration diff was answered by promising existing
 fields by name, not by an append; what remains open there is the exit-code question, which this
