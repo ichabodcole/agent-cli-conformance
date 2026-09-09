@@ -438,6 +438,14 @@ The report grows a `RECORDED SURFACES` block, and the census below it labels eve
     accepted-not-declared  --limit at state [recorded-by-caller (identity unstated)]
 ```
 
+When four or more of your paths enumerate one identical flag set, one more line appears under
+the readings: `N of M recorded paths enumerate the same K flags; if each flag belongs to one verb,
+up to N×K flag/path pairs are accepted where they do not belong — …`, ending with where to look.
+It is a bound, not a finding: a parser holding one global list and a tool whose flags are
+genuinely global both produce it, and which verb owns a flag is what your declaration says. Paths
+that stated an empty set do not count toward it. The report carries it as
+`recordedSurfaces.sharedEnumeration`.
+
 Three things to check, in this order:
 
 1. **The path count moved.** `2 of 3 declared command paths compared` — before the batch it was

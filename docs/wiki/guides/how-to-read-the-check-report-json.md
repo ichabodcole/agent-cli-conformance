@@ -391,7 +391,12 @@ And what came back:
   the root. Both are evidence on the same terms as `surface` — no rule reads either, and neither
   moves a count. Absent means you passed nothing, never that everything agreed;
   [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md) is where they
-  are worked through. Four fields under `declaration` are promised, on the README's stable column and
+  are worked through. `recordedSurfaces.sharedEnumeration`, `{ paths, flags }`, appears when four
+  or more recorded paths enumerate one identical flag set. `paths × flags` is the upper bound on
+  flag/path pairs accepted outside the verb that owns the flag, if each flag belongs to one verb;
+  a declaration says which verb owns each flag, so only with one supplied can the census count
+  the pairs that do not belong. Four
+  fields under `declaration` are promised, on the README's stable column and
   [the pre-1.0 decision](../decisions/pre-1-0-while-the-design-moves.md) it mirrors, so a CI
   ratchet may bind to them by name: `formatVersion`, the echo described below; `status`, which is
   `"checked"` when at least one path was compared, the undeclared root included, and

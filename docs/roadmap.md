@@ -147,8 +147,8 @@ to read a major it does not know. The report gained `formatVersion` and echoes t
 and the batch's; `acc report` and `acc compare` refuse an unknown major. What this step still
 wants and does not have: a coordinate for the spec and the checker corpus separate from
 `kitVersion`, which waits until they move apart, and the profile coordinate, which waits for
-profiles. The four asks below are unblocked on the format side; one is answered in part, and the rest stay
-open on their merits.
+profiles. Of the four asks below, one is answered in part, one is declined unless a modelled-declaration
+adopter asks, one shipped, and one waits on its merits.
 
 **Two adopter asks against the promised surface, parked here until that decision was made.** Both
 came from the 2026-09-03 trials and both are about what a consumer may bind to, which is this
@@ -175,8 +175,12 @@ when every compared path enumerates the same flag set, print the flag/path pair 
 one-registry guide's `magpie` case is built on. The census can print the shape — thirteen paths
 all enumerating the same fourteen flags — from what it already reads. The number the adopter
 wanted counts flags accepted at verbs that do not own them, and which verb owns a flag is what a
-declaration supplies; once one exists, that count is the `accepted-not-declared` total. Whether
-the shape line alone is worth printing is the open question.
+declaration supplies; once one exists, that count is the `accepted-not-declared` total. Shipped on
+2026-09-08: the census names the shape as a bound with its condition, `N of M recorded paths
+enumerate the same K flags; if each flag belongs to one verb, up to N×K flag/path pairs are
+accepted where they do not belong`, carried as `recordedSurfaces.sharedEnumeration`, and with a
+declaration supplied it points at the `accepted-not-declared` findings below it, which count the
+pairs that do not belong.
 
 **A fourth, from the 2026-09-07 round.** From
 [the pdocs report](reports/2026-09-07-the-pdocs-adopter-report.md#pd-2--a-positional-cannot-declare-its-closed-set):
@@ -185,7 +189,7 @@ declares its set. The declaration parser accepts `values` on flags today and not
 so the append alone would publish a field the census ignores on both containers. The ask is
 really for the comparison: a declared closed set, on either container, checked against the set
 the target's rejection names. That is a format change and a census change together, and it
-waits here with the other three.
+waits here.
 
 ## 3. Control the observation environment, which is also the L0 safety work
 
