@@ -223,6 +223,15 @@ the folded 5 are listed individually in .data.recordedSurfaces.readings
 Only the repetition folds. A sixth path answering differently is still printed in full beside the
 rollup, and the folded paths keep their own sentences in the JSON.
 
+**When four or more paths enumerate the same flag set, the census prints a bound with its
+condition:** `5 of 5 recorded paths enumerate the same 3 flags; if each flag belongs to one verb,
+up to 15 flag/path pairs are accepted where they do not belong — …`. A parser holding one global
+list produces that enumeration, and so does a tool with genuinely global flags; the line cannot
+tell them apart, which is why it says `if`. Paths that stated an empty set do not count toward
+it. A declaration says which verb owns a flag, and with one supplied the census counts the pairs
+that do not belong among its `accepted-not-declared` findings. Size the restructure in step 6 by
+the bound.
+
 **`enumerated`** means that when your tool refuses an unknown flag, it lists the flags it does
 accept. That listing is what the comparison reads, so you already get some coverage without doing
 anything.

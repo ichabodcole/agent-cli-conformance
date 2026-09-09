@@ -424,6 +424,48 @@ export interface RecordedSurfacesReport {
   }>;
   recordedBy: string[];
   identity: RecordedIdentity | null;
+  /**
+   * THE SHAPE `magpie` HAD, when the batch shows it: the largest group of recorded paths whose
+   * rejections enumerate the SAME flag set, present only when that group reaches
+   * `SHARED_ENUMERATION_AT`. `paths × flags` bounds the flag/path pairs accepted where they may
+   * not belong, which is the number an adopter sizing the one-registry restructure wanted and
+   * computed by hand (`docs/reports/2026-09-06-the-citty-and-media-buffet-reports.md` § `MB-4`).
+   *
+   * A SHAPE, NOT A FINDING. Identical sets are what a parser holding one global list produces,
+   * and also what a tool with genuinely global flags produces; which it is depends on which verb
+   * owns each flag, and only a declaration says that. Absent means no group reached the
+   * threshold, never that the sets differed at every path.
+   */
+  sharedEnumeration?: { paths: number; flags: number };
+}
+
+/** How many recorded paths must enumerate one identical set before the census names the shape. */
+export const SHARED_ENUMERATION_AT = 4;
+
+/**
+ * The group of enumerating paths sharing one flag set with the LARGEST BOUND, `paths × flags`,
+ * when it reaches the threshold. Keyed on the sorted set, so order in the rejection does not split
+ * a group; ties on the bound go to the group seen first, so the answer is a function of the batch.
+ */
+export function sharedEnumeration(
+  surfaces: readonly PathSurface[],
+): { paths: number; flags: number } | undefined {
+  const groups = new Map<string, number>();
+  for (const p of surfaces) {
+    if (p.surface.status !== "enumerated" || !p.surface.flags?.length) continue;
+    const key = [...p.surface.flags].sort().join("\u0000");
+    groups.set(key, (groups.get(key) ?? 0) + 1);
+  }
+  let best: { paths: number; flags: number } | undefined;
+  for (const [key, paths] of groups) {
+    const flags = key.split("\u0000").length;
+    if (
+      paths >= SHARED_ENUMERATION_AT &&
+      (best === undefined || paths * flags > best.paths * best.flags)
+    )
+      best = { paths, flags };
+  }
+  return best;
 }
 
 /** Everything one supplied batch contributes to a run. */

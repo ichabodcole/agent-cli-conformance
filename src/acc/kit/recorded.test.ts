@@ -623,6 +623,62 @@ describe("magpie's empty enumeration — the regression enumerated-none exists t
       ],
     });
 
+    test("four or more paths enumerating one set name the shape magpie had, as a bound", () => {
+      const same = write("same-set.json", {
+        formatVersion: "0",
+        records: ["state", "claim", "list", "open", "close"].map((k) => ({
+          path: [k],
+          argv: [k, "--acc-not-a-flag"],
+          exitCode: 2,
+          streams: "separated",
+          stdout: "",
+          stderr: `Unknown option '--acc-not-a-flag'. Valid flags: --json --limit --as\n`,
+          completeness: "complete",
+          recordedBy: "ci@test",
+          recordedAt: "2026-08-25T09:14:02Z",
+        })),
+      });
+      const j = run(["--recorded-surfaces", same], "json");
+      expect(JSON.parse(j.stdout).data.recordedSurfaces.sharedEnumeration).toEqual({
+        paths: 5,
+        flags: 3,
+      });
+      const t = run(["--recorded-surfaces", same]);
+      expect(t.stdout).toContain(
+        "5 of 5 recorded paths enumerate the same 3 flags; if each flag belongs to one verb, up to 15 flag/path pairs are accepted where they do not belong — a declaration says which",
+      );
+      // With a declaration the tail points at the census that already counts them.
+      const withDecl = run(["--recorded-surfaces", same, "--declaration", declaration]);
+      expect(withDecl.stdout).toContain("the census below counts the ones that do not");
+      // Two groups of equal size: the larger bound wins, whichever the batch lists first.
+      const rec = (k: string, flags: string) => ({
+        path: [k],
+        argv: [k, "--acc-not-a-flag"],
+        exitCode: 2,
+        streams: "separated",
+        stdout: "",
+        stderr: `Unknown option '--acc-not-a-flag'. Valid flags: ${flags}\n`,
+        completeness: "complete",
+        recordedBy: "ci@test",
+        recordedAt: "2026-08-25T09:14:02Z",
+      });
+      const tie = write("tie.json", {
+        formatVersion: "0",
+        records: [
+          ...["a", "b", "c", "d"].map((k) => rec(k, "--x --y")),
+          ...["e", "f", "g", "h"].map((k) => rec(k, "--x --y --z --w")),
+        ],
+      });
+      expect(
+        JSON.parse(run(["--recorded-surfaces", tie], "json").stdout).data.recordedSurfaces
+          .sharedEnumeration,
+      ).toEqual({ paths: 4, flags: 4 });
+      // Below the threshold, no shape is named: absent, not zero.
+      const bounty = batchFixture("bounty.recorded-surfaces.json");
+      const b = run(["--recorded-surfaces", bounty], "json");
+      expect(JSON.parse(b.stdout).data.recordedSurfaces.sharedEnumeration).toBeUndefined();
+    });
+
     test("`-` reads the declaration from stdin, and the report names /dev/stdin", () => {
       const r = spawnSync(
         "bun",

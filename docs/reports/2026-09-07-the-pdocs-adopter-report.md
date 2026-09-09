@@ -218,7 +218,8 @@ recorded at all.
 ## Disposition, verified 2026-09-07
 
 Written after the fixes landed on develop; the finding text above is unmodified except that PD-3
-named the skill's count sentence as step 3, and it is in step 1.
+named the skill's count sentence as step 3, and it is in step 1. All of them, and the two
+slices in the addendum below, shipped in v0.1.14 on 2026-09-08.
 
 - **`PD-1` actioned**: step 7 of the one-registry guide says what `bunx` does with the
   substituted descriptor, names the two other options it affects, and gives the pipe and the
@@ -250,3 +251,7 @@ process and naming `-`, on `--declaration`, `--recorded-surfaces`, `probe-plan`'
 and `--paths`, `acc report` and `acc compare`. And `-` reads stdin on each of those except
 `compare`, refused when stdin is a terminal, and on `acc check` refused when both options name it.
 The one-registry guide's round trip reads `--declaration -`.
+
+`PD-2` was decided the same day: the closed-set comparison waits for a second adopter to need it.
+The roadmap's step 2 carries the three-piece sketch, the format append, the out-of-set probe below
+the root, and the reader that compares `choices` against `values`, so it can be picked up whole.

@@ -11,6 +11,7 @@ import {
   type RecordedReading,
   type RecordedSurfacesReport,
   recordedPathSummary,
+  sharedEnumeration,
 } from "./recorded.ts";
 import {
   type AdvertisedVerbsComparison,
@@ -1160,6 +1161,9 @@ export function buildReport(
             })),
             recordedBy: recorded.reading.recordedBy,
             identity: recorded.reading.identity,
+            ...((shared) => (shared ? { sharedEnumeration: shared } : {}))(
+              sharedEnumeration(recorded.reading.surfaces),
+            ),
           },
         }
       : {}),

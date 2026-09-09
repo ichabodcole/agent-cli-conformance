@@ -828,6 +828,22 @@ export function renderCheckReportText(r: Report, prelude: string[] = []): string
               `      the folded ${[...said].length} are listed individually in .data.recordedSurfaces.readings`,
             ];
           })(r.recordedSurfaces),
+          // THE SHAPE `magpie` HAD, named when the batch shows it. Printed as a bound with its
+          // condition attached: the census cannot tell a parser holding one global list from a
+          // tool whose flags are genuinely global, and only a declaration says which verb owns
+          // a flag. Without one this line is the cue to size the one-registry restructure; with
+          // one, the census below already counts the pairs that do not belong.
+          ...((rs) => {
+            const s = rs.sharedEnumeration;
+            if (!s) return [];
+            const tail =
+              r.declaration === undefined
+                ? "a declaration says which; acc show how-to-derive-your-surface-from-one-registry"
+                : "the census below counts the ones that do not, as accepted-not-declared";
+            return [
+              `      ${s.paths} of ${rs.readings.length} recorded paths enumerate the same ${s.flags} flags; if each flag belongs to one verb, up to ${s.paths * s.flags} flag/path pairs are accepted where they do not belong — ${tail}`,
+            ];
+          })(r.recordedSurfaces),
           // BESIDE THE AFFECTED PATHS FIRST, and this total is a summary of that rather than
           // a substitute for it — an absent identity observation withholds nothing, but it
           // weakens the tie between the recording and the binary the kit ran, and the place a

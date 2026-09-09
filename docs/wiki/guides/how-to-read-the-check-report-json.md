@@ -7,7 +7,7 @@ description:
 tags: [guide, conformance, acc-check, evidence]
 related: [tutorial/check-your-first-cli, concept/conformance, concept/machine-mode]
 status: stable
-generated: { by: claude-opus-5, at: 2026-08-29 }
+generated: { by: claude-fable-5-1, at: 2026-09-08 }
 ---
 
 # How to read the check report JSON
@@ -391,7 +391,22 @@ And what came back:
   the root. Both are evidence on the same terms as `surface` — no rule reads either, and neither
   moves a count. Absent means you passed nothing, never that everything agreed;
   [how to record surfaces below the root](./how-to-record-surfaces-below-the-root.md) is where they
-  are worked through.
+  are worked through. `recordedSurfaces.sharedEnumeration`, `{ paths, flags }`, appears when four
+  or more recorded paths enumerate one identical flag set. `paths × flags` is the upper bound on
+  flag/path pairs accepted outside the verb that owns the flag, if each flag belongs to one verb;
+  a declaration says which verb owns each flag, so only with one supplied can the census count
+  the pairs that do not belong. Four
+  fields under `declaration` are promised, on the README's stable column and
+  [the pre-1.0 decision](../decisions/pre-1-0-while-the-design-moves.md) it mirrors, so a CI
+  ratchet may bind to them by name: `formatVersion`, the echo described below; `status`, which is
+  `"checked"` when at least one path was compared, the undeclared root included, and
+  `"not-checked"` when none was; `checkedCommands`, the number of declared command paths that
+  were compared; and `findings`, one entry per disagreement, each carrying `kind` (one of
+  `declared-not-accepted`, `accepted-not-declared`, `refused-but-enumerated`,
+  `self-description-not-declared`), `path` (the command path, `[]` for the root) and `subject`
+  (the flag or verb). A ratchet reads `status == "checked"` and `findings` empty; the exit code
+  does not move on the declaration diff, because the kit cannot tell which side of a disagreement
+  is wrong.
 - **`evidenceGaps`** — per applicable core rule, what this run did not establish — **whatever the
   verdict was**. A `pass` with partial coverage contributes the clauses its checker never looked
   at; a `fail` and an `unverified` each contribute a row as well, and theirs opens with the
@@ -410,8 +425,8 @@ And what came back:
   moving to a deeper probe level is what silently turns the second kind from a live suppression
   into a line that suppresses nothing.
 - **`kitVersion`** — the kit that produced the report; the verdict line quotes it in text mode.
-- **`formatVersion`** — the major of the report's own shape, `"0"`, distinct from `kitVersion`:
-  the kit names the instrument, this names the document. `acc report` and `acc compare` refuse a
+- **`formatVersion`** — the major of the report's own shape, `"0"`. It is distinct from `kitVersion`:
+  `kitVersion` says which kit wrote the report, `formatVersion` says which shape the report has. `acc report` and `acc compare` refuse a
   major they do not know rather than reading the fields they recognise, and accept a report with
   no `formatVersion` as one written before the field existed. `declaration.formatVersion` and
   `recordedSurfaces.formatVersion` echo the majors of the two documents the run read. The rule is

@@ -210,6 +210,9 @@ says so.
   probe set — the round that established that is in the commit history. **The alias field is promoted** on 2026-09-04 into
   [the roadmap](../roadmap.md#2-version-the-contract-not-only-the-rules), beside the glamour
   stable-column question, as an ask against the promised surface.
+  Decided on 2026-09-08: the field is not built unless a modelled-declaration adopter asks for it,
+  because a declared alias the rejection does not name is the silence the census exists to
+  surface, and a tool's owner fixes it in the rejection. The roadmap carries the reasoning.
 - **`AN-2` actioned** in the same commit: the surfaces guide's step 1 and the standard's census
   paragraph. Two sentences in the standard that said the kit could not yet accept below-root
   evidence were found stale on the way and corrected in the same commit.

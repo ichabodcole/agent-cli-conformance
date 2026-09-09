@@ -89,13 +89,16 @@ did not record the field, and the format line joins that list.
 ## Consequences
 
 **The README's promised column gains a row.** `formatVersion` on every document, and the refusal
-of an unknown major, move to the stable side. The shape inside a major stays on the unstable side,
-with the append-only rule stated beside it.
+of an unknown major, move to the stable side. Which fields the shape carries inside a major stays
+on the unstable side, with the append-only rule stated beside it; a field moves left when an
+adopter automates against it, as the census fields did on the same day.
 
-**The four parked asks are unblocked on the format side.** An alias field, closed sets on
-positionals, a stable signal from the declaration diff, and the census pair count each become an
-append to a `formatVersion 0` document, decided on its own merits. What remains open for the
-stable-signal ask is the exit-code question, which this page does not touch.
+**The four parked asks are unblocked on the format side.** An alias field (since declined unless a
+modelled-declaration adopter asks), closed sets on
+positionals, and the census pair count each become an append to a `formatVersion 0` document, decided on
+its own merits. The stable signal from the declaration diff was answered by promising existing
+fields by name, not by an append; what remains open there is the exit-code question, which this
+page does not touch.
 
 **A future major is a deliberate event, and a break.** Renaming or removing a report field, or
 changing what one means, is a new `REPORT_FORMAT_MAJOR`, typed `!` in the commit that makes it,

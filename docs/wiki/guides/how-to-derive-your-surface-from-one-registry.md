@@ -47,6 +47,13 @@ disagreements**, with an `emitted` declaration. It is the only target measured s
 declaration and the enumeration agree everywhere, and it is the only one where they were never
 separate things.
 
+**The census reports `magpie`'s shape when a recorded batch shows it.** When four or more recorded
+paths enumerate the same flag set, the report prints a line saying so and bounds the flag/path
+pairs at `paths × flags`. The bound is conditional, if each flag belongs to one verb, because a
+tool with genuinely global flags produces the same enumeration. On `magpie` the bound is 17 × 19 =
+323; the 289 above is the count against a declaration, which is lower by the pairs that did
+belong. That bound sizes a defect like `magpie`'s before you decide on the restructure below.
+
 ## Before you build the table: read the one you already have
 
 **This is the cheapest thing on this page and the only part that needs no restructure.** Everything

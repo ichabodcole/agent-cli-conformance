@@ -192,7 +192,8 @@ exists, that count is the `accepted-not-declared` total. The adopter asked for t
 at a point where they had no declaration.
 
 **A tooling ask, promoted as an open question.** Whether the shape line alone is worth printing is
-what [the roadmap](../roadmap.md#2-version-the-contract-not-only-the-rules) now carries.
+what [the roadmap](../roadmap.md#2-version-the-contract-not-only-the-rules) now carries. (Built
+on 2026-09-08; the addendum at the end of this report says what prints.)
 
 ## MB-5 · Already covered
 
@@ -227,6 +228,15 @@ working as documented.
 | `MB-3` | mostly covered | a clause in the surfaces guide's format note; a pointer from the registry guide's step 4               |
 | `MB-4` | tooling ask    | promoted to the roadmap as an open question                                                            |
 | `MB-5` | covered        | none                                                                                                   |
+
+## Addendum, 2026-09-08
+
+`MB-4`'s shape line is built. When four or more recorded paths enumerate one identical flag set,
+the census prints `N of M recorded paths enumerate the same K flags; if each flag belongs to one
+verb, up to N×K flag/path pairs are accepted where they do not belong`, and the report carries
+`recordedSurfaces.sharedEnumeration`. With a declaration supplied the line points at the
+`accepted-not-declared` findings below it, which count the pairs that do not belong, the number
+the adopter wanted.
 
 ## Disposition, verified 2026-09-06
 
