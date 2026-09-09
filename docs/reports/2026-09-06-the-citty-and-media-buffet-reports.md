@@ -231,7 +231,7 @@ working as documented.
 
 ## Addendum, 2026-09-08
 
-`MB-4`'s shape line is built. When four or more recorded paths enumerate one identical flag set,
+`MB-4`'s shape line is built, and shipped in v0.1.15 on 2026-09-09. When four or more recorded paths enumerate one identical flag set,
 the census prints `N of M recorded paths enumerate the same K flags; if each flag belongs to one
 verb, up to N×K flag/path pairs are accepted where they do not belong`, and the report carries
 `recordedSurfaces.sharedEnumeration`. With a declaration supplied the line points at the

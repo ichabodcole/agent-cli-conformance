@@ -212,7 +212,7 @@ declined. Issue #37 is closed on it.
 
 ## Addendum, 2026-09-08
 
-Of `GL-3`'s two asks, the stable subset was taken: `declaration.formatVersion`, `declaration.status`,
+Of `GL-3`'s two asks, the stable subset was taken, and shipped in v0.1.15 on 2026-09-09: `declaration.formatVersion`, `declaration.status`,
 `declaration.checkedCommands` and `declaration.findings[].{kind,path,subject}` are promised by
 name in the README's stable column, under
 [the pre-1.0 decision](../wiki/decisions/pre-1-0-while-the-design-moves.md)'s rule that a
