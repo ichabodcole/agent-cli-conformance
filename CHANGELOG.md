@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.15](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.14...v0.1.15) (2026-09-09)
+
+
+### Features
+
+* **census:** name the shared flag set a recorded batch shows, and promise the census fields a ratchet reads ([e0bcc7e](https://github.com/ichabodcole/agent-cli-conformance/commit/e0bcc7e719efaa70538d5311668cead260b7b369))
+* **census:** the census names the shape magpie had, as a bound with its condition ([3facef1](https://github.com/ichabodcole/agent-cli-conformance/commit/3facef187d9b2793cdea4b9b5ab4dea3591186db))
+
 ## [0.1.14](https://github.com/ichabodcole/agent-cli-conformance/compare/v0.1.13...v0.1.14) (2026-09-08)
 
 
