@@ -172,8 +172,8 @@ it, and the field is an append under format major `0` if someone does.
 **A third ask, from the 2026-09-05 round, sits beside them.** From
 [the citty and media-buffet report](reports/2026-09-06-the-citty-and-media-buffet-reports.md#mb-4--the-census-could-print-the-pair-count-the-magpie-case-is-built-on):
 when every compared path enumerates the same flag set, print the flag/path pair count the
-one-registry guide's `magpie` case is built on. The census can print the shape — thirteen paths
-all enumerating the same fourteen flags — from what it already reads. The number the adopter
+one-registry guide's `magpie` case is built on. The census can print the shape — for `mb`, thirteen
+paths all enumerating the same fourteen flags — from what it already reads. The number the adopter
 wanted counts flags accepted at verbs that do not own them, and which verb owns a flag is what a
 declaration supplies; once one exists, that count is the `accepted-not-declared` total. Shipped on
 2026-09-08: the census names the shape as a bound with its condition, `N of M recorded paths
