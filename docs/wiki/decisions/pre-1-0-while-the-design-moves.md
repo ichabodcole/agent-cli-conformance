@@ -66,7 +66,11 @@ Extended on 2026-09-08 by
 [every artifact names its format](./every-artifact-names-its-format.md): `formatVersion` on the
 report, the declaration and a recorded batch, and a reader's refusal of a major it does not know,
 join the left column; the right column's "every field" is bounded to a major, within which fields
-are appended and never renamed or removed. The README's table carries both.
+are appended and never renamed or removed. Extended again the same day: `declaration.formatVersion`,
+`declaration.status`, `declaration.checkedCommands` and
+`declaration.findings[].{kind,path,subject}` join the left column, because they are what a CI
+ratchet on the declaration diff reads, and a surface an adopter automates against belongs there.
+The README's table carries all of it.
 
 **`conformant` and the exit code are on the stable side on purpose.** They are what a CI gate
 binds to, and moving them silently would turn a green build red for reasons nobody could read out

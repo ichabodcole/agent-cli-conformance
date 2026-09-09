@@ -115,8 +115,10 @@ rather than against this sentence.
 **Reserve `!` for the promised surface, which is narrow.** One question decides it:
 
 > **Did you change something in the STABLE column?** Rule ids, the exit-code taxonomy,
-> `conformant`, and the format majors: bumping `REPORT_FORMAT_MAJOR`, `DECLARATION_FORMAT_MAJOR`
-> or `RECORDED_SURFACES_FORMAT_MAJOR`, or removing the refusal of an unknown one, is a break. If
+> `conformant`, the census fields a ratchet reads (`declaration.formatVersion`, `status`,
+> `checkedCommands`, `findings[].{kind,path,subject}`), and the format majors: bumping
+> `REPORT_FORMAT_MAJOR`, `DECLARATION_FORMAT_MAJOR` or `RECORDED_SURFACES_FORMAT_MAJOR`, or
+> removing the refusal of an unknown one, is a break. If
 > not — a field appended to the report shape, `fullyVerified`, `acc.config.json` keys, CLI flags,
 > the text layout — it is a `feat` or a `fix`, however large it felt to write.
 

@@ -209,3 +209,12 @@ says so.
 
 With that promotion this report is **discharged**: every finding is actioned, promoted, or
 declined. Issue #37 is closed on it.
+
+## Addendum, 2026-09-08
+
+Of `GL-3`'s two asks, the stable subset was taken: `declaration.formatVersion`, `declaration.status`,
+`declaration.checkedCommands` and `declaration.findings[].{kind,path,subject}` are promised by
+name in the README's stable column, under
+[the pre-1.0 decision](../wiki/decisions/pre-1-0-while-the-design-moves.md)'s rule that a
+surface an adopter automates against moves left. The flag that would move the exit code is not
+built; it will be built when a second adopter asks for it.

@@ -323,6 +323,10 @@ export interface DeclarationDiff {
    *
    * `self-description-not-declared` findings can be present while this is `not-checked`, because
    * that check reads the document and never the target.
+   *
+   * PROMISED, with `checkedCommands` and `findings[].{kind,path,subject}`: on the README's stable
+   * column since 2026-09-08, because a CI ratchet reads them by name. Renaming a value here, or
+   * withdrawing a `DeclarationFindingKind`, is a breaking change.
    */
   status: "checked" | "not-checked";
   /** Why the diff did not run, when `status` is `not-checked`. */
